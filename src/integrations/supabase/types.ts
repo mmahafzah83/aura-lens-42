@@ -6271,38 +6271,44 @@ export type Database = {
       oe_taps: {
         Row: {
           applied_at: string | null
-          card_id: string
+          card_id: string | null
           created_at: string
           id: string
+          opportunity_id: string | null
           scope: string | null
           scope_value: string | null
           source: string | null
           tap: string
           tapped_at: string
+          truth_code: string | null
           user_id: string
         }
         Insert: {
           applied_at?: string | null
-          card_id: string
+          card_id?: string | null
           created_at?: string
           id?: string
+          opportunity_id?: string | null
           scope?: string | null
           scope_value?: string | null
           source?: string | null
           tap: string
           tapped_at?: string
+          truth_code?: string | null
           user_id: string
         }
         Update: {
           applied_at?: string | null
-          card_id?: string
+          card_id?: string | null
           created_at?: string
           id?: string
+          opportunity_id?: string | null
           scope?: string | null
           scope_value?: string | null
           source?: string | null
           tap?: string
           tapped_at?: string
+          truth_code?: string | null
           user_id?: string
         }
         Relationships: [
@@ -6319,6 +6325,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_cards"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_taps_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_taps_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -9752,6 +9772,33 @@ export type Database = {
             referencedColumns: ["opportunity_id"]
           },
         ]
+      }
+      oe_serves_untapped: {
+        Row: {
+          card_id: string | null
+          opportunity_id: string | null
+          serve_id: string | null
+          tap: string | null
+          tapped_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          card_id?: string | null
+          opportunity_id?: string | null
+          serve_id?: string | null
+          tap?: string | null
+          tapped_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          card_id?: string | null
+          opportunity_id?: string | null
+          serve_id?: string | null
+          tap?: string | null
+          tapped_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       oe_unjudged_alive: {
         Row: {
