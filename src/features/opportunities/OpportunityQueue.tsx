@@ -31,21 +31,31 @@ const STATE_LABEL: Record<AccessState, string> = {
 };
 type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
 type Mix = "win" | "build" | "explore";
-type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null };
+type Goal = "income_from_expertise" | "advancement" | "visibility" | "relationships" | "knowledge";
+type Direction = {
+  priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null;
+  mix: Mix | null; mix_set_on: string | null;
+  goal: Goal | null; goal_proposed: Goal | null; goal_confirmed_at: string | null; goal_expires_at: string | null;
+};
+/* The window is a promise with a date on it. It is stated once, it is never
+   moved forward quietly, and it disappears the day a first card is shown. */
+type Window = { expected_by: string; declared_on: string | null; missed: boolean };
 type Derivation = { comments?: Array<{ id?: string; text?: string; said_on?: string }>; profile?: string[]; legal_basis?: string };
 type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; rule_text_ar: string | null; field: string | null; value: string | null; stated_on: string; derived_from?: Derivation | null; ratified_at?: string | null };
 type Held = { id: string; day: string; reason: string | null; rank: number | null; title: string | null };
 type History = { id: string; shown_at: string; lane: string | null; tap: string | null; signal_class: string | null; truth_code: string | null; outcome: string | null; why: Record<string, unknown> | null; title: string | null };
 type DueOutcome = { id: string; title: string | null };
-type QueueData = { cards: QueueCard[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
+type QueueData = { cards: QueueCard[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
 type Proposal = { id: string; count: number; value: string };
 type DirectionQuestion = "priority" | "mix" | null;
 
-const emptyData: QueueData = { cards: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, rules: [], held: [], history: [], due_outcomes: [] };
+const emptyData: QueueData = { cards: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [] };
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const chipBase = { minHeight: 36, padding: "7px 10px", borderRadius: 4, background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
 const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
 const mixes: Mix[] = ["win", "build", "explore"];
+const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "relationships", "knowledge"];
+
 
 function validWhy(card: QueueCard) {
   return (card.why_lines ?? []).some((line) => String(line?.text ?? "").trim());
