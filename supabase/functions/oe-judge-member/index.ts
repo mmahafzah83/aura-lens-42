@@ -552,7 +552,7 @@ Deno.serve(async (req) => {
     // oeEligibility here created a second, contradictory verdict, so the judge
     // now consumes the match row exactly as written by oe-screen-member.
     const { data: priorMatches } = await admin.from("oe_matches")
-      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, presentation_line, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
+      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, gate_note, presentation_line, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
       .eq("user_id", userId);
     const matchByOpportunity = new Map(
       (priorMatches ?? []).map((m: any) => [String(m.opportunity_id), m]),
@@ -870,11 +870,16 @@ Deno.serve(async (req) => {
       // record asks for nothing, we say that instead of claiming completeness.
       const check = pick.check ?? { list: [], met: 0, total: 0 };
       const firstUnmet = (check.list ?? []).find((r: any) => !r.met) ?? null;
-      const distanceLine = check.total === 0
+      // A level we could not confirm is carried on the card, not hidden.
+      const levelUnconfirmed = String((pick as any).o?._match?.gate_note ?? "") === "level_unconfirmed";
+      const distanceLine = levelUnconfirmed
+        ? { text: "We could not confirm the level of this role", derived_from: "level_unconfirmed" }
+        : check.total === 0
         ? { text: vocab("no_requirements_published", lang), no_requirements: true }
         : firstUnmet
         ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
         : null;
+
 
       // The queue's own three conditions, applied here so a card is never
       // written that the queue would refuse.
