@@ -251,6 +251,31 @@ Deno.serve(async (req) => {
     };
     const survivors: any[] = [];
 
+    // THE TWO JUDGES MUST AGREE. The rubric already written on the match is
+    // read here, so the screen cannot promote to the act lane a record the
+    // rubric has refused — eligibility not met, an average under the gate, or
+    // a zero on a criterion that may not be zero.
+    const { data: policyRow } = await admin.from("oe_policy_versions")
+      .select("params").eq("active", true).maybeSingle();
+    const gateMin = Number((policyRow?.params as any)?.gate_min_avg ?? 3.0);
+    const { data: scoreRows } = await admin.from("oe_matches")
+      .select("opportunity_id, scores").eq("user_id", userId);
+    const scoresById = new Map<string, any>();
+    for (const row of scoreRows ?? []) scoresById.set(String(row.opportunity_id), row.scores);
+    const rubricVerdict = (oppId: string): { refuses: boolean; gap: string } => {
+      const scores = scoresById.get(oppId);
+      const passes = Array.isArray(scores?.passes) ? scores.passes : [];
+      if (!passes.length) return { refuses: false, gap: "" };
+      const notMet = passes.find((p: any) => p?.eligibility_met === false);
+      const avg = Number(scores?.score_avg ?? NaN);
+      const zero = passes.some((p: any) => Array.isArray(p?.gate_no_zero)
+        && p.gate_no_zero.some((c: string) => Number(p?.criteria?.[c] ?? 1) === 0));
+      const refuses = Boolean(notMet) || (Number.isFinite(avg) && avg < gateMin) || zero;
+      const gap = String(notMet?.gap ?? scores?.gap ?? "").trim();
+      return { refuses, gap };
+    };
+
+
     for (const o of (opps ?? [])) {
       funnel.alive++;
       // KIND IS NOT A PASS. A kind may relax place or level only when the
