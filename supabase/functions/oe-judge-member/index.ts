@@ -1022,13 +1022,14 @@ Deno.serve(async (req) => {
           ...(opening ? [{ text: opening, label: vocab("open_with", lang), cites: [] as any[] }] : []),
         ];
         const card = await writeCard(admin, userId, cardDate, {
-          opportunity_id: o.id, match_id: null,
+          opportunity_id: o.id, match_id: bands?.matchId ?? null,
           why_lines: lines, gap_line: null,
           cited_ids: knowCites,
           lane: "write",
           quote: o.evidence_quote,
           clock_text: vocab("nothing_to_act_on", lang),
-          fit_band: writeBand, win_band: null,
+          fit_band: writeBand, win_band: bands?.win ?? null,
+
           channel: "email",
         }, {
           rules: ruleIds,
