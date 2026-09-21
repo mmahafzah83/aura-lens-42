@@ -732,6 +732,28 @@ Deno.serve(async (req) => {
       if (check.total > 0) counts.requirement_checked++;
       costUsd += check.total > 0 ? 0.0004 : 0;
 
+      // THE TWO JUDGES MUST AGREE. The act lane says "you could hold this".
+      // The rubric is the other judge, and when it says he does not meet what
+      // the record requires, the record does not go out — it is rejected with
+      // the rubric's own sentence, in the second person.
+      const priorLane = o._match?.lane_final ?? null;
+      const rubricRefuses = priorLane === "act" && (
+        passes.some((p: any) => p?.eligibility_met === false)
+        || scoreAvg < gateMin
+        || !noZero
+      );
+      // "Your angle:" is the writing lane's sentence. An act card carries the
+      // requirement↔evidence sentence or it carries nothing.
+      const priorLine = String(o._match?.presentation_line ?? "");
+      const wrongLine = priorLane === "act" && /^your angle:/i.test(priorLine.trim());
+      const gapText = String(last?.gap ?? "").trim();
+      const rubricSentence = gapText
+        ? (() => {
+          const clause = secondPersonClause(gapText) || gapText;
+          return clause.charAt(0).toUpperCase() + clause.slice(1) + (/[.!?]$/.test(clause) ? "" : ".");
+        })()
+        : "The rubric does not find what this one requires in your record.";
+
       const { data: match, error: matchError } = await admin.from("oe_matches").upsert({
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         retrieval: cand.retrieval,
@@ -744,10 +766,27 @@ Deno.serve(async (req) => {
         eligibility_fail: o._screen.fails,
         eligibility_unknowns: o._screen.unknowns,
         eligibility_conditions: o._screen.conditions ?? [],
-        // oe-screen-member owns the final lane; judging cannot reopen or close it.
-        lane_final: o._match?.lane_final ?? null,
-        gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
+        // oe-screen-member owns the final lane; judging cannot reopen or close
+        // it — except to refuse one, which is a rejection, never a promotion.
+        lane_final: rubricRefuses || wrongLine ? null : priorLane,
+        ...(rubricRefuses
+          ? {
+            screen_gate: "rubric", screen_outcome: "rejected",
+            rejection_sentence: rubricSentence,
+            presentation_line: null, presentation_evidence_ids: [],
+          }
+          : wrongLine
+          ? {
+            screen_gate: "presentation", screen_outcome: "rejected",
+            rejection_sentence: "No line — the act lane carries what this asks for against your record, and there was none.",
+            presentation_line: null, presentation_evidence_ids: [],
+          }
+          : {}),
+        gate_passed: rubricRefuses || wrongLine ? false : gatePassed,
+        gate_reason: rubricRefuses ? "rubric_refuses" : gateReason,
+        judged_at: new Date().toISOString(),
       }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
+
       if (matchError) throw new Error(`judge match upsert failed for ${o.id}: ${matchError.message}`);
 
       judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds, warmth, check, mine: mineForReqs });
