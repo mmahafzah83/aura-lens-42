@@ -4445,6 +4445,7 @@ export type Database = {
           goal_expires_at: string | null
           goal_proposed: string | null
           goal_proposed_reason: Json | null
+          goal_secondary: string[] | null
           mix: string | null
           mix_set_on: string | null
           priority: string | null
@@ -4462,6 +4463,7 @@ export type Database = {
           goal_expires_at?: string | null
           goal_proposed?: string | null
           goal_proposed_reason?: Json | null
+          goal_secondary?: string[] | null
           mix?: string | null
           mix_set_on?: string | null
           priority?: string | null
@@ -4479,6 +4481,7 @@ export type Database = {
           goal_expires_at?: string | null
           goal_proposed?: string | null
           goal_proposed_reason?: Json | null
+          goal_secondary?: string[] | null
           mix?: string | null
           mix_set_on?: string | null
           priority?: string | null
@@ -10537,7 +10540,7 @@ export type Database = {
       }
       oe_goal_propose: { Args: { p_user: string }; Returns: string }
       oe_goal_save: {
-        Args: { p_defer?: boolean; p_goal?: string }
+        Args: { p_defer?: boolean; p_goal?: string; p_secondary?: string[] }
         Returns: Json
       }
       oe_goal_window: { Args: { p_user: string }; Returns: Json }
