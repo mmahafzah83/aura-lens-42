@@ -20,6 +20,9 @@ type QueueCard = {
   issuer_name: string | null; last_checked: string | null; rule_count: number; purpose: "strength" | "build" | "explore";
   access_state: AccessState | null; access_state_reason: string | null; inference: Inference | null;
   claims: Record<string, "pass" | "fail" | "unknown"> | null;
+  /** What the page says entry costs. When present, it replaces the free-door line. */
+  cost_of_door: string | null;
+  gap_question: { investigation_id: string; field: string; question: string } | null;
 };
 
 // Only a confirmed opening, or better, may use the language of an opening.
@@ -377,7 +380,11 @@ export function OpportunityQueue() {
             {card.quote && <blockquote>“{card.quote}” {card.source_url && <a href={card.source_url} target="_blank" rel="noreferrer">{t("source_link", "Source")}</a>}{card.last_checked && <small style={mono}>{String(card.last_checked).slice(0, 10)}</small>}</blockquote>}
           </div>}
         </div>
-        {card.lane === "act" && <p className="oe-door-cost"><span aria-hidden />{t("queue_direct_cost", "Direct application. One form, no recruiter call first.")}</p>}
+        {card.lane === "act" && (
+          card.cost_of_door
+            ? <p className="oe-door-cost"><span aria-hidden />{v("door_cost_en").replace("{cost}", card.cost_of_door)}</p>
+            : <p className="oe-door-cost"><span aria-hidden />{t("queue_direct_cost", "Direct application. One form, no recruiter call first.")}</p>
+        )}
         {!declining ? <div className="oe-actions"><AuraButton onClick={() => void decide("right")} loading={busy}>{card.lane === "act" ? t("queue_act", "I will go for it") : t("queue_draft", "Draft it")}</AuraButton><AuraButton variant="ghost" onClick={() => void decide("later")} disabled={busy}>{t("queue_later", "Later")}</AuraButton><AuraButton variant="ghost" onClick={() => setDeclining(true)} disabled={busy}>{t("queue_not_for_me", "Not for me")}</AuraButton></div> : <div className="oe-decline">
           <div><h3>{t("queue_not_because", "Not for me because")}</h3><div className="oe-chip-row">{taste.map(([key, fallback, scope, value]) => <button key={key} type="button" disabled={busy || !value} style={{ ...chipBase, border: "1px solid var(--border-default)" }} onClick={() => void decline(scope, value, null)}>{t(key, fallback)}</button>)}</div></div>
           <div><h3>{t("queue_or_wrong", "Or something is wrong with it")}</h3><div className="oe-chip-row">{truths.map(([key, fallback, truth]) => <button key={key} type="button" disabled={busy} className="oe-truth-chip" style={chipBase} onClick={() => void decline(null, null, truth)}>{t(key, fallback)}</button>)}</div></div>
