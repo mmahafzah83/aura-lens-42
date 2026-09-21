@@ -36,6 +36,7 @@ const SUBSTANTIVE = new Set([
 
 /** The same bar the requirement matcher holds itself to: a real subject in
  *  common, not a shared word. Cosine over stemmed term frequencies. */
+export const LISTING_OVERLAP_MIN = 0.30;
 export const SUBJECT_OVERLAP_MIN = 0.12;
 
 export type Overlap = {
@@ -119,12 +120,27 @@ export function writeTests(input: {
   // somebody else's vacancy. For a listing the subject must be work he has
   // actually done, by profession — a foreign engineering vacancy fails here.
   const role = classifyProfession(opportunity?.title, opportunity?.scope);
-  const isListing = String(opportunity?.kind ?? "") === "executive_role";
+  // A record with no established access state is a listing whatever kind it
+  // carries — the kind is not a free pass into writing either.
+  const isListing = String(opportunity?.kind ?? "") === "executive_role"
+    || !String(opportunity?.access_state ?? "").trim();
   const holdsRole = !!role && held(identity).has(String(role));
+  const titleStems = new Set(tokenise(String(opportunity?.title ?? "")).stems);
+  const titleTerms = (best?.overlap.specific ?? []).filter((t) => titleStems.has(t));
+  // For a listing the bar is the subject of the job itself: his own work, and a
+  // strong, title-level overlap. A near miss on one shared word is not standing.
+  const strongEnough = !!best
+    && best.overlap.score >= LISTING_OVERLAP_MIN
+    && titleTerms.length >= 2;
   const t1: WriteTest = isListing
-    ? holdsRole
+    ? holdsRole && strongEnough
       ? { passed: true, sentence: "This is work you have done yourself." }
-      : { passed: false, sentence: "This is a vacancy in work you have not done — not your audience." }
+      : {
+        passed: false,
+        sentence: holdsRole
+          ? "This job is not close enough to what you have done to be worth writing about."
+          : "This is a vacancy in work you have not done — not your audience.",
+      }
     : {
       passed: standing.has_standing,
       sentence: secondPersonClause(standing.reason) || standing.reason,
