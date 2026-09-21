@@ -281,14 +281,33 @@ Deno.serve(async (req) => {
         let line: string | null = null;
         let position: string | null = null;
         try {
+          const ev = (o as any).scope_evidence ?? null;
+          const stated: string[] = Array.isArray(ev?.stated_requirements) ? ev.stated_requirements : [];
+          const fromRecord: string[] = Array.isArray((o as any).requirements)
+            ? (o as any).requirements.map((r: any) => String(r?.text ?? r ?? "")).filter(Boolean)
+            : [];
           const out = await askForLine(lovableKey, JSON.stringify({
             first_name: String(identity.positions[0]?.title ?? "").split(" ")[0] && (body.first_name ?? "He"),
             positions: identity.positions.map((p) => ({
               position: `${p.title} at ${p.company}`, period: [p.started, p.ended].filter(Boolean).join(" to "),
               function: p.profession, standing: p.grade_label,
             })),
+            // what he actually ran, not how long he has worked
+            his_scope: identity.scope_evidence.slice(0, 10),
             qualifications: identity.qualifications.slice(0, 6),
-            opportunity: { title: o.title, scope: o.scope, sector: o.sector, issuer: o.issuer_raw },
+            opportunity: {
+              title: o.title, scope: o.scope, sector: o.sector, issuer: o.issuer_raw,
+              stated_requirements: (stated.length ? stated : fromRecord).slice(0, 10),
+              states: ev
+                ? {
+                  reports_to: ev.reports_to?.value ?? null,
+                  direct_reports: ev.direct_reports?.value ?? null,
+                  organisational_scope: ev.organisational_scope?.value ?? null,
+                  decision_rights: ev.decision_rights?.value ?? null,
+                  accountability: (ev.accountability_sentences ?? []).slice(0, 5),
+                }
+                : null,
+            },
             relation: g.profession_relation, bridge: g.bridge,
           }));
           line = out.line; position = out.position;
