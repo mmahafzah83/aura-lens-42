@@ -381,7 +381,7 @@ export type GateResult = {
   role_profession: Profession | null;
   profession_relation: "same" | "adjacent" | "different" | "unstated" | null;
   employer_tier: Tier | null;
-  level_direction: "below" | "lateral" | "one_above" | "two_plus" | "unknown" | null;
+  level_direction: "below" | "lateral" | "one_above" | "two_plus" | "unknown" | "not_applicable" | null;
   standing_gap: number | null;
   bridge: string | null;
   stretch: boolean;
