@@ -238,7 +238,18 @@ Deno.serve(async (req) => {
     record("eligibility_value_without_ratified_rule", bad);
   }
 
+  // 11. A record cannot both pass the gate and carry a refusal sentence.
+  {
+    const { data } = await admin.from("oe_gate_contradiction").select("*").limit(50);
+    const bad = (data ?? []).map((r: any) => ({
+      user_id: r.user_id, opportunity_id: r.opportunity_id,
+      screen_gate: r.screen_gate, rejection_sentence: r.rejection_sentence,
+    }));
+    record("gate_passed_with_rejection_sentence", bad);
+  }
+
   for (const v of violations) {
+
     await admin.from("ef_error_log").insert({
       function_name: FN,
       severity: "error",
