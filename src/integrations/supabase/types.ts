@@ -4855,12 +4855,15 @@ export type Database = {
       }
       oe_investigations: {
         Row: {
+          answered_at: string | null
+          asked_on: string | null
           attempts: number
           created_at: string
           field: string
           first_seen: string
           id: string
           last_attempt_at: string | null
+          member_question: string | null
           opportunity_id: string
           reason: string | null
           resolved_value: string | null
@@ -4869,12 +4872,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          answered_at?: string | null
+          asked_on?: string | null
           attempts?: number
           created_at?: string
           field: string
           first_seen?: string
           id?: string
           last_attempt_at?: string | null
+          member_question?: string | null
           opportunity_id: string
           reason?: string | null
           resolved_value?: string | null
@@ -4883,12 +4889,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          answered_at?: string | null
+          asked_on?: string | null
           attempts?: number
           created_at?: string
           field?: string
           first_seen?: string
           id?: string
           last_attempt_at?: string | null
+          member_question?: string | null
           opportunity_id?: string
           reason?: string | null
           resolved_value?: string | null
@@ -5254,6 +5263,7 @@ export type Database = {
           member_access_confirmed: boolean
           met_count: number | null
           opportunity_id: string
+          presentation_evidence_ids: string[]
           presentation_line: string | null
           profession_relation: string | null
           profession_source: string | null
@@ -5297,6 +5307,7 @@ export type Database = {
           member_access_confirmed?: boolean
           met_count?: number | null
           opportunity_id: string
+          presentation_evidence_ids?: string[]
           presentation_line?: string | null
           profession_relation?: string | null
           profession_source?: string | null
@@ -5340,6 +5351,7 @@ export type Database = {
           member_access_confirmed?: boolean
           met_count?: number | null
           opportunity_id?: string
+          presentation_evidence_ids?: string[]
           presentation_line?: string | null
           profession_relation?: string | null
           profession_source?: string | null
@@ -5376,6 +5388,65 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_unjudged_alive"
             referencedColumns: ["opportunity_id"]
+          },
+        ]
+      }
+      oe_member_evidence: {
+        Row: {
+          claim: string
+          confidence: number
+          created_at: string
+          extracted_at: string
+          id: string
+          kind: string
+          position_ref: string | null
+          quote: string
+          source_field: string | null
+          source_id: string | null
+          source_table: string
+          superseded_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claim: string
+          confidence?: number
+          created_at?: string
+          extracted_at?: string
+          id?: string
+          kind: string
+          position_ref?: string | null
+          quote: string
+          source_field?: string | null
+          source_id?: string | null
+          source_table: string
+          superseded_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claim?: string
+          confidence?: number
+          created_at?: string
+          extracted_at?: string
+          id?: string
+          kind?: string
+          position_ref?: string | null
+          quote?: string
+          source_field?: string | null
+          source_id?: string | null
+          source_table?: string
+          superseded_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_member_evidence_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "oe_member_evidence"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -10460,6 +10531,10 @@ export type Database = {
         Returns: number
       }
       oe_learning_state: { Args: { p_user: string }; Returns: Json }
+      oe_member_answer: {
+        Args: { p_answer: string; p_investigation: string }
+        Returns: Json
+      }
       oe_member_evidence: {
         Args: { p_embedding: string; p_k?: number; p_user_id: string }
         Returns: {

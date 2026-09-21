@@ -21,6 +21,8 @@
  * bridge from utilities transformation to irrigation engineering.
  */
 
+import { numberIn, scopeIn, standingProxy } from "./memberEvidence.ts";
+
 // ── PROFESSIONS ────────────────────────────────────────────────────────────
 // The function that actually carries a role's accountability. Ordered: the
 // most specific accountability wins, because every senior title contains the
@@ -298,11 +300,30 @@ export type MemberPosition = {
   started: string | null;
   ended: string | null;
   profession: Profession | null;
+  /** how the profession was established, so a verdict is auditable */
+  profession_source: "title" | "accountability_sentence";
+  profession_source_quote: string | null;
   grade: number | null;
   grade_label: string | null;
+  /** title, or the stated scope, reports and profit and loss in his own record */
+  grade_basis: "title" | "proxies" | "none";
   tier: Tier;
   tier_label: string;
   standing: number | null;
+};
+
+/**
+ * A claim the member's own record STATES about him, with the quote that proves
+ * it. Extracted once by oe-extract-member-evidence, read here — never inferred.
+ */
+export type MemberEvidenceRow = {
+  id: string;
+  kind: string;
+  claim: string;
+  quote: string;
+  position_ref: string | null;
+  confidence: number | string | null;
+  source_table: string | null;
 };
 
 export type MemberIdentity = {
@@ -315,10 +336,12 @@ export type MemberIdentity = {
     tier: Tier | null;
     grade_label: string | null;
     period: string | null;
+    /** the title, or what his own record states he ran */
+    basis: "title" | "proxies" | "none";
   };
   sectors_delivered: Array<{ sector: string; position: string }>;
   qualifications: Array<{ kind: string; title: string; institution: string | null; year: string | null }>;
-  scope_evidence: Array<{ position: string; evidence: string }>;
+  scope_evidence: Array<{ position: string; evidence: string; evidence_id?: string; kind?: string; quote?: string }>;
 };
 
 const periodOf = (p: MemberPosition) => [p.started, p.ended].filter(Boolean).join(" to ");
@@ -335,12 +358,34 @@ const SECTOR_PATTERNS: Array<[string, RegExp]> = [
   ["financial services", /bank|insurance|finance|capital|invest/i],
 ];
 
+const normRef = (s: string) =>
+  String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+
+/** Claims his own record ties to this position. */
+function evidenceFor(evidence: MemberEvidenceRow[], ref: string): MemberEvidenceRow[] {
+  const want = normRef(ref);
+  if (!want) return [];
+  return evidence.filter((row) => {
+    const got = normRef(row.position_ref ?? "");
+    return !!got && (got === want || want.includes(got) || got.includes(want));
+  });
+}
+
 /**
- * Build the member's identity from the saved profile snapshot. Derived, never
- * hand-written: the same function run against another member's snapshot yields
- * that member's professions, standing and sectors.
+ * Build the member's identity from the saved profile snapshot AND from what his
+ * own record states about him — his position descriptions, his CV, his answers.
+ * Derived, never hand-written: the same function run against another member's
+ * record yields that member's professions, standing and sectors.
+ *
+ * A title is still read first. It is simply no longer the only thing read: a
+ * seat is judged by decision rights, magnitude and scope, and where his record
+ * states those, they decide.
  */
-export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberIdentity {
+export function deriveIdentity(
+  snapshot: any,
+  ladder: LadderRow[] = [],
+  evidence: MemberEvidenceRow[] = [],
+): MemberIdentity {
   const experience: any[] = Array.isArray(snapshot?.experience) ? snapshot.experience : [];
   const education: any[] = Array.isArray(snapshot?.education) ? snapshot.education : [];
   const certifications: any[] = Array.isArray(snapshot?.certifications) ? snapshot.certifications : [];
@@ -350,20 +395,64 @@ export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberI
     const company = String(e?.companyName ?? e?.company ?? "").trim();
     const placed = employerTier(company, ladder);
     const grade = gradeOf(title);
+    const mine = evidenceFor(evidence, `${title} at ${company}`);
+
+    // PROFESSION — the title first, because a title is an employer's own
+    // statement of accountability. Only when it says nothing, or nothing more
+    // than "general management", may what he stated he was accountable for be
+    // read, and only those sentences.
+    const fromTitle = classifyProfession(title);
+    let profession: Profession | null = fromTitle;
+    let profession_source: "title" | "accountability_sentence" = "title";
+    let profession_source_quote: string | null = null;
+    if (!fromTitle || fromTitle === "general_management") {
+      for (const row of mine) {
+        if (!["decision_rights", "delivered_outcome", "organisational_scope"].includes(row.kind)) continue;
+        const p = classifyProfession(row.claim, row.quote);
+        if (p && p !== "general_management") {
+          profession = p;
+          profession_source = "accountability_sentence";
+          profession_source_quote = String(row.quote).slice(0, 400);
+          break;
+        }
+      }
+    }
+
+    // GRADE — the same proxy map the posting side uses, read off what his own
+    // record states he ran. The title is the tie-breaker, never thrown away.
+    const team = mine.filter((r) => r.kind === "team_size")
+      .map((r) => numberIn(`${r.claim} ${r.quote}`)).filter((n): n is number => n !== null);
+    const scopeWord = mine.filter((r) => r.kind === "organisational_scope")
+      .map((r) => scopeIn(`${r.claim} ${r.quote}`)).find(Boolean) ?? null;
+    const hasPnl = mine.some((r) => r.kind === "budget_or_pnl");
+    const proxy = standingProxy({
+      organisational_scope: scopeWord,
+      team_size: team.length ? Math.max(...team) : null,
+      has_pnl: hasPnl,
+    });
+
+    let rank = grade?.rank ?? null;
+    let grade_label = grade?.label ?? null;
+    let grade_basis: "title" | "proxies" | "none" = grade ? "title" : "none";
+    if (proxy) {
+      grade_basis = "proxies";
+      if (!grade || proxy.rank > grade.rank) { rank = proxy.rank; grade_label = proxy.label; }
+    }
+
     return {
       title,
       company,
       started: e?.startDate?.text ?? null,
       ended: e?.endDate?.text ?? null,
-      // The TITLE carries the accountability. A description is prose: it names
-      // every technology the employer sells and would classify a process
-      // consultant as a procurement lead.
-      profession: classifyProfession(title),
-      grade: grade?.rank ?? null,
-      grade_label: grade?.label ?? null,
+      profession,
+      profession_source,
+      profession_source_quote,
+      grade: rank,
+      grade_label,
+      grade_basis,
       tier: placed.tier,
       tier_label: placed.label,
-      standing: grade ? +(grade.rank + placed.bonus).toFixed(2) : null,
+      standing: rank !== null ? +(rank + placed.bonus).toFixed(2) : null,
     };
   }).filter((p) => p.title);
 
@@ -390,6 +479,15 @@ export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberI
       sectors.push({ sector, position: `${p.title} at ${p.company}` });
     }
   }
+  // A sector his own record STATES he delivered in, named where he named it.
+  for (const row of evidence) {
+    if (row.kind !== "sector_delivered") continue;
+    for (const [sector, re] of SECTOR_PATTERNS) {
+      if (!re.test(`${row.claim} ${row.quote}`)) continue;
+      if (sectors.some((s) => s.sector === sector)) continue;
+      sectors.push({ sector, position: row.position_ref ?? "stated in your own record" });
+    }
+  }
 
   const qualifications = [
     ...education.map((e) => ({
@@ -406,12 +504,26 @@ export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberI
     })),
   ].filter((q) => q.title);
 
-  const scope_evidence = positions
-    .filter((p) => (p.grade ?? 0) >= 5)
-    .map((p) => ({
-      position: `${p.title} at ${p.company}`,
-      evidence: `${p.grade_label ?? "position"} at ${p.tier_label ?? TIER_LABEL[p.tier]}${periodOf(p) ? `, ${periodOf(p)}` : ""}`,
-    }));
+  // What he ran: the standing his positions carry, and — first, because it is
+  // evidence rather than inference — what his own record states he ran, each
+  // line carrying the row it came from so the member can see where it came from.
+  const scope_evidence = [
+    ...evidence
+      .filter((row) => ["decision_rights", "budget_or_pnl", "team_size", "organisational_scope", "delivered_outcome"].includes(row.kind))
+      .map((row) => ({
+        position: row.position_ref ?? "stated in your own record",
+        evidence: row.claim,
+        evidence_id: row.id,
+        kind: row.kind,
+        quote: row.quote,
+      })),
+    ...positions
+      .filter((p) => (p.grade ?? 0) >= 5)
+      .map((p) => ({
+        position: `${p.title} at ${p.company}`,
+        evidence: `${p.grade_label ?? "position"} at ${p.tier_label ?? TIER_LABEL[p.tier]}${periodOf(p) ? `, ${periodOf(p)}` : ""}`,
+      })),
+  ];
 
   return {
     positions,
@@ -425,6 +537,7 @@ export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberI
       tier: top?.tier ?? null,
       grade_label: top?.grade_label ?? null,
       period: top ? periodOf(top) : null,
+      basis: top?.grade_basis ?? "none",
     },
     sectors_delivered: sectors,
     qualifications,

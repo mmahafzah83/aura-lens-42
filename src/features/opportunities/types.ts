@@ -53,6 +53,11 @@ export type OpportunityCardData = {
   warmth?: WarmthRow[] | null;
   /** Measured, never guessed: null when we hold no pairs of this kind. */
   lead?: { days: number; sample: number } | null;
+  /** The one thing this record asks for that his own record does not yet say. */
+  gap_question?: { investigation_id: string; field: string; question: string } | null;
+  /** What his own record said, and where it said it — the line's own sources. */
+  presentation_evidence?: Array<{ id: string; claim: string; quote: string; source: string; position: string | null }> | null;
+  presentation_line?: string | null;
 };
 
 export type PublicOpportunityCard = {
