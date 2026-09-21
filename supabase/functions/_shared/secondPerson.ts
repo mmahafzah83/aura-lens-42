@@ -19,7 +19,7 @@ const IRREGULAR: Record<string, string> = {
 };
 
 /** A word that ends in s but is not a third-person verb. */
-const NOT_A_VERB = /(?:ss|us|is|ous|ics|ies$)/;
+const NOT_A_VERB = /(?:ss|us|ous|ics|ies)$/;
 
 /** Past tense and participles need no change in the second person. */
 const PAST = /(?:ed|led|built|ran|won|held|made|took|gave|drove|grew|oversaw|sold|left|set|put|led)$/;
