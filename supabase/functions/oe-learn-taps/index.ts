@@ -35,8 +35,9 @@ Deno.serve(async (req) => {
     const fewShotK = Math.max(1, Number(params.few_shot_k ?? 8));
 
     const { data: taps, error: tapsError } = await admin.from("oe_taps")
-      .select("id,user_id,card_id,tap,scope,scope_value,tapped_at")
+      .select("id,user_id,card_id,opportunity_id,tap,scope,scope_value,source,truth_code,tapped_at")
       .is("applied_at", null).order("tapped_at", { ascending: true }).limit(200);
+
     if (tapsError) throw new Error(tapsError.message);
 
     const byUser = new Map<string, any[]>();
