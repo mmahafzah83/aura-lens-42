@@ -322,6 +322,14 @@ export function OpportunityQueue() {
   ] as const;
 
   return <section className="oe-queue" dir="ltr" aria-busy={loading}>
+    {showGoalCard && !loading && <GoalCard
+      direction={data.direction}
+      busy={busy}
+      v={v}
+      onChoose={(goal) => void saveGoal(goal)}
+      onDefer={() => void deferGoal()}
+    />}
+
     <header className="oe-queue-header">
       <h1>{t("queue_morning", "Morning")}{firstName ? `, ${firstName}` : ""}</h1>
       <p>{count === 0 ? t("queue_nothing_today", "Nothing today.") : <><span style={mono}>{count}</span> {t("queue_things_today", "things today. About a minute.")}</>}</p>
