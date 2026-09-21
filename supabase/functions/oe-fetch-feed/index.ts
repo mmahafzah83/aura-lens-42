@@ -824,15 +824,19 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // 3. VERIFY the quote against the page.
+        // 3. VERIFY the quote against the page text WE KEEP. Verifying against
+        // text we then throw away is how a "verified" quote ends up absent from
+        // the record: the verdict and the stored copy must be the same text.
+        const storedText = keptPageText(String(cand.text ?? ""), String(rec.evidence_quote ?? ""));
         const quote = normaliseForQuote(rec.evidence_quote);
-        const pageNorm = normaliseForQuote(cand.text);
+        const pageNorm = normaliseForQuote(storedText);
         const quoteVerified = quote.length > 10 && pageNorm.includes(quote);
         let confidence = Number(rec.extraction_confidence ?? 0.5);
         if (!quoteVerified) {
           if (rec.time_kind === "open_now") { counts.dropped_no_quote++; continue; }
           confidence = Math.min(confidence, 0.5);
         }
+
 
         // 4. ISSUER
         const issuerId = await resolveIssuer(admin, rec.issuer_raw || feed.issuer_hint || "", cand.url, rec.sector ?? null);
