@@ -540,11 +540,24 @@ Deno.serve(async (req) => {
     // oeEligibility here created a second, contradictory verdict, so the judge
     // now consumes the match row exactly as written by oe-screen-member.
     const { data: priorMatches } = await admin.from("oe_matches")
-      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
+      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, presentation_line, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
       .eq("user_id", userId);
     const matchByOpportunity = new Map(
       (priorMatches ?? []).map((m: any) => [String(m.opportunity_id), m]),
     );
+
+    // ── ONE LIST, ONE TEST ────────────────────────────────────────────────
+    // public.oe_app_queue() refuses a card whose record is incomplete for its
+    // kind, whose match is not a survivor, or which carries no presentation
+    // line. The judge must never write a card the queue would then refuse, so
+    // it applies the same three conditions here. The RPC keeps them as a net.
+    const queueRefusal = (o: any): string | null => {
+      const m = matchByOpportunity.get(String(o.id)) ?? o?._match ?? null;
+      if (!(o?.kind_completeness?.complete === true)) return "kind_incomplete";
+      if (m?.screen_outcome !== "survivor") return "not_survivor";
+      if (!String(m?.presentation_line ?? "").trim()) return "no_presentation_line";
+      return null;
+    };
 
     const actPool: any[] = [];
     const writePool: any[] = [];
