@@ -14,8 +14,6 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { loadVocab } from "../_shared/oeVocab.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
-import { laneFor, levelOf, screen, type Eligibility } from "../_shared/oeEligibility.ts";
-import { loadLocationSensitivity, sensitivityOf } from "../_shared/oeKinds.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -482,24 +480,6 @@ Deno.serve(async (req) => {
     const lang = (profile?.content_language === "ar" ? "ar" : "en") as "ar" | "en";
     const cardDate = localToday(profile?.timezone);
 
-    // What he can actually hold. His own row, in his own words.
-    const { data: eligRow } = await admin
-      .from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
-    const eligibility = (eligRow ?? null) as Eligibility | null;
-
-    // What he can SHOW. A stated requirement is tested against this, never
-    // against a band he once mentioned in passing.
-    const yearsText = String((profile as any)?.years_experience ?? "");
-    const yearsMatch = /(\d{1,2})/.exec(yearsText);
-    const evidence = {
-      years_experience: yearsMatch ? Number(yearsMatch[1]) : null,
-      practice: (profile as any)?.core_practice ?? null,
-      sectors: eligibility?.sectors_core ?? null,
-    };
-
-
-
-
     // Past judgements, in his words.
     const { data: labelled } = await admin
       .from("oe_taps")
@@ -538,10 +518,8 @@ Deno.serve(async (req) => {
     }
 
     // Coverage and ranking are separate. Retrieval decides review order; it
-    // must never decide whether a live record exists for this member. Every
-    // live record is screened and receives a match row. Eligibility, route,
-    // gate and taste then decide whether it can be served.
-    const kindSensitivity = await loadLocationSensitivity(admin);
+    // never decides the gate. oe-screen-member is the one source of truth for
+    // gate_passed and lane_final; this function reads those stored verdicts.
     const { data: opps, error: oppsError } = await admin
       .from("oe_opportunities")
       .select("id, kind, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
@@ -557,100 +535,35 @@ Deno.serve(async (req) => {
     counts.outside_retrieval = pool.length - counts.retrieved;
     counts.filtered = 0;
 
-    // ── THE ELIGIBILITY GATE — free, deterministic, and before the model ──
-    // Every live record receives an access outcome before review. Excluded
-    // records remain visible in coverage but cannot enter the act lane.
-    //
-    // REACHABLE IS NOT THE ACT LANE. Reachable says only two things: he can
-    // hold it, and there is a live door. The act lane is the INTERSECTION of
-    // that with a passed gate, and the gate is not known until the judge has
-    // run. So a record enters as 'write' and is promoted only when it earns
-    // it. A database constraint refuses any other combination.
+    // ── THE STORED SCREEN VERDICT ─────────────────────────────────────────
+    // The three-gate screen owns eligibility and lane assignment. Re-running
+    // oeEligibility here created a second, contradictory verdict, so the judge
+    // now consumes the match row exactly as written by oe-screen-member.
     const { data: priorMatches } = await admin.from("oe_matches")
-      .select("opportunity_id, gate_passed, lane, screen_outcome")
+      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
       .eq("user_id", userId);
-    const priorGate = new Map(
-      (priorMatches ?? []).map((m: any) =>
-        [String(m.opportunity_id), m.gate_passed === true && m.lane === "lane_open"]),
-    );
-    // The screening brain is the later and harder word. A record it refused
-    // cannot be re-admitted to the act lane by a re-run of the judge.
-    const screenRejected = new Set(
-      (priorMatches ?? [])
-        .filter((m: any) => m.screen_outcome === "rejected")
-        .map((m: any) => String(m.opportunity_id)),
+    const matchByOpportunity = new Map(
+      (priorMatches ?? []).map((m: any) => [String(m.opportunity_id), m]),
     );
 
     const actPool: any[] = [];
     const writePool: any[] = [];
     for (const o of filtered) {
-      const level = levelOf(o);
-      const withLevel = {
-        ...o, level_band: level,
-        location_sensitivity: sensitivityOf(kindSensitivity, (o as any).kind),
+      const stored = matchByOpportunity.get(String(o.id)) ?? null;
+      const inActLane = stored?.gate_passed === true && stored?.lane_final === "act";
+      if (stored?.gate_passed !== true) counts.skipped_ineligible++;
+      const candidate = {
+        ...o,
+        _match: stored,
+        _reachable: inActLane,
+        _screen: {
+          outcome: stored?.eligibility_outcome ?? null,
+          fails: stored?.eligibility_fail ?? [],
+          unknowns: stored?.eligibility_unknowns ?? [],
+          conditions: stored?.eligibility_conditions ?? [],
+        },
       };
-      const s = screen(withLevel, eligibility, evidence);
-      const issuerDomain = (o as any).issuer?.domain ?? null;
-      const reachable = laneFor(withLevel, s, issuerDomain) === "act"
-        && !screenRejected.has(String(o.id));
-      if (!s.pass) counts.skipped_ineligible++;
-      (reachable ? actPool : writePool).push({ ...withLevel, _screen: s, _reachable: reachable });
-
-      // level_band is a property of the record itself and stays on the shared row.
-      await admin.from("oe_opportunities")
-        .update({ level_band: level })
-        .eq("id", o.id);
-      // The lane verdict is PER MEMBER — it belongs on this member's match row.
-      const laneFinal = reachable && priorGate.get(String(o.id)) === true ? "act" : "write";
-      const { error: laneErr } = await admin.from("oe_matches").upsert({
-        user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
-        lane_final: laneFinal, eligibility_fail: s.fails,
-        eligibility_outcome: s.outcome, eligibility_unknowns: s.unknowns,
-        eligibility_conditions: s.conditions,
-      }, { onConflict: "user_id,opportunity_id,rubric_version" });
-
-      if (laneErr) {
-        await logEfError(admin, {
-          function_name: FN, error: new Error(`lane upsert failed: ${laneErr.message}`),
-          severity: "error", context: { opportunity_id: o.id, user_id: userId },
-        });
-      }
-    }
-    counts.lane_act = actPool.length;
-    counts.lane_write = writePool.length;
-
-    // ── THE STALE SWEEP ───────────────────────────────────────────────────
-    // A judged match carrying no access verdict predates the profile-versus-
-    // requirement test. Screening costs nothing, so no such row is left to
-    // sit: it is re-screened here even when retrieval, a taste correction or
-    // an existing card kept it out of today's pool. Every judged match must
-    // land on excluded, unknown or eligible.
-    const { data: unscreened } = await admin.from("oe_matches")
-      .select("opportunity_id, rubric_version, gate_passed, lane")
-      .eq("user_id", userId).is("eligibility_outcome", null);
-    const inPool = new Set(filtered.map((o: any) => String(o.id)));
-    const stale = (unscreened ?? []).filter((m: any) => !inPool.has(String(m.opportunity_id)));
-    if (stale.length) {
-      const { data: staleOpps } = await admin.from("oe_opportunities")
-        .select("id, kind, title, scope, sector, chair_type, seniority_band, level_band, location, remote, requirements, route_url, route_kind, route_dead, issuer_id, issuer:oe_issuers(domain)")
-        .in("id", stale.map((m: any) => m.opportunity_id));
-      for (const row of stale) {
-        const o = (staleOpps ?? []).find((x: any) => String(x.id) === String(row.opportunity_id));
-        if (!o) continue;
-        const withLevel = {
-          ...o, level_band: levelOf(o),
-          location_sensitivity: sensitivityOf(kindSensitivity, (o as any).kind),
-        };
-        const s = screen(withLevel, eligibility, evidence);
-        const reachable = laneFor(withLevel, s, (o as any).issuer?.domain ?? null) === "act";
-        await admin.from("oe_matches").update({
-          eligibility_outcome: s.outcome, eligibility_fail: s.fails, eligibility_unknowns: s.unknowns,
-          eligibility_conditions: s.conditions,
-          lane_final: reachable && row.gate_passed === true && row.lane === "lane_open" ? "act" : "write",
-        }).eq("user_id", userId).eq("opportunity_id", row.opportunity_id)
-          .eq("rubric_version", row.rubric_version);
-        counts.rescreened++;
-      }
+      (inActLane ? actPool : writePool).push(candidate);
     }
 
     // Both lanes are read. A writing-lane record still needs citations before
@@ -679,7 +592,7 @@ Deno.serve(async (req) => {
     // Retrieval runs BEFORE the model: the eligible pool is ordered, then cut
     // to the shortlist from params. The cut is a cost control, never a silent
     // one — a shortlist smaller than the eligible pool is logged and counted.
-    const eligiblePool = scored.length;
+    const eligiblePool = actPool.length + writePool.filter((o) => o._match?.gate_passed === true).length;
     const modelCap = Math.min(shortlistK, judgeMax);
     const shortlist = scored.slice(0, modelCap);
     counts.eligible_pool = eligiblePool;
@@ -741,8 +654,8 @@ Deno.serve(async (req) => {
 
       const scoreAvg = QUESTIONS.reduce((sum, q) => sum + avg[q] * Number(weights[q] ?? 0), 0);
       const noZero = !gateNoZero || QUESTIONS.every((q) => avg[q] > 0);
-      const gatePassed = scoreAvg >= gateMin && noZero && !!o.quote_verified
-        && !screenRejected.has(String(o.id));
+      // Scoring may add evidence and bands; it cannot reverse the stored gates.
+      const gatePassed = o._match?.gate_passed === true;
 
       if (gatePassed) counts.gate_passed++;
 
@@ -800,8 +713,8 @@ Deno.serve(async (req) => {
         eligibility_fail: o._screen.fails,
         eligibility_unknowns: o._screen.unknowns,
         eligibility_conditions: o._screen.conditions ?? [],
-        // THE INTERSECTION: he can hold it, the gate passed, the door is live.
-        lane_final: o._reachable && gatePassed && lane === "lane_open" ? "act" : "write",
+        // oe-screen-member owns the final lane; judging cannot reopen or close it.
+        lane_final: o._match?.lane_final ?? "write",
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
       }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
       if (matchError) throw new Error(`judge match upsert failed for ${o.id}: ${matchError.message}`);
@@ -811,8 +724,29 @@ Deno.serve(async (req) => {
 
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
     // Warmth never moves the score; it only breaks a tie in the ordering.
-    const eligible = judged
-      .filter((j) => j.o._reachable === true && j.gatePassed && !j.unstable && j.lane === "lane_open")
+    const storedAct = actPool.map((o: any) => ({
+      o,
+      scoreAvg: Number(o._match?.score_avg ?? 0),
+      unstable: o._match?.unstable === true,
+      gatePassed: true,
+      fitBand: o._match?.fit_band ?? null,
+      winBand: o._match?.win_band ?? null,
+      lane: o._match?.lane ?? null,
+      matchId: o._match?.id ?? null,
+      requirementIds: Array.isArray(o.requirements) ? o.requirements.map((_: any, i: number) => `req:${i}`) : [],
+      warmth: { total: 0, kinds: [] as string[] },
+      check: {
+        list: o._match?.requirement_check ?? [],
+        met: Number(o._match?.met_count ?? 0),
+        total: Number(o._match?.total_count ?? 0),
+      },
+    }));
+    const freshAct = new Map(judged
+      .filter((j) => j.o._reachable === true && j.gatePassed)
+      .map((j) => [String(j.o.id), j]));
+    const eligible = storedAct
+      .map((j) => freshAct.get(String(j.o.id)) ?? j)
+      .filter((j) => !j.unstable)
       .sort((a, b) => Math.abs(b.scoreAvg - a.scoreAvg) < 0.01
         ? (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0)
         : b.scoreAvg - a.scoreAvg);
@@ -958,7 +892,8 @@ Deno.serve(async (req) => {
       // A card carries the band its own match row holds. The band is judged
       // once, on the match, and only ever copied here — never recomputed.
       const judgedBands = new Map<string, { fit: string | null; win: string | null; matchId: string | null }>(
-        judged.map((j: any) => [j.o.id, { fit: j.fitBand ?? null, win: j.winBand ?? null, matchId: j.matchId ?? null }]),
+        [...writePool.map((o: any) => ({ o, fitBand: o._match?.fit_band, winBand: o._match?.win_band, matchId: o._match?.id })), ...judged]
+          .map((j: any) => [j.o.id, { fit: j.fitBand ?? null, win: j.winBand ?? null, matchId: j.matchId ?? null }]),
       );
       for (const [idx, { o }] of ranked.slice(0, 3).entries()) {
         void idx;
@@ -1100,6 +1035,16 @@ Deno.serve(async (req) => {
 
     const { error: purposeError } = await admin.rpc("oe_refresh_purpose", { p_user: userId });
     if (purposeError) throw new Error(`purpose refresh failed: ${purposeError.message}`);
+
+    // Report the persisted lanes, not an in-memory approximation.
+    const aliveIds = new Set((opps ?? []).map((o: any) => String(o.id)));
+    const { data: finalMatches, error: finalMatchError } = await admin.from("oe_matches")
+      .select("opportunity_id, lane_final, gate_passed").eq("user_id", userId);
+    if (finalMatchError) throw new Error(`final lane counts: ${finalMatchError.message}`);
+    const finalAlive = (finalMatches ?? []).filter((m: any) => aliveIds.has(String(m.opportunity_id)));
+    counts.lane_act = finalAlive.filter((m: any) => m.lane_final === "act").length;
+    counts.lane_write = finalAlive.filter((m: any) => m.lane_final === "write").length;
+    counts.gate_passed = finalAlive.filter((m: any) => m.gate_passed === true).length;
 
     const { data: run } = await admin.from("oe_runs").insert({
       run_kind: "judge_member", user_id: userId,
