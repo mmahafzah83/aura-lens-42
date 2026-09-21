@@ -4931,10 +4931,10 @@ export type Database = {
           issuer_id: string
           linkedin_url: string | null
           opportunity_id: string | null
-          quote: string | null
+          quote: string
           role_in_matter: boolean
           role_in_matter_reason: string | null
-          role_title: string | null
+          role_title: string
           source_url: string
           updated_at: string
           verified_at: string
@@ -4947,10 +4947,10 @@ export type Database = {
           issuer_id: string
           linkedin_url?: string | null
           opportunity_id?: string | null
-          quote?: string | null
+          quote: string
           role_in_matter?: boolean
           role_in_matter_reason?: string | null
-          role_title?: string | null
+          role_title: string
           source_url: string
           updated_at?: string
           verified_at?: string
@@ -4963,10 +4963,10 @@ export type Database = {
           issuer_id?: string
           linkedin_url?: string | null
           opportunity_id?: string | null
-          quote?: string | null
+          quote?: string
           role_in_matter?: boolean
           role_in_matter_reason?: string | null
-          role_title?: string | null
+          role_title?: string
           source_url?: string
           updated_at?: string
           verified_at?: string
