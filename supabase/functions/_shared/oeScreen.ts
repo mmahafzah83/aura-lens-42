@@ -86,6 +86,40 @@ export function classifyProfession(...parts: Array<string | null | undefined>): 
   return null;
 }
 
+export type ProfessionRead = {
+  profession: Profession | null;
+  source: "title" | "accountability_sentence" | "none";
+  quote: string | null;
+};
+
+/**
+ * The profession a RECORD carries. The title is read first, because a title is
+ * an employer's own statement of accountability. Only when the title says
+ * nothing, or says nothing more than "general management", may the record's
+ * accountability sentences be read — and only those sentences, never the whole
+ * body, which names every technology the employer sells. A profession
+ * established that way is recorded with the sentence that established it.
+ */
+export function professionOf(opportunity: any): ProfessionRead {
+  const fromTitle = classifyProfession(opportunity?.title, opportunity?.scope);
+  if (fromTitle && fromTitle !== "general_management") {
+    return { profession: fromTitle, source: "title", quote: null };
+  }
+  const sentences: string[] = Array.isArray(opportunity?.scope_evidence?.accountability_sentences)
+    ? opportunity.scope_evidence.accountability_sentences
+    : [];
+  for (const sentence of sentences) {
+    const p = classifyProfession(sentence);
+    if (p && p !== "general_management") {
+      return { profession: p, source: "accountability_sentence", quote: String(sentence).slice(0, 400) };
+    }
+  }
+  return fromTitle
+    ? { profession: fromTitle, source: "title", quote: null }
+    : { profession: null, source: "none", quote: null };
+}
+
+
 /**
  * Adjacency. A neighbouring profession is a bridge ONLY when a named position
  * in the member's own history sits in it. Sector never appears here, and never
