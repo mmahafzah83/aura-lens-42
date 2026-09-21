@@ -115,7 +115,7 @@ export function OpportunityQueue() {
     setUserId(uid);
     if (!uid) { setLoading(false); return; }
     const [{ data: profile }, { data: payload, error }] = await Promise.all([
-      (supabase.from("diagnostic_profiles" as never) as ReturnType<typeof supabase.from>).select("first_name").eq("user_id", uid).maybeSingle(),
+      supabase.from("diagnostic_profiles").select("first_name").eq("user_id", uid).maybeSingle(),
       supabase.rpc("oe_app_queue" as never),
     ]);
     setFirstName(String((profile as { first_name?: string } | null)?.first_name ?? ""));
