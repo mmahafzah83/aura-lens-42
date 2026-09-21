@@ -24,6 +24,14 @@ import {
 const FN = "oe-extract-member-evidence";
 const MODEL = "openai/gpt-6-astra";
 
+/** The member's own record: what he wrote, uploaded or answered himself.
+ *  Anything else is a page he read, and it never grounds a card. */
+const OWN_RECORD_SOURCES = new Set([
+  "documents", "linkedin_profile_snapshots", "linkedin_posts",
+  "diagnostic_profiles", "assessment_sessions",
+]);
+
+
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
