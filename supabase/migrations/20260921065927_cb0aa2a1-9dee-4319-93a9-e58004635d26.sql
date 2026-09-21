@@ -1,0 +1,2 @@
+ALTER TABLE public.oe_opportunities ADD COLUMN IF NOT EXISTS cost_of_door text;
+COMMENT ON COLUMN public.oe_opportunities.cost_of_door IS 'What entry costs, verbatim from the posting page. Null when the page states no cost.';

@@ -5661,6 +5661,7 @@ export type Database = {
           chair_type: string
           conditions: Json
           content_hash: string | null
+          cost_of_door: string | null
           created_at: string
           deadline: string | null
           discovery_kind: string
@@ -5712,6 +5713,7 @@ export type Database = {
           chair_type: string
           conditions?: Json
           content_hash?: string | null
+          cost_of_door?: string | null
           created_at?: string
           deadline?: string | null
           discovery_kind?: string
@@ -5763,6 +5765,7 @@ export type Database = {
           chair_type?: string
           conditions?: Json
           content_hash?: string | null
+          cost_of_door?: string | null
           created_at?: string
           deadline?: string | null
           discovery_kind?: string
