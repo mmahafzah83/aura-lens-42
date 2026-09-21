@@ -31,16 +31,19 @@ type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; field: strin
 type Held = { id: string; day: string; reason: string | null; title: string | null };
 type History = { shown_at: string; lane: string | null; tap: string | null; tap_scope: string | null; truth_code: string | null; outcome: string | null; title: string | null; issuer_name: string | null; location: string | null; presentation_line: string | null };
 type DueOutcome = { id: string; title: string | null };
-type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
+type Metrics = { sources_read: number; organisations: number; judged_week: number; survived: number; shown: number; first_card_expected: string | null };
+type Proposed = { id: string; rule_text: string; field: string | null };
+type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[]; metrics: Metrics | null; filters: FilterMap; proposed_rules: Proposed[] };
 type View = "today" | "parked" | "history" | "settings";
 type DirectionStep = "renew" | "goal" | "secondary" | "priority" | "mix" | "done";
 type HistoryFilter = "all" | "right" | "declined" | "flagged";
 
 const STATE_LABEL: Record<AccessState, string> = { observed_event: "Something happened", possible_need: "A need may follow", confirmed_opportunity: "An opening exists", identified_route: "A way in exists" };
-const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [] };
+const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [] };
 const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
 const mixes: Mix[] = ["win", "build", "explore"];
 const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "relationships", "knowledge"];
+
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const chipBase = { minHeight: 44, padding: "8px 11px", borderRadius: 4, border: "1px solid var(--border-default)", background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
 const FIELD_LABEL: Record<string, string> = { sector: "Sector", issuer: "Organisation", level: "Level", place: "Place" };
