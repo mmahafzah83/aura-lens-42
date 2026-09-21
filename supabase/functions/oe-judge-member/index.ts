@@ -14,6 +14,8 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { loadVocab } from "../_shared/oeVocab.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
+import { secondPersonClause } from "../_shared/secondPerson.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -789,7 +791,7 @@ Deno.serve(async (req) => {
 
       if (matchError) throw new Error(`judge match upsert failed for ${o.id}: ${matchError.message}`);
 
-      judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds, warmth, check, mine: mineForReqs });
+      judged.push({ o, scoreAvg, unstable, gatePassed: !(rubricRefuses || wrongLine) && gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds, warmth, check, mine: mineForReqs });
     }
 
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
