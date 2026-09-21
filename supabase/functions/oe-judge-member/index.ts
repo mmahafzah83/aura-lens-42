@@ -462,6 +462,15 @@ Deno.serve(async (req) => {
     const exploreShare = Number(params.explore_share ?? 0);
     const fewShotK = Number(params.few_shot_k ?? 8);
     const alarmRun = Number(params.empty_day_alarm_run ?? 3);
+    // THE GOAL STEERS. It weights the kinds the member's own answer points at.
+    // A weight, never a filter: no kind is ever excluded because of the goal.
+    const { data: directionRow } = await admin
+      .from("oe_direction").select("goal").eq("user_id", userId).maybeSingle();
+    const memberGoal = String((directionRow as any)?.goal ?? "");
+    const goalWeights: Record<string, number> =
+      (params.goal_kind_weights?.[memberGoal] ?? {}) as Record<string, number>;
+    const goalWeight = (kind: string | null) => Number(goalWeights[String(kind ?? "")] ?? 1);
+
 
     // ── the member ────────────────────────────────────────────────────────
     const { data: faces } = await admin
