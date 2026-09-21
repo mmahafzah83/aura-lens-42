@@ -11128,6 +11128,10 @@ export type Database = {
       oe_norm_text: { Args: { p: string }; Returns: string }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
       oe_place_country: { Args: { p_location: string }; Returns: string }
+      oe_place_weight: {
+        Args: { p_location: string; p_sector: string; p_user: string }
+        Returns: number
+      }
       oe_queue_kind_investigations: {
         Args: { p_user: string }
         Returns: number
