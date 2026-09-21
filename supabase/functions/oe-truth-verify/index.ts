@@ -18,6 +18,7 @@
  *                     only.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withRun } from "../_shared/oeRun.ts";
 import { normaliseText } from "../_shared/textMatch.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-cron-secret" };
@@ -55,7 +56,7 @@ async function read(url: string): Promise<{ ok: boolean; status: number; text: s
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withRun("truth_verify", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const url = Deno.env.get("SUPABASE_URL");
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -136,4 +137,4 @@ Deno.serve(async (req) => {
     });
     return json({ error: String((e as Error)?.message ?? e) }, 500);
   }
-});
+}));

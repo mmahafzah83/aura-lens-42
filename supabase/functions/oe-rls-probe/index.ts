@@ -11,6 +11,7 @@
  * The throwaway member is deleted at the end of the run, pass or fail.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withRun } from "../_shared/oeRun.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,7 +30,7 @@ const TABLES: Array<{ table: string; write: Record<string, unknown> }> = [
   { table: "oe_faces", write: { weight: 0.99 } },
 ];
 
-Deno.serve(async (req) => {
+Deno.serve(withRun("rls_probe", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const url = Deno.env.get("SUPABASE_URL");
@@ -101,4 +102,4 @@ Deno.serve(async (req) => {
   } finally {
     if (probeUserId) await admin.auth.admin.deleteUser(probeUserId).catch(() => undefined);
   }
-});
+}));

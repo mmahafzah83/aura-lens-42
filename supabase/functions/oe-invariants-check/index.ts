@@ -9,6 +9,7 @@
  * stops being a measurement.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withRun } from "../_shared/oeRun.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +48,7 @@ function normaliseUrl(u: string | null): string | null {
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withRun("invariants_check", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -336,4 +337,4 @@ Deno.serve(async (req) => {
 
 
   return json({ ok: violations.length === 0, violations });
-});
+}));

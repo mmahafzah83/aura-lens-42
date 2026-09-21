@@ -23,6 +23,7 @@
  * last cause kept on the row. Nothing is deleted and nothing is invented.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withRun } from "../_shared/oeRun.ts";
 import { normaliseText } from "../_shared/textMatch.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-cron-secret" };
@@ -81,7 +82,7 @@ function isShellPage(html: string, text: string): boolean {
 }
 
 
-Deno.serve(async (req) => {
+Deno.serve(withRun("reverify_quote", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const url = Deno.env.get("SUPABASE_URL");
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -260,4 +261,4 @@ Deno.serve(async (req) => {
     });
     return json({ error: String((e as Error)?.message ?? e) }, 500);
   }
-});
+}));
