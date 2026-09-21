@@ -97,3 +97,11 @@
 - [x] Human-language “What reaches you” drawer with progressive disclosure
 - [x] `oe_app_queue_core` history payload and `oe_goal_save` secondary-goal support
 - [x] Seven dated self-checks, including available 375px screenshots
+
+## Step 33 — Opportunities tab structure
+- [ ] Four URL-persistent views and sticky segments
+- [ ] Grouped Today cards, decision states, render visibility, outcomes and empty state
+- [ ] Direction setup strip and sheet
+- [ ] Parked, History filters and Settings views
+- [ ] Queue and bring-back RPC changes
+- [ ] 375px and 1280px verification plus seven self-checks
