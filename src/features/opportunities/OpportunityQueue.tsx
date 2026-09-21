@@ -46,7 +46,6 @@ const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "re
 
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const chipBase = { minHeight: 44, padding: "8px 11px", borderRadius: 4, border: "1px solid var(--border-default)", background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
-const FIELD_LABEL: Record<string, string> = { sector: "Sector", issuer: "Organisation", level: "Level", place: "Place" };
 const SCOPE_REASON: Record<string, string> = { level: "wrong level", sector: "wrong sector", issuer: "not this organisation", place: "wrong place", just_this: "just this one" };
 const TRUTH_REASON: Record<string, string> = { dead_route: "dead link", quote_absent: "quote not on the page", listing_page: "listing page", already_happened: "already happened", wrong_issuer: "wrong organisation" };
 const validViews = new Set<View>(["today", "parked", "history", "settings"]);
@@ -100,9 +99,6 @@ export function OpportunityQueue() {
   const [directionChoice, setDirectionChoice] = useState<Goal | Priority | Mix | null>(null);
   const [primaryGoal, setPrimaryGoal] = useState<Goal | null>(null);
   const [secondaryGoals, setSecondaryGoals] = useState<Set<Goal>>(new Set());
-  const [newRule, setNewRule] = useState("");
-  const [newRuleType, setNewRuleType] = useState<"sector" | "issuer">("sector");
-  const [addingRule, setAddingRule] = useState(false);
   const [showAllHeld, setShowAllHeld] = useState(false);
   const renderedRef = useRef<Set<string>>(new Set());
   const noticeTimer = useRef<number | null>(null);
@@ -230,8 +226,6 @@ export function OpportunityQueue() {
     if (directionStep === "mix") { if (!directionChoice) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_mix: directionChoice } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("done"); await load(); } }
   };
   const reconfirm = async () => { if (!direction?.goal || busy) return; setBusy(true); await supabase.rpc("oe_goal_save" as never, { p_goal: direction.goal, p_secondary: direction.goal_secondary ?? null } as never); setBusy(false); setDirectionStep("done"); await load(); };
-  const saveRule = async () => { const value = newRule.trim(); if (!userId || !value || busy) return; setBusy(true); await supabase.from("oe_notebook" as never).insert({ user_id: userId, kind: "soft", rule_text: `Show me more from ${value}`, rule_text_ar: `أظهر لي المزيد من ${value}`, field: newRuleType, op: "prefer", value, origin: "stated", proposal_status: "signed", active: true, entry_kind: "rule", ratified_at: new Date().toISOString() } as never); setNewRule(""); setAddingRule(false); setBusy(false); await load(); };
-  const toggleRule = async (rule: Rule) => { await supabase.from("oe_notebook" as never).update({ active: !rule.active } as never).eq("id", rule.id); await load(); };
   const showAnyway = async (id: string) => { await supabase.rpc("oe_app_show_anyway" as never, { p_suppressed: id } as never); await load(); };
   const answerOutcome = async (id: string, outcome: string) => { if (!userId) return; await supabase.from("oe_serves" as never).update({ outcome, outcome_at: new Date().toISOString() } as never).eq("id", id).eq("user_id", userId); await load(); };
   const answerProposal = async (accept: boolean) => { if (!proposal || busy) return; setBusy(true); await supabase.rpc("oe_app_proposal" as never, { p_id: proposal.id, p_accept: accept } as never); setBusy(false); setProposal(null); await load(); };
