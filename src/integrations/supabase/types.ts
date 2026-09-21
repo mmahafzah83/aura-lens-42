@@ -4930,6 +4930,10 @@ export type Database = {
           is_public_spokesperson: boolean
           issuer_id: string
           linkedin_url: string | null
+          opportunity_id: string | null
+          quote: string | null
+          role_in_matter: boolean
+          role_in_matter_reason: string | null
           role_title: string | null
           source_url: string
           updated_at: string
@@ -4942,6 +4946,10 @@ export type Database = {
           is_public_spokesperson?: boolean
           issuer_id: string
           linkedin_url?: string | null
+          opportunity_id?: string | null
+          quote?: string | null
+          role_in_matter?: boolean
+          role_in_matter_reason?: string | null
           role_title?: string | null
           source_url: string
           updated_at?: string
@@ -4954,6 +4962,10 @@ export type Database = {
           is_public_spokesperson?: boolean
           issuer_id?: string
           linkedin_url?: string | null
+          opportunity_id?: string | null
+          quote?: string | null
+          role_in_matter?: boolean
+          role_in_matter_reason?: string | null
           role_title?: string | null
           source_url?: string
           updated_at?: string
@@ -4966,6 +4978,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_issuers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_issuer_people_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_issuer_people_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -5661,6 +5687,7 @@ export type Database = {
           chair_type: string
           conditions: Json
           content_hash: string | null
+          cost_of_door: string | null
           created_at: string
           deadline: string | null
           discovery_kind: string
@@ -5678,6 +5705,7 @@ export type Database = {
           last_seen_at: string
           level_band: string | null
           location: string | null
+          people_read_at: string | null
           pipeline_version: number
           posting_date: string | null
           quote_abandoned: boolean
@@ -5712,6 +5740,7 @@ export type Database = {
           chair_type: string
           conditions?: Json
           content_hash?: string | null
+          cost_of_door?: string | null
           created_at?: string
           deadline?: string | null
           discovery_kind?: string
@@ -5729,6 +5758,7 @@ export type Database = {
           last_seen_at?: string
           level_band?: string | null
           location?: string | null
+          people_read_at?: string | null
           pipeline_version?: number
           posting_date?: string | null
           quote_abandoned?: boolean
@@ -5763,6 +5793,7 @@ export type Database = {
           chair_type?: string
           conditions?: Json
           content_hash?: string | null
+          cost_of_door?: string | null
           created_at?: string
           deadline?: string | null
           discovery_kind?: string
@@ -5780,6 +5811,7 @@ export type Database = {
           last_seen_at?: string
           level_band?: string | null
           location?: string | null
+          people_read_at?: string | null
           pipeline_version?: number
           posting_date?: string | null
           quote_abandoned?: boolean

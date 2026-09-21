@@ -14,6 +14,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
+import { secondPerson } from "../_shared/secondPerson.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 import {
   deriveIdentity, runGates, writingStanding,
@@ -142,6 +143,10 @@ const ANSWERABLE: Array<[string, RegExp]> = [
 ];
 
 const r_trim = (s: string) => String(s ?? "").replace(/\s+/g, " ").trim();
+
+/** A stated fee, subscription or price — the cost of the door, not a requirement. */
+const IS_A_PRICE =
+  /(\$|usd|sar|eur|aed|£|€|﷼)\s?[\d,]{3,}|[\d,]{3,}\s?(usd|sar|aed|eur|riyals?|dollars?)|\bper year\b.*\b\d|\bfee\b|\bfees\b|\bsubscription\b|\bmembership (?:cost|price|rate)\b|\bprice\b|\brasm\b|رسوم|اشتراك/i;
 
 function answerableKind(requirement: string): string | null {
   for (const [kind, re] of ANSWERABLE) if (re.test(String(requirement ?? ""))) return kind;
@@ -337,7 +342,11 @@ Deno.serve(async (req) => {
         const fromRecord: string[] = Array.isArray((o as any).requirements)
           ? (o as any).requirements.map((r: any) => String(r?.text ?? r ?? "")).filter(Boolean)
           : [];
-        const requirements = (stated.length ? stated : fromRecord).slice(0, 10);
+        // A price is the cost of the door, not something his record can answer.
+        // It is carried on the record as cost_of_door and never matched here.
+        const requirements = (stated.length ? stated : fromRecord)
+          .filter((r) => !IS_A_PRICE.test(String(r)))
+          .slice(0, 10);
 
         let matches: Array<{ requirement: string; evidence_id: string }> = [];
         if (requirements.length && memberEvidence.length) {
@@ -371,25 +380,8 @@ Deno.serve(async (req) => {
           .slice(0, 2);
 
         // His record speaks of him in the third person; the line speaks TO him.
-        // Drop the pronoun, then put the verb that followed it into "you" form.
-        const IRREGULAR: Record<string, string> = {
-          has: "have", is: "are", was: "were", does: "do", "hasn't": "haven't",
-        };
-        const toYou = (verb: string) => {
-          const low = verb.toLowerCase();
-          if (IRREGULAR[low]) return IRREGULAR[low];
-          // A present-tense third-person verb ends in s; a past tense does not.
-          if (/^[a-z]+(?:ie|e|[a-z])s$/.test(low) && !/(ss|us|is)$/.test(low)) {
-            return low.endsWith("ies") ? `${low.slice(0, -3)}y` : low.endsWith("hes") || low.endsWith("oes") ? low.slice(0, -2) : low.slice(0, -1);
-          }
-          return low;
-        };
-        const youSay = (claim: string) => {
-          const c = r_trim(claim).replace(/[.\s]+$/, "");
-          const m = c.match(/^(?:he|the member|mohammad)\s+([A-Za-z']+)\b(.*)$/i);
-          if (m) return `${toYou(m[1])}${m[2]}`;
-          return c.replace(/^(?:he|the member|mohammad)\s+/i, "");
-        };
+        // Deterministic, no model: drop the pronoun, carry the verb with it.
+        const youSay = (claim: string) => secondPerson(claim);
         const asked = (requirement: string) => {
           const r = r_trim(requirement).replace(/^[-•*]\s*/, "");
           return r.length > 140 ? `${r.slice(0, 137)}…` : r;
