@@ -37,12 +37,16 @@ const json = (b: unknown, status = 200) =>
 const PRESENTATION_SYSTEM =
   "You are a search consultant. Before you present anyone you must be able to say one line — " +
   "'<first name> is the man who ___' — and have the client nod. " +
-  "You receive one professional's actual positions and one opportunity. " +
-  "Write that single line ONLY if a named position in his history plainly earns it for THIS opportunity. " +
-  "Return strict JSON {line: string|null, position: string|null}. " +
+  "You receive one professional's actual positions and the evidence of what he ran, and one opportunity " +
+  "with the requirements it STATES. " +
+  "Match his history against those stated requirements. Write the line ONLY if a named position in his " +
+  "history plainly answers at least one stated requirement — never from the opportunity's title alone. " +
+  "Return strict JSON {line: string|null, position: string|null, requirement: string|null}. " +
   "line is one sentence under 25 words, starting with the first name, in plain English, no adjectives of praise. " +
   "position must be copied verbatim from the positions given, and must be the position that earns the line. " +
-  "If no position earns it, return {line: null, position: null}. Never invent experience.";
+  "requirement must be copied verbatim from the stated requirements when there are any, else null. " +
+  "If nothing in his history answers a requirement, return {line: null, position: null, requirement: null}. " +
+  "Never invent experience.";
 
 /** One streamed call. Reasoning models run for minutes; never buffer, never time out on a timer. */
 async function askForLine(key: string, payload: string): Promise<{ line: string | null; position: string | null }> {
@@ -217,6 +221,8 @@ Deno.serve(async (req) => {
         rejection_sentence: g.outcome === "rejected" ? g.sentence : null,
 
         role_profession: g.role_profession, profession_relation: g.profession_relation,
+        profession_source: g.profession_source, profession_source_quote: g.profession_source_quote,
+        grade_basis: g.grade_basis,
         employer_tier: g.employer_tier, level_direction: g.level_direction,
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),
         eligibility_outcome: licence.outcome, eligibility_fail: licence.fails,
