@@ -4549,6 +4549,9 @@ export type Database = {
         Row: {
           active: boolean
           band: string
+          basis: string
+          basis_note: string | null
+          complexity: string | null
           country: string
           created_at: string
           id: string
@@ -4556,12 +4559,17 @@ export type Database = {
           label_en: string
           notes: string | null
           pattern: string
+          sector_code: string | null
+          size_band: string | null
           standing_bonus: number
           updated_at: string
         }
         Insert: {
           active?: boolean
           band: string
+          basis?: string
+          basis_note?: string | null
+          complexity?: string | null
           country?: string
           created_at?: string
           id?: string
@@ -4569,12 +4577,17 @@ export type Database = {
           label_en: string
           notes?: string | null
           pattern: string
+          sector_code?: string | null
+          size_band?: string | null
           standing_bonus?: number
           updated_at?: string
         }
         Update: {
           active?: boolean
           band?: string
+          basis?: string
+          basis_note?: string | null
+          complexity?: string | null
           country?: string
           created_at?: string
           id?: string
@@ -4582,6 +4595,8 @@ export type Database = {
           label_en?: string
           notes?: string | null
           pattern?: string
+          sector_code?: string | null
+          size_band?: string | null
           standing_bonus?: number
           updated_at?: string
         }
@@ -5229,6 +5244,7 @@ export type Database = {
           fit_band: string | null
           gate_passed: boolean
           gate_reason: string | null
+          grade_basis: string | null
           id: string
           judged_at: string
           lane: string | null
@@ -5240,6 +5256,8 @@ export type Database = {
           opportunity_id: string
           presentation_line: string | null
           profession_relation: string | null
+          profession_source: string | null
+          profession_source_quote: string | null
           purpose: string | null
           rejection_sentence: string | null
           requirement_check: Json | null
@@ -5269,6 +5287,7 @@ export type Database = {
           fit_band?: string | null
           gate_passed?: boolean
           gate_reason?: string | null
+          grade_basis?: string | null
           id?: string
           judged_at?: string
           lane?: string | null
@@ -5280,6 +5299,8 @@ export type Database = {
           opportunity_id: string
           presentation_line?: string | null
           profession_relation?: string | null
+          profession_source?: string | null
+          profession_source_quote?: string | null
           purpose?: string | null
           rejection_sentence?: string | null
           requirement_check?: Json | null
@@ -5309,6 +5330,7 @@ export type Database = {
           fit_band?: string | null
           gate_passed?: boolean
           gate_reason?: string | null
+          grade_basis?: string | null
           id?: string
           judged_at?: string
           lane?: string | null
@@ -5320,6 +5342,8 @@ export type Database = {
           opportunity_id?: string
           presentation_line?: string | null
           profession_relation?: string | null
+          profession_source?: string | null
+          profession_source_quote?: string | null
           purpose?: string | null
           rejection_sentence?: string | null
           requirement_check?: Json | null
@@ -5598,6 +5622,7 @@ export type Database = {
           route_kind: string | null
           route_url: string | null
           scope: string | null
+          scope_evidence: Json | null
           sector: string | null
           seniority_band: string | null
           signal_date: string | null
@@ -5648,6 +5673,7 @@ export type Database = {
           route_kind?: string | null
           route_url?: string | null
           scope?: string | null
+          scope_evidence?: Json | null
           sector?: string | null
           seniority_band?: string | null
           signal_date?: string | null
@@ -5698,6 +5724,7 @@ export type Database = {
           route_kind?: string | null
           route_url?: string | null
           scope?: string | null
+          scope_evidence?: Json | null
           sector?: string | null
           seniority_band?: string | null
           signal_date?: string | null
@@ -9773,6 +9800,48 @@ export type Database = {
           },
         ]
       }
+      oe_ladder_judgement_review: {
+        Row: {
+          band: string | null
+          basis: string | null
+          basis_note: string | null
+          complexity: string | null
+          country: string | null
+          id: string | null
+          label_en: string | null
+          opportunities_touched: number | null
+          pattern: string | null
+          size_band: string | null
+          standing_bonus: number | null
+        }
+        Insert: {
+          band?: string | null
+          basis?: string | null
+          basis_note?: string | null
+          complexity?: string | null
+          country?: string | null
+          id?: string | null
+          label_en?: string | null
+          opportunities_touched?: never
+          pattern?: string | null
+          size_band?: string | null
+          standing_bonus?: number | null
+        }
+        Update: {
+          band?: string | null
+          basis?: string | null
+          basis_note?: string | null
+          complexity?: string | null
+          country?: string | null
+          id?: string | null
+          label_en?: string | null
+          opportunities_touched?: never
+          pattern?: string | null
+          size_band?: string | null
+          standing_bonus?: number | null
+        }
+        Relationships: []
+      }
       oe_serves_untapped: {
         Row: {
           card_id: string | null
@@ -10385,6 +10454,10 @@ export type Database = {
           p_field: string
         }
         Returns: boolean
+      }
+      oe_ladder_bonus: {
+        Args: { p_complexity: string; p_size: string }
+        Returns: number
       }
       oe_learning_state: { Args: { p_user: string }; Returns: Json }
       oe_member_evidence: {
