@@ -745,7 +745,7 @@ Deno.serve(async (req) => {
         eligibility_unknowns: o._screen.unknowns,
         eligibility_conditions: o._screen.conditions ?? [],
         // oe-screen-member owns the final lane; judging cannot reopen or close it.
-        lane_final: o._match?.lane_final ?? "write",
+        lane_final: o._match?.lane_final ?? null,
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
       }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
       if (matchError) throw new Error(`judge match upsert failed for ${o.id}: ${matchError.message}`);
