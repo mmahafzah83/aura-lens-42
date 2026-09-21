@@ -522,7 +522,7 @@ Deno.serve(async (req) => {
     // gate_passed and lane_final; this function reads those stored verdicts.
     const { data: opps, error: oppsError } = await admin
       .from("oe_opportunities")
-      .select("id, kind, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
+      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
     const requestedSet = new Set(requestedOpportunityIds);
@@ -540,11 +540,24 @@ Deno.serve(async (req) => {
     // oeEligibility here created a second, contradictory verdict, so the judge
     // now consumes the match row exactly as written by oe-screen-member.
     const { data: priorMatches } = await admin.from("oe_matches")
-      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
+      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, presentation_line, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
       .eq("user_id", userId);
     const matchByOpportunity = new Map(
       (priorMatches ?? []).map((m: any) => [String(m.opportunity_id), m]),
     );
+
+    // ── ONE LIST, ONE TEST ────────────────────────────────────────────────
+    // public.oe_app_queue() refuses a card whose record is incomplete for its
+    // kind, whose match is not a survivor, or which carries no presentation
+    // line. The judge must never write a card the queue would then refuse, so
+    // it applies the same three conditions here. The RPC keeps them as a net.
+    const queueRefusal = (o: any): string | null => {
+      const m = matchByOpportunity.get(String(o.id)) ?? o?._match ?? null;
+      if (!(o?.kind_completeness?.complete === true)) return "kind_incomplete";
+      if (m?.screen_outcome !== "survivor") return "not_survivor";
+      if (!String(m?.presentation_line ?? "").trim()) return "no_presentation_line";
+      return null;
+    };
 
     const actPool: any[] = [];
     const writePool: any[] = [];
@@ -845,6 +858,17 @@ Deno.serve(async (req) => {
         ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
         : null;
 
+      // The queue's own three conditions, applied here so a card is never
+      // written that the queue would refuse.
+      const refusal = queueRefusal(o);
+      if (refusal) {
+        await admin.from("oe_learning_events").insert({
+          user_id: userId, process: "card_withheld", trigger_reason: refusal,
+          detail: { lane: "act", opportunity_id: o.id, card_date: cardDate }, applied: false,
+        });
+        continue;
+      }
+
       // A card without a band cannot be ranked or presented, so it is not made.
       if (!pick.fitBand) {
         await admin.from("oe_learning_events").insert({
@@ -897,6 +921,14 @@ Deno.serve(async (req) => {
       );
       for (const [idx, { o }] of ranked.slice(0, 3).entries()) {
         void idx;
+        const writeRefusal = queueRefusal(o);
+        if (writeRefusal) {
+          await admin.from("oe_learning_events").insert({
+            user_id: userId, process: "card_withheld", trigger_reason: writeRefusal,
+            detail: { lane: "write", opportunity_id: o.id, card_date: cardDate }, applied: false,
+          });
+          continue;
+        }
         const bands = judgedBands.get(o.id) ?? null;
         const writeBand = bands?.fit ?? null;
         if (!writeBand) {
@@ -982,7 +1014,11 @@ Deno.serve(async (req) => {
 
     if (!cardsWritten.length) {
       const empty = await writeCard(admin, userId, cardDate, {
+        // A quiet day replaces the day's card entirely. Leaving a lane or a
+        // band behind from an earlier run leaves a card that says "nothing
+        // today" while still carrying yesterday's recommendation.
         opportunity_id: null, match_id: null, why_lines: [], gap_line: null,
+        lane: null, fit_band: null, win_band: null, quote: null, cited_ids: [],
         clock_text: vocab("nothing_today", lang), channel: "email",
       }, { rules: ruleIds, faces: [], scores: {}, gate: "no_candidate" });
 

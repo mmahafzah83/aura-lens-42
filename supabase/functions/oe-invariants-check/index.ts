@@ -248,6 +248,20 @@ Deno.serve(async (req) => {
     record("gate_passed_with_rejection_sentence", bad);
   }
 
+  // 12. The judge and the queue must agree. A card written for today that
+  //     public.oe_app_queue() would refuse — incomplete record, a match that
+  //     is not a survivor, or no presentation line — is a card the member
+  //     will never see and should never have been written.
+  {
+    const { data } = await admin.from("oe_card_queue_refused").select("*").limit(50);
+    const bad = (data ?? []).map((r: any) => ({
+      card_id: r.card_id, user_id: r.user_id, opportunity_id: r.opportunity_id,
+      lane: r.lane, refusal: r.refusal,
+    }));
+    record("card_today_queue_would_refuse", bad);
+  }
+
+
   for (const v of violations) {
 
     await admin.from("ef_error_log").insert({
@@ -261,7 +275,7 @@ Deno.serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: FN,
       severity: "info",
-      error_message: "OE_INVARIANTS ok — all eleven assertions hold",
+      error_message: "OE_INVARIANTS ok — all twelve assertions hold",
       context: {},
     });
   }

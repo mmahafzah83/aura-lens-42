@@ -4425,6 +4425,13 @@ export type Database = {
             foreignKeyName: "oe_corrections_card_id_fkey"
             columns: ["card_id"]
             isOneToOne: false
+            referencedRelation: "oe_card_queue_refused"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "oe_corrections_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
             referencedRelation: "oe_cards"
             referencedColumns: ["id"]
           },
@@ -5006,6 +5013,13 @@ export type Database = {
           writing_lang?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "oe_kits_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_card_queue_refused"
+            referencedColumns: ["card_id"]
+          },
           {
             foreignKeyName: "oe_kits_card_id_fkey"
             columns: ["card_id"]
@@ -5777,6 +5791,13 @@ export type Database = {
             foreignKeyName: "oe_outcomes_card_id_fkey"
             columns: ["card_id"]
             isOneToOne: false
+            referencedRelation: "oe_card_queue_refused"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "oe_outcomes_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
             referencedRelation: "oe_cards"
             referencedColumns: ["id"]
           },
@@ -6261,6 +6282,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "oe_taps_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_card_queue_refused"
+            referencedColumns: ["card_id"]
+          },
           {
             foreignKeyName: "oe_taps_card_id_fkey"
             columns: ["card_id"]
@@ -9591,6 +9619,32 @@ export type Database = {
           runs_that_sent: number | null
         }
         Relationships: []
+      }
+      oe_card_queue_refused: {
+        Row: {
+          card_date: string | null
+          card_id: string | null
+          lane: string | null
+          opportunity_id: string | null
+          refusal: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_cards_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_cards_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
+          },
+        ]
       }
       oe_connected_brain: {
         Row: {
