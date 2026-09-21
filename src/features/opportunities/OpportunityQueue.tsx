@@ -267,6 +267,25 @@ export function OpportunityQueue() {
     if (!error) { markDirectionAsked(); void load(); }
   };
 
+  /* The goal is written by the member's own confirmation and by nothing else.
+     The engine may propose; only this call, from his hand, may set it. */
+  const saveGoal = async (value: Goal) => {
+    if (busy) return;
+    setBusy(true);
+    const { error } = await (supabase.rpc as any)("oe_goal_save", { p_goal: value });
+    setBusy(false);
+    if (!error) { setGoalChanging(false); void load(); }
+  };
+
+  const deferGoal = async () => {
+    if (busy) return;
+    setBusy(true);
+    const { error } = await (supabase.rpc as any)("oe_goal_save", { p_defer: true });
+    setBusy(false);
+    if (!error) { setGoalChanging(false); void load(); }
+  };
+
+
   const changeDirection = (question: Exclude<DirectionQuestion, null>) => {
     if (directionAsked || data.cards.length === 0) return;
     setDrawerOpen(false);
