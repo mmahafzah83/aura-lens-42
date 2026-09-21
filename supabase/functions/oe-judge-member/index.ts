@@ -934,7 +934,27 @@ Deno.serve(async (req) => {
       const ranked = writePool
         .map((o) => ({ o, score: merged.get(o.id)?.score ?? 0 }))
         .sort((a, b) => b.score - a.score);
-      for (const { o } of ranked.slice(0, 3)) {
+      // A card carries a band or it is not made. The band is this record's
+      // standing among today's candidates — a rank, never a percentage.
+      const bandForRank = (rank: number, of: number): string | null => {
+        if (!Number.isFinite(rank) || rank < 1 || of < 1) return null;
+        if (rank === 1) return "strong";
+        if (rank <= Math.max(2, Math.ceil(of / 2))) return "worth_a_look";
+        return "stretch";
+      };
+      for (const [idx, { o }] of ranked.slice(0, 3).entries()) {
+        const writeBand = bandForRank(idx + 1, ranked.length);
+        if (!writeBand) {
+          await admin.from("oe_learning_events").insert({
+            user_id: userId, kind: "card_withheld",
+            payload: {
+              reason: "no_band_computable", lane: "write",
+              opportunity_id: o.id, card_date: cardDate, pool_size: ranked.length,
+            },
+          });
+          continue;
+        }
+
         const oppVec = asVector(o.embedding);
         const mine = await memberEvidence(admin, userId, oppVec);
         if (!mine.length) { counts.no_evidence++; continue; }
