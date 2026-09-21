@@ -107,7 +107,9 @@ const NEWSROOM_TEXT = /newsroom|news\s*room|media\s*cent|press\s*release|press\s
  */
 type SurfaceType =
   | "careers" | "news" | "press" | "insights" | "events"
-  | "tenders" | "leadership" | "investor_relations" | "blog" | "podcast" | "directory";
+  | "tenders" | "leadership" | "investor_relations" | "blog" | "podcast" | "directory"
+  | "board_nominations";
+
 
 const SURFACE_RULES: Array<{
   type: SurfaceType;
