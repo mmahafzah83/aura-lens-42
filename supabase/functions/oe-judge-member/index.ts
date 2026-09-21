@@ -567,11 +567,18 @@ Deno.serve(async (req) => {
     // run. So a record enters as 'write' and is promoted only when it earns
     // it. A database constraint refuses any other combination.
     const { data: priorMatches } = await admin.from("oe_matches")
-      .select("opportunity_id, gate_passed, lane")
+      .select("opportunity_id, gate_passed, lane, screen_outcome")
       .eq("user_id", userId);
     const priorGate = new Map(
       (priorMatches ?? []).map((m: any) =>
         [String(m.opportunity_id), m.gate_passed === true && m.lane === "lane_open"]),
+    );
+    // The screening brain is the later and harder word. A record it refused
+    // cannot be re-admitted to the act lane by a re-run of the judge.
+    const screenRejected = new Set(
+      (priorMatches ?? [])
+        .filter((m: any) => m.screen_outcome === "rejected")
+        .map((m: any) => String(m.opportunity_id)),
     );
 
     const actPool: any[] = [];
@@ -584,9 +591,11 @@ Deno.serve(async (req) => {
       };
       const s = screen(withLevel, eligibility, evidence);
       const issuerDomain = (o as any).issuer?.domain ?? null;
-      const reachable = laneFor(withLevel, s, issuerDomain) === "act";
+      const reachable = laneFor(withLevel, s, issuerDomain) === "act"
+        && !screenRejected.has(String(o.id));
       if (!s.pass) counts.skipped_ineligible++;
       (reachable ? actPool : writePool).push({ ...withLevel, _screen: s, _reachable: reachable });
+
       // level_band is a property of the record itself and stays on the shared row.
       await admin.from("oe_opportunities")
         .update({ level_band: level })
