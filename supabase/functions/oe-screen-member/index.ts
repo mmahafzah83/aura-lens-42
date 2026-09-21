@@ -197,8 +197,10 @@ Deno.serve(async (req) => {
     const { data: evidenceRows } = await admin
       .from("oe_member_evidence")
       .select("id, kind, claim, quote, position_ref, confidence, source_table")
-      .eq("user_id", userId).is("superseded_by", null)
+      // Only his own record. A captured third-party page is reading material.
+      .eq("user_id", userId).eq("own_record", true).is("superseded_by", null)
       .order("confidence", { ascending: false }).limit(300);
+
     const memberEvidence = (evidenceRows ?? []) as MemberEvidenceRow[];
 
     const identity: MemberIdentity = deriveIdentity(snap, ladder, memberEvidence);
