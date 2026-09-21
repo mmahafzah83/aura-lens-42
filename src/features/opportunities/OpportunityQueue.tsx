@@ -84,6 +84,8 @@ export function OpportunityQueue() {
   const [refreshNote, setRefreshNote] = useState("");
   const renderedRef = useRef<Set<string>>(new Set());
   const v = useVocab("en");
+  const [goalChanging, setGoalChanging] = useState(false);
+
 
   const load = useCallback(async () => {
     setLoading(true);
