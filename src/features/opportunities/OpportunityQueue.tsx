@@ -388,6 +388,14 @@ export function OpportunityQueue() {
     </> : !loading && <AuraCard hover="none" className="oe-end" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)", borderRadius: 20 }}>
       <h2>{t("queue_today_done", "That is today.")}</h2>
       <p>{data.cards.length === 0 ? t("queue_still_weak", "Nothing strong enough to send. The machine is still reading.") : t("queue_held_explain", "Anything held back remains available behind What reaches you.")}</p>
+      {/* A promise with a date on it. It is never moved forward quietly, and
+          the day it is missed it says so. */}
+      {data.cards.length === 0 && windowDate && (() => {
+        const line = data.window?.missed ? v("window_missed") : v("window_expected");
+        const [before, after] = line.split("{date}");
+        return <p className="oe-window-line">{before}<span style={mono}>{dateText(windowDate)}</span>{after}</p>;
+      })()}
+
       {data.due_outcomes.map((due) => <div key={due.id} className="oe-outcome"><strong>{due.title}</strong><span>{t("queue_outcome_ask", "Did anything come of it?")}</span><div className="oe-chip-row">{[["applied","queue_applied","I applied"],["shortlisted","queue_shortlisted","I was shortlisted"],["won","queue_won","I got it"],["nothing","queue_nothing","Nothing came of it"]].map(([outcome,key,fallback]) => <button key={outcome} type="button" style={{ ...chipBase, border: "1px solid var(--border-default)" }} onClick={() => void answerOutcome(due.id,outcome)}>{t(key,fallback)}</button>)}</div></div>)}
       <div className="oe-end-links"><button type="button" className="v23-textlink" onClick={() => setDrawerOpen(true)}>{t("queue_setup", "Review what reaches you")}</button><button type="button" className="v23-textlink" onClick={() => setHistoryOpen((open) => !open)}>{t("queue_history", "History")}</button></div>
       {historyOpen && <div className="oe-history">{data.history.map((row) => <details key={row.id}><summary><strong>{row.title ?? "—"}</strong><span style={mono}>{String(row.shown_at).slice(0,10)}</span></summary><pre>{JSON.stringify(row.why, null, 2)}</pre></details>)}</div>}
