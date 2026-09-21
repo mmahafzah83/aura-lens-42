@@ -1,0 +1,1 @@
+SELECT c.card_date, c.lane, c.fit_band, c.win_band, o.title FROM public.oe_cards c LEFT JOIN public.oe_opportunities o ON o.id=c.opportunity_id WHERE c.card_date=current_date ORDER BY c.created_at DESC;

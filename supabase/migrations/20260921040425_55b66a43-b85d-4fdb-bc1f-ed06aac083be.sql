@@ -1,0 +1,1 @@
+SELECT m.lane_final, m.gate_passed, count(*) FROM public.oe_matches m JOIN public.oe_opportunities o ON o.id=m.opportunity_id WHERE o.alive GROUP BY 1,2 ORDER BY 1,2;
