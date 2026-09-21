@@ -381,7 +381,7 @@ export type GateResult = {
   role_profession: Profession | null;
   profession_relation: "same" | "adjacent" | "different" | "unstated" | null;
   employer_tier: Tier | null;
-  level_direction: "below" | "lateral" | "one_above" | "two_plus" | "unknown" | null;
+  level_direction: "below" | "lateral" | "one_above" | "two_plus" | "unknown" | "not_applicable" | null;
   standing_gap: number | null;
   bridge: string | null;
   stretch: boolean;
@@ -556,6 +556,18 @@ export function runGates(
   };
   if (prof.relation === "different") {
     return { ...withProf, gate: "profession", outcome: "rejected", sentence: prof.sentence };
+  }
+
+  // GATE 3 applies only to kinds that carry a seat with a grade. The catalogue
+  // says which; a record whose kind has no seat passes on licence and
+  // profession alone, and the gate is recorded as not applicable.
+  if ((opportunity as any)?.level_gate_applies === false) {
+    return {
+      ...withProf,
+      gate: "scored", outcome: "survivor", sentence: null,
+      employer_tier: employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null).tier,
+      level_direction: "not_applicable",
+    };
   }
 
   const lvl = levelGate(identity, opportunity, routeIsSpecific, ladder);

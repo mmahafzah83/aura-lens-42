@@ -16,7 +16,9 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 import { deriveIdentity, runGates, writingStanding, type LadderRow, type MemberIdentity } from "../_shared/oeScreen.ts";
-import { loadLocationSensitivity, sensitivityOf } from "../_shared/oeKinds.ts";
+import {
+  loadLocationSensitivity, sensitivityOf, loadLevelGateApplies, levelGateApplies,
+} from "../_shared/oeKinds.ts";
 
 const FN = "oe-screen-member";
 const MODEL = "openai/gpt-6-astra";
@@ -127,6 +129,7 @@ Deno.serve(async (req) => {
     if (ladderError) throw new Error(`employer ladder: ${ladderError.message}`);
     const ladder = (ladderRows ?? []) as LadderRow[];
     const sensitivity = await loadLocationSensitivity(admin);
+    const levelApplies = await loadLevelGateApplies(admin);
 
     // ── the member, derived from his own snapshot ────────────────────────
     const { data: snap } = await admin
@@ -186,7 +189,11 @@ Deno.serve(async (req) => {
     for (const o of (opps ?? [])) {
       funnel.alive++;
       // Place means different things to different kinds; the kind's own row says which.
-      const withKind = { ...o, location_sensitivity: sensitivityOf(sensitivity, (o as any).kind) };
+      const withKind = {
+        ...o,
+        location_sensitivity: sensitivityOf(sensitivity, (o as any).kind),
+        level_gate_applies: levelGateApplies(levelApplies, (o as any).kind),
+      };
       const licence = screen(withKind, eligibility, evidence);
       const routeIsSpecific = hasRoute(o, (o as any).issuer?.domain ?? null)
         && String((o as any).access_state ?? "") === "identified_route";
@@ -216,8 +223,12 @@ Deno.serve(async (req) => {
         eligibility_unknowns: licence.unknowns, eligibility_conditions: licence.conditions,
         // A record cannot both pass the gate and carry a rejection. The screen
         // is the later word, so it closes the gate it just refused.
+        // The screen is the one verdict on the gates, so it writes both sides
+        // of it: a survivor passes, a refusal closes and falls to writing.
         ...(g.outcome === "rejected"
           ? { gate_passed: false, lane_final: "write" }
+          : g.outcome === "survivor"
+          ? { gate_passed: true }
           : {}),
         // The act lane is an intersection; a record he cannot hold leaves it.
         ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
@@ -273,10 +284,28 @@ Deno.serve(async (req) => {
             context: { stage: "presentation_line", opportunity_id: o.id },
           });
         }
-        // The line must rest on a position he actually held, quoted back.
-        const grounded = !!line && !!position
-          && positionList.some((p) => p.toLowerCase() === String(position).toLowerCase().trim());
-        if (grounded) { funnel.presented++; } else { funnel.no_line++; line = null; }
+        // The line must rest on a position he actually held, quoted back. The
+        // position must still be one of his own; only spacing, punctuation and
+        // case are forgiven, so a real position is not thrown away over a comma.
+        const norm = (s: string) =>
+          s.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+        const want = position ? norm(String(position)) : "";
+        const grounded = !!line && !!want
+          && positionList.some((p) => {
+            const held = norm(p);
+            return held === want || held.includes(want) || want.includes(held);
+          });
+        if (grounded) { funnel.presented++; } else {
+          funnel.no_line++;
+          if (line || position) {
+            await logEfError(admin, {
+              function_name: FN, error: new Error("presentation line not grounded"),
+              severity: "warn",
+              context: { opportunity_id: o.id, returned_position: position, held: positionList },
+            });
+          }
+          line = null;
+        }
         await admin.from("oe_matches").update({
           presentation_line: grounded ? line : null,
           ...(grounded ? {} : {

@@ -5720,6 +5720,7 @@ export type Database = {
           exclude_en: string | null
           label_ar: string
           label_en: string
+          level_gate_applies: boolean
           location_sensitivity: string
           require_en: string | null
           required_fields: Json
@@ -5735,6 +5736,7 @@ export type Database = {
           exclude_en?: string | null
           label_ar: string
           label_en: string
+          level_gate_applies?: boolean
           location_sensitivity?: string
           require_en?: string | null
           required_fields?: Json
@@ -5750,6 +5752,7 @@ export type Database = {
           exclude_en?: string | null
           label_ar?: string
           label_en?: string
+          level_gate_applies?: boolean
           location_sensitivity?: string
           require_en?: string | null
           required_fields?: Json
