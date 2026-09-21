@@ -4630,6 +4630,7 @@ export type Database = {
           resolve_detail: Json | null
           resolve_error: string | null
           resolve_status: string
+          sector_code: string | null
           seed_source: string
           size_hint: string | null
           sub_industry: string | null
@@ -4659,6 +4660,7 @@ export type Database = {
           resolve_detail?: Json | null
           resolve_error?: string | null
           resolve_status?: string
+          sector_code?: string | null
           seed_source: string
           size_hint?: string | null
           sub_industry?: string | null
@@ -4688,6 +4690,7 @@ export type Database = {
           resolve_detail?: Json | null
           resolve_error?: string | null
           resolve_status?: string
+          sector_code?: string | null
           seed_source?: string
           size_hint?: string | null
           sub_industry?: string | null
@@ -4745,6 +4748,7 @@ export type Database = {
       }
       oe_feeds: {
         Row: {
+          access_detail: Json | null
           access_finding: string
           active: boolean
           cadence: string
@@ -4779,6 +4783,7 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          access_detail?: Json | null
           access_finding?: string
           active?: boolean
           cadence?: string
@@ -4813,6 +4818,7 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          access_detail?: Json | null
           access_finding?: string
           active?: boolean
           cadence?: string
@@ -4862,51 +4868,60 @@ export type Database = {
           asked_on: string | null
           attempts: number
           created_at: string
-          field: string
+          detail: Json | null
+          field: string | null
           first_seen: string
           id: string
+          kind: string
           last_attempt_at: string | null
           member_question: string | null
-          opportunity_id: string
+          opportunity_id: string | null
           reason: string | null
           resolved_value: string | null
+          source: string | null
           status: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           answered_at?: string | null
           asked_on?: string | null
           attempts?: number
           created_at?: string
-          field: string
+          detail?: Json | null
+          field?: string | null
           first_seen?: string
           id?: string
+          kind?: string
           last_attempt_at?: string | null
           member_question?: string | null
-          opportunity_id: string
+          opportunity_id?: string | null
           reason?: string | null
           resolved_value?: string | null
+          source?: string | null
           status?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           answered_at?: string | null
           asked_on?: string | null
           attempts?: number
           created_at?: string
-          field?: string
+          detail?: Json | null
+          field?: string | null
           first_seen?: string
           id?: string
+          kind?: string
           last_attempt_at?: string | null
           member_question?: string | null
-          opportunity_id?: string
+          opportunity_id?: string | null
           reason?: string | null
           resolved_value?: string | null
+          source?: string | null
           status?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -5967,6 +5982,7 @@ export type Database = {
           created_at: string
           evidence: string | null
           id: string
+          notes: string | null
           params: Json
           reason: string | null
           rubric: Json
@@ -5978,6 +5994,7 @@ export type Database = {
           created_at?: string
           evidence?: string | null
           id?: string
+          notes?: string | null
           params: Json
           reason?: string | null
           rubric: Json
@@ -5989,6 +6006,7 @@ export type Database = {
           created_at?: string
           evidence?: string | null
           id?: string
+          notes?: string | null
           params?: Json
           reason?: string | null
           rubric?: Json
@@ -10517,6 +10535,7 @@ export type Database = {
         Args: { o: Database["public"]["Tables"]["oe_opportunities"]["Row"] }
         Returns: string
       }
+      oe_classify_kind_probe: { Args: { p: Json }; Returns: string }
       oe_derive_access_state: { Args: never; Returns: number }
       oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {

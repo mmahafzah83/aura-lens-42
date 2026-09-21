@@ -105,3 +105,13 @@
 - [ ] Parked, History filters and Settings views
 - [ ] Queue and bring-back RPC changes
 - [ ] 375px and 1280px verification plus seven self-checks
+
+## Step 34 — UNGM (21 Sep 2026)
+- UNGM: recognised, not harvested — terms prohibit storage and commercial use. Route for UN mandates = the member's own UNGM tender alert, forwarded by the member (user-forwarded email source, next build), plus buyer portals whose terms allow it, checked one by one.
+- Upwork: the API key application is the founder's action, not the engine's — pending.
+- Five notices read once for calibration; answers only, in oe_investigations (kind='sample_test'). Nothing served, nothing stored.
+
+## Step 35 — denominators (21 Sep 2026)
+- Municipal: 17 amanat seeded from https://momah.gov.sa/ar/branches-secretariat (official denominator 17).
+- Chambers: not readable — fsc.org.sa publishes no member list (holding page); nothing seeded.
+- Listed: saudiexchange.sa still 403; cma.org.sa renders in JavaScript with no readable text; nothing seeded.
