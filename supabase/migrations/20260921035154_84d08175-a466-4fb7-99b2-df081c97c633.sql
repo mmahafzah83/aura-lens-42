@@ -1,0 +1,2 @@
+delete from oe_cards where card_date = current_date and sent_at is null and opportunity_id is null;
+insert into job_queue (job_type, payload, status) values ('oe_judge_member', '{"user_id":"9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3","on_demand":true}'::jsonb, 'pending');
