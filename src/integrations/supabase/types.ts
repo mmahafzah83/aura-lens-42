@@ -4440,6 +4440,11 @@ export type Database = {
       oe_direction: {
         Row: {
           ambition_text: string | null
+          goal: string | null
+          goal_confirmed_at: string | null
+          goal_expires_at: string | null
+          goal_proposed: string | null
+          goal_proposed_reason: Json | null
           mix: string | null
           mix_set_on: string | null
           priority: string | null
@@ -4447,9 +4452,16 @@ export type Database = {
           priority_set_on: string | null
           updated_at: string
           user_id: string
+          window_declared_on: string | null
+          window_expected_by: string | null
         }
         Insert: {
           ambition_text?: string | null
+          goal?: string | null
+          goal_confirmed_at?: string | null
+          goal_expires_at?: string | null
+          goal_proposed?: string | null
+          goal_proposed_reason?: Json | null
           mix?: string | null
           mix_set_on?: string | null
           priority?: string | null
@@ -4457,9 +4469,16 @@ export type Database = {
           priority_set_on?: string | null
           updated_at?: string
           user_id: string
+          window_declared_on?: string | null
+          window_expected_by?: string | null
         }
         Update: {
           ambition_text?: string | null
+          goal?: string | null
+          goal_confirmed_at?: string | null
+          goal_expires_at?: string | null
+          goal_proposed?: string | null
+          goal_proposed_reason?: Json | null
           mix?: string | null
           mix_set_on?: string | null
           priority?: string | null
@@ -4467,6 +4486,8 @@ export type Database = {
           priority_set_on?: string | null
           updated_at?: string
           user_id?: string
+          window_declared_on?: string | null
+          window_expected_by?: string | null
         }
         Relationships: []
       }
@@ -10295,6 +10316,12 @@ export type Database = {
           sample_size: number
         }[]
       }
+      oe_goal_propose: { Args: { p_user: string }; Returns: string }
+      oe_goal_save: {
+        Args: { p_defer?: boolean; p_goal?: string }
+        Returns: Json
+      }
+      oe_goal_window: { Args: { p_user: string }; Returns: Json }
       oe_investigate_unknowns: {
         Args: { p_user: string }
         Returns: {
