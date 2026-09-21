@@ -500,17 +500,20 @@ export function levelGate(
   const mine = identity.highest_standing;
   const placed = employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null);
   const tier = placed.tier;
-  const grade = gradeOf(opportunity?.title) ?? gradeOf(opportunity?.scope);
+  // The grade is read from what the posting states about scope, reports and
+  // profit and loss where it states them, and from the title where it does not.
+  const grade = gradeFrom(opportunity);
+  const basis = (grade?.basis ?? "none") as "title" | "proxies" | "none";
 
   if (mine.standing === null || !grade) {
     return {
-      direction: "unknown" as const, gap: null, tier, placed, sentence: null,
+      direction: "unknown" as const, gap: null, tier, placed, sentence: null, basis,
       reason: !grade ? "role_grade_unreadable" : "member_standing_unreadable",
     };
   }
   if (tier === "unknown") {
     return {
-      direction: "unknown" as const, gap: null, tier, placed,
+      direction: "unknown" as const, gap: null, tier, placed, basis,
       sentence: null, reason: "employer_tier_unknown",
     };
   }
@@ -522,19 +525,19 @@ export function levelGate(
 
   if (gap <= -1) {
     return {
-      direction: "below" as const, gap, tier, placed, reason: null,
+      direction: "below" as const, gap, tier, placed, reason: null, basis,
       sentence: `Below your standing — ${held}; ${thisOne}.`,
     };
   }
   if (gap < 1) {
-    if (routeIsSpecific) return { direction: "lateral" as const, gap, tier, placed, sentence: null, reason: null };
+    if (routeIsSpecific) return { direction: "lateral" as const, gap, tier, placed, sentence: null, reason: null, basis };
     return {
-      direction: "lateral" as const, gap, tier, placed, reason: null,
+      direction: "lateral" as const, gap, tier, placed, reason: null, basis,
       sentence: `Level with what you already hold — ${held} — and it opens no route your current seat does not already give you.`,
     };
   }
-  if (gap < 2) return { direction: "one_above" as const, gap, tier, placed, sentence: null, reason: null };
-  return { direction: "two_plus" as const, gap, tier, placed, sentence: null, reason: null };
+  if (gap < 2) return { direction: "one_above" as const, gap, tier, placed, sentence: null, reason: null, basis };
+  return { direction: "two_plus" as const, gap, tier, placed, sentence: null, reason: null, basis };
 }
 
 // ── GATE 1, NAMED HONESTLY ─────────────────────────────────────────────────
