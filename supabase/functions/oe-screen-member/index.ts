@@ -15,7 +15,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
-import { deriveIdentity, runGates, writingStanding, type LadderRow, type MemberIdentity } from "../_shared/oeScreen.ts";
+import {
+  deriveIdentity, runGates, writingStanding,
+  type LadderRow, type MemberIdentity, type MemberEvidenceRow,
+} from "../_shared/oeScreen.ts";
 import {
   loadLocationSensitivity, sensitivityOf, loadLevelGateApplies, levelGateApplies,
 } from "../_shared/oeKinds.ts";
@@ -34,25 +37,31 @@ const COUNTRY_NAME: Record<string, string> = {
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+/**
+ * THE PRESENTATION LINE IS A MATCH, NOT A DESCRIPTION.
+ *
+ * It is not written from his title and it is not written from prose. It is one
+ * stated requirement of the posting set against one claim his own record makes,
+ * with the row that proves the claim cited beside it. The model's only job is
+ * to say which requirement is answered by which evidence row; the sentence is
+ * composed here, from their own words.
+ */
 const PRESENTATION_SYSTEM =
-  "You are a search consultant. Before you present anyone you must be able to say one line — " +
-  "'<first name> is the man who ___' — and have the client nod. " +
-  "You receive one professional's actual positions and the evidence of what he ran, and one opportunity " +
-  "with the requirements it STATES. " +
-  "Match his history against those stated requirements. Write the line ONLY if a named position in his " +
-  "history plainly answers at least one stated requirement — never from the opportunity's title alone. " +
-  "Return strict JSON {line: string|null, position: string|null, requirement: string|null}. " +
-  "line is one sentence under 25 words, starting with the first name, in plain English, no adjectives of praise. " +
-  "position must be copied verbatim from the positions given, and must be the position that earns the line. " +
-  "requirement must be copied verbatim from the stated requirements when there are any, else null. " +
-  "If nothing in his history answers a requirement, return {line: null, position: null, requirement: null}. " +
-  "Never invent experience.";
+  "You are a search consultant deciding whether a professional can be presented for one opportunity. " +
+  "You receive the requirements the opportunity STATES, and a numbered list of evidence rows — each one a " +
+  "claim this professional's own record makes about him, with the quote that proves it. " +
+  "Pair a requirement with an evidence row ONLY when the evidence plainly answers that requirement. " +
+  "Return strict JSON {matches: [{requirement: string, evidence_id: string}]}. " +
+  "requirement must be copied character for character from the stated requirements. " +
+  "evidence_id must be copied character for character from the evidence rows given. " +
+  "Never pair on a shared word or a shared sector — the evidence must answer the requirement. " +
+  "If nothing answers anything, return {matches: []}. Never invent evidence.";
 
 /** One streamed call. Reasoning models run for minutes; never buffer, never time out on a timer. */
 async function askForLine(
   key: string,
   payload: string,
-): Promise<{ line: string | null; position: string | null; requirement: string | null }> {
+): Promise<{ matches: Array<{ requirement: string; evidence_id: string }> }> {
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
@@ -65,17 +74,26 @@ async function askForLine(
       text: {
         format: {
           type: "json_schema",
-          name: "presentation_line",
+          name: "presentation_matches",
           strict: true,
           schema: {
             type: "object",
             additionalProperties: false,
             properties: {
-              line: { type: ["string", "null"] },
-              position: { type: ["string", "null"] },
-              requirement: { type: ["string", "null"] },
+              matches: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    requirement: { type: "string" },
+                    evidence_id: { type: "string" },
+                  },
+                  required: ["requirement", "evidence_id"],
+                },
+              },
             },
-            required: ["line", "position", "requirement"],
+            required: ["matches"],
           },
         },
       },
@@ -105,14 +123,29 @@ async function askForLine(
   }
   try {
     const parsed = JSON.parse(text.trim());
-    return {
-      line: parsed?.line ?? null,
-      position: parsed?.position ?? null,
-      requirement: parsed?.requirement ?? null,
-    };
+    return { matches: Array.isArray(parsed?.matches) ? parsed.matches : [] };
   } catch {
-    return { line: null, position: null, requirement: null };
+    return { matches: [] };
   }
+}
+
+/**
+ * WHAT IS STILL MISSING, AND WHETHER HE COULD ANSWER IT IN ONE LINE.
+ * A requirement about a team, a budget, a qualification or a sector is a
+ * question a man answers in a sentence. Anything else is not asked.
+ */
+const ANSWERABLE: Array<[string, RegExp]> = [
+  ["team_size", /\bteam|people|staff|direct reports|headcount|lead(ing)? a team|manage(d|ment of)? (a )?team/i],
+  ["budget_or_pnl", /\bbudget|p&l|profit and loss|revenue|contract value|spend|portfolio value|\bsar\s?\d|\busd\s?\d/i],
+  ["qualification", /\bdegree|bachelor|master|mba|phd|certifi|chartered|accredit|licen[cs]e|pmp|prince2|cfa|cpa/i],
+  ["sector_delivered", /\bsector|industry|experience in (the )?[a-z ]{3,30} (sector|industry)|healthcare|utilities|banking|government|public sector|energy|education/i],
+];
+
+const r_trim = (s: string) => String(s ?? "").replace(/\s+/g, " ").trim();
+
+function answerableKind(requirement: string): string | null {
+  for (const [kind, re] of ANSWERABLE) if (re.test(String(requirement ?? ""))) return kind;
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -150,7 +183,15 @@ Deno.serve(async (req) => {
       .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(1).maybeSingle();
     if (!snap) throw new Error("no profile snapshot — nothing to screen against");
 
-    const identity: MemberIdentity = deriveIdentity(snap, ladder);
+    // ── what his OWN RECORD states about him, extracted once and stored ──
+    const { data: evidenceRows } = await admin
+      .from("oe_member_evidence")
+      .select("id, kind, claim, quote, position_ref, confidence, source_table")
+      .eq("user_id", userId).is("superseded_by", null)
+      .order("confidence", { ascending: false }).limit(300);
+    const memberEvidence = (evidenceRows ?? []) as MemberEvidenceRow[];
+
+    const identity: MemberIdentity = deriveIdentity(snap, ladder, memberEvidence);
     if (!identity.positions.length) throw new Error("profile snapshot holds no positions");
 
     await admin.from("oe_member_identity").upsert({
@@ -278,81 +319,120 @@ Deno.serve(async (req) => {
     }
 
     // ── THE PRESENTATION TEST — the last gate, and the real one ──────────
-    const positionList = identity.positions.map((p) => `${p.title} at ${p.company}`);
+    // One requirement the posting STATES, set against one claim his own record
+    // makes, with the row that proves it cited beside it. No match, no line.
+    const evidenceById = new Map(memberEvidence.map((r) => [String(r.id), r]));
+    // Has a question already been put to him today? At most one, ever, per day.
+    const today = new Date().toISOString().slice(0, 10);
+    const { count: askedToday } = await admin
+      .from("oe_investigations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId).eq("asked_on", today);
+    let mayAsk = (askedToday ?? 0) === 0;
+
     if (withLines && lovableKey) {
       for (const { o, g } of survivors.slice(0, lineBudget)) {
-        let line: string | null = null;
-        let position: string | null = null;
-        try {
-          const ev = (o as any).scope_evidence ?? null;
-          const stated: string[] = Array.isArray(ev?.stated_requirements) ? ev.stated_requirements : [];
-          const fromRecord: string[] = Array.isArray((o as any).requirements)
-            ? (o as any).requirements.map((r: any) => String(r?.text ?? r ?? "")).filter(Boolean)
-            : [];
-          const out = await askForLine(lovableKey, JSON.stringify({
-            first_name: String(identity.positions[0]?.title ?? "").split(" ")[0] && (body.first_name ?? "He"),
-            positions: identity.positions.map((p) => ({
-              position: `${p.title} at ${p.company}`, period: [p.started, p.ended].filter(Boolean).join(" to "),
-              function: p.profession, standing: p.grade_label,
-            })),
-            // what he actually ran, not how long he has worked
-            his_scope: identity.scope_evidence.slice(0, 10),
-            qualifications: identity.qualifications.slice(0, 6),
-            opportunity: {
-              title: o.title, scope: o.scope, sector: o.sector, issuer: o.issuer_raw,
-              stated_requirements: (stated.length ? stated : fromRecord).slice(0, 10),
-              states: ev
-                ? {
-                  reports_to: ev.reports_to?.value ?? null,
-                  direct_reports: ev.direct_reports?.value ?? null,
-                  organisational_scope: ev.organisational_scope?.value ?? null,
-                  decision_rights: ev.decision_rights?.value ?? null,
-                  accountability: (ev.accountability_sentences ?? []).slice(0, 5),
-                }
-                : null,
-            },
-            relation: g.profession_relation, bridge: g.bridge,
-          }));
-          line = out.line; position = out.position;
-        } catch (e) {
-          await logEfError(admin, {
-            function_name: FN, error: e as Error, severity: "warn",
-            context: { stage: "presentation_line", opportunity_id: o.id },
-          });
-        }
-        // The line must rest on a position he actually held, quoted back. The
-        // position must still be one of his own; only spacing, punctuation and
-        // case are forgiven, so a real position is not thrown away over a comma.
-        const norm = (s: string) =>
-          s.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
-        const want = position ? norm(String(position)) : "";
-        const grounded = !!line && !!want
-          && positionList.some((p) => {
-            const held = norm(p);
-            return held === want || held.includes(want) || want.includes(held);
-          });
-        if (grounded) { funnel.presented++; } else {
-          funnel.no_line++;
-          if (line || position) {
+        const ev = (o as any).scope_evidence ?? null;
+        const stated: string[] = Array.isArray(ev?.stated_requirements) ? ev.stated_requirements : [];
+        const fromRecord: string[] = Array.isArray((o as any).requirements)
+          ? (o as any).requirements.map((r: any) => String(r?.text ?? r ?? "")).filter(Boolean)
+          : [];
+        const requirements = (stated.length ? stated : fromRecord).slice(0, 10);
+
+        let matches: Array<{ requirement: string; evidence_id: string }> = [];
+        if (requirements.length && memberEvidence.length) {
+          try {
+            const out = await askForLine(lovableKey, JSON.stringify({
+              opportunity: {
+                title: o.title, scope: o.scope, sector: o.sector, issuer: o.issuer_raw,
+                stated_requirements: requirements,
+              },
+              // His own record, each row with the id that must be cited back.
+              evidence: memberEvidence.slice(0, 80).map((r) => ({
+                evidence_id: r.id, kind: r.kind, claim: r.claim,
+                quote: String(r.quote).slice(0, 300), position: r.position_ref,
+              })),
+              relation: g.profession_relation, bridge: g.bridge,
+            }));
+            matches = Array.isArray(out.matches) ? out.matches : [];
+          } catch (e) {
             await logEfError(admin, {
-              function_name: FN, error: new Error("presentation line not grounded"),
-              severity: "warn",
-              context: { opportunity_id: o.id, returned_position: position, held: positionList },
+              function_name: FN, error: e as Error, severity: "warn",
+              context: { stage: "presentation_line", opportunity_id: o.id },
             });
           }
-          line = null;
         }
+
+        // A pair counts only when BOTH halves are real: the requirement copied
+        // from the posting, the evidence row one of his own.
+        const kept = matches
+          .map((m) => ({ m, row: evidenceById.get(String(m.evidence_id)) }))
+          .filter((x) => !!x.row && requirements.some((r) => r.trim() === String(x.m.requirement).trim()))
+          .slice(0, 2);
+
+        // His record speaks of him in the third person; the line speaks TO him.
+        // Drop the pronoun, then put the verb that followed it into "you" form.
+        const IRREGULAR: Record<string, string> = {
+          has: "have", is: "are", was: "were", does: "do", "hasn't": "haven't",
+        };
+        const toYou = (verb: string) => {
+          const low = verb.toLowerCase();
+          if (IRREGULAR[low]) return IRREGULAR[low];
+          // A present-tense third-person verb ends in s; a past tense does not.
+          if (/^[a-z]+(?:ie|e|[a-z])s$/.test(low) && !/(ss|us|is)$/.test(low)) {
+            return low.endsWith("ies") ? `${low.slice(0, -3)}y` : low.endsWith("hes") || low.endsWith("oes") ? low.slice(0, -2) : low.slice(0, -1);
+          }
+          return low;
+        };
+        const youSay = (claim: string) => {
+          const c = r_trim(claim).replace(/[.\s]+$/, "");
+          const m = c.match(/^(?:he|the member|mohammad)\s+([A-Za-z']+)\b(.*)$/i);
+          if (m) return `${toYou(m[1])}${m[2]}`;
+          return c.replace(/^(?:he|the member|mohammad)\s+/i, "");
+        };
+        const asked = (requirement: string) => {
+          const r = r_trim(requirement).replace(/^[-•*]\s*/, "");
+          return r.length > 140 ? `${r.slice(0, 137)}…` : r;
+        };
+        const line = kept.length
+          ? kept.map(({ m, row }) =>
+            `This asks for ${asked(m.requirement)}; you ${youSay(row!.claim)}${row!.position_ref ? ` — ${row!.position_ref}` : ""}.`
+          ).join(" ")
+          : null;
+        const citedIds = kept.map(({ row }) => row!.id);
+        const grounded = !!line;
+
+        if (grounded) funnel.presented++; else funnel.no_line++;
+
         await admin.from("oe_matches").update({
-          presentation_line: grounded ? line : null,
+          presentation_line: line,
+          presentation_evidence_ids: citedIds,
           ...(grounded ? {} : {
             screen_gate: "presentation", screen_outcome: "rejected",
             gate_passed: false, lane_final: "write",
-            rejection_sentence: "No line — nothing in your history says, in one sentence, why you would be presented for this.",
+            rejection_sentence: "No line — nothing in your record answers anything this one asks for.",
           }),
         }).eq("user_id", userId).eq("opportunity_id", o.id);
 
+        // ── WHAT IS STILL MISSING, ASKED ON THE CARD, ONE LINE ────────────
+        if (grounded && mayAsk) {
+          const answered = new Set(kept.map(({ m }) => r_trim(m.requirement)));
+          const gap = requirements
+            .map((r) => ({ r, kind: answerableKind(r) }))
+            .find((x) => x.kind && !answered.has(r_trim(x.r)));
+          if (gap) {
+            const { error: invError } = await admin.from("oe_investigations").upsert({
+              user_id: userId, opportunity_id: o.id, field: gap.kind!,
+              status: "open", asked_on: today,
+              reason: `Stated requirement with no matching evidence: ${r_trim(gap.r)}`,
+              member_question: `This asks for ${asked(gap.r)} — does your record cover it?`,
+            }, { onConflict: "user_id,opportunity_id,field" });
+            if (!invError) mayAsk = false;
+          }
+        }
       }
     }
+
 
     await admin.from("ef_error_log").insert({
       function_name: FN, user_id: userId, severity: "info",

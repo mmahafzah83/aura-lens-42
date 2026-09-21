@@ -1,7 +1,58 @@
+import { useState } from "react";
 import { AuraCard } from "@/components/ui/AuraCard";
+import { supabase } from "@/integrations/supabase/client";
 import { chairKey, useVocab } from "./useVocab";
 import { TapRow } from "./TapRow";
 import type { OpportunityCardData } from "./types";
+
+/**
+ * ONE QUESTION, ON THE CARD, ANSWERED IN A LINE.
+ * Never a form: this appears only when a record asks for something his own
+ * record does not yet say, and the answer is kept for every later record.
+ */
+function GapQuestion({ q, language, rtl, onSaved }: {
+  q: NonNullable<OpportunityCardData["gap_question"]>;
+  language: "en" | "ar"; rtl: boolean; onSaved?: () => void;
+}) {
+  const v = useVocab(language);
+  const [answer, setAnswer] = useState("");
+  const [state, setState] = useState<"asking" | "saving" | "saved" | "failed">("asking");
+
+  const save = async () => {
+    if (answer.trim().length < 2) return;
+    setState("saving");
+    const { error } = await (supabase.rpc as any)("oe_member_answer", {
+      p_investigation: q.investigation_id, p_answer: answer.trim(),
+    });
+    if (error) { setState("failed"); return; }
+    setState("saved");
+    onSaved?.();
+  };
+
+  return (
+    <div style={{ border: "1px solid #E2E7EE", borderRadius: 12, padding: 11, display: "grid", gap: 8, background: "#FBFCFE" }}>
+      <span style={{ fontSize: 13, color: "#0F1519" }}>{q.question}</span>
+      {state === "saved"
+        ? <span style={{ fontSize: 12, color: "#5B6673" }}>{v("gap_answer_saved")}</span>
+        : (
+          <div style={{ display: "flex", gap: 8, flexDirection: rtl ? "row-reverse" : "row" }}>
+            <input
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder={v("gap_answer_placeholder")}
+              aria-label={q.question}
+              style={{ flex: 1, border: "1px solid #E2E7EE", borderRadius: 8, padding: "8px 10px", fontSize: 13, color: "#0F1519", background: "#FFFFFF" }}
+            />
+            <button
+              type="button" onClick={save} disabled={state === "saving" || answer.trim().length < 2}
+              style={{ border: "1px solid #E2E7EE", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 600, color: "#0670C4", background: "#FFFFFF", cursor: "pointer" }}
+            >{v("gap_answer_save")}</button>
+          </div>
+        )}
+      {state === "failed" && <span style={{ fontSize: 12, color: "#9A6F12" }}>{v("gap_answer_failed")}</span>}
+    </div>
+  );
+}
 
 type Props = { card: OpportunityCardData; language: "en" | "ar"; readOnly?: boolean; onSaved?: () => void };
 
@@ -63,6 +114,7 @@ export function OpportunityCard({ card, language, readOnly, onSaved }: Props) {
               </div>
             );
           })()}
+          {card.gap_question && <GapQuestion q={card.gap_question} language={language} rtl={rtl} onSaved={onSaved} />}
           {(card.warmth ?? []).length > 0 && (
             <p style={{ margin: 0, fontSize: 12, color: "#5B6673" }}>
               <strong style={{ color: "#0F1519" }}>{v("warmth")}: </strong>
