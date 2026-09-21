@@ -338,7 +338,11 @@ Deno.serve(async (req) => {
         const fromRecord: string[] = Array.isArray((o as any).requirements)
           ? (o as any).requirements.map((r: any) => String(r?.text ?? r ?? "")).filter(Boolean)
           : [];
-        const requirements = (stated.length ? stated : fromRecord).slice(0, 10);
+        // A price is the cost of the door, not something his record can answer.
+        // It is carried on the record as cost_of_door and never matched here.
+        const requirements = (stated.length ? stated : fromRecord)
+          .filter((r) => !IS_A_PRICE.test(String(r)))
+          .slice(0, 10);
 
         let matches: Array<{ requirement: string; evidence_id: string }> = [];
         if (requirements.length && memberEvidence.length) {
