@@ -22,7 +22,11 @@ Deno.serve(async (req) => {
     if (error) throw new Error(error.message);
     counts.eligible = taps?.length ?? 0;
     for (const tap of taps ?? []) {
+      // A yes taken on a record that never had a card of its own carries no
+      // card to ask about; the question waits until there is one.
+      if (!tap.card_id) { counts.existing++; continue; }
       const { data: existing } = await admin.from("oe_outcomes").select("id").eq("card_id", tap.card_id).limit(1).maybeSingle();
+
       if (existing) { counts.existing++; continue; }
       const { error: insertError } = await admin.from("oe_outcomes").insert({ user_id: tap.user_id, card_id: tap.card_id, stage: "asked" });
       if (!insertError) counts.asked++;
