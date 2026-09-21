@@ -1,0 +1,1 @@
+SELECT count(*) AS daily_judge_schedule_rows FROM cron.job WHERE jobname = 'oe-enqueue-judging-daily' AND schedule = '30 0 * * *' AND active;
