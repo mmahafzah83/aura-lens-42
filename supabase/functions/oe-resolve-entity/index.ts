@@ -148,7 +148,17 @@ const SURFACE_RULES: Array<{
   { type: "directory", text: /member directory|our members|licensee|licensed (firms|entities)|firm index|company directory|دليل الأعضاء|المرخص/i,
     path: /\/(directory|directories|members?|licensees?|licen[cs]es?-directory|firms?-index)(\/|$|\?)/i,
     yields: [], cadence: "weekly" },
+  /**
+   * Where a listed issuer must publish its board-nomination announcement. The
+   * regulation puts it on the issuer's own site, not on the exchange, so this
+   * is the page that matters and nobody indexes it.
+   */
+  { type: "board_nominations",
+    text: /board nomination|nomination period|nominat\w* (for|to) (the )?board|announcements?|investor relations|فتح باب الترشح|الترشح لعضوية|إعلانات|علاقات المستثمرين/i,
+    path: /\/(announcements?|disclosures?|board-?nominations?|nominations?|investor-?relations?\/announcements?|إعلانات)(\/|$|\?)/i,
+    yields: ["board"], cadence: "daily" },
 ];
+
 
 
 function json(body: unknown, status = 200) {
