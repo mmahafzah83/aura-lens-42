@@ -117,7 +117,11 @@ Deno.serve(async (req) => {
         if (!evidence) { counts.nothing_stated++; continue; }
 
         const { error: upErr } = await admin.from("oe_opportunities")
-          .update({ scope_evidence: evidence }).eq("id", o.id);
+          .update({
+            scope_evidence: evidence,
+            // The cost of the door is a fact of the record, not a requirement.
+            ...(evidence.cost_of_door ? { cost_of_door: evidence.cost_of_door.value } : {}),
+          }).eq("id", o.id);
         if (upErr) throw new Error(upErr.message);
         counts.extracted++;
       } catch (e) {

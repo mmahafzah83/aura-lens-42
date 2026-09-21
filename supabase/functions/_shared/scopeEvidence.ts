@@ -27,6 +27,8 @@ export type ScopeEvidence = {
   organisational_scope: Quoted<"enterprise" | "division" | "function" | "team"> | null;
   accountability_sentences: string[];
   stated_requirements: string[];
+  /** What entry costs, verbatim, when the page states a fee. */
+  cost_of_door: Quoted<string> | null;
   version: string;
   extracted_at: string;
 };
@@ -39,7 +41,9 @@ export const SCOPE_EVIDENCE_INSTRUCTION =
   `decision_rights:{value:'owns'|'shared'|'contributes',quote}|null, ` +
   `organisational_scope:{value:'enterprise'|'division'|'function'|'team',quote}|null, ` +
   `accountability_sentences:[up to 5 verbatim sentences containing lead, own, accountable for, responsible for, manage, deliver or decide], ` +
-  `stated_requirements:[the must-have list, verbatim, one string per requirement]}. ` +
+  `stated_requirements:[the must-have list, verbatim, one string per requirement], ` +
+  `cost_of_door:{value:'the fee exactly as written, e.g. \`$15,000/year\`', quote}|null}. ` +
+  `cost_of_door is set only when the page states a price, fee or subscription to take part. ` +
   `A field the page does not state is null — never infer, never estimate, never round. ` +
   `decision_rights is set only from an accountability verb: 'owns' when the page says own/accountable for/decide, ` +
   `'shared' when it says jointly/with/partner with, 'contributes' when it says support/assist/input to. ` +
@@ -109,11 +113,16 @@ export function verifyScopeEvidence(raw: any, pageText: string): ScopeEvidence |
     organisational_scope: asQuoted(raw.organisational_scope, hay, oneOf(["enterprise", "division", "function", "team"] as const)),
     accountability_sentences: sentences,
     stated_requirements: requirements,
+    cost_of_door: asQuoted<string>(raw.cost_of_door, hay, (v) => {
+      const s = String(v ?? "").trim();
+      return s && s.length <= 120 ? s : null;
+    }),
     version: SCOPE_EVIDENCE_VERSION,
     extracted_at: new Date().toISOString(),
   };
 
   const anything = out.reports_to || out.direct_reports || out.budget_or_pnl || out.decision_rights
-    || out.organisational_scope || out.accountability_sentences.length || out.stated_requirements.length;
+    || out.organisational_scope || out.accountability_sentences.length || out.stated_requirements.length
+    || out.cost_of_door;
   return anything ? out : null;
 }
