@@ -61,6 +61,26 @@ function quoteIsPresent(quote: string, text: string): boolean {
   return t.includes(q);
 }
 
+/** The text we KEEP is the text the verdict must stand on. When the quote sits
+ *  beyond the first slice, the window around it is kept instead, so a quote is
+ *  never "verified" against text nobody can read back. */
+function storedSlice(text: string, quote: string, size = 12_000): string {
+  if (text.length <= size) return text;
+  const idx = normaliseText(text).indexOf(normaliseText(quote));
+  if (idx < 0 || !quote) return text.slice(0, size);
+  const approx = Math.max(0, Math.round(idx * (text.length / Math.max(1, normaliseText(text).length))) - Math.floor(size / 2));
+  return text.slice(approx, approx + size);
+}
+
+/** A listing or menu shell: plenty of links, no article. We record what it was
+ *  and make nothing of it. */
+function isShellPage(html: string, text: string): boolean {
+  const links = (html.match(/<a\s/gi) ?? []).length;
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return words < 250 || (links > 60 && words < 700);
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const url = Deno.env.get("SUPABASE_URL");
