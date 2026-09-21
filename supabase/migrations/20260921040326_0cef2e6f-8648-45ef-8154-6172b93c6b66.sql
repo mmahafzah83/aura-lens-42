@@ -1,0 +1,1 @@
+SELECT 1 AS oe_judge_member_single_screen_deployment_recorded;

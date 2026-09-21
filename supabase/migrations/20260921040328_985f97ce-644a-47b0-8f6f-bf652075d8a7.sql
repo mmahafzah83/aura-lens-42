@@ -1,0 +1,1 @@
+SELECT 1 AS oe_enqueue_judging_daily_schedule_recorded;

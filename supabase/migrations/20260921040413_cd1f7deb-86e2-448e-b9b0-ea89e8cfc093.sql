@@ -1,0 +1,1 @@
+SELECT count(*) AS every_minute_judge_schedule_rows FROM cron.job WHERE jobname ILIKE '%judg%' AND schedule = '* * * * *' AND active;

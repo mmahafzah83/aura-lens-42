@@ -1,0 +1,1 @@
+SELECT 1 AS oe_judge_schedule_marker;

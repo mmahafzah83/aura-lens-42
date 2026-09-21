@@ -1,0 +1,1 @@
+SELECT jobid, jobname, schedule, active FROM cron.job WHERE jobname = 'oe-enqueue-judging-daily';
