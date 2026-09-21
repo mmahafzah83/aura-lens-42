@@ -61,8 +61,15 @@ function historyDecision(row: History) {
   if (row.tap === "right") return row.lane === "write" ? "You drafted it" : "You went for it";
   if (row.tap === "later") return "You said later";
   if (row.truth_code) return `You flagged: ${TRUTH_REASON[row.truth_code] ?? "something was wrong"}`;
-  return row.tap_scope ? `Not for you · ${SCOPE_REASON[row.tap_scope] ?? "not a fit"}` : "Not for you";
+  return row.tap_scope ? `Not for you · ${SCOPE_REASON[row.tap_scope] ?? "not a fit"}` : "Not for you · no reason recorded";
 }
+/** His record speaks of him; a line shown to him speaks to him. */
+const youText = (text: string) => String(text ?? "")
+  .replace(/\bhe does not\b/gi, "you do not").replace(/\bhe has\b/gi, "you have")
+  .replace(/\bhe is\b/gi, "you are").replace(/\bhe was\b/gi, "you were")
+  .replace(/\bhis\b/gi, "your").replace(/\bhimself\b/gi, "yourself")
+  .replace(/\bhim\b/gi, "you").replace(/\bhe\b/gi, "you");
+
 function historyOutcome(row: History) {
   const copy: Record<string, string> = { applied: "You applied", shortlisted: "You were shortlisted", won: "You got it", nothing: "Nothing came of it" };
   return row.outcome ? copy[row.outcome] ?? "Outcome recorded" : row.tap === "right" ? "Not yet known" : "No outcome expected";
