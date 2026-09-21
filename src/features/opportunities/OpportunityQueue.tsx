@@ -296,6 +296,15 @@ export function OpportunityQueue() {
 
   const t = (key: string, fallback: string) => v(key) || fallback;
   const count = cards.length;
+  const today = new Date().toISOString().slice(0, 10);
+  /* The goal is asked first, and asked loudest when the tab is empty — an
+     empty fortnight is exactly when "opportunity" needs a meaning. */
+  const goalDeferredUntil = data.direction?.goal ? null : (data.direction?.goal_expires_at ?? null);
+  const askGoal = !data.direction?.goal && (!goalDeferredUntil || goalDeferredUntil <= today);
+  const showGoalCard = askGoal || goalChanging;
+  const windowDate = data.window?.expected_by ?? null;
+  const dateText = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
   const lead = card?.why_lines?.find((line) => String(line?.text ?? "").trim())?.text ?? "";
   const taste = card ? [
     ["queue_wrong_level", "Wrong level", "level", card.level_band],
