@@ -261,6 +261,17 @@ Deno.serve(async (req) => {
     record("card_today_queue_would_refuse", bad);
   }
 
+  // 13. One fact, one table. Every decision a member has taken is recorded in
+  //     oe_taps; the serve row is only its mirror. A tapped serve with no tap
+  //     row is a decision the learning side will never see.
+  {
+    const { data } = await admin.from("oe_serves_untapped").select("*").limit(50);
+    const bad = (data ?? []).map((r: any) => ({
+      serve_id: r.serve_id, user_id: r.user_id, opportunity_id: r.opportunity_id, tap: r.tap, tapped_at: r.tapped_at,
+    }));
+    record("serve_tap_without_tap_row", bad);
+  }
+
 
   for (const v of violations) {
 
@@ -275,7 +286,7 @@ Deno.serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: FN,
       severity: "info",
-      error_message: "OE_INVARIANTS ok — all twelve assertions hold",
+      error_message: "OE_INVARIANTS ok — all thirteen assertions hold",
       context: {},
     });
   }
