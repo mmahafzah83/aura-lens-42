@@ -558,6 +558,18 @@ export function runGates(
     return { ...withProf, gate: "profession", outcome: "rejected", sentence: prof.sentence };
   }
 
+  // GATE 3 applies only to kinds that carry a seat with a grade. The catalogue
+  // says which; a record whose kind has no seat passes on licence and
+  // profession alone, and the gate is recorded as not applicable.
+  if ((opportunity as any)?.level_gate_applies === false) {
+    return {
+      ...withProf,
+      gate: "scored", outcome: "survivor", sentence: null,
+      employer_tier: employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null).tier,
+      level_direction: "not_applicable",
+    };
+  }
+
   const lvl = levelGate(identity, opportunity, routeIsSpecific, ladder);
   const withLevel: GateResult = {
     ...withProf, employer_tier: lvl.tier, level_direction: lvl.direction, standing_gap: lvl.gap,
