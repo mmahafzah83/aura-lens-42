@@ -14,7 +14,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
-import { secondPerson } from "../_shared/secondPerson.ts";
+import { secondPersonClause } from "../_shared/secondPerson.ts";
+import { bestStanding, writeTests } from "../_shared/writeValue.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 import {
   deriveIdentity, runGates, writingStanding,
@@ -302,13 +303,15 @@ Deno.serve(async (req) => {
         // A survivor is proposed for the act lane; the access trigger is the
         // one that decides whether it may stay there, and drops it to writing
         // when there is no door the member can actually walk through.
+        // WHAT FAILS THE ACT LANE IS NOT WRITING MATERIAL. The lane is cleared
+        // here and only the four writing tests below may set it to 'write'.
         ...(g.outcome === "rejected"
-          ? { gate_passed: false, lane_final: "write" }
+          ? { gate_passed: false, lane_final: null }
           : g.outcome === "survivor"
           ? { gate_passed: true, lane_final: "act" }
           : {}),
         // The act lane is an intersection; a record he cannot hold leaves it.
-        ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
+        ...(licence.outcome === "excluded" ? { lane_final: null } : {}),
         ...(g.outcome === "survivor" ? {} : { presentation_line: null }),
       }).eq("user_id", userId).eq("opportunity_id", o.id);
 
@@ -395,14 +398,14 @@ Deno.serve(async (req) => {
 
         // His record speaks of him in the third person; the line speaks TO him.
         // Deterministic, no model: drop the pronoun, carry the verb with it.
-        const youSay = (claim: string) => secondPerson(claim);
+        const youSay = (claim: string) => secondPersonClause(claim);
         const asked = (requirement: string) => {
           const r = r_trim(requirement).replace(/^[-•*]\s*/, "");
           return r.length > 140 ? `${r.slice(0, 137)}…` : r;
         };
         const line = kept.length
           ? kept.map(({ m, row }) =>
-            `This asks for ${asked(m.requirement)}; you ${youSay(row!.claim)}${row!.position_ref ? ` — ${row!.position_ref}` : ""}.`
+            `This asks for ${asked(m.requirement)}; ${youSay(row!.claim)}${row!.position_ref ? ` — ${row!.position_ref}` : ""}.`
           ).join(" ")
           : null;
         const citedIds = kept.map(({ row }) => row!.id);
@@ -415,7 +418,7 @@ Deno.serve(async (req) => {
           presentation_evidence_ids: citedIds,
           ...(grounded ? {} : {
             screen_gate: "presentation", screen_outcome: "rejected",
-            gate_passed: false, lane_final: "write",
+            gate_passed: false, lane_final: null,
             rejection_sentence: "No line — nothing in your record answers anything this one asks for.",
           }),
         }).eq("user_id", userId).eq("opportunity_id", o.id);
@@ -439,47 +442,58 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── THE WRITE LANE PRESENTS ON STANDING, NOT ON REQUIREMENTS ──────────
-    // A market signal states no requirements, so a requirement↔evidence line
-    // can never exist for it. What it needs is the member's own sentence on
-    // the subject. Same evidence, different question: not "can you meet this"
-    // but "what have you already said about this".
+    // ── THE WRITE LANE IS EARNED, NOT INHERITED ───────────────────────────
+    // What fails the act lane is not writing material. Every candidate is put
+    // through the four writing tests, and the standing sentence must be ABOUT
+    // this record's subject. Anything else is discarded: no lane, no card.
     {
       const { data: writeRows } = await admin.from("oe_matches")
         .select("opportunity_id")
-        .eq("user_id", userId).eq("lane_final", "write");
-      const stop = new Set("the a an and or of for in on to with by from at is are was were this that these those new more into over under about your you his her their its it as be been".split(" "));
-      const words = (text: string) => new Set(
-        String(text ?? "").toLowerCase().replace(/[^a-z0-9\u0600-\u06FF ]+/g, " ")
-          .split(/\s+/).filter((w) => w.length > 3 && !stop.has(w)));
+        .eq("user_id", userId).is("lane_final", null);
+      const { data: sectorRule } = await admin.from("oe_notebook")
+        .select("values,value")
+        .eq("user_id", userId).eq("field", "sector").eq("active", true)
+        .eq("status", "active").maybeSingle();
+      const preferredSectors: string[] = Array.isArray(sectorRule?.values)
+        ? sectorRule!.values as string[]
+        : sectorRule?.value ? [String(sectorRule.value)] : [];
       const oppById = new Map((opps ?? []).map((o: any) => [String(o.id), o]));
 
       for (const row of (writeRows ?? [])) {
         const o: any = oppById.get(String(row.opportunity_id));
         if (!o) continue;
-        const subject = words(`${o.title ?? ""} ${o.scope ?? ""} ${o.sector ?? ""}`);
-        let best: { row: any; score: number } | null = null;
-        for (const e of memberEvidence) {
-          const mine = words(`${e.claim} ${e.quote}`);
-          let score = 0;
-          for (const w of subject) if (mine.has(w)) score++;
-          if (score >= 2 && (!best || score > best.score)) best = { row: e, score };
-        }
-        if (!best) {
+        const best = bestStanding(o, memberEvidence);
+        const standing = writingStanding(identity, o, standsFace?.summary ?? null);
+        const tests = writeTests({ identity, opportunity: o, standing, best, preferredSectors });
+
+        const note = (err: any, stage: string) => err && logEfError(admin, {
+          function_name: FN, error: new Error(`${stage}: ${err.message}`), severity: "error",
+          context: { opportunity_id: o.id, user_id: userId },
+        });
+        if (!tests.all_true) {
+          const sentence = !best
+            ? "presentation: no standing sentence"
+            : !tests.subject_fits_audience.passed || !tests.fits_your_positioning.passed
+            ? "writing: outside what you are known for"
+            : "writing: nothing useful to add";
           await admin.from("oe_matches").update({
+            write_tests: tests, standing_overlap: tests.overlap,
             presentation_line: null, presentation_evidence_ids: [],
             screen_gate: "presentation", screen_outcome: "rejected", gate_passed: false,
-            rejection_sentence: "presentation: no standing sentence",
-          }).eq("user_id", userId).eq("opportunity_id", o.id);
+            lane_final: null, rejection_sentence: sentence,
+          }).eq("user_id", userId).eq("opportunity_id", o.id).then(({ error }) => note(error, "write discard"));
           continue;
         }
-        const angle = `Your angle: you ${secondPerson(best.row.claim)}` +
-          `${best.row.position_ref ? ` — ${best.row.position_ref}` : ""}.`;
+
+        const angle = `Your angle: ${secondPersonClause(best!.row.claim)}` +
+          `${best!.row.position_ref ? ` — ${best!.row.position_ref}` : ""}.`;
         await admin.from("oe_matches").update({
+          write_tests: tests, standing_overlap: tests.overlap,
           presentation_line: angle,
-          presentation_evidence_ids: [best.row.id],
+          presentation_evidence_ids: [best!.row.id],
+          lane_final: "write",
           rejection_sentence: null,
-        }).eq("user_id", userId).eq("opportunity_id", o.id);
+        }).eq("user_id", userId).eq("opportunity_id", o.id).then(({ error }) => note(error, "write admit"));
       }
     }
 

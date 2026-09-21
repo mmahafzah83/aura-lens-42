@@ -54,3 +54,21 @@ export function secondPerson(claim: string): string {
     .replace(/\byou was\b/g, "you were")
     .replace(/[.\s]+$/, "");
 }
+
+/** A word that opens a phrase rather than a verb — "your Aramco role …". */
+const OPENER = /^(?:your|the|a|an|this|that|these|those|it|there|and|but|as|in|on|at|for|with|from)$/i;
+
+/**
+ * A clause that can be dropped straight into a sentence addressed to him.
+ * Guarantees the subject appears exactly once: never "you your Aramco…", and
+ * never a bare third-person verb like "advises the board".
+ */
+export function secondPersonClause(claim: string): string {
+  const c = secondPerson(claim);
+  if (!c) return "";
+  if (/^you\b/i.test(c)) return c.replace(/^You\b/, "you");
+  const m = c.match(/^([A-Za-z']+)\b([\s\S]*)$/);
+  if (!m) return c;
+  if (OPENER.test(m[1])) return c;
+  return `you ${verbToYou(m[1])}${m[2]}`;
+}

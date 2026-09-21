@@ -10,7 +10,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { SCOPE_EVIDENCE_INSTRUCTION, verifyScopeEvidence } from "../_shared/scopeEvidence.ts";
-import { secondPerson } from "../_shared/secondPerson.ts";
+import { secondPerson, secondPersonClause } from "../_shared/secondPerson.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 import {
   deriveIdentity, runGates,
@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
               .slice(0, 2);
             line = kept.length
               ? kept.map(({ m, row }) =>
-                `This asks for ${String(m.requirement).slice(0, 140)}; you ${secondPerson(row!.claim)}${row!.position_ref ? ` — ${row!.position_ref}` : ""}.`
+                `This asks for ${String(m.requirement).slice(0, 140)}; ${secondPersonClause(row!.claim)}${row!.position_ref ? ` — ${row!.position_ref}` : ""}.`
               ).join(" ")
               : null;
           } catch (e) { answers.presentation_error = String((e as Error).message); }

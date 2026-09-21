@@ -5325,11 +5325,13 @@ export type Database = {
           screen_outcome: string | null
           screened_at: string | null
           standing_gap: number | null
+          standing_overlap: number | null
           total_count: number | null
           unstable: boolean
           user_id: string
           win_band: string | null
           win_basis: Json | null
+          write_tests: Json | null
         }
         Insert: {
           created_at?: string
@@ -5370,11 +5372,13 @@ export type Database = {
           screen_outcome?: string | null
           screened_at?: string | null
           standing_gap?: number | null
+          standing_overlap?: number | null
           total_count?: number | null
           unstable?: boolean
           user_id: string
           win_band?: string | null
           win_basis?: Json | null
+          write_tests?: Json | null
         }
         Update: {
           created_at?: string
@@ -5415,11 +5419,13 @@ export type Database = {
           screen_outcome?: string | null
           screened_at?: string | null
           standing_gap?: number | null
+          standing_overlap?: number | null
           total_count?: number | null
           unstable?: boolean
           user_id?: string
           win_band?: string | null
           win_basis?: Json | null
+          write_tests?: Json | null
         }
         Relationships: [
           {
