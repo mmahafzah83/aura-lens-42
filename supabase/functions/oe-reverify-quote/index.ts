@@ -106,8 +106,9 @@ Deno.serve(async (req) => {
   try {
     let due: any[] = [];
     if (mode === "stored") {
-      const { data, error } = await admin.from("oe_opportunities")
-        .select(SELECT).eq("alive", true).limit(limit);
+      const base = admin.from("oe_opportunities").select(SELECT).eq("alive", true);
+      const { data, error } = only.length ? await base.in("id", only) : await base.limit(Math.max(limit, 500));
+
       if (error) throw new Error(error.message);
       due = data ?? [];
     } else if (only.length) {
