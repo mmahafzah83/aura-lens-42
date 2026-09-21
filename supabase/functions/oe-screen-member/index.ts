@@ -144,6 +144,10 @@ const ANSWERABLE: Array<[string, RegExp]> = [
 
 const r_trim = (s: string) => String(s ?? "").replace(/\s+/g, " ").trim();
 
+/** A stated fee, subscription or price — the cost of the door, not a requirement. */
+const IS_A_PRICE =
+  /(\$|usd|sar|eur|aed|£|€|﷼)\s?[\d,]{3,}|[\d,]{3,}\s?(usd|sar|aed|eur|riyals?|dollars?)|\bper year\b.*\b\d|\bfee\b|\bfees\b|\bsubscription\b|\bmembership (?:cost|price|rate)\b|\bprice\b|\brasm\b|رسوم|اشتراك/i;
+
 function answerableKind(requirement: string): string | null {
   for (const [kind, re] of ANSWERABLE) if (re.test(String(requirement ?? ""))) return kind;
   return null;
