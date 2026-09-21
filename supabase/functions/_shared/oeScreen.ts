@@ -447,15 +447,20 @@ export type GateResult = {
   standing_gap: number | null;
   bridge: string | null;
   stretch: boolean;
+  /** how the record's profession and grade were established, so a verdict is auditable */
+  profession_source: "title" | "accountability_sentence" | "none" | null;
+  profession_source_quote: string | null;
+  grade_basis: "title" | "proxies" | "none" | null;
 };
 
 /** GATE 2 — is this his profession? A sector match may never rescue it. */
 export function professionGate(identity: MemberIdentity, opportunity: any) {
-  const role = classifyProfession(opportunity?.title, opportunity?.scope);
+  const read = professionOf(opportunity);
+  const role = read.profession;
   const held = new Map(identity.professions.map((p) => [p.profession, p.positions]));
 
   if (!role) {
-    return { role, relation: "unstated" as const, bridge: null, sentence: null };
+    return { role, read, relation: "unstated" as const, bridge: null, sentence: null };
   }
   const own = held.get(role);
   if (own?.length) {
