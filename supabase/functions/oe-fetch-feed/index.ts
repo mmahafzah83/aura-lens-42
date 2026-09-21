@@ -144,7 +144,18 @@ function stripTags(html: string): string {
     .replace(/&gt;/g, ">");
 }
 
+/** The text we keep is the text the quote is judged against. When the quote
+ *  sits past the first slice, the window around it is kept instead. */
+function keptPageText(text: string, quote: string, size = 12_000): string {
+  if (text.length <= size) return text;
+  const idx = quote.length > 10 ? text.indexOf(quote) : -1;
+  if (idx < 0) return text.slice(0, size);
+  const start = Math.max(0, idx - Math.floor(size / 2));
+  return text.slice(start, start + size);
+}
+
 function canonicalise(raw: string): string {
+
   try {
     const u = new URL(raw);
     u.hash = "";
@@ -949,7 +960,7 @@ Deno.serve(async (req) => {
             prompt_version: READER_VERSION,
             model: MODEL,
             lane,
-            page_text: String(cand.text ?? "").slice(0, 12_000),
+            page_text: storedText,
             ...(cand.extra ?? {}),
           },
         };
