@@ -91,9 +91,9 @@
 - [ ] C oe_issuer_people from stored page text of all 47 alive market signals; in the reader, not a one-off; route_kind='named_person' + route_url; identified_route only where the role in the matter is stated
 
 ## Step 32 — member Opportunities tab
-- [ ] Plain-language grouped history with no internal JSON, ids, or codes
-- [ ] 375px decision, decline, confirmation, next-item, and empty states
-- [ ] Suggested-but-unselected primary goal, secondary goals, and expiry reconfirmation
-- [ ] Human-language “What reaches you” drawer with progressive disclosure
-- [ ] `oe_app_queue_core` history payload and `oe_goal_save` secondary-goal support
-- [ ] Seven dated self-checks, including available 375px screenshots
+- [x] Plain-language grouped history with no internal JSON, ids, or codes
+- [x] 375px decision, decline, confirmation, next-item, and empty states
+- [x] Suggested-but-unselected primary goal, secondary goals, and expiry reconfirmation
+- [x] Human-language “What reaches you” drawer with progressive disclosure
+- [x] `oe_app_queue_core` history payload and `oe_goal_save` secondary-goal support
+- [x] Seven dated self-checks, including available 375px screenshots
