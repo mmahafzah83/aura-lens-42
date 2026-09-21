@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: FN,
       severity: "info",
-      error_message: "OE_INVARIANTS ok — all ten assertions hold",
+      error_message: "OE_INVARIANTS ok — all eleven assertions hold",
       context: {},
     });
   }
