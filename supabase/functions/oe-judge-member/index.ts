@@ -741,7 +741,9 @@ Deno.serve(async (req) => {
 
       const scoreAvg = QUESTIONS.reduce((sum, q) => sum + avg[q] * Number(weights[q] ?? 0), 0);
       const noZero = !gateNoZero || QUESTIONS.every((q) => avg[q] > 0);
-      const gatePassed = scoreAvg >= gateMin && noZero && !!o.quote_verified;
+      const gatePassed = scoreAvg >= gateMin && noZero && !!o.quote_verified
+        && !screenRejected.has(String(o.id));
+
       if (gatePassed) counts.gate_passed++;
 
       const fitBand = scoreAvg >= Number(bands.strong ?? 3.4)
