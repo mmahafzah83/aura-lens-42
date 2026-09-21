@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
   try { payload = await req.json(); } catch { /* empty body is an empty run */ }
   const targets: Array<{ url: string; phrases?: string[] }> = Array.isArray(payload?.targets) ? payload.targets : [];
   const wantText = payload?.text === true;
+  const linkPattern: string | null = typeof payload?.links === "string" ? payload.links : null;
   const maxChars = Math.min(Number(payload?.max_chars ?? 4000), 60_000);
   if (!targets.length) return json({ error: "no targets" }, 400);
 
@@ -166,6 +167,11 @@ Deno.serve(async (req) => {
       phrases,
       error: page.error,
       text: wantText ? text.slice(0, maxChars) : undefined,
+      links: linkPattern
+        ? anchors(page.body, page.final_url ?? t.url)
+            .filter((a) => new RegExp(linkPattern, "i").test(`${a.href} ${a.text}`))
+            .slice(0, 400)
+        : undefined,
     });
   }
 
