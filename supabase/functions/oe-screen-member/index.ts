@@ -12,6 +12,7 @@
  * own history.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withRun } from "../_shared/oeRun.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
 import { secondPersonClause } from "../_shared/secondPerson.ts";
@@ -158,7 +159,7 @@ function answerableKind(requirement: string): string | null {
   return null;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withRun("screen_member", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const admin = createClient(
@@ -550,4 +551,4 @@ Deno.serve(async (req) => {
     await logEfError(admin, { function_name: FN, error: e as Error, severity: "error", context: { user_id: userId } });
     return json({ error: (e as Error).message }, 500);
   }
-});
+}));

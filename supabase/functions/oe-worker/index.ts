@@ -5,6 +5,7 @@
  * job_type-agnostic (it resets every 'claimed' row older than ten minutes).
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withRun } from "../_shared/oeRun.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +31,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withRun("worker", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -106,4 +107,4 @@ Deno.serve(async (req) => {
     } catch (_) { /* the reaper will pick it up */ }
     return json({ claimed: true, job_id: jobId, ok: false, error: err });
   }
-});
+}));

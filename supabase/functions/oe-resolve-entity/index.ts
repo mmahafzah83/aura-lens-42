@@ -758,8 +758,15 @@ Deno.serve(async (req) => {
 
     if (typeof body.seed_source === "string") q = q.eq("seed_source", body.seed_source);
 
-    if (body.entity_id) q = admin.from("oe_entities")
-      .select("id, name, domain, careers_url").eq("id", body.entity_id);
+    // An id is a uuid or it is not an id. A stray "0" or a name arriving in
+    // this field used to reach Postgres as a cast error; it is refused here.
+    if (body.entity_id) {
+      const wanted = String(body.entity_id).trim();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(wanted)) {
+        return json({ ok: false, error: `entity_id is not an identifier: ${wanted.slice(0, 40)}` }, 400);
+      }
+      q = admin.from("oe_entities").select("id, name, domain, careers_url").eq("id", wanted);
+    }
 
     const { data: ents, error } = await q;
     if (error) throw new Error(error.message);

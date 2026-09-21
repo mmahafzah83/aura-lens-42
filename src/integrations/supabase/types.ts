@@ -4798,6 +4798,7 @@ export type Database = {
           score_yield: number | null
           source_type: string | null
           structured: boolean | null
+          surface_id: string | null
           terms_note: string | null
           terms_ok: boolean
           updated_at: string
@@ -4833,6 +4834,7 @@ export type Database = {
           score_yield?: number | null
           source_type?: string | null
           structured?: boolean | null
+          surface_id?: string | null
           terms_note?: string | null
           terms_ok?: boolean
           updated_at?: string
@@ -4868,6 +4870,7 @@ export type Database = {
           score_yield?: number | null
           source_type?: string | null
           structured?: boolean | null
+          surface_id?: string | null
           terms_note?: string | null
           terms_ok?: boolean
           updated_at?: string
@@ -4880,6 +4883,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_source_types"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "oe_feeds_surface_id_fkey"
+            columns: ["surface_id"]
+            isOneToOne: false
+            referencedRelation: "oe_surfaces"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -5795,6 +5805,7 @@ export type Database = {
           access_state_at: string | null
           access_state_reason: string | null
           alive: boolean
+          candidate_id: string | null
           canonical_url: string | null
           chair_type: string
           conditions: Json
@@ -5817,6 +5828,7 @@ export type Database = {
           language: string | null
           last_seen_at: string
           level_band: string | null
+          lineage_note: string | null
           location: string | null
           people_read_at: string | null
           pipeline_version: number
@@ -5831,6 +5843,7 @@ export type Database = {
           read_result: string | null
           remote: boolean | null
           requirements: Json
+          route_checked_at: string | null
           route_dead: boolean
           route_kind: string | null
           route_url: string | null
@@ -5851,6 +5864,7 @@ export type Database = {
           access_state_at?: string | null
           access_state_reason?: string | null
           alive?: boolean
+          candidate_id?: string | null
           canonical_url?: string | null
           chair_type: string
           conditions?: Json
@@ -5873,6 +5887,7 @@ export type Database = {
           language?: string | null
           last_seen_at?: string
           level_band?: string | null
+          lineage_note?: string | null
           location?: string | null
           people_read_at?: string | null
           pipeline_version?: number
@@ -5887,6 +5902,7 @@ export type Database = {
           read_result?: string | null
           remote?: boolean | null
           requirements?: Json
+          route_checked_at?: string | null
           route_dead?: boolean
           route_kind?: string | null
           route_url?: string | null
@@ -5907,6 +5923,7 @@ export type Database = {
           access_state_at?: string | null
           access_state_reason?: string | null
           alive?: boolean
+          candidate_id?: string | null
           canonical_url?: string | null
           chair_type?: string
           conditions?: Json
@@ -5929,6 +5946,7 @@ export type Database = {
           language?: string | null
           last_seen_at?: string
           level_band?: string | null
+          lineage_note?: string | null
           location?: string | null
           people_read_at?: string | null
           pipeline_version?: number
@@ -5943,6 +5961,7 @@ export type Database = {
           read_result?: string | null
           remote?: boolean | null
           requirements?: Json
+          route_checked_at?: string | null
           route_dead?: boolean
           route_kind?: string | null
           route_url?: string | null
@@ -5959,6 +5978,20 @@ export type Database = {
           verify_reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "oe_opportunities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "oe_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_opportunities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "oe_read_backlog"
+            referencedColumns: ["candidate_id"]
+          },
           {
             foreignKeyName: "oe_opportunities_feed_id_fkey"
             columns: ["feed_id"]
@@ -6340,6 +6373,24 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_run_schedule: {
+        Row: {
+          created_at: string
+          expected_every_hours: number
+          run_kind: string
+        }
+        Insert: {
+          created_at?: string
+          expected_every_hours: number
+          run_kind: string
+        }
+        Update: {
+          created_at?: string
+          expected_every_hours?: number
+          run_kind?: string
+        }
+        Relationships: []
+      }
       oe_runs: {
         Row: {
           cost_usd: number | null
@@ -6351,6 +6402,7 @@ export type Database = {
           id: string
           outcome: string | null
           run_kind: string
+          severity: string | null
           started_at: string
           user_id: string | null
         }
@@ -6364,6 +6416,7 @@ export type Database = {
           id?: string
           outcome?: string | null
           run_kind: string
+          severity?: string | null
           started_at?: string
           user_id?: string | null
         }
@@ -6377,6 +6430,7 @@ export type Database = {
           id?: string
           outcome?: string | null
           run_kind?: string
+          severity?: string | null
           started_at?: string
           user_id?: string | null
         }
@@ -6449,7 +6503,29 @@ export type Database = {
           user_id?: string
           why?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_card_cites_foreign_evidence"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_card_queue_refused"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       oe_source_facts: {
         Row: {
@@ -10226,6 +10302,25 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_heartbeat: {
+        Row: {
+          expected_every_hours: number | null
+          hours_since: number | null
+          last_run_at: string | null
+          run_kind: string | null
+          stale: boolean | null
+        }
+        Relationships: []
+      }
+      oe_job_health: {
+        Row: {
+          at: string | null
+          detail: string | null
+          kind: string | null
+          row_id: string | null
+        }
+        Relationships: []
+      }
       oe_judge_disagreement: {
         Row: {
           lane_final: string | null
@@ -10301,6 +10396,15 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_lineage_orphans: {
+        Row: {
+          kind: string | null
+          opportunity_id: string | null
+          row_id: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       oe_quote_not_in_raw: {
         Row: {
           id: string | null
@@ -10321,6 +10425,41 @@ export type Database = {
           title?: string | null
         }
         Relationships: []
+      }
+      oe_read_backlog: {
+        Row: {
+          candidate_id: string | null
+          created_at: string | null
+          feed_id: string | null
+          lang: string | null
+          title: string | null
+          url: string | null
+        }
+        Insert: {
+          candidate_id?: string | null
+          created_at?: string | null
+          feed_id?: string | null
+          lang?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Update: {
+          candidate_id?: string | null
+          created_at?: string | null
+          feed_id?: string | null
+          lang?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_candidates_feed_id_fkey"
+            columns: ["feed_id"]
+            isOneToOne: false
+            referencedRelation: "oe_feeds"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       oe_serves_untapped: {
         Row: {
@@ -10347,7 +10486,29 @@ export type Database = {
           tapped_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_card_cites_foreign_evidence"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_card_queue_refused"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       oe_unjudged_alive: {
         Row: {
@@ -10921,6 +11082,10 @@ export type Database = {
       oe_goal_save: {
         Args: { p_defer?: boolean; p_goal?: string; p_secondary?: string[] }
         Returns: Json
+      }
+      oe_goal_weight: {
+        Args: { p_kind: string; p_user: string }
+        Returns: number
       }
       oe_goal_window: { Args: { p_user: string }; Returns: Json }
       oe_investigate_unknowns: {
