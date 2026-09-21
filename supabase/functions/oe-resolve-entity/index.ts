@@ -767,6 +767,10 @@ Deno.serve(async (req) => {
       q = q.in("resolve_error", body.recheck_error);
     }
     if (body.with_domain_only === true) q = q.not("domain", "is", null);
+    // One class of organisation at a time — listed issuers are worked first
+    // because a nomination window only exists on their own site.
+    if (typeof body.entity_kind === "string") q = q.eq("entity_kind", body.entity_kind);
+
 
     if (typeof body.seed_source === "string") q = q.eq("seed_source", body.seed_source);
 
