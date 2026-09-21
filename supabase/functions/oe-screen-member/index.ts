@@ -105,9 +105,13 @@ async function askForLine(
   }
   try {
     const parsed = JSON.parse(text.trim());
-    return { line: parsed?.line ?? null, position: parsed?.position ?? null };
+    return {
+      line: parsed?.line ?? null,
+      position: parsed?.position ?? null,
+      requirement: parsed?.requirement ?? null,
+    };
   } catch {
-    return { line: null, position: null };
+    return { line: null, position: null, requirement: null };
   }
 }
 
