@@ -1009,7 +1009,7 @@ Deno.serve(async (req) => {
           lane: "write",
           quote: o.evidence_quote,
           clock_text: vocab("nothing_to_act_on", lang),
-          fit_band: null, win_band: null,
+          fit_band: writeBand, win_band: null,
           channel: "email",
         }, {
           rules: ruleIds,
