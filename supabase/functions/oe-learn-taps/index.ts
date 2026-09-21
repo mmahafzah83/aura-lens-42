@@ -107,15 +107,15 @@ Deno.serve(async (req) => {
           const reach = tap.scope || (tap.tap === "not_my_area" ? "type" : tap.tap === "less_from_here" ? "issuer" : "just_this");
           const reachValue = tap.scope_value || ({
             issuer: opportunity.issuer_id,
-            level: opportunity.seniority_band,
-            place: opportunity.location,
-            type: opportunity.chair_type,
-            just_this: opportunity.id,
+            level: opportunity?.seniority_band ?? null,
+            place: opportunity?.location ?? null,
+            type: opportunity?.chair_type ?? null,
+            just_this: opportunity?.id ?? null,
           } as Record<string, unknown>)[reach] || opportunity.id;
           const days = reach === "type" || (reach === "issuer" && tap.tap === "less_from_here") ? 90 : 42;
           await admin.from("oe_corrections").insert({
-            user_id: userId, card_id: tap.card_id, seniority_band: opportunity.seniority_band,
-            chair_type: opportunity.chair_type, reach, reach_value: String(reachValue ?? ""),
+            user_id: userId, card_id: tap.card_id, seniority_band: opportunity?.seniority_band ?? null,
+            chair_type: opportunity?.chair_type ?? null, reach, reach_value: String(reachValue ?? ""),
             expires_at: new Date(Date.now() + days * 86_400_000).toISOString(),
             what_we_said: { title }, what_he_changed: { tap: tap.tap, scope: reach },
           });
