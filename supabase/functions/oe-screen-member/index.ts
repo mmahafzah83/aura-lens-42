@@ -189,7 +189,11 @@ Deno.serve(async (req) => {
     for (const o of (opps ?? [])) {
       funnel.alive++;
       // Place means different things to different kinds; the kind's own row says which.
-      const withKind = { ...o, location_sensitivity: sensitivityOf(sensitivity, (o as any).kind) };
+      const withKind = {
+        ...o,
+        location_sensitivity: sensitivityOf(sensitivity, (o as any).kind),
+        level_gate_applies: levelGateApplies(levelApplies, (o as any).kind),
+      };
       const licence = screen(withKind, eligibility, evidence);
       const routeIsSpecific = hasRoute(o, (o as any).issuer?.domain ?? null)
         && String((o as any).access_state ?? "") === "identified_route";
