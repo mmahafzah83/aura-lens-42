@@ -277,9 +277,11 @@ Deno.serve(async (req) => {
           presentation_line: grounded ? line : null,
           ...(grounded ? {} : {
             screen_gate: "presentation", screen_outcome: "rejected",
+            gate_passed: false, lane_final: "write",
             rejection_sentence: "No line — nothing in your history says, in one sentence, why you would be presented for this.",
           }),
         }).eq("user_id", userId).eq("opportunity_id", o.id);
+
       }
     }
 
