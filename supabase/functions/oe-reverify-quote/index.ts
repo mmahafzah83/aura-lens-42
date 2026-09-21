@@ -189,7 +189,9 @@ Deno.serve(async (req) => {
       }
 
       const abandoned = !verified && attempts >= MAX_ATTEMPTS;
-      await admin.from("oe_opportunities").update({
+      // A verdict that fails to save is a verdict that never happened, so the
+      // write is checked and a refusal is recorded rather than swallowed.
+      const { error: saveError } = await admin.from("oe_opportunities").update({
         quote_verified: verified,
         quote_attempts: attempts,
         quote_last_attempt_at: new Date().toISOString(),
@@ -201,6 +203,14 @@ Deno.serve(async (req) => {
         ...(verified && hash ? { content_hash: hash } : {}),
         ...(newStored ? { raw: { ...(row.raw ?? {}), page_text: newStored } } : {}),
       }).eq("id", row.id);
+      if (saveError) {
+        await admin.from("ef_error_log").insert({
+          function_name: FN, severity: "error",
+          error_message: `Verdict not saved: ${saveError.message}`,
+          context: { opportunity_id: row.id, verified, reason },
+        });
+      }
+
 
       // A SHAPE MAY NOT OUTRANK ITS STATE. A seat that states no closing date
       // and no way in is not a confirmed opportunity; it is something we saw.
