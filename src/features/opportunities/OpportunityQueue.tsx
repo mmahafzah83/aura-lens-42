@@ -403,7 +403,11 @@ export function OpportunityQueue() {
 
     {drawerOpen && createPortal(<div className="oe-drawer-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}><aside className="oe-drawer" role="dialog" aria-modal="true" aria-label={t("queue_tuning_title", "What reaches you")}>
       <div className="oe-drawer-head"><h2>{t("queue_tuning_title", "What reaches you")}</h2><button type="button" onClick={() => setDrawerOpen(false)} aria-label={t("queue_close", "Close")}><X size={18}/></button></div>
+      {data.direction?.goal && <section className="oe-direction-summary">
+        <div className="oe-rule"><div><strong>{v("goal_sentence").replace("{goal}", v(`goal_${data.direction.goal}`)).replace("{date}", String(data.direction.goal_confirmed_at ?? "").slice(0, 10))}</strong></div><button type="button" className="v23-textlink" onClick={() => { setDrawerOpen(false); setGoalChanging(true); }}>{v("direction_change")}</button></div>
+      </section>}
       {data.direction?.priority && <section className="oe-direction-summary">
+
         <div className="oe-rule"><div><strong>{v("direction_priority_sentence").replace("{priority}", v(`priority_${data.direction.priority}`)).replace("{date}", data.direction.priority_set_on ?? "")}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("priority")}>{v("direction_change")}</button></div>
         {data.direction.mix && <div className="oe-rule"><div><strong>{v("direction_mix_sentence").replace("{mix}", v(`mix_${data.direction.mix}`))}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("mix")}>{v("direction_change")}</button></div>}
       </section>}
