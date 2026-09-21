@@ -297,6 +297,20 @@ Deno.serve(async (req) => {
 
       const g = runGates(identity, withKind, licence, routeIsSpecific, { ladder, member: memberPlace });
 
+      // The rubric's own refusal stands, and it is the rubric's own sentence
+      // the member reads.
+      if (g.outcome === "survivor") {
+        const verdict = rubricVerdict(String(o.id));
+        if (verdict.refuses) {
+          (g as any).outcome = "rejected";
+          (g as any).gate = "rubric";
+          const gap = verdict.gap ? secondPersonClause(verdict.gap) : "the requirements of this role are not met on your record";
+          (g as any).sentence = gap.charAt(0).toUpperCase() + gap.slice(1);
+        }
+      }
+
+
+
       if (licence.conditions.length) funnel.place_conditions++;
       if (g.outcome === "rejected") {
         if (g.gate === "profession") funnel.profession++;
