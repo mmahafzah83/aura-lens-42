@@ -796,7 +796,18 @@ Deno.serve(async (req) => {
 
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
     // Warmth never moves the score; it only breaks a tie in the ordering.
-    const storedAct = actPool.map((o: any) => ({
+    // A stored act row is not re-judged, so the same agreement test is applied
+    // to what is stored: a rubric that refuses it, or a writing-lane sentence
+    // on an act row, takes it out of the pick.
+    const storedAgrees = (o: any) => {
+      const m = o._match ?? {};
+      const ps = Array.isArray(m.scores?.passes) ? m.scores.passes : [];
+      if (ps.some((p: any) => p?.eligibility_met === false)) return false;
+      if (Number(m.score_avg ?? 0) < gateMin) return false;
+      if (/^your angle:/i.test(String(m.presentation_line ?? "").trim())) return false;
+      return true;
+    };
+    const storedAct = actPool.filter(storedAgrees).map((o: any) => ({
       o,
       scoreAvg: Number(o._match?.score_avg ?? 0),
       unstable: o._match?.unstable === true,
@@ -813,6 +824,7 @@ Deno.serve(async (req) => {
         total: Number(o._match?.total_count ?? 0),
       },
     }));
+
     const freshAct = new Map(judged
       .filter((j) => j.o._reachable === true && j.gatePassed)
       .map((j) => [String(j.o.id), j]));
