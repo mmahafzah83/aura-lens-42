@@ -1,0 +1,1 @@
+alter table public.oe_opportunities add column if not exists dead_reason text;

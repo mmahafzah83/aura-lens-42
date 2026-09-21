@@ -128,12 +128,16 @@ Deno.serve(async (req) => {
 
       // F1. The floor is applied first, then every face — 'avoid' included —
       // is divided by the new sum, so a member's faces sum to exactly 1.000.
+      // Below stage 2 NOTHING is written back: the renormalisation was itself a
+      // weight move, and it is the thing that moved the weights at 05:02.
+      if (!mayMoveWeights) { counts.held_at_stage++; continue; }
       const floor = 0.05;
       const raw = [...next.entries()].map(([id, value]) => ({ id, ...value, weight: Math.max(floor, value.weight) }));
       const total = raw.reduce((sum, face) => sum + face.weight, 0) || 1;
       for (const face of raw) {
         await admin.from("oe_faces").update({ weight: face.weight / total, few_shot: face.few_shot }).eq("id", face.id);
       }
+
 
     }
 

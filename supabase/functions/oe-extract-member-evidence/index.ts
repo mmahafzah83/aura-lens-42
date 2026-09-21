@@ -24,6 +24,14 @@ import {
 const FN = "oe-extract-member-evidence";
 const MODEL = "openai/gpt-6-astra";
 
+/** The member's own record: what he wrote, uploaded or answered himself.
+ *  Anything else is a page he read, and it never grounds a card. */
+const OWN_RECORD_SOURCES = new Set([
+  "documents", "linkedin_profile_snapshots", "linkedin_posts",
+  "diagnostic_profiles", "assessment_sessions",
+]);
+
+
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -135,7 +143,10 @@ Deno.serve(async (req) => {
         source_table: meta.source_table, source_id: meta.source_id ?? null,
         source_field: meta.source_field, position_ref: c.position_ref,
         confidence: meta.confidence,
+        // His own record, or reading material. Only the first may ground a card.
+        own_record: OWN_RECORD_SOURCES.has(meta.source_table),
       }).select("id").maybeSingle();
+
       if (error) {
         if (String(error.code) === "23505") counts.duplicates++;
         else await logEfError(admin, { function_name: FN, error: new Error(`${group}: ${error.message}`), severity: "low", context: { user_id: userId } });

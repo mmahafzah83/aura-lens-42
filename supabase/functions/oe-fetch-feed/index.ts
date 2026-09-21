@@ -144,7 +144,18 @@ function stripTags(html: string): string {
     .replace(/&gt;/g, ">");
 }
 
+/** The text we keep is the text the quote is judged against. When the quote
+ *  sits past the first slice, the window around it is kept instead. */
+function keptPageText(text: string, quote: string, size = 12_000): string {
+  if (text.length <= size) return text;
+  const idx = quote.length > 10 ? text.indexOf(quote) : -1;
+  if (idx < 0) return text.slice(0, size);
+  const start = Math.max(0, idx - Math.floor(size / 2));
+  return text.slice(start, start + size);
+}
+
 function canonicalise(raw: string): string {
+
   try {
     const u = new URL(raw);
     u.hash = "";
@@ -824,15 +835,19 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // 3. VERIFY the quote against the page.
+        // 3. VERIFY the quote against the page text WE KEEP. Verifying against
+        // text we then throw away is how a "verified" quote ends up absent from
+        // the record: the verdict and the stored copy must be the same text.
+        const storedText = keptPageText(String(cand.text ?? ""), String(rec.evidence_quote ?? ""));
         const quote = normaliseForQuote(rec.evidence_quote);
-        const pageNorm = normaliseForQuote(cand.text);
+        const pageNorm = normaliseForQuote(storedText);
         const quoteVerified = quote.length > 10 && pageNorm.includes(quote);
         let confidence = Number(rec.extraction_confidence ?? 0.5);
         if (!quoteVerified) {
           if (rec.time_kind === "open_now") { counts.dropped_no_quote++; continue; }
           confidence = Math.min(confidence, 0.5);
         }
+
 
         // 4. ISSUER
         const issuerId = await resolveIssuer(admin, rec.issuer_raw || feed.issuer_hint || "", cand.url, rec.sector ?? null);
@@ -945,7 +960,7 @@ Deno.serve(async (req) => {
             prompt_version: READER_VERSION,
             model: MODEL,
             lane,
-            page_text: String(cand.text ?? "").slice(0, 12_000),
+            page_text: storedText,
             ...(cand.extra ?? {}),
           },
         };

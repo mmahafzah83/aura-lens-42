@@ -21,7 +21,11 @@ Deno.serve(async (req) => {
   const startedAt = new Date().toISOString();
   const counts = { members: 0, promoted: 0, proposals: 0 };
   try {
-    const { data: served, error } = await admin.from("oe_serves").select("user_id,tap,outcome");
+    // A test serve is not a member's decision. It carries channel='test' or no
+    // card at all, and it may never count towards a stage or a label.
+    const { data: served, error } = await admin.from("oe_serves")
+      .select("user_id,tap,outcome,channel,card_id")
+      .not("channel", "eq", "test").not("card_id", "is", null);
     if (error) throw new Error(error.message);
     const byUser = new Map<string, { labels: number; outcomes: number }>();
     for (const row of served ?? []) {
@@ -33,7 +37,9 @@ Deno.serve(async (req) => {
 
     for (const [userId, tally] of byUser) {
       counts.members++;
-      const { data: labelRows } = await admin.from("oe_labels").select("id").eq("user_id", userId);
+      const { data: labelRows } = await admin.from("oe_labels")
+        .select("id").eq("user_id", userId).eq("excluded", false);
+
       const labels = Math.max(tally.labels, labelRows?.length ?? 0);
       const outcomes = tally.outcomes;
       const stage = labels >= 50 && outcomes >= 10 ? 2 : labels >= 15 ? 1 : 0;
