@@ -418,6 +418,24 @@ export function OpportunityQueue() {
   </section>;
 }
 
+/* One question, five answers, asked before anything else and asked whether or
+   not there is a card. The engine may mark its reading of the profile; the
+   member's hand is the only thing that sets the goal. */
+function GoalCard({ direction, busy, v, onChoose, onDefer }: { direction: Direction | null; busy: boolean; v: ReturnType<typeof useVocab>; onChoose: (goal: Goal) => void; onDefer: () => void }) {
+  const proposed = direction?.goal_proposed ?? null;
+  return <AuraCard hover="none" className="oe-direction-card" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)", borderRadius: 20 }}>
+    <h2>{v("goal_question")}</h2>
+    <p>{v("goal_sub")}</p>
+    <div className="oe-direction-options">
+      {goals.map((goal) => <Button key={goal} type="button" variant="outline" className={`oe-direction-option${direction?.goal === goal ? " is-selected" : ""}`} disabled={busy} onClick={() => onChoose(goal)} aria-pressed={direction?.goal === goal}>
+        <span><strong>{v(`goal_${goal}`)}</strong>{proposed === goal && <small>{v("goal_proposed_marker")}</small>}</span>
+      </Button>)}
+    </div>
+    <button type="button" className="v23-textlink oe-direction-later" disabled={busy} onClick={onDefer}>{v("goal_not_now")}</button>
+  </AuraCard>;
+}
+
+
 function DirectionCard({ kind, direction, busy, v, onChoose, onDefer }: { kind: Exclude<DirectionQuestion, null>; direction: Direction | null; busy: boolean; v: ReturnType<typeof useVocab>; onChoose: (value: Priority | Mix) => void; onDefer: () => void }) {
   const isRenewal = kind === "priority" && Boolean(direction?.priority);
   const options = kind === "priority" ? priorities : mixes;
