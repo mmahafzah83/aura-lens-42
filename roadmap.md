@@ -89,3 +89,11 @@
 - [ ] A1 second-person rewrite covers the verb (has→have, is→are, was→were, past unchanged, his→your, him→you); deterministic
 - [ ] A2 oe_opportunities.cost_of_door (text, quote-verified); populate for today's card; vocabulary door_cost_en/door_cost_ar; act card shows it instead of the direct-application line; exclude fee/price requirements from matching and rebuild the line
 - [ ] C oe_issuer_people from stored page text of all 47 alive market signals; in the reader, not a one-off; route_kind='named_person' + route_url; identified_route only where the role in the matter is stated
+
+## Step 32 — member Opportunities tab
+- [ ] Plain-language grouped history with no internal JSON, ids, or codes
+- [ ] 375px decision, decline, confirmation, next-item, and empty states
+- [ ] Suggested-but-unselected primary goal, secondary goals, and expiry reconfirmation
+- [ ] Human-language “What reaches you” drawer with progressive disclosure
+- [ ] `oe_app_queue_core` history payload and `oe_goal_save` secondary-goal support
+- [ ] Seven dated self-checks, including available 375px screenshots
