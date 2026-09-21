@@ -94,6 +94,21 @@ function visibleText(html: string): string {
 
 const norm = (s: string) => s.toLowerCase().replace(/[\u2018\u2019\u201c\u201d]/g, "'").replace(/\s+/g, " ").trim();
 
+/** Every anchor on the page, as href and text — so a list page can be found rather than guessed. */
+function anchors(html: string, base: string): Array<{ href: string; text: string }> {
+  const out: Array<{ href: string; text: string }> = [];
+  const re = /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    let href = m[1];
+    try { href = new URL(href, base).toString(); } catch { continue; }
+    const text = visibleText(m[2]).slice(0, 160);
+    out.push({ href, text });
+  }
+  return out;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
