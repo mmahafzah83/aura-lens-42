@@ -49,7 +49,10 @@ const PRESENTATION_SYSTEM =
   "Never invent experience.";
 
 /** One streamed call. Reasoning models run for minutes; never buffer, never time out on a timer. */
-async function askForLine(key: string, payload: string): Promise<{ line: string | null; position: string | null }> {
+async function askForLine(
+  key: string,
+  payload: string,
+): Promise<{ line: string | null; position: string | null; requirement: string | null }> {
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
@@ -70,8 +73,9 @@ async function askForLine(key: string, payload: string): Promise<{ line: string 
             properties: {
               line: { type: ["string", "null"] },
               position: { type: ["string", "null"] },
+              requirement: { type: ["string", "null"] },
             },
-            required: ["line", "position"],
+            required: ["line", "position", "requirement"],
           },
         },
       },
