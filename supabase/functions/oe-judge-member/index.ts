@@ -955,24 +955,24 @@ Deno.serve(async (req) => {
       const ranked = writePool
         .map((o) => ({ o, score: merged.get(o.id)?.score ?? 0 }))
         .sort((a, b) => b.score - a.score);
-      // A card carries a band or it is not made. The band is this record's
-      // standing among today's candidates — a rank, never a percentage.
-      const bandForRank = (rank: number, of: number): string | null => {
-        if (!Number.isFinite(rank) || rank < 1 || of < 1) return null;
-        if (rank === 1) return "strong";
-        if (rank <= Math.max(2, Math.ceil(of / 2))) return "worth_a_look";
-        return "stretch";
-      };
+      // A card carries the band its own match row holds. The band is judged
+      // once, on the match, and only ever copied here — never recomputed.
+      const judgedBands = new Map<string, { fit: string | null; win: string | null; matchId: string | null }>(
+        judged.map((j: any) => [j.o.id, { fit: j.fitBand ?? null, win: j.winBand ?? null, matchId: j.matchId ?? null }]),
+      );
       for (const [idx, { o }] of ranked.slice(0, 3).entries()) {
-        const writeBand = bandForRank(idx + 1, ranked.length);
+        void idx;
+        const bands = judgedBands.get(o.id) ?? null;
+        const writeBand = bands?.fit ?? null;
         if (!writeBand) {
           await admin.from("oe_learning_events").insert({
-            user_id: userId, process: "card_withheld", trigger_reason: "no_band_computable",
+            user_id: userId, process: "card_withheld", trigger_reason: "no_band_on_match",
             detail: { lane: "write", opportunity_id: o.id, card_date: cardDate, pool_size: ranked.length },
             applied: false,
           });
           continue;
         }
+
 
         const oppVec = asVector(o.embedding);
         const mine = await memberEvidence(admin, userId, oppVec);
@@ -1022,13 +1022,14 @@ Deno.serve(async (req) => {
           ...(opening ? [{ text: opening, label: vocab("open_with", lang), cites: [] as any[] }] : []),
         ];
         const card = await writeCard(admin, userId, cardDate, {
-          opportunity_id: o.id, match_id: null,
+          opportunity_id: o.id, match_id: bands?.matchId ?? null,
           why_lines: lines, gap_line: null,
           cited_ids: knowCites,
           lane: "write",
           quote: o.evidence_quote,
           clock_text: vocab("nothing_to_act_on", lang),
-          fit_band: writeBand, win_band: null,
+          fit_band: writeBand, win_band: bands?.win ?? null,
+
           channel: "email",
         }, {
           rules: ruleIds,
