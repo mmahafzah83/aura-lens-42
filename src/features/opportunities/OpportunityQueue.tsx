@@ -110,7 +110,9 @@ export function OpportunityQueue() {
   const v = useVocab("en");
   const t = (key: string, fallback: string) => v(key) || fallback;
 
-  const setView = (next: View) => { const copy = new URLSearchParams(params); next === "today" ? copy.delete("view") : copy.set("view", next); setParams(copy); };
+  const setView = (next: View) => { const copy = new URLSearchParams(params); next === "today" ? copy.delete("view") : copy.set("view", next); if (next !== "history") copy.delete("f"); setParams(copy); };
+  const setHistoryFilter = (next: HistoryFilter) => { const copy = new URLSearchParams(params); copy.set("view", "history"); next === "all" ? copy.delete("f") : copy.set("f", next); setParams(copy); };
+
   const load = useCallback(async () => {
     setLoading(true);
     const { data: auth } = await supabase.auth.getUser();
