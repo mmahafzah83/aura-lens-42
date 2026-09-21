@@ -852,7 +852,10 @@ Deno.serve(async (req) => {
             const reader = readerFor(page.finalUrl, page.body);
             kind = reader.kind;
             readUrl = reader.feed ?? page.finalUrl;
+            // A nomination page is read as announcements, whatever its markup.
+            if (rule.type === "board_nominations" && !reader.feed) kind = "announcements";
             health = "ok";
+
           } else {
             health = "unreadable";
             access = access ?? (page.status === 403 ? "bot_defended" : "no_response");
