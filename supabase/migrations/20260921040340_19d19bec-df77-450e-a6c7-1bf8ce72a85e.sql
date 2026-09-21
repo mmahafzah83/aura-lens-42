@@ -1,0 +1,1 @@
+SELECT 1 AS deployed_judge_fix_already_active;

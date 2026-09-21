@@ -1,0 +1,1 @@
+SELECT 1 AS daily_judge_schedule_already_active;
