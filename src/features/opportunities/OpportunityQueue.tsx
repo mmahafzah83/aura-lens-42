@@ -92,7 +92,9 @@ export function OpportunityQueue() {
   const [proposalShown, setProposalShown] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState("");
-  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
+  const rawFilter = params.get("f") as HistoryFilter | null;
+  const historyFilter: HistoryFilter = rawFilter && ["all", "right", "declined", "flagged"].includes(rawFilter) ? rawFilter : "all";
+
   const [sheetOpen, setSheetOpen] = useState(false);
   const [directionStep, setDirectionStep] = useState<DirectionStep>("goal");
   const [directionChoice, setDirectionChoice] = useState<Goal | Priority | Mix | null>(null);
