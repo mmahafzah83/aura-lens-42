@@ -491,6 +491,21 @@ const BANNED_WORDS_V = [
 const BANNED_WORDS_RE = new RegExp(`\\b(?:${BANNED_WORDS_V.join("|")})\\b`, "i");
 /** "authority" as a noun: not preceded by "the ... of", not "authoritative". */
 const AUTHORITY_NOUN_RE = /\bauthority\b(?!\s*=)/i;
+
+/**
+ * THE ARABIC BAN. The same policy as the English one, in the language it is
+ * written in: «تم» is the limp passive where a verb will do, «باب» is the door
+ * metaphor we do not use for a member, «مدير تنفيذي» says chief executive and
+ * must not stand for an ordinary director, and «الفجوة» is a gap named as a
+ * thing instead of said plainly.
+ */
+const ARABIC_BANNED_RE = /(تم\s|\bباب\b|باب\s|مدير تنفيذي|الفجوة)/;
+const ARABIC_SAY = {
+  "تم": "use the verb itself (حُفظ، أُرسل)",
+  "باب": "say the way in, not the door",
+  "مدير تنفيذي": "that is a chief executive — a director is مدير",
+  "الفجوة": "say what is missing",
+};
 /** "leverage" used as a verb: followed by an article or a noun phrase. */
 const LEVERAGE_VERB_RE = /\bleverage(?:s|d|ing)?\s+(?:the|your|our|his|her|its|their|a|an|this|these)\b/i;
 
@@ -604,6 +619,7 @@ function findPassV(rel, rawLine, line) {
     else if (AUTHORITY_NOUN_RE.test(lit) && !/authoritative/i.test(lit))
       out.push({ kind: "banned word", match: "authority (as a noun)" });
     else if ((m = lit.match(LEVERAGE_VERB_RE))) out.push({ kind: "banned word", match: m[0] });
+    if ((m = lit.match(ARABIC_BANNED_RE))) out.push({ kind: "banned Arabic word", arabic: true, match: `${m[0]} — ${ARABIC_SAY[m[0].trim()] ?? "say it plainly"}` });
 
     if ((m = lit.match(SIMPLE_RE))) {
       const w = m[0].toLowerCase();
@@ -690,7 +706,10 @@ export function runVocabularyCheck() {
       if (/vocab-ok/.test(rawLines[idx] || "")) return;
       for (const v of findPassV(rel, rawLines[idx] || "", line)) {
         const hit = { rel, line: idx + 1, text: (rawLines[idx] || "").trim().slice(0, 160), match: v.match, kind: v.kind };
-        if (isMemberFacing(rel)) passV.push(hit); else passVDeferred.push(hit);
+        // The Arabic ban is enforced where it was written — the opportunity
+        // screens — and listed everywhere else until those surfaces are redone.
+        const enforced = v.arabic ? rel.startsWith("src/features/opportunities/") : isMemberFacing(rel);
+        if (enforced) passV.push(hit); else passVDeferred.push(hit);
       }
       const banned = findBannedPhrase(line);
       const match = banned || findHit(line);
