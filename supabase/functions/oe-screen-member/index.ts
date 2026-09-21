@@ -280,10 +280,28 @@ Deno.serve(async (req) => {
             context: { stage: "presentation_line", opportunity_id: o.id },
           });
         }
-        // The line must rest on a position he actually held, quoted back.
-        const grounded = !!line && !!position
-          && positionList.some((p) => p.toLowerCase() === String(position).toLowerCase().trim());
-        if (grounded) { funnel.presented++; } else { funnel.no_line++; line = null; }
+        // The line must rest on a position he actually held, quoted back. The
+        // position must still be one of his own; only spacing, punctuation and
+        // case are forgiven, so a real position is not thrown away over a comma.
+        const norm = (s: string) =>
+          s.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+        const want = position ? norm(String(position)) : "";
+        const grounded = !!line && !!want
+          && positionList.some((p) => {
+            const held = norm(p);
+            return held === want || held.includes(want) || want.includes(held);
+          });
+        if (grounded) { funnel.presented++; } else {
+          funnel.no_line++;
+          if (line || position) {
+            await logEfError(admin, {
+              function_name: FN, error: new Error("presentation line not grounded"),
+              severity: "warn",
+              context: { opportunity_id: o.id, returned_position: position, held: positionList },
+            });
+          }
+          line = null;
+        }
         await admin.from("oe_matches").update({
           presentation_line: grounded ? line : null,
           ...(grounded ? {} : {
