@@ -608,6 +608,7 @@ export function runGates(
     gate: "scored", outcome: "survivor", sentence: null, role_profession: null,
     profession_relation: null, employer_tier: null, level_direction: null,
     standing_gap: null, bridge: null, stretch: false,
+    profession_source: null, profession_source_quote: null, grade_basis: null,
   };
 
   if (licence.outcome === "excluded") {
@@ -625,6 +626,7 @@ export function runGates(
   const prof = professionGate(identity, opportunity);
   const withProf: GateResult = {
     ...base, role_profession: prof.role, profession_relation: prof.relation, bridge: prof.bridge,
+    profession_source: prof.read.source, profession_source_quote: prof.read.quote,
   };
   if (prof.relation === "different") {
     return { ...withProf, gate: "profession", outcome: "rejected", sentence: prof.sentence };
@@ -638,13 +640,14 @@ export function runGates(
       ...withProf,
       gate: "scored", outcome: "survivor", sentence: null,
       employer_tier: employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null).tier,
-      level_direction: "not_applicable",
+      level_direction: "not_applicable", grade_basis: "none",
     };
   }
 
   const lvl = levelGate(identity, opportunity, routeIsSpecific, ladder);
   const withLevel: GateResult = {
     ...withProf, employer_tier: lvl.tier, level_direction: lvl.direction, standing_gap: lvl.gap,
+    grade_basis: lvl.basis,
   };
   if (lvl.direction === "below" || (lvl.direction === "lateral" && lvl.sentence)) {
     return { ...withLevel, gate: "level", outcome: "rejected", sentence: lvl.sentence };
