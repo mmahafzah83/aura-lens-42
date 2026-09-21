@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
 
     // ── every live record ────────────────────────────────────────────────
     const { data: opps, error: oppsError } = await admin.from("oe_opportunities")
-      .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
+      .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
 
