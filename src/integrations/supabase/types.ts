@@ -7947,30 +7947,6 @@ export type Database = {
         }
         Relationships: []
       }
-      tmp_step26_before: {
-        Row: {
-          access_state: string | null
-          id: string | null
-          name: string | null
-          new_kind: string | null
-          old_kind: string | null
-        }
-        Insert: {
-          access_state?: string | null
-          id?: string | null
-          name?: string | null
-          new_kind?: string | null
-          old_kind?: string | null
-        }
-        Update: {
-          access_state?: string | null
-          id?: string | null
-          name?: string | null
-          new_kind?: string | null
-          old_kind?: string | null
-        }
-        Relationships: []
-      }
       training_logs: {
         Row: {
           created_at: string
