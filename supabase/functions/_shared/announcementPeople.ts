@@ -16,7 +16,7 @@
 
 export type NamedPerson = {
   full_name: string;
-  role_title: string | null;
+  role_title: string;
   /** True only when the page presents the person as speaking for the organisation. */
   is_public_spokesperson: boolean;
   /** True only when the page states this person's role IN THIS ANNOUNCEMENT. */
@@ -29,7 +29,13 @@ export type NamedPerson = {
 export const PEOPLE_SYSTEM =
   `You read one stored announcement and list every person it names in a public professional role. ` +
   `Return strict JSON {people:[{full_name, role_title, is_public_spokesperson, role_in_matter, role_in_matter_reason, quote}]}. ` +
-  `Include only people the text itself names. role_title is the public role the text gives them, or null. ` +
+  `Include a person ONLY when all three hold: the text states their role; that role is AT the organisation ` +
+  `making the announcement, or explicitly IN the announced matter (the person appointed, the chair of the ` +
+  `nomination committee, the executive taking over, the spokesperson quoted for the organisation); and one ` +
+  `sentence of the text carries BOTH the name and that role. ` +
+  `Never include a head of state, royalty, a ceremonial figure, a patron, a guest or an attendee named as ` +
+  `context or background — they are not a way in. Never include the writer of the article. ` +
+  `role_title is that stated role, verbatim from the text. ` +
   `is_public_spokesperson is true only when the text presents the person as speaking for the organisation. ` +
   `role_in_matter is true ONLY when the text states what this person does IN THE MATTER the announcement is about ` +
   `(they are the one appointed, the one leaving, the one who decides, the one to contact, the one chairing it). ` +
@@ -50,6 +56,13 @@ const A_NAME = /^[\p{L}][\p{L}'’.\- ]{3,79}$/u;
  * A byline is not a public role at the organisation. The person who wrote the
  * article, or reported it, is not part of the matter and is not stored.
  */
+/**
+ * Ceremonial and political figures named as context, patrons or attendees. A
+ * head of state in a paragraph is not a route, whatever else the page says.
+ */
+const CEREMONIAL =
+  /\b(king|queen|crown prince|prince|princess|royal highness|his majesty|head of state|patron|first lady|president of the republic)\b|الملك|ولي العهد|صاحب السمو|سمو الأمير|الأمير|رئيس الجمهورية/i;
+
 const A_BYLINE = /\b(writer|author|reporter|correspondent|journalist|editor|editorial|contributor|staff)\b|كاتب|كاتبة|محرر|مراسل|صحفي|صحفية/i;
 
 /** Keep only what the stored page can prove. */
@@ -63,15 +76,22 @@ export function verifyPeople(raw: unknown, pageText: string): NamedPerson[] {
 
   for (const p of list) {
     const full_name = String(p?.full_name ?? "").trim();
-    const role_title = String(p?.role_title ?? "").trim() || null;
+    const role_title = String(p?.role_title ?? "").trim();
     const quote = String(p?.quote ?? "").trim();
 
     if (!A_NAME.test(full_name)) continue;
-    if (CONTACT.test(full_name) || (role_title && CONTACT.test(role_title)) || CONTACT.test(quote)) continue;
-    if (role_title && A_BYLINE.test(role_title)) continue;
+    // (a) A role must be stated. No role, no row.
+    if (!role_title) continue;
+    if (CONTACT.test(full_name) || CONTACT.test(role_title) || CONTACT.test(quote)) continue;
+    if (A_BYLINE.test(role_title)) continue;
+    // (b) Ceremonial and political figures are context, never a route.
+    if (CEREMONIAL.test(role_title)) continue;
     // The name itself must be in the page, and so must the sentence that names it.
     if (!hay.includes(norm(full_name))) continue;
     if (norm(quote).length < 12 || !hay.includes(norm(quote))) continue;
+    // (c) One sentence must carry both the name and the role.
+    if (!norm(quote).includes(norm(full_name))) continue;
+    if (!norm(quote).includes(norm(role_title))) continue;
 
     const key = norm(full_name);
     if (seen.has(key)) continue;
@@ -80,7 +100,7 @@ export function verifyPeople(raw: unknown, pageText: string): NamedPerson[] {
     const reason = String(p?.role_in_matter_reason ?? "").trim();
     out.push({
       full_name,
-      role_title: role_title ? role_title.slice(0, 160) : null,
+      role_title: role_title.slice(0, 160),
       is_public_spokesperson: p?.is_public_spokesperson === true,
       role_in_matter: p?.role_in_matter === true && reason.length > 0,
       role_in_matter_reason: reason ? reason.slice(0, 240) : null,
