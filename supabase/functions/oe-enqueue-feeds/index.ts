@@ -186,6 +186,7 @@ Deno.serve(async (req) => {
       started_at: startedAt,
       finished_at: new Date().toISOString(),
       outcome: "error",
+      severity: "error",
       counts: { enqueued, skipped_terms: skippedTerms, skipped_cadence: skippedCadence },
       error: String((e as Error).message).slice(0, 500),
     });
