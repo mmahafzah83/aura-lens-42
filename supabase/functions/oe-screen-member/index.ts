@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
     if (ladderError) throw new Error(`employer ladder: ${ladderError.message}`);
     const ladder = (ladderRows ?? []) as LadderRow[];
     const sensitivity = await loadLocationSensitivity(admin);
+    const levelApplies = await loadLevelGateApplies(admin);
 
     // ── the member, derived from his own snapshot ────────────────────────
     const { data: snap } = await admin
