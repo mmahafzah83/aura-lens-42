@@ -10,6 +10,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { isAggregator, normaliseForQuote } from "../_shared/oeGuards.ts";
 import { parseLevel } from "../_shared/oeEligibility.ts";
+import { SCOPE_EVIDENCE_INSTRUCTION, verifyScopeEvidence } from "../_shared/scopeEvidence.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,7 +81,8 @@ const P2_SYSTEM =
   `A calendar, directory, aggregator, newsroom index, listing page, company-governance profile page or 'about us' page is NEVER an opportunity — ` +
   `only one specific event, vacancy, notice, mandate, tender or announcement is. If the page describes many events or many roles, return is_opportunity=false. ` +
   `If the page reports an event or a call that has already taken place or already closed, is_opportunity=false — a recap is not a chair. ` +
-  `route_url must be a real link found on the page; never invent one, and never use the page's own address unless that page itself takes the submission.`;
+  `route_url must be a real link found on the page; never invent one, and never use the page's own address unless that page itself takes the submission. ` +
+  SCOPE_EVIDENCE_INSTRUCTION;
 
 /** A chair whose date has passed is not a chair. */
 function pastEvent(rec: Record<string, any>): boolean {
@@ -936,6 +938,9 @@ Deno.serve(async (req) => {
           language: rec.language === "ar" ? "ar" : "en",
           extraction_confidence: confidence,
           alive: true,
+          // What the page STATES about accountability, each fact carrying the
+          // sentence it came from; a quote not found in the page is dropped.
+          scope_evidence: verifyScopeEvidence(rec.scope_evidence, String(cand.text ?? "")),
           raw: {
             prompt_version: READER_VERSION,
             model: MODEL,

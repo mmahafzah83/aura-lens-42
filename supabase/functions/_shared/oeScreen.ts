@@ -86,6 +86,40 @@ export function classifyProfession(...parts: Array<string | null | undefined>): 
   return null;
 }
 
+export type ProfessionRead = {
+  profession: Profession | null;
+  source: "title" | "accountability_sentence" | "none";
+  quote: string | null;
+};
+
+/**
+ * The profession a RECORD carries. The title is read first, because a title is
+ * an employer's own statement of accountability. Only when the title says
+ * nothing, or says nothing more than "general management", may the record's
+ * accountability sentences be read — and only those sentences, never the whole
+ * body, which names every technology the employer sells. A profession
+ * established that way is recorded with the sentence that established it.
+ */
+export function professionOf(opportunity: any): ProfessionRead {
+  const fromTitle = classifyProfession(opportunity?.title, opportunity?.scope);
+  if (fromTitle && fromTitle !== "general_management") {
+    return { profession: fromTitle, source: "title", quote: null };
+  }
+  const sentences: string[] = Array.isArray(opportunity?.scope_evidence?.accountability_sentences)
+    ? opportunity.scope_evidence.accountability_sentences
+    : [];
+  for (const sentence of sentences) {
+    const p = classifyProfession(sentence);
+    if (p && p !== "general_management") {
+      return { profession: p, source: "accountability_sentence", quote: String(sentence).slice(0, 400) };
+    }
+  }
+  return fromTitle
+    ? { profession: fromTitle, source: "title", quote: null }
+    : { profession: null, source: "none", quote: null };
+}
+
+
 /**
  * Adjacency. A neighbouring profession is a bridge ONLY when a named position
  * in the member's own history sits in it. Sector never appears here, and never
@@ -227,6 +261,34 @@ export function gradeOf(title?: string | null): { rank: number; label: string } 
   for (const [rank, label, re] of GRADES) if (re.test(t)) return { rank, label };
   return null;
 }
+
+/**
+ * Seniority is decision rights, magnitude and scope — not a title. When the
+ * posting states any of those, they decide the grade and the title becomes the
+ * tie-breaker (a title reading higher than the stated scope is not thrown away).
+ * When the posting states none of them, the title stands alone.
+ */
+export type GradeRead = { rank: number; label: string; basis: "title" | "proxies" } | null;
+
+export function gradeFrom(opportunity: any): GradeRead {
+  const title = gradeOf(opportunity?.title) ?? gradeOf(opportunity?.scope);
+  const ev = opportunity?.scope_evidence ?? null;
+
+  const reports = Number(ev?.direct_reports?.value);
+  const scope = String(ev?.organisational_scope?.value ?? "");
+  const hasPnl = !!ev?.budget_or_pnl;
+
+  let proxy: { rank: number; label: string } | null = null;
+  if (scope === "enterprise" || hasPnl) proxy = { rank: 8, label: "enterprise scope or stated profit and loss" };
+  else if (scope === "division" || (Number.isFinite(reports) && reports >= 30)) proxy = { rank: 7, label: "division scope or thirty or more reports" };
+  else if (scope === "function" || (Number.isFinite(reports) && reports >= 8)) proxy = { rank: 5, label: "function scope or eight or more reports" };
+  else if (scope === "team") proxy = { rank: 4, label: "team scope" };
+
+  if (!proxy) return title ? { ...title, basis: "title" } : null;
+  if (title && title.rank > proxy.rank) return { ...title, basis: "proxies" };
+  return { ...proxy, basis: "proxies" };
+}
+
 
 // ── THE MEMBER, DERIVED ────────────────────────────────────────────────────
 
@@ -385,25 +447,31 @@ export type GateResult = {
   standing_gap: number | null;
   bridge: string | null;
   stretch: boolean;
+  /** how the record's profession and grade were established, so a verdict is auditable */
+  profession_source: "title" | "accountability_sentence" | "none" | null;
+  profession_source_quote: string | null;
+  grade_basis: "title" | "proxies" | "none" | null;
 };
 
 /** GATE 2 — is this his profession? A sector match may never rescue it. */
 export function professionGate(identity: MemberIdentity, opportunity: any) {
-  const role = classifyProfession(opportunity?.title, opportunity?.scope);
+  const read = professionOf(opportunity);
+  const role = read.profession;
   const held = new Map(identity.professions.map((p) => [p.profession, p.positions]));
 
   if (!role) {
-    return { role, relation: "unstated" as const, bridge: null, sentence: null };
+    return { role, read, relation: "unstated" as const, bridge: null, sentence: null };
   }
   const own = held.get(role);
   if (own?.length) {
-    return { role, relation: "same" as const, bridge: own[0], sentence: null };
+    return { role, read, relation: "same" as const, bridge: own[0], sentence: null };
   }
   for (const neighbour of ADJACENT[role] ?? []) {
     const via = held.get(neighbour);
     if (via?.length) {
       return {
         role,
+        read,
         relation: "adjacent" as const,
         bridge: `${via[0]} — ${PROFESSION_LABEL[neighbour]} bridges to ${PROFESSION_LABEL[role]}`,
         sentence: null,
@@ -413,6 +481,7 @@ export function professionGate(identity: MemberIdentity, opportunity: any) {
   const mine = identity.professions.map((p) => p.label).join(", ") || "not established from your history";
   return {
     role,
+    read,
     relation: "different" as const,
     bridge: null,
     sentence:
@@ -431,17 +500,20 @@ export function levelGate(
   const mine = identity.highest_standing;
   const placed = employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null);
   const tier = placed.tier;
-  const grade = gradeOf(opportunity?.title) ?? gradeOf(opportunity?.scope);
+  // The grade is read from what the posting states about scope, reports and
+  // profit and loss where it states them, and from the title where it does not.
+  const grade = gradeFrom(opportunity);
+  const basis = (grade?.basis ?? "none") as "title" | "proxies" | "none";
 
   if (mine.standing === null || !grade) {
     return {
-      direction: "unknown" as const, gap: null, tier, placed, sentence: null,
+      direction: "unknown" as const, gap: null, tier, placed, sentence: null, basis,
       reason: !grade ? "role_grade_unreadable" : "member_standing_unreadable",
     };
   }
   if (tier === "unknown") {
     return {
-      direction: "unknown" as const, gap: null, tier, placed,
+      direction: "unknown" as const, gap: null, tier, placed, basis,
       sentence: null, reason: "employer_tier_unknown",
     };
   }
@@ -453,19 +525,19 @@ export function levelGate(
 
   if (gap <= -1) {
     return {
-      direction: "below" as const, gap, tier, placed, reason: null,
+      direction: "below" as const, gap, tier, placed, reason: null, basis,
       sentence: `Below your standing — ${held}; ${thisOne}.`,
     };
   }
   if (gap < 1) {
-    if (routeIsSpecific) return { direction: "lateral" as const, gap, tier, placed, sentence: null, reason: null };
+    if (routeIsSpecific) return { direction: "lateral" as const, gap, tier, placed, sentence: null, reason: null, basis };
     return {
-      direction: "lateral" as const, gap, tier, placed, reason: null,
+      direction: "lateral" as const, gap, tier, placed, reason: null, basis,
       sentence: `Level with what you already hold — ${held} — and it opens no route your current seat does not already give you.`,
     };
   }
-  if (gap < 2) return { direction: "one_above" as const, gap, tier, placed, sentence: null, reason: null };
-  return { direction: "two_plus" as const, gap, tier, placed, sentence: null, reason: null };
+  if (gap < 2) return { direction: "one_above" as const, gap, tier, placed, sentence: null, reason: null, basis };
+  return { direction: "two_plus" as const, gap, tier, placed, sentence: null, reason: null, basis };
 }
 
 // ── GATE 1, NAMED HONESTLY ─────────────────────────────────────────────────
@@ -536,6 +608,7 @@ export function runGates(
     gate: "scored", outcome: "survivor", sentence: null, role_profession: null,
     profession_relation: null, employer_tier: null, level_direction: null,
     standing_gap: null, bridge: null, stretch: false,
+    profession_source: null, profession_source_quote: null, grade_basis: null,
   };
 
   if (licence.outcome === "excluded") {
@@ -553,6 +626,7 @@ export function runGates(
   const prof = professionGate(identity, opportunity);
   const withProf: GateResult = {
     ...base, role_profession: prof.role, profession_relation: prof.relation, bridge: prof.bridge,
+    profession_source: prof.read.source, profession_source_quote: prof.read.quote,
   };
   if (prof.relation === "different") {
     return { ...withProf, gate: "profession", outcome: "rejected", sentence: prof.sentence };
@@ -566,13 +640,14 @@ export function runGates(
       ...withProf,
       gate: "scored", outcome: "survivor", sentence: null,
       employer_tier: employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null).tier,
-      level_direction: "not_applicable",
+      level_direction: "not_applicable", grade_basis: "none",
     };
   }
 
   const lvl = levelGate(identity, opportunity, routeIsSpecific, ladder);
   const withLevel: GateResult = {
     ...withProf, employer_tier: lvl.tier, level_direction: lvl.direction, standing_gap: lvl.gap,
+    grade_basis: lvl.basis,
   };
   if (lvl.direction === "below" || (lvl.direction === "lateral" && lvl.sentence)) {
     return { ...withLevel, gate: "level", outcome: "rejected", sentence: lvl.sentence };

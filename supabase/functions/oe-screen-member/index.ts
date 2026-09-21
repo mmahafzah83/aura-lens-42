@@ -37,15 +37,22 @@ const json = (b: unknown, status = 200) =>
 const PRESENTATION_SYSTEM =
   "You are a search consultant. Before you present anyone you must be able to say one line — " +
   "'<first name> is the man who ___' — and have the client nod. " +
-  "You receive one professional's actual positions and one opportunity. " +
-  "Write that single line ONLY if a named position in his history plainly earns it for THIS opportunity. " +
-  "Return strict JSON {line: string|null, position: string|null}. " +
+  "You receive one professional's actual positions and the evidence of what he ran, and one opportunity " +
+  "with the requirements it STATES. " +
+  "Match his history against those stated requirements. Write the line ONLY if a named position in his " +
+  "history plainly answers at least one stated requirement — never from the opportunity's title alone. " +
+  "Return strict JSON {line: string|null, position: string|null, requirement: string|null}. " +
   "line is one sentence under 25 words, starting with the first name, in plain English, no adjectives of praise. " +
   "position must be copied verbatim from the positions given, and must be the position that earns the line. " +
-  "If no position earns it, return {line: null, position: null}. Never invent experience.";
+  "requirement must be copied verbatim from the stated requirements when there are any, else null. " +
+  "If nothing in his history answers a requirement, return {line: null, position: null, requirement: null}. " +
+  "Never invent experience.";
 
 /** One streamed call. Reasoning models run for minutes; never buffer, never time out on a timer. */
-async function askForLine(key: string, payload: string): Promise<{ line: string | null; position: string | null }> {
+async function askForLine(
+  key: string,
+  payload: string,
+): Promise<{ line: string | null; position: string | null; requirement: string | null }> {
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
@@ -66,8 +73,9 @@ async function askForLine(key: string, payload: string): Promise<{ line: string 
             properties: {
               line: { type: ["string", "null"] },
               position: { type: ["string", "null"] },
+              requirement: { type: ["string", "null"] },
             },
-            required: ["line", "position"],
+            required: ["line", "position", "requirement"],
           },
         },
       },
@@ -97,9 +105,13 @@ async function askForLine(key: string, payload: string): Promise<{ line: string 
   }
   try {
     const parsed = JSON.parse(text.trim());
-    return { line: parsed?.line ?? null, position: parsed?.position ?? null };
+    return {
+      line: parsed?.line ?? null,
+      position: parsed?.position ?? null,
+      requirement: parsed?.requirement ?? null,
+    };
   } catch {
-    return { line: null, position: null };
+    return { line: null, position: null, requirement: null };
   }
 }
 
@@ -165,7 +177,7 @@ Deno.serve(async (req) => {
 
     // ── every live record ────────────────────────────────────────────────
     const { data: opps, error: oppsError } = await admin.from("oe_opportunities")
-      .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
+      .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
 
@@ -217,6 +229,8 @@ Deno.serve(async (req) => {
         rejection_sentence: g.outcome === "rejected" ? g.sentence : null,
 
         role_profession: g.role_profession, profession_relation: g.profession_relation,
+        profession_source: g.profession_source, profession_source_quote: g.profession_source_quote,
+        grade_basis: g.grade_basis,
         employer_tier: g.employer_tier, level_direction: g.level_direction,
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),
         eligibility_outcome: licence.outcome, eligibility_fail: licence.fails,
@@ -225,10 +239,13 @@ Deno.serve(async (req) => {
         // is the later word, so it closes the gate it just refused.
         // The screen is the one verdict on the gates, so it writes both sides
         // of it: a survivor passes, a refusal closes and falls to writing.
+        // A survivor is proposed for the act lane; the access trigger is the
+        // one that decides whether it may stay there, and drops it to writing
+        // when there is no door the member can actually walk through.
         ...(g.outcome === "rejected"
           ? { gate_passed: false, lane_final: "write" }
           : g.outcome === "survivor"
-          ? { gate_passed: true }
+          ? { gate_passed: true, lane_final: "act" }
           : {}),
         // The act lane is an intersection; a record he cannot hold leaves it.
         ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
@@ -267,14 +284,33 @@ Deno.serve(async (req) => {
         let line: string | null = null;
         let position: string | null = null;
         try {
+          const ev = (o as any).scope_evidence ?? null;
+          const stated: string[] = Array.isArray(ev?.stated_requirements) ? ev.stated_requirements : [];
+          const fromRecord: string[] = Array.isArray((o as any).requirements)
+            ? (o as any).requirements.map((r: any) => String(r?.text ?? r ?? "")).filter(Boolean)
+            : [];
           const out = await askForLine(lovableKey, JSON.stringify({
             first_name: String(identity.positions[0]?.title ?? "").split(" ")[0] && (body.first_name ?? "He"),
             positions: identity.positions.map((p) => ({
               position: `${p.title} at ${p.company}`, period: [p.started, p.ended].filter(Boolean).join(" to "),
               function: p.profession, standing: p.grade_label,
             })),
+            // what he actually ran, not how long he has worked
+            his_scope: identity.scope_evidence.slice(0, 10),
             qualifications: identity.qualifications.slice(0, 6),
-            opportunity: { title: o.title, scope: o.scope, sector: o.sector, issuer: o.issuer_raw },
+            opportunity: {
+              title: o.title, scope: o.scope, sector: o.sector, issuer: o.issuer_raw,
+              stated_requirements: (stated.length ? stated : fromRecord).slice(0, 10),
+              states: ev
+                ? {
+                  reports_to: ev.reports_to?.value ?? null,
+                  direct_reports: ev.direct_reports?.value ?? null,
+                  organisational_scope: ev.organisational_scope?.value ?? null,
+                  decision_rights: ev.decision_rights?.value ?? null,
+                  accountability: (ev.accountability_sentences ?? []).slice(0, 5),
+                }
+                : null,
+            },
             relation: g.profession_relation, bridge: g.bridge,
           }));
           line = out.line; position = out.position;
