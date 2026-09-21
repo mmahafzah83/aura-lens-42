@@ -61,7 +61,13 @@ const validViews = new Set<View>(["today", "parked", "history", "settings"]);
 const dayKey = (value: string) => String(value).slice(0, 10);
 /** A date a member reads — never the machine's own form. */
 const displayDay = (value: string) => new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-const dateText = (value: string) => new Date(`${String(value).slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+/** Dates read "21 Sep 2026" — three letters, never ISO, never "Sept". */
+const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const dateText = (value: string) => {
+  const d = new Date(`${String(value).slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getUTCDate()} ${MONTHS_EN[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+};
 const fill = (text: string, vars: Record<string, string | number>) =>
   Object.entries(vars).reduce((acc, [k, val]) => acc.split(`{${k}}`).join(String(val)), text);
 const hasWhy = (card: QueueCard) => (card.why_lines ?? []).some((line) => String(line.text ?? "").trim());
