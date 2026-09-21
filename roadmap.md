@@ -120,3 +120,10 @@
 1. Lateral must pass the level gate (rank >= floor includes equality).
 2. Unknown level: title grade word read first (Director/GM -> executive 4; Manager/Team Leader -> manager 2); employer ladder only adjusts; any still-unknown passes with gate_note='level_unconfirmed' and the card line "We could not confirm the level of this role".
 3. Re-screen + judge on demand for the founder; paste breakdown, the eight records, survivors and today's card.
+
+## Step 36C — writing value judged on its own (21 Sep 2026)
+- oe_matches.write_tests jsonb + standing_overlap numeric; lane_final=write requires all four tests true.
+- _shared/writeValue.ts: subject overlap (cosine over stemmed title+scope vs evidence), bestStanding, writeTests. Listings (kind executive_role, or any record with no access_state) need the profession held plus overlap >= 0.30 with two title-level terms.
+- oe_matches_act_requires_route now clears the lane instead of dropping an act into writing.
+- secondPersonClause fixes "you your ..." / "you advises".
+- Founder after re-screen: 4 act, 14 write (all four tests true), 0 bad grammar lines, 1 card today.
