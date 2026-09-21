@@ -567,11 +567,18 @@ Deno.serve(async (req) => {
     // run. So a record enters as 'write' and is promoted only when it earns
     // it. A database constraint refuses any other combination.
     const { data: priorMatches } = await admin.from("oe_matches")
-      .select("opportunity_id, gate_passed, lane")
+      .select("opportunity_id, gate_passed, lane, screen_outcome")
       .eq("user_id", userId);
     const priorGate = new Map(
       (priorMatches ?? []).map((m: any) =>
         [String(m.opportunity_id), m.gate_passed === true && m.lane === "lane_open"]),
+    );
+    // The screening brain is the later and harder word. A record it refused
+    // cannot be re-admitted to the act lane by a re-run of the judge.
+    const screenRejected = new Set(
+      (priorMatches ?? [])
+        .filter((m: any) => m.screen_outcome === "rejected")
+        .map((m: any) => String(m.opportunity_id)),
     );
 
     const actPool: any[] = [];
@@ -584,9 +591,11 @@ Deno.serve(async (req) => {
       };
       const s = screen(withLevel, eligibility, evidence);
       const issuerDomain = (o as any).issuer?.domain ?? null;
-      const reachable = laneFor(withLevel, s, issuerDomain) === "act";
+      const reachable = laneFor(withLevel, s, issuerDomain) === "act"
+        && !screenRejected.has(String(o.id));
       if (!s.pass) counts.skipped_ineligible++;
       (reachable ? actPool : writePool).push({ ...withLevel, _screen: s, _reachable: reachable });
+
       // level_band is a property of the record itself and stays on the shared row.
       await admin.from("oe_opportunities")
         .update({ level_band: level })
@@ -732,7 +741,9 @@ Deno.serve(async (req) => {
 
       const scoreAvg = QUESTIONS.reduce((sum, q) => sum + avg[q] * Number(weights[q] ?? 0), 0);
       const noZero = !gateNoZero || QUESTIONS.every((q) => avg[q] > 0);
-      const gatePassed = scoreAvg >= gateMin && noZero && !!o.quote_verified;
+      const gatePassed = scoreAvg >= gateMin && noZero && !!o.quote_verified
+        && !screenRejected.has(String(o.id));
+
       if (gatePassed) counts.gate_passed++;
 
       const fitBand = scoreAvg >= Number(bands.strong ?? 3.4)
@@ -900,7 +911,17 @@ Deno.serve(async (req) => {
         ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
         : null;
 
+      // A card without a band cannot be ranked or presented, so it is not made.
+      if (!pick.fitBand) {
+        await admin.from("oe_learning_events").insert({
+          user_id: userId, process: "card_withheld", trigger_reason: "no_band_computable",
+          detail: { lane: "act", opportunity_id: o.id, card_date: cardDate }, applied: false,
+        });
+        continue;
+      }
+
       const citedIds = [...new Set(why.flatMap((w) => w.cites.map((c) => c.id)))];
+
       const card = await writeCard(admin, userId, cardDate, {
         opportunity_id: o.id,
         match_id: pick.matchId,
@@ -934,7 +955,25 @@ Deno.serve(async (req) => {
       const ranked = writePool
         .map((o) => ({ o, score: merged.get(o.id)?.score ?? 0 }))
         .sort((a, b) => b.score - a.score);
-      for (const { o } of ranked.slice(0, 3)) {
+      // A card carries a band or it is not made. The band is this record's
+      // standing among today's candidates — a rank, never a percentage.
+      const bandForRank = (rank: number, of: number): string | null => {
+        if (!Number.isFinite(rank) || rank < 1 || of < 1) return null;
+        if (rank === 1) return "strong";
+        if (rank <= Math.max(2, Math.ceil(of / 2))) return "worth_a_look";
+        return "stretch";
+      };
+      for (const [idx, { o }] of ranked.slice(0, 3).entries()) {
+        const writeBand = bandForRank(idx + 1, ranked.length);
+        if (!writeBand) {
+          await admin.from("oe_learning_events").insert({
+            user_id: userId, process: "card_withheld", trigger_reason: "no_band_computable",
+            detail: { lane: "write", opportunity_id: o.id, card_date: cardDate, pool_size: ranked.length },
+            applied: false,
+          });
+          continue;
+        }
+
         const oppVec = asVector(o.embedding);
         const mine = await memberEvidence(admin, userId, oppVec);
         if (!mine.length) { counts.no_evidence++; continue; }
@@ -989,7 +1028,7 @@ Deno.serve(async (req) => {
           lane: "write",
           quote: o.evidence_quote,
           clock_text: vocab("nothing_to_act_on", lang),
-          fit_band: null, win_band: null,
+          fit_band: writeBand, win_band: null,
           channel: "email",
         }, {
           rules: ruleIds,

@@ -204,16 +204,26 @@ Deno.serve(async (req) => {
       else { funnel.scored++; survivors.push({ o, g }); }
 
       const { error: upErr } = await admin.from("oe_matches").update({
-        screen_gate: g.gate, screen_outcome: g.outcome, rejection_sentence: g.sentence,
+        // Only a refusal carries a refusal sentence. An unknown is an open
+        // investigation, not a verdict, and must not read like one.
+        screen_gate: g.gate, screen_outcome: g.outcome,
+        rejection_sentence: g.outcome === "rejected" ? g.sentence : null,
+
         role_profession: g.role_profession, profession_relation: g.profession_relation,
         employer_tier: g.employer_tier, level_direction: g.level_direction,
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),
         eligibility_outcome: licence.outcome, eligibility_fail: licence.fails,
         eligibility_unknowns: licence.unknowns, eligibility_conditions: licence.conditions,
+        // A record cannot both pass the gate and carry a rejection. The screen
+        // is the later word, so it closes the gate it just refused.
+        ...(g.outcome === "rejected"
+          ? { gate_passed: false, lane_final: "write" }
+          : {}),
         // The act lane is an intersection; a record he cannot hold leaves it.
         ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
         ...(g.outcome === "survivor" ? {} : { presentation_line: null }),
       }).eq("user_id", userId).eq("opportunity_id", o.id);
+
       if (upErr) {
         await logEfError(admin, {
           function_name: FN, error: new Error(`screen write failed: ${upErr.message}`),
@@ -271,9 +281,11 @@ Deno.serve(async (req) => {
           presentation_line: grounded ? line : null,
           ...(grounded ? {} : {
             screen_gate: "presentation", screen_outcome: "rejected",
+            gate_passed: false, lane_final: "write",
             rejection_sentence: "No line — nothing in your history says, in one sentence, why you would be presented for this.",
           }),
         }).eq("user_id", userId).eq("opportunity_id", o.id);
+
       }
     }
 

@@ -4261,6 +4261,13 @@ export type Database = {
             foreignKeyName: "oe_cards_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
+            referencedRelation: "oe_gate_contradiction"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "oe_cards_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
             referencedRelation: "oe_matches"
             referencedColumns: ["id"]
           },
@@ -5693,9 +5700,11 @@ export type Database = {
           created_at: string
           detect_ar: string | null
           detect_en: string | null
+          exclude_en: string | null
           label_ar: string
           label_en: string
           location_sensitivity: string
+          require_en: string | null
           required_fields: Json
           sort_order: number
           updated_at: string
@@ -5706,9 +5715,11 @@ export type Database = {
           created_at?: string
           detect_ar?: string | null
           detect_en?: string | null
+          exclude_en?: string | null
           label_ar: string
           label_en: string
           location_sensitivity?: string
+          require_en?: string | null
           required_fields?: Json
           sort_order?: number
           updated_at?: string
@@ -5719,9 +5730,11 @@ export type Database = {
           created_at?: string
           detect_ar?: string | null
           detect_en?: string | null
+          exclude_en?: string | null
           label_ar?: string
           label_en?: string
           location_sensitivity?: string
+          require_en?: string | null
           required_fields?: Json
           sort_order?: number
           updated_at?: string
@@ -9630,6 +9643,34 @@ export type Database = {
           stage_order: number | null
         }
         Relationships: []
+      }
+      oe_gate_contradiction: {
+        Row: {
+          lane_final: string | null
+          match_id: string | null
+          opportunity_id: string | null
+          rejection_sentence: string | null
+          screen_gate: string | null
+          screen_outcome: string | null
+          title: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_matches_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_matches_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
+          },
+        ]
       }
       oe_unjudged_alive: {
         Row: {
