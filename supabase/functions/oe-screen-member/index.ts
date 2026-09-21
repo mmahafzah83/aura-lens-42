@@ -239,10 +239,13 @@ Deno.serve(async (req) => {
         // is the later word, so it closes the gate it just refused.
         // The screen is the one verdict on the gates, so it writes both sides
         // of it: a survivor passes, a refusal closes and falls to writing.
+        // A survivor is proposed for the act lane; the access trigger is the
+        // one that decides whether it may stay there, and drops it to writing
+        // when there is no door the member can actually walk through.
         ...(g.outcome === "rejected"
           ? { gate_passed: false, lane_final: "write" }
           : g.outcome === "survivor"
-          ? { gate_passed: true }
+          ? { gate_passed: true, lane_final: "act" }
           : {}),
         // The act lane is an intersection; a record he cannot hold leaves it.
         ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
