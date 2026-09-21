@@ -858,6 +858,17 @@ Deno.serve(async (req) => {
         ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
         : null;
 
+      // The queue's own three conditions, applied here so a card is never
+      // written that the queue would refuse.
+      const refusal = queueRefusal(o);
+      if (refusal) {
+        await admin.from("oe_learning_events").insert({
+          user_id: userId, process: "card_withheld", trigger_reason: refusal,
+          detail: { lane: "act", opportunity_id: o.id, card_date: cardDate }, applied: false,
+        });
+        continue;
+      }
+
       // A card without a band cannot be ranked or presented, so it is not made.
       if (!pick.fitBand) {
         await admin.from("oe_learning_events").insert({
