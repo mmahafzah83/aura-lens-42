@@ -56,6 +56,7 @@ const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "re
 
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const chipBase = { minHeight: 44, padding: "8px 11px", borderRadius: 4, border: "1px solid var(--border-default)", background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
+const ARIA_CURRENT = "page" as const;
 const validViews = new Set<View>(["today", "parked", "history", "settings"]);
 const dayKey = (value: string) => String(value).slice(0, 10);
 /** A date a member reads — never the machine's own form. */
@@ -276,7 +277,7 @@ export function OpportunityQueue() {
       {refreshNote && <p className="oe-refresh-note">{refreshNote}</p>}
     </header>
 
-    <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history", "settings"] as View[]).map((item) => <button key={item} type="button" aria-current={view === item ? "page" : undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b>{data.parked.length}</b>}</button>)}</nav>
+    <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history", "settings"] as View[]).map((item) => <button key={item} type="button" aria-current={view === item ? ARIA_CURRENT : undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b>{data.parked.length}</b>}</button>)}</nav>
 
     {view === "today" && directionIncomplete && <button type="button" className="oe-setup-strip" onClick={() => openDirection()}><span><strong>{v("setup_title")}</strong><small>{direction?.goal ? v(!direction.priority ? "setup_sub_priority" : "setup_sub_mix") : v("setup_sub_full")}</small></span><span className="oe-progress" aria-label={fill(v("setup_progress_aria"), { done: directionProgress.filter(Boolean).length })}>{directionProgress.map((done, index) => <i key={index} className={done ? "is-set" : ""} />)}</span></button>}
 
