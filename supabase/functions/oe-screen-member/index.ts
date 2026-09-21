@@ -144,9 +144,13 @@ const ANSWERABLE: Array<[string, RegExp]> = [
 
 const r_trim = (s: string) => String(s ?? "").replace(/\s+/g, " ").trim();
 
-/** A stated fee, subscription or price — the cost of the door, not a requirement. */
+/**
+ * A stated PRICE — the cost of the door. Only a requirement that carries an
+ * actual amount counts: a sentence that merely mentions a fee alongside real
+ * conditions is still a condition, and his record may answer it.
+ */
 const IS_A_PRICE =
-  /(\$|usd|sar|eur|aed|£|€|﷼)\s?[\d,]{3,}|[\d,]{3,}\s?(usd|sar|aed|eur|riyals?|dollars?)|\bper year\b.*\b\d|\bfee\b|\bfees\b|\bsubscription\b|\bmembership (?:cost|price|rate)\b|\bprice\b|\brasm\b|رسوم|اشتراك/i;
+  /(?:\$|£|€|﷼|\bUSD\b|\bSAR\b|\bAED\b|\bEUR\b)\s?[\d,]{3,}|[\d,]{3,}\s?(?:USD|SAR|AED|EUR|riyals?|dollars?)\b/i;
 
 function answerableKind(requirement: string): string | null {
   for (const [kind, re] of ANSWERABLE) if (re.test(String(requirement ?? ""))) return kind;
