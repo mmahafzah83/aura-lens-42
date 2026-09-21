@@ -127,3 +127,7 @@
 - oe_matches_act_requires_route now clears the lane instead of dropping an act into writing.
 - secondPersonClause fixes "you your ..." / "you advises".
 - Founder after re-screen: 4 act, 14 write (all four tests true), 0 bad grammar lines, 1 card today.
+
+## Step 37 — the seven audit blockers (21 Sep 2026)
+- Done: learning ledger reset and weight guard, daily RLS probe cron, feed access law, own-record evidence + rubric agreement (screen and judge), quote-in-text verification, Arabic/board-seat classifier.
+- Open: item 7 of the remediation order (not in this step); Upwork API key pending founder action.
