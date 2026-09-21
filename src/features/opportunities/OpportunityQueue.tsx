@@ -7,6 +7,8 @@ import { AuraCard } from "@/components/ui/AuraCard";
 import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useVocab } from "./useVocab";
+import { FiltersSection, SuggestedRules, type FilterMap } from "./FiltersSection";
+
 
 type WhyLine = { text?: string; label?: string };
 type AccessState = "observed_event" | "possible_need" | "confirmed_opportunity" | "identified_route";
