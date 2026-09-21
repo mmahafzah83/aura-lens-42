@@ -1018,7 +1018,7 @@ Deno.serve(async (req) => {
         // band behind from an earlier run leaves a card that says "nothing
         // today" while still carrying yesterday's recommendation.
         opportunity_id: null, match_id: null, why_lines: [], gap_line: null,
-        lane: null, fit_band: null, win_band: null, quote: null, cited_ids: null,
+        lane: null, fit_band: null, win_band: null, quote: null, cited_ids: [],
         clock_text: vocab("nothing_today", lang), channel: "email",
       }, { rules: ruleIds, faces: [], scores: {}, gate: "no_candidate" });
 
