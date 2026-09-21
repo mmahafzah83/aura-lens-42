@@ -46,6 +46,12 @@ const CONTACT = /[\w.+-]+@[\w-]+\.[\w.]+|\+?\d[\d\s().-]{7,}/;
 
 const A_NAME = /^[\p{L}][\p{L}'’.\- ]{3,79}$/u;
 
+/**
+ * A byline is not a public role at the organisation. The person who wrote the
+ * article, or reported it, is not part of the matter and is not stored.
+ */
+const A_BYLINE = /\b(writer|author|reporter|correspondent|journalist|editor|editorial|contributor|staff)\b|كاتب|كاتبة|محرر|مراسل|صحفي|صحفية/i;
+
 /** Keep only what the stored page can prove. */
 export function verifyPeople(raw: unknown, pageText: string): NamedPerson[] {
   const list = Array.isArray((raw as any)?.people) ? (raw as any).people : [];
@@ -62,6 +68,7 @@ export function verifyPeople(raw: unknown, pageText: string): NamedPerson[] {
 
     if (!A_NAME.test(full_name)) continue;
     if (CONTACT.test(full_name) || (role_title && CONTACT.test(role_title)) || CONTACT.test(quote)) continue;
+    if (role_title && A_BYLINE.test(role_title)) continue;
     // The name itself must be in the page, and so must the sentence that names it.
     if (!hay.includes(norm(full_name))) continue;
     if (norm(quote).length < 12 || !hay.includes(norm(quote))) continue;
