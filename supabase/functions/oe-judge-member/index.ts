@@ -900,7 +900,17 @@ Deno.serve(async (req) => {
         ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
         : null;
 
+      // A card without a band cannot be ranked or presented, so it is not made.
+      if (!pick.fitBand) {
+        await admin.from("oe_learning_events").insert({
+          user_id: userId, kind: "card_withheld",
+          payload: { reason: "no_band_computable", lane: "act", opportunity_id: o.id, card_date: cardDate },
+        });
+        continue;
+      }
+
       const citedIds = [...new Set(why.flatMap((w) => w.cites.map((c) => c.id)))];
+
       const card = await writeCard(admin, userId, cardDate, {
         opportunity_id: o.id,
         match_id: pick.matchId,
