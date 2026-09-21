@@ -5199,6 +5199,7 @@ export type Database = {
           lane: string | null
           lane_final: string | null
           level_direction: string | null
+          member_access_basis: string | null
           member_access_confirmed: boolean
           met_count: number | null
           opportunity_id: string
@@ -5238,6 +5239,7 @@ export type Database = {
           lane?: string | null
           lane_final?: string | null
           level_direction?: string | null
+          member_access_basis?: string | null
           member_access_confirmed?: boolean
           met_count?: number | null
           opportunity_id: string
@@ -5277,6 +5279,7 @@ export type Database = {
           lane?: string | null
           lane_final?: string | null
           level_direction?: string | null
+          member_access_basis?: string | null
           member_access_confirmed?: boolean
           met_count?: number | null
           opportunity_id?: string
