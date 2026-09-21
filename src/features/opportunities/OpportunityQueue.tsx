@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { AuraCard } from "@/components/ui/AuraCard";
@@ -11,103 +10,93 @@ import { useVocab } from "./useVocab";
 
 type WhyLine = { text?: string; label?: string };
 type AccessState = "observed_event" | "possible_need" | "confirmed_opportunity" | "identified_route";
-type Inference = { what_we_saw?: string | null; what_we_infer?: string | null; what_would_confirm?: string | null };
 type QueueCard = {
   id: string; opportunity_id: string; lane: "act" | "write"; why_lines: WhyLine[] | null;
   gap_line: WhyLine | null; quote: string | null; clock_text: string | null; title: string;
-  chair_type: string | null; level_band: string | null; sector: string | null; location: string | null; scope: string | null; deadline: string | null;
-  source_url: string | null; route_url: string | null; route_kind: string | null; issuer_id: string | null;
-  issuer_name: string | null; last_checked: string | null; rule_count: number; purpose: "strength" | "build" | "explore";
-  access_state: AccessState | null; access_state_reason: string | null; inference: Inference | null;
-  claims: Record<string, "pass" | "fail" | "unknown"> | null; cost_of_door: string | null;
-  gap_question: { investigation_id: string; field: string; question: string } | null;
+  level_band: string | null; sector: string | null; location: string | null; scope: string | null; deadline: string | null;
+  source_url: string | null; route_url: string | null; issuer_id: string | null; issuer_name: string | null;
+  last_checked: string | null; rule_count: number; access_state: AccessState | null; cost_of_door: string | null;
+  presentation_line?: string | null;
 };
-
-const STATE_LABEL: Record<AccessState, string> = {
-  observed_event: "Something happened", possible_need: "A need may follow",
-  confirmed_opportunity: "An opening exists", identified_route: "A way in exists",
-};
+type Parked = { opportunity_id: string; title: string; issuer_name: string | null; location: string | null; deadline: string | null; parked_at: string };
 type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
 type Mix = "win" | "build" | "explore";
 type Goal = "income_from_expertise" | "advancement" | "visibility" | "relationships" | "knowledge";
-type Direction = {
-  priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null;
-  mix: Mix | null; mix_set_on: string | null; goal: Goal | null; goal_secondary: Goal[] | null;
-  goal_proposed: Goal | null; goal_confirmed_at: string | null; goal_expires_at: string | null;
-};
+type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null; goal: Goal | null; goal_secondary: Goal[] | null; goal_proposed: Goal | null; goal_confirmed_at: string | null; goal_expires_at: string | null };
 type Window = { expected_by: string; declared_on: string | null; missed: boolean };
 type Derivation = { comments?: Array<{ id?: string; text?: string; said_on?: string }>; profile?: string[]; legal_basis?: string };
-type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; rule_text_ar: string | null; field: string | null; value: string | null; stated_on: string; derived_from?: Derivation | null; ratified_at?: string | null };
-type Held = { id: string; day: string; reason: string | null; rank: number | null; title: string | null };
-type History = {
-  shown_at: string; lane: string | null; tap: string | null; tap_scope: string | null; tap_scope_value: string | null;
-  tapped_at: string | null; truth_code: string | null; outcome: string | null; outcome_at: string | null;
-  title: string | null; issuer_name: string | null; location: string | null; presentation_line: string | null;
-};
+type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; field: string | null; value: string | null; stated_on: string; active?: boolean; derived_from?: Derivation | null };
+type Held = { id: string; day: string; reason: string | null; title: string | null };
+type History = { shown_at: string; lane: string | null; tap: string | null; tap_scope: string | null; truth_code: string | null; outcome: string | null; title: string | null; issuer_name: string | null; location: string | null; presentation_line: string | null };
 type DueOutcome = { id: string; title: string | null };
-type QueueData = { cards: QueueCard[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
-type Proposal = { id: string; count: number; value: string };
-type DirectionQuestion = "priority" | "mix" | null;
-type GoalStep = "choose" | "secondary" | "confirmed";
+type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
+type View = "today" | "parked" | "history" | "settings";
+type DirectionStep = "renew" | "goal" | "secondary" | "priority" | "mix" | "done";
+type HistoryFilter = "all" | "right" | "declined" | "flagged";
 
-const emptyData: QueueData = { cards: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [] };
-const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
-const chipBase = { minHeight: 44, padding: "8px 11px", borderRadius: 4, background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
+const STATE_LABEL: Record<AccessState, string> = { observed_event: "Something happened", possible_need: "A need may follow", confirmed_opportunity: "An opening exists", identified_route: "A way in exists" };
+const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [] };
 const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
 const mixes: Mix[] = ["win", "build", "explore"];
 const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "relationships", "knowledge"];
+const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
+const chipBase = { minHeight: 44, padding: "8px 11px", borderRadius: 4, border: "1px solid var(--border-default)", background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
 const FIELD_LABEL: Record<string, string> = { sector: "Sector", issuer: "Organisation", level: "Level", place: "Place" };
 const SCOPE_REASON: Record<string, string> = { level: "wrong level", sector: "wrong sector", issuer: "not this organisation", place: "wrong place", just_this: "just this one" };
 const TRUTH_REASON: Record<string, string> = { dead_route: "dead link", quote_absent: "quote not on the page", listing_page: "listing page", already_happened: "already happened", wrong_issuer: "wrong organisation" };
+const validViews = new Set<View>(["today", "parked", "history", "settings"]);
+const dayKey = (value: string) => String(value).slice(0, 10);
+const displayDay = (value: string) => new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const dateText = (value: string) => new Date(`${String(value).slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+const hasWhy = (card: QueueCard) => (card.why_lines ?? []).some((line) => String(line.text ?? "").trim());
+const isClosing = (card: QueueCard) => Boolean(card.clock_text) || Boolean(card.deadline && new Date(`${card.deadline}T23:59:59Z`).getTime() <= Date.now() + 14 * 86_400_000);
 
-function validWhy(card: QueueCard) { return (card.why_lines ?? []).some((line) => String(line?.text ?? "").trim()); }
-function dayKey(value: string) { return String(value).slice(0, 10); }
-function displayDay(value: string) { return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); }
 function historyDecision(row: History) {
   if (!row.tap) return "No decision yet";
   if (row.tap === "right") return row.lane === "write" ? "You drafted it" : "You went for it";
   if (row.tap === "later") return "You said later";
   if (row.truth_code) return `You flagged: ${TRUTH_REASON[row.truth_code] ?? "something was wrong"}`;
-  const reason = row.tap_scope ? SCOPE_REASON[row.tap_scope] : null;
-  return reason ? `Not for you · ${reason}` : "Not for you";
+  return row.tap_scope ? `Not for you · ${SCOPE_REASON[row.tap_scope] ?? "not a fit"}` : "Not for you";
 }
 function historyOutcome(row: History) {
   const copy: Record<string, string> = { applied: "You applied", shortlisted: "You were shortlisted", won: "You got it", nothing: "Nothing came of it" };
-  if (row.outcome) return copy[row.outcome] ?? "Outcome recorded";
-  return row.tap === "right" ? "Not yet known" : "No outcome expected";
+  return row.outcome ? copy[row.outcome] ?? "Outcome recorded" : row.tap === "right" ? "Not yet known" : "No outcome expected";
 }
 
 export function OpportunityQueue() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const requested = params.get("view") as View | null;
+  const view: View = requested && validViews.has(requested) ? requested : "today";
   const [userId, setUserId] = useState<string | null>(null);
   const [firstName, setFirstName] = useState("");
   const [data, setData] = useState<QueueData>(emptyData);
   const [loading, setLoading] = useState(true);
-  const [queueIndex, setQueueIndex] = useState(0);
-  const [later, setLater] = useState<Set<string>>(new Set());
-  const [expanded, setExpanded] = useState(false);
-  const [scopeExpanded, setScopeExpanded] = useState(false);
-  const [declining, setDeclining] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [proposalShown, setProposalShown] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [decliningId, setDecliningId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [newRule, setNewRule] = useState("");
-  const [newRuleType, setNewRuleType] = useState<"sector" | "issuer">("sector");
-  const [directionQuestion, setDirectionQuestion] = useState<DirectionQuestion>(null);
-  const [directionAsked, setDirectionAsked] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; undo?: string } | null>(null);
+  const [proposal, setProposal] = useState<{ id: string; count: number; value: string } | null>(null);
+  const [proposalShown, setProposalShown] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState("");
-  const [notice, setNotice] = useState("");
-  const [goalChanging, setGoalChanging] = useState(false);
-  const [goalStep, setGoalStep] = useState<GoalStep>("choose");
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [directionStep, setDirectionStep] = useState<DirectionStep>("goal");
+  const [directionChoice, setDirectionChoice] = useState<Goal | Priority | Mix | null>(null);
   const [primaryGoal, setPrimaryGoal] = useState<Goal | null>(null);
   const [secondaryGoals, setSecondaryGoals] = useState<Set<Goal>>(new Set());
+  const [newRule, setNewRule] = useState("");
+  const [newRuleType, setNewRuleType] = useState<"sector" | "issuer">("sector");
+  const [addingRule, setAddingRule] = useState(false);
+  const [showAllHeld, setShowAllHeld] = useState(false);
   const renderedRef = useRef<Set<string>>(new Set());
   const noticeTimer = useRef<number | null>(null);
+  const cardRefs = useRef<Record<string, HTMLElement | null>>({});
   const v = useVocab("en");
+  const t = (key: string, fallback: string) => v(key) || fallback;
 
+  const setView = (next: View) => { const copy = new URLSearchParams(params); next === "today" ? copy.delete("view") : copy.set("view", next); setParams(copy); };
   const load = useCallback(async () => {
     setLoading(true);
     const { data: auth } = await supabase.auth.getUser();
@@ -115,265 +104,193 @@ export function OpportunityQueue() {
     setUserId(uid);
     if (!uid) { setLoading(false); return; }
     const [{ data: profile }, { data: payload, error }] = await Promise.all([
-      supabase.from("diagnostic_profiles").select("first_name").eq("user_id", uid).maybeSingle(),
-      supabase.rpc("oe_app_queue" as never),
+      supabase.from("diagnostic_profiles").select("first_name").eq("user_id", uid).maybeSingle(), supabase.rpc("oe_app_queue" as never),
     ]);
     setFirstName(String((profile as { first_name?: string } | null)?.first_name ?? ""));
-    if (!error && payload) {
-      const next = { ...emptyData, ...(payload as unknown as QueueData) };
-      setData(next);
-      const asked = window.sessionStorage.getItem(`oe-direction-asked:${uid}`) === "true";
-      setDirectionAsked(asked);
-      if (!asked && next.cards.length > 0) {
-        const today = new Date().toISOString().slice(0, 10);
-        const priorityDue = !next.direction?.priority && (!next.direction?.priority_expires_at || next.direction.priority_expires_at <= today);
-        const priorityExpired = Boolean(next.direction?.priority && next.direction.priority_expires_at && next.direction.priority_expires_at <= today);
-        if (priorityDue || priorityExpired) setDirectionQuestion("priority");
-        else if (next.direction?.priority && !next.direction.mix) setDirectionQuestion("mix");
-        else setDirectionQuestion(null);
-      } else setDirectionQuestion(null);
-    }
+    if (!error && payload) setData({ ...emptyData, ...(payload as unknown as QueueData) });
     setLoading(false);
   }, []);
-
   useEffect(() => { void load(); }, [load]);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const old = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setSheetOpen(false); };
+    window.addEventListener("keydown", close);
+    return () => { document.body.style.overflow = old; window.removeEventListener("keydown", close); };
+  }, [sheetOpen]);
 
-  const showNotice = (message: string) => {
-    setNotice(message);
+  const cards = data.cards.filter(hasWhy);
+  const groups = useMemo(() => {
+    const closing = cards.filter(isClosing);
+    const used = new Set(closing.map((card) => card.id));
+    const act = cards.filter((card) => card.lane === "act" && !used.has(card.id)); act.forEach((card) => used.add(card.id));
+    const write = cards.filter((card) => card.lane === "write" && !used.has(card.id)); write.forEach((card) => used.add(card.id));
+    const happened = cards.filter((card) => !used.has(card.id) && (card.access_state === "observed_event" || card.access_state === "possible_need"));
+    return [{ key: "closing", label: "Closing soon", tone: "clock", cards: closing }, { key: "act", label: "Open now", tone: "act", cards: act }, { key: "write", label: "Worth writing about", tone: "write", cards: write }, { key: "event", label: "Something happened", tone: "event", cards: happened }].filter((group) => group.cards.length > 0);
+  }, [cards]);
+  const selected = cards.find((card) => card.id === selectedId) ?? null;
+  const direction = data.direction;
+  const today = new Date().toISOString().slice(0, 10);
+  const goalExpired = Boolean(direction?.goal && direction.goal_expires_at && direction.goal_expires_at <= today);
+  const directionIncomplete = !direction?.goal || !direction.priority || !direction.mix || goalExpired;
+  const directionProgress = [Boolean(direction?.goal), Boolean(direction?.priority), Boolean(direction?.mix)];
+
+  const showNotice = (text: string, undo?: string) => {
+    setNotice({ text, undo });
     if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
-    noticeTimer.current = window.setTimeout(() => setNotice(""), 4000);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 4000);
   };
-
-  const refresh = useCallback(async () => {
-    if (refreshing) return;
-    setRefreshing(true); setRefreshNote("");
+  const refresh = async () => {
+    if (refreshing) return; setRefreshing(true); setRefreshNote("");
     const { data: payload, error } = await supabase.rpc("oe_app_refresh" as never);
     const result = payload as { ok?: boolean; retry_after_seconds?: number } | null;
     if (error) setRefreshNote("Could not look again just now.");
-    else if (result?.ok === false) {
-      const wait = Number(result.retry_after_seconds ?? 60);
-      setRefreshNote(`Just looked. Try again in ${wait} second${wait === 1 ? "" : "s"}.`);
-    } else {
-      renderedRef.current = new Set(); setQueueIndex(0); setLater(new Set()); await load();
-    }
+    else if (result?.ok === false) setRefreshNote(`Just looked. Try again in ${Number(result.retry_after_seconds ?? 60)} seconds.`);
+    else { renderedRef.current.clear(); await load(); }
     setRefreshing(false);
-  }, [load, refreshing]);
-
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const old = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setDrawerOpen(false); };
-    window.addEventListener("keydown", close);
-    return () => { document.body.style.overflow = old; window.removeEventListener("keydown", close); };
-  }, [drawerOpen]);
-
-  const cards = useMemo(() => data.cards.filter((item) => !later.has(item.id)), [data.cards, later]);
-  const card = cards[queueIndex] ?? null;
-  const historyGroups = useMemo(() => {
-    const groups = new Map<string, History[]>();
-    data.history.forEach((row) => { const key = dayKey(row.shown_at); groups.set(key, [...(groups.get(key) ?? []), row]); });
-    return Array.from(groups.entries());
-  }, [data.history]);
-
-  useEffect(() => {
-    if (!card || renderedRef.current.has(card.id)) return;
-    renderedRef.current.add(card.id);
-    if (validWhy(card)) void supabase.rpc("oe_app_render" as never, { p_card: card.opportunity_id } as never);
-  }, [card]);
-
-  const advance = () => { setExpanded(false); setScopeExpanded(false); setDeclining(false); setQueueIndex((index) => index + 1); };
-  const decide = useCallback(async (action: "right" | "later") => {
-    if (!card || busy) return;
-    setBusy(true);
+  };
+  const markRendered = useCallback((card: QueueCard, node: HTMLElement | null) => {
+    cardRefs.current[card.id] = node;
+    if (!node || renderedRef.current.has(card.id)) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0]?.isIntersecting || renderedRef.current.has(card.id)) return;
+      renderedRef.current.add(card.id);
+      void supabase.rpc("oe_app_render" as never, { p_card: card.opportunity_id } as never);
+      observer.disconnect();
+    }, { threshold: 0.35 });
+    observer.observe(node);
+  }, []);
+  const selectCard = (card: QueueCard) => {
+    const next = selectedId === card.id ? null : card.id;
+    setSelectedId(next); setDecliningId(null);
+    if (next) window.setTimeout(() => cardRefs.current[next]?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 20);
+  };
+  const bringBack = async (opportunityId: string, returnToToday = false) => {
+    if (busy) return; setBusy(true);
+    const { data: raw } = await supabase.rpc("oe_app_decide" as never, { p_card: opportunityId, p_action: "bring_back" } as never);
+    setBusy(false);
+    if ((raw as { ok?: boolean } | null)?.ok) { setNotice(null); await load(); if (returnToToday) setView("today"); }
+  };
+  const decide = async (card: QueueCard, action: "right" | "later") => {
+    if (busy) return; setBusy(true);
     const { data: raw } = await supabase.rpc("oe_app_decide" as never, { p_card: card.opportunity_id, p_action: action } as never);
     setBusy(false);
-    const result = raw as { ok?: boolean } | null;
-    if (!result?.ok) return;
-    if (action === "later") {
-      setLater((current) => new Set(current).add(card.id));
-      setExpanded(false); setScopeExpanded(false); setDeclining(false); setQueueIndex(0); showNotice("Marked later");
-      return;
-    }
-    showNotice(card.lane === "act" ? "Off you go — the link is open" : "Draft started");
+    if (!(raw as { ok?: boolean } | null)?.ok) return;
+    if (action === "later") { setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id), parked: [{ opportunity_id: card.opportunity_id, title: card.title, issuer_name: card.issuer_name, location: card.location, deadline: card.deadline, parked_at: new Date().toISOString() }, ...current.parked] })); setSelectedId(null); showNotice("Marked later · in Parked", card.opportunity_id); return; }
+    showNotice("Off you go — the link is open");
     if (card.lane === "write") navigate(`/studio?opportunity=${card.opportunity_id}`);
-    else {
-      const destination = card.route_url ?? card.source_url;
-      if (destination) window.open(destination, "_blank", "noopener,noreferrer");
-      advance();
-    }
-  }, [busy, card, navigate]);
-
-  const decline = async (scope: string | null, value: string | null, truth: string | null) => {
-    if (!card || busy) return;
-    setBusy(true);
+    else { const destination = card.route_url ?? card.source_url; if (destination) window.open(destination, "_blank", "noopener,noreferrer"); await load(); }
+  };
+  const decline = async (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => {
+    if (busy) return; setBusy(true);
     const { data: raw } = await supabase.rpc("oe_app_decide" as never, { p_card: card.opportunity_id, p_action: "not_quite", p_scope: scope, p_scope_value: value, p_truth: truth } as never);
     setBusy(false);
     const result = raw as { ok?: boolean; proposal_id?: string; declines?: number } | null;
     if (!result?.ok) return;
-    showNotice("Noted — not for you");
-    if (result.proposal_id && !proposalShown) {
-      setProposal({ id: String(result.proposal_id), count: Number(result.declines ?? 3), value: value ?? "" });
-      setProposalShown(true); setExpanded(false); setScopeExpanded(false); setDeclining(false);
-    } else advance();
+    showNotice("Noted — not for you"); setSelectedId(null); setDecliningId(null);
+    if (result.proposal_id && !proposalShown) { setProposal({ id: String(result.proposal_id), count: Number(result.declines ?? 3), value: value ?? "" }); setProposalShown(true); }
+    await load();
   };
-
-  const answerProposal = async (accept: boolean) => {
-    if (!proposal || busy) return;
-    setBusy(true); await supabase.rpc("oe_app_proposal" as never, { p_id: proposal.id, p_accept: accept } as never);
-    setBusy(false); setProposal(null); advance(); void load();
-  };
-
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea, select, [contenteditable='true']") || drawerOpen || proposal || !card) return;
-      if (event.key === "1") void decide("right");
-      if (event.key === "2") void decide("later");
-      if (event.key === "3") setDeclining(true);
+      if (!selected || sheetOpen || target?.closest("input, textarea, select, button, [contenteditable='true']")) return;
+      if (event.key === "1") void decide(selected, "right");
+      if (event.key === "2") void decide(selected, "later");
+      if (event.key === "3") setDecliningId(selected.id);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [card, decide, drawerOpen, proposal]);
+    window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
+  }, [selected, sheetOpen, busy]);
 
-  const saveRule = async () => {
-    const value = newRule.trim();
-    if (!userId || !value || busy) return;
-    setBusy(true);
-    await supabase.from("oe_notebook" as never).insert({ user_id: userId, kind: "soft", rule_text: `Show me more from ${value}`, rule_text_ar: `أظهر لي المزيد من ${value}`, field: newRuleType, op: "prefer", value, origin: "stated", proposal_status: "signed", active: true, entry_kind: "rule", ratified_at: new Date().toISOString() } as never);
-    setNewRule(""); setBusy(false); void load();
-  };
-  const deactivate = async (recordId: string) => { await supabase.from("oe_notebook" as never).update({ active: false } as never).eq("id", recordId); void load(); };
-  const showAnyway = async (recordId: string) => { await supabase.rpc("oe_app_show_anyway" as never, { p_suppressed: recordId } as never); void load(); };
-  const answerOutcome = async (recordId: string, outcome: string) => { if (!userId) return; await supabase.from("oe_serves" as never).update({ outcome, outcome_at: new Date().toISOString() } as never).eq("id", recordId).eq("user_id", userId); void load(); };
-  const markDirectionAsked = () => { if (userId) window.sessionStorage.setItem(`oe-direction-asked:${userId}`, "true"); setDirectionAsked(true); setDirectionQuestion(null); };
-  const saveDirection = async (value: Priority | Mix) => { if (busy) return; setBusy(true); const params = directionQuestion === "priority" ? { p_priority: value } : { p_mix: value }; const { error } = await supabase.rpc("oe_direction_save" as never, params as never); setBusy(false); if (!error) { markDirectionAsked(); setQueueIndex(0); void load(); } };
-  const deferDirection = async () => { if (busy) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_defer: true } as never); setBusy(false); if (!error) { markDirectionAsked(); void load(); } };
-
-  const choosePrimaryGoal = async (value: Goal) => {
+  const openDirection = (step?: DirectionStep) => { setDirectionChoice(null); setPrimaryGoal(null); setSecondaryGoals(new Set(direction?.goal_secondary ?? [])); setDirectionStep(step ?? (goalExpired ? "renew" : !direction?.goal ? "goal" : !direction.priority ? "priority" : "mix")); setSheetOpen(true); };
+  const deferDirection = async () => { if (busy) return; setBusy(true); await supabase.rpc(directionStep === "goal" || directionStep === "renew" ? "oe_goal_save" as never : "oe_direction_save" as never, { p_defer: true } as never); setBusy(false); setSheetOpen(false); await load(); };
+  const nextDirection = async () => {
     if (busy) return;
-    setBusy(true);
-    const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: value } as never);
-    setBusy(false);
-    if (!error) { setPrimaryGoal(value); setSecondaryGoals(new Set()); setGoalStep("secondary"); }
+    if (directionStep === "goal") { if (!directionChoice) return; setBusy(true); const goal = directionChoice as Goal; const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: goal } as never); setBusy(false); if (!error) { setPrimaryGoal(goal); setDirectionChoice(null); setDirectionStep("secondary"); } return; }
+    if (directionStep === "secondary") { const goal = primaryGoal ?? direction?.goal; if (!goal) return; setBusy(true); const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: goal, p_secondary: Array.from(secondaryGoals) } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("priority"); await load(); } return; }
+    if (directionStep === "priority") { if (!directionChoice) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_priority: directionChoice } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("mix"); await load(); } return; }
+    if (directionStep === "mix") { if (!directionChoice) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_mix: directionChoice } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("done"); await load(); } }
   };
-  const finishGoal = async (secondary: Goal[] | null) => {
-    const chosen = primaryGoal ?? data.direction?.goal;
-    if (!chosen || busy) return;
-    setBusy(true);
-    const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: chosen, p_secondary: secondary } as never);
-    setBusy(false);
-    if (!error) {
-      setGoalStep("confirmed"); setGoalChanging(false);
-      window.setTimeout(() => { setGoalStep("choose"); setPrimaryGoal(null); void load(); }, 2400);
-    }
-  };
-  const deferGoal = async () => { if (busy) return; setBusy(true); const { error } = await supabase.rpc("oe_goal_save" as never, { p_defer: true } as never); setBusy(false); if (!error) { setGoalChanging(false); setGoalStep("choose"); void load(); } };
-  const reconfirmGoal = async () => {
-    const goal = data.direction?.goal;
-    if (!goal || busy) return;
-    setBusy(true);
-    const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: goal, p_secondary: data.direction?.goal_secondary ?? null } as never);
-    setBusy(false);
-    if (!error) {
-      setGoalStep("confirmed");
-      window.setTimeout(() => { setGoalStep("choose"); void load(); }, 2400);
-    }
-  };
-  const changeDirection = (question: Exclude<DirectionQuestion, null>) => { if (directionAsked || data.cards.length === 0) return; setDrawerOpen(false); setDirectionQuestion(question); };
-
-  const t = (key: string, fallback: string) => v(key) || fallback;
-  const count = cards.length;
-  const today = new Date().toISOString().slice(0, 10);
-  const goalExpired = Boolean(data.direction?.goal && data.direction.goal_expires_at && data.direction.goal_expires_at <= today);
-  const goalDeferredUntil = data.direction?.goal ? null : (data.direction?.goal_expires_at ?? null);
-  const askGoal = !data.direction?.goal && (!goalDeferredUntil || goalDeferredUntil <= today);
-  const showGoalCard = askGoal || goalChanging || goalExpired || goalStep !== "choose";
-  const windowDate = data.window?.expected_by ?? null;
-  const dateText = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-  const lead = card?.why_lines?.find((line) => String(line?.text ?? "").trim())?.text ?? "";
-  const taste = card ? [
-    ["queue_wrong_level", "Wrong level", "level", card.level_band], ["queue_wrong_sector", "Wrong sector", "sector", card.sector],
-    ["queue_wrong_org", "Not this organisation", "issuer", card.issuer_id], ["queue_wrong_place", "Wrong place", "place", card.location],
-    ["queue_just_one", "Just this one", "just_this", card.opportunity_id],
-  ].filter((entry) => Boolean(entry[3])) as string[][] : [];
-  const truths = [["queue_dead_link", "The link does not work", "dead_route"], ["queue_quote_absent", "The quote is not on the page", "quote_absent"], ["queue_listing", "It is a listing page", "listing_page"], ["queue_happened", "This already happened", "already_happened"], ["queue_wrong_issuer", "Wrong organisation", "wrong_issuer"]] as const;
-
-  const history = <HistoryList groups={historyGroups} emptyText={t("queue_history_empty", "Nothing has been shown yet.")} />;
-  const links = <div className="oe-end-links"><AuraButton onClick={() => setDrawerOpen(true)}>{t("queue_setup", "Review what reaches you")}</AuraButton><button type="button" className="v23-textlink" onClick={() => setHistoryOpen((open) => !open)}>{t("queue_history", "History")}</button></div>;
+  const reconfirm = async () => { if (!direction?.goal || busy) return; setBusy(true); await supabase.rpc("oe_goal_save" as never, { p_goal: direction.goal, p_secondary: direction.goal_secondary ?? null } as never); setBusy(false); setDirectionStep("done"); await load(); };
+  const saveRule = async () => { const value = newRule.trim(); if (!userId || !value || busy) return; setBusy(true); await supabase.from("oe_notebook" as never).insert({ user_id: userId, kind: "soft", rule_text: `Show me more from ${value}`, rule_text_ar: `أظهر لي المزيد من ${value}`, field: newRuleType, op: "prefer", value, origin: "stated", proposal_status: "signed", active: true, entry_kind: "rule", ratified_at: new Date().toISOString() } as never); setNewRule(""); setAddingRule(false); setBusy(false); await load(); };
+  const toggleRule = async (rule: Rule) => { await supabase.from("oe_notebook" as never).update({ active: !rule.active } as never).eq("id", rule.id); await load(); };
+  const showAnyway = async (id: string) => { await supabase.rpc("oe_app_show_anyway" as never, { p_suppressed: id } as never); await load(); };
+  const answerOutcome = async (id: string, outcome: string) => { if (!userId) return; await supabase.from("oe_serves" as never).update({ outcome, outcome_at: new Date().toISOString() } as never).eq("id", id).eq("user_id", userId); await load(); };
+  const answerProposal = async (accept: boolean) => { if (!proposal || busy) return; setBusy(true); await supabase.rpc("oe_app_proposal" as never, { p_id: proposal.id, p_accept: accept } as never); setBusy(false); setProposal(null); await load(); };
 
   return <section className="oe-queue" dir="ltr" aria-busy={loading}>
-    {showGoalCard && !loading && <GoalCard direction={data.direction} busy={busy} v={v} step={goalStep} primary={primaryGoal} secondary={secondaryGoals} expired={goalExpired} changing={goalChanging} onChoose={(goal) => void choosePrimaryGoal(goal)} onReconfirm={() => void reconfirmGoal()} onChange={() => { setDrawerOpen(false); setGoalChanging(true); setGoalStep("choose"); }} onToggleSecondary={(goal) => setSecondaryGoals((current) => { const next = new Set(current); next.has(goal) ? next.delete(goal) : next.add(goal); return next; })} onSaveSecondary={() => void finishGoal(Array.from(secondaryGoals))} onSkipSecondary={() => void finishGoal(null)} onDefer={() => void deferGoal()} />}
-
     <header className="oe-queue-header">
       <h1>{t("queue_morning", "Morning")}{firstName ? `, ${firstName}` : ""}</h1>
-      {count > 0 && <><p><span style={mono}>{count}</span> {t("queue_things_today", "things today. About a minute.")}</p><div className="oe-machine-line"><span className={refreshing ? "oe-machine-dot oe-machine-dot-working" : "oe-machine-dot"} aria-hidden /><span>{refreshing ? t("queue_refreshing", "Looking again") : t("queue_still_reading", "Still reading")} — <b style={mono}>{data.surface_count}</b> {t("queue_sources_across", "sources across")} <b style={mono}>{data.entity_count}</b> {t("queue_organisations", "organisations")}</span><button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>{refreshing ? t("queue_refreshing_short", "Refreshing…") : t("queue_refresh", "Refresh")}</button></div></>}
+      {view === "today" && <p><span style={mono}>{cards.length}</span> {cards.length === 1 ? "thing" : "things"} today · about a minute</p>}
+      <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? "Looking again" : "Still reading"} — <b style={mono}>{data.surface_count}</b> sources across <b style={mono}>{data.entity_count}</b> organisations</span><button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>{refreshing ? "Refreshing…" : "Refresh"}</button></div>
       {refreshNote && <p className="oe-refresh-note">{refreshNote}</p>}
-      {count > 0 && <div className="oe-header-tools"><button type="button" className="oe-tuning-door" onClick={() => setDrawerOpen(true)}><strong>{t("queue_tuning_title", "What reaches you")}</strong><span><b style={mono}>{data.rule_count}</b> {t("queue_rules_force", "rules in force")} · <b style={mono}>{data.held_count}</b> {t("queue_held_month", "held back this month")}</span></button><button type="button" className="v23-textlink" onClick={() => setHistoryOpen((open) => !open)}>{t("queue_history", "History")}</button></div>}
     </header>
+    <nav className="oe-segments" aria-label="Opportunity views">{(["today", "parked", "history", "settings"] as View[]).map((item) => <button key={item} type="button" aria-current={view === item ? "page" : undefined} onClick={() => setView(item)}><span>{item[0].toUpperCase() + item.slice(1)}</span>{item === "today" && cards.length > 0 && <b>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b>{data.parked.length}</b>}</button>)}</nav>
 
-    <div className={`oe-notice${notice ? " is-visible" : ""}`} role="status" aria-live="polite">{notice}</div>
+    {view === "today" && directionIncomplete && <button type="button" className="oe-setup-strip" onClick={() => openDirection()}><span><strong>Set your direction</strong><small>{direction?.goal ? `Goal set · ${!direction.priority ? "priority" : "mix"} next · 1 min` : "Goal, priority and mix · 1 min"}</small></span><span className="oe-progress" aria-label={`${directionProgress.filter(Boolean).length} of 3 set`}>{directionProgress.map((done, index) => <i key={index} className={done ? "is-set" : ""} />)}</span></button>}
 
-    {proposal ? <AuraCard hover="none" className="oe-proposal"><p><strong>{`That is the ${proposal.count}th ${proposal.value} ${t("queue_proposal_seen", "item you have turned down.")}`}</strong></p><p>{t("queue_proposal_question", "Shall we stop showing them? You can undo it any time, and it will not touch anything else.")}</p><div className="oe-actions"><AuraButton onClick={() => void answerProposal(true)} loading={busy}>{t("queue_yes_stop", "Yes, stop")}</AuraButton><AuraButton variant="ghost" onClick={() => void answerProposal(false)} disabled={busy}>{t("queue_no_keep", "No, keep them")}</AuraButton></div></AuraCard>
-    : directionQuestion && card ? <DirectionCard kind={directionQuestion} direction={data.direction} busy={busy} v={v} onChoose={(value) => void saveDirection(value)} onDefer={() => void deferDirection()} />
-    : card && validWhy(card) ? <>
-      <AuraCard hover="none" className="oe-decision-card">
-        <div className="oe-card-flags"><div className={`oe-lane oe-lane-${card.lane}`}><span aria-hidden />{card.access_state ? STATE_LABEL[card.access_state] : (card.lane === "act" ? t("queue_open_now", "Open now") : t("queue_worth_writing", "Worth writing about"))}{card.clock_text && <em> · {card.clock_text}</em>}</div>{card.purpose === "explore" && <span className="oe-purpose-chip">{v("purpose_explore")}</span>}</div>
-        <h2>{card.title}</h2>
-        <p className="oe-meta">{[card.issuer_name, card.location].filter(Boolean).join(" · ")}</p>
-        {card.scope && <div className="oe-scope-wrap"><p className={`oe-summary${scopeExpanded ? " is-expanded" : ""}`}>{card.scope}</p><button type="button" className="v23-textlink" onClick={() => setScopeExpanded((open) => !open)}>{scopeExpanded ? t("queue_less", "Less") : t("queue_more", "More")}</button></div>}
-        {card.inference && <div className="oe-inference">{card.inference.what_we_saw && <p><strong>What we saw:</strong> “{card.inference.what_we_saw}”</p>}{card.inference.what_we_infer && <p><strong>What we infer:</strong> {card.inference.what_we_infer}</p>}{card.inference.what_would_confirm && <p><strong>What would confirm it:</strong> {card.inference.what_would_confirm}</p>}</div>}
-        <div className="oe-why"><div className="oe-why-lead"><p><strong>{card.lane === "act" ? t("queue_why_you", "Why you") : t("queue_your_angle", "Your angle")}:</strong> {lead}</p><button type="button" className="v23-textlink" onClick={() => setExpanded((open) => !open)}>{expanded ? t("queue_less", "Less") : t("queue_more", "More")}</button></div>{expanded && <div className="oe-why-more">{(card.why_lines ?? []).slice(1).map((line, index) => <p key={index}><span className="oe-dot-evidence" aria-hidden />{line.text}</p>)}{card.gap_line?.text && <p><span className="oe-dot-risk" aria-hidden /><strong>{t("queue_risk", "You would have to answer for")}:</strong> {card.gap_line.text}</p>}<p><span className="oe-dot-rule" aria-hidden /><strong>{t("queue_clears_n_rules", "Clears {n} of your rules").replace("{n}", String(card.rule_count))}</strong></p>{card.quote && <blockquote>“{card.quote}” {card.source_url && <a href={card.source_url} target="_blank" rel="noreferrer">{t("source_link", "Source")}</a>}{card.last_checked && <small style={mono}>{String(card.last_checked).slice(0, 10)}</small>}</blockquote>}</div>}</div>
-        {card.lane === "act" && (card.cost_of_door ? <p className="oe-door-cost"><span aria-hidden />{v("door_cost_en").replace("{cost}", card.cost_of_door)}</p> : <p className="oe-door-cost"><span aria-hidden />{t("queue_direct_cost", "Direct application. One form, no recruiter call first.")}</p>)}
-        {!declining ? <div className="oe-actions"><AuraButton onClick={() => void decide("right")} loading={busy}>{card.lane === "act" ? t("queue_act", "I will go for it") : t("queue_draft", "Draft it")}</AuraButton><AuraButton variant="ghost" onClick={() => void decide("later")} disabled={busy}>{t("queue_later", "Later")}</AuraButton><AuraButton variant="ghost" onClick={() => setDeclining(true)} disabled={busy}>{t("queue_not_for_me", "Not for me")}</AuraButton></div>
-        : <div className="oe-decline"><button type="button" className="v23-textlink oe-back" onClick={() => setDeclining(false)}>{t("queue_back", "Back")}</button><div><h3>{t("queue_not_because", "Not for me because")}</h3><div className="oe-chip-row">{taste.map(([key, fallback, scope, value]) => <button key={key} type="button" disabled={busy} style={{ ...chipBase, border: "1px solid var(--border-default)" }} onClick={() => void decline(scope, value, null)}>{t(key, fallback)}</button>)}</div></div><div><h3>{t("queue_or_wrong", "Or something is wrong with it")}</h3><div className="oe-chip-row">{truths.map(([key, fallback, truth]) => <button key={key} type="button" disabled={busy} className="oe-truth-chip" style={chipBase} onClick={() => void decline(null, null, truth)}>{t(key, fallback)}</button>)}</div></div></div>}
-      </AuraCard>
-      {cards.slice(queueIndex + 1).length > 0 && <div className="oe-after"><SectionHeader label={t("queue_after_this", "After this")} />{cards.slice(queueIndex + 1).map((item, offset) => <button type="button" key={item.id} onClick={() => { setQueueIndex(queueIndex + offset + 1); setExpanded(false); setScopeExpanded(false); setDeclining(false); }}><strong>{item.title}</strong><span>{item.lane === "act" ? t("queue_open_now", "Open now") : t("queue_worth_writing", "Worth writing about")}</span></button>)}</div>}
-      <p className="oe-key-legend" style={mono}>{t("queue_keys", "1 choose · 2 later · 3 decline")}</p>
-    </>
-    : !loading && <AuraCard hover="none" className="oe-end"><h2>{t("queue_nothing_today", "Nothing today.")}</h2><p>{t("queue_still_reading_counts", "Still reading {sources} sources across {organisations} organisations.").replace("{sources}", String(data.surface_count)).replace("{organisations}", String(data.entity_count))}</p>{windowDate && (() => { const line = data.window?.missed ? v("window_missed") : v("window_expected"); const [before, after] = line.split("{date}"); return <p className="oe-window-line">{before}<span style={mono}>{dateText(windowDate)}</span>{after}</p>; })()}{data.due_outcomes.map((due) => <div key={due.id} className="oe-outcome"><strong>{due.title}</strong><span>{t("queue_outcome_ask", "Did anything come of it?")}</span><div className="oe-chip-row">{[["applied","queue_applied","I applied"],["shortlisted","queue_shortlisted","I was shortlisted"],["won","queue_won","I got it"],["nothing","queue_nothing","Nothing came of it"]].map(([outcome,key,fallback]) => <button key={outcome} type="button" style={{ ...chipBase, border: "1px solid var(--border-default)" }} onClick={() => void answerOutcome(due.id,outcome)}>{t(key,fallback)}</button>)}</div></div>)}{links}</AuraCard>}
+    {proposal && <AuraCard hover="none" className="oe-proposal"><p><strong>That is the <span style={mono}>{proposal.count}</span>th {proposal.value} item you have turned down.</strong></p><p>Shall we stop showing them? You can undo it any time.</p><div className="oe-actions"><AuraButton onClick={() => void answerProposal(true)} loading={busy}>Yes, stop</AuraButton><AuraButton variant="ghost" onClick={() => void answerProposal(false)}>No, keep them</AuraButton></div></AuraCard>}
 
-    {historyOpen && <section className="oe-history"><SectionHeader label={t("queue_history", "History")} />{history}</section>}
+    {view === "today" && <TodayView groups={groups} selected={selected} decliningId={decliningId} data={data} busy={busy} v={v} onSelect={selectCard} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} onOutcome={answerOutcome} onSettings={() => setView("settings")} onHistory={() => setView("history")} />}
+    {view === "parked" && <ParkedView rows={data.parked} busy={busy} onBringBack={(id) => void bringBack(id, true)} />}
+    {view === "history" && <HistoryView rows={data.history} filter={historyFilter} onFilter={setHistoryFilter} />}
+    {view === "settings" && <SettingsView data={data} busy={busy} newRule={newRule} newRuleType={newRuleType} addingRule={addingRule} showAllHeld={showAllHeld} v={v} onDirection={openDirection} onToggleRule={toggleRule} onNewRule={setNewRule} onRuleType={setNewRuleType} onAddingRule={setAddingRule} onSaveRule={saveRule} onShowAllHeld={setShowAllHeld} onShowAnyway={showAnyway} />}
 
-    {drawerOpen && createPortal(<div className="oe-drawer-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}><aside className="oe-drawer" role="dialog" aria-modal="true" aria-label={t("queue_tuning_title", "What reaches you")}><div className="oe-drawer-head"><h2>{t("queue_tuning_title", "What reaches you")}</h2><button type="button" onClick={() => setDrawerOpen(false)} aria-label={t("queue_close", "Close")}><X size={18}/></button></div>
-      {data.direction?.goal && <section className="oe-direction-summary"><div className="oe-rule"><div><strong>{v(`goal_${data.direction.goal}`)} · since <span style={mono}>{String(data.direction.goal_confirmed_at ?? "").slice(0, 10)}</span>{data.direction.goal_secondary?.length ? ` + ${data.direction.goal_secondary.map((goal) => v(`goal_${goal}`)).join(", ")}` : ""}</strong></div><button type="button" className="v23-textlink" onClick={() => { setDrawerOpen(false); setGoalChanging(true); setGoalStep("choose"); }}>{v("direction_change")}</button></div></section>}
-      {data.direction?.priority && <section className="oe-direction-summary"><div className="oe-rule"><div><strong>{v("direction_priority_sentence").replace("{priority}", v(`priority_${data.direction.priority}`)).replace("{date}", data.direction.priority_set_on ?? "")}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("priority")}>{v("direction_change")}</button></div>{data.direction.mix && <div className="oe-rule"><div><strong>{v("direction_mix_sentence").replace("{mix}", v(`mix_${data.direction.mix}`))}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("mix")}>{v("direction_change")}</button></div>}</section>}
-      <section><SectionHeader label={t("queue_must_true", "Must be true")} />{data.rules.filter((rule) => rule.kind === "hard").map((rule) => <RuleRow key={rule.id} rule={rule} onDeactivate={deactivate} />)}</section>
-      <section><SectionHeader label={t("queue_better_true", "Better if true")} />{data.rules.filter((rule) => rule.kind === "soft").map((rule) => <RuleRow key={rule.id} rule={rule} onDeactivate={deactivate} />)}<div className="oe-add-rule"><select aria-label="Rule type" value={newRuleType} onChange={(event) => setNewRuleType(event.target.value as "sector"|"issuer")}><option value="sector">Sector</option><option value="issuer">Organisation</option></select><input aria-label="Rule value" value={newRule} onChange={(event) => setNewRule(event.target.value)} placeholder={t("queue_add_control", "Add a sector or organisation")} /><AuraButton variant="ghost" onClick={() => void saveRule()} disabled={!newRule.trim() || busy}>Add</AuraButton></div></section>
-      <section><SectionHeader label={t("queue_held_title", "Held back this month")} />{data.held.map((held) => <div key={held.id} className="oe-held"><div><strong>{held.title ?? t("queue_untitled", "Untitled item")}</strong><span>{held.reason ?? t("queue_held_rule", "Held by a rule")}</span></div><AuraButton variant="ghost" onClick={() => void showAnyway(held.id)}>{t("queue_show_anyway", "Show me anyway")}</AuraButton></div>)}<p className="oe-commitment">{t("queue_never_locked", "Filtering never locks you out. You can reopen anything held back here.")}</p></section>
-    </aside></div>, document.body)}
+    <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span>{notice?.undo && <button type="button" onClick={() => void bringBack(notice.undo as string)}>Undo</button>}</div>
+    {sheetOpen && createPortal(<DirectionSheet step={directionStep} direction={direction} choice={directionChoice} primaryGoal={primaryGoal} secondary={secondaryGoals} busy={busy} v={v} onChoice={setDirectionChoice} onSecondary={(goal) => setSecondaryGoals((current) => { const next = new Set(current); next.has(goal) ? next.delete(goal) : next.add(goal); return next; })} onNext={() => void nextDirection()} onBack={() => { setDirectionChoice(null); setDirectionStep(directionStep === "mix" ? "priority" : directionStep === "priority" ? (direction?.goal ? "goal" : "goal") : directionStep === "secondary" ? "goal" : "goal"); }} onSkip={() => void deferDirection()} onClose={() => setSheetOpen(false)} onReconfirm={() => void reconfirm()} onChange={() => setDirectionStep("goal")} />, document.body)}
   </section>;
 }
 
-function HistoryList({ groups, emptyText }: { groups: Array<[string, History[]]>; emptyText: string }) {
-  if (groups.length === 0) return <p className="oe-history-empty">{emptyText}</p>;
-  return <div>{groups.map(([day, rows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{displayDay(`${day}T12:00:00Z`)}</h3>{rows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>Shown</span><strong>{row.title ?? "Opportunity"}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small><em>{row.lane === "write" ? "Worth writing about" : "Open now"}</em>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>You decided</span>{historyDecision(row)}</p><p><span>What happened</span>{historyOutcome(row)}</p></article>)}</section>)}</div>;
+function TodayView({ groups, selected, decliningId, data, busy, v, onSelect, onDeclineStart, onDecide, onDecline, onRender, onOutcome, onSettings, onHistory }: { groups: Array<{ key: string; label: string; tone: string; cards: QueueCard[] }>; selected: QueueCard | null; decliningId: string | null; data: QueueData; busy: boolean; v: ReturnType<typeof useVocab>; onSelect: (card: QueueCard) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void; onOutcome: (id: string, outcome: string) => Promise<void>; onSettings: () => void; onHistory: () => void }) {
+  const cards = groups.flatMap((group) => group.cards);
+  return <>
+    {data.due_outcomes.length > 0 && <section className="oe-outcomes"><SectionHeader label="Something to close" />{data.due_outcomes.map((due) => <div key={due.id} className="oe-outcome"><strong>{due.title}</strong><span>Did anything come of it?</span><div className="oe-chip-row">{[["applied", "I applied"], ["shortlisted", "I was shortlisted"], ["won", "I got it"], ["nothing", "Nothing came of it"]].map(([value, label]) => <button key={value} type="button" style={chipBase} onClick={() => void onOutcome(due.id, value)}>{label}</button>)}</div></div>)}</section>}
+    {cards.length > 0 ? <div className="oe-today-layout"><div className="oe-group-list">{groups.map((group) => <section key={group.key} className={`oe-group oe-group-${group.tone}`}><div className="oe-group-head"><SectionHeader label={group.label} /><b>{group.cards.length}</b></div>{group.cards.map((card) => <OpportunityItem key={card.id} card={card} selected={selected?.id === card.id} declining={decliningId === card.id} busy={busy} v={v} onSelect={() => onSelect(card)} onDeclineStart={() => onDeclineStart(card.id)} onDeclineBack={() => onDeclineStart(null)} onDecide={(action) => onDecide(card, action)} onDecline={(scope, value, truth) => onDecline(card, scope, value, truth)} onRender={(node) => onRender(card, node)} />)}</section>)}</div><div className="oe-detail-pane">{selected ? <OpportunityDetail card={selected} declining={decliningId === selected.id} busy={busy} v={v} onDeclineStart={() => onDeclineStart(selected.id)} onDeclineBack={() => onDeclineStart(null)} onDecide={(action) => onDecide(selected, action)} onDecline={(scope, value, truth) => onDecline(selected, scope, value, truth)} /> : <p>Select something to read it here.</p>}</div></div>
+    : <AuraCard hover="none" className="oe-empty"><h2>Nothing today.</h2><p>Still reading <span style={mono}>{data.surface_count}</span> sources across <span style={mono}>{data.entity_count}</span> organisations.</p>{data.window?.expected_by && <p className="oe-window-line">{data.window.missed ? v("window_missed").replace("{date}", dateText(data.window.expected_by)) : v("window_expected").replace("{date}", dateText(data.window.expected_by))}</p>}<AuraButton onClick={onSettings}>Review what reaches you</AuraButton><button type="button" className="v23-textlink" onClick={onHistory}>See history</button></AuraCard>}
+    {selected && <p className="oe-key-legend" style={mono}>1 choose · 2 later · 3 decline</p>}
+  </>;
 }
 
-function GoalCard({ direction, busy, v, step, primary, secondary, expired, changing, onChoose, onReconfirm, onChange, onToggleSecondary, onSaveSecondary, onSkipSecondary, onDefer }: { direction: Direction | null; busy: boolean; v: ReturnType<typeof useVocab>; step: GoalStep; primary: Goal | null; secondary: Set<Goal>; expired: boolean; changing: boolean; onChoose: (goal: Goal) => void; onReconfirm: () => void; onChange: () => void; onToggleSecondary: (goal: Goal) => void; onSaveSecondary: () => void; onSkipSecondary: () => void; onDefer: () => void }) {
-  const proposed = direction?.goal_proposed ?? null;
-  const selectedPrimary = primary ?? direction?.goal ?? null;
-  if (step === "confirmed") return <AuraCard hover="none" className="oe-direction-card"><p className="oe-goal-confirmed">Set. We will ask again in <span style={mono}>90</span> days, or sooner if things change.</p></AuraCard>;
-  if (step === "secondary" && selectedPrimary) return <AuraCard hover="none" className="oe-direction-card"><h2>Anything else worth watching for?</h2><div className="oe-secondary-goals">{goals.filter((goal) => goal !== selectedPrimary).map((goal) => <Button key={goal} type="button" variant="outline" className="oe-secondary-chip" disabled={busy} aria-pressed={secondary.has(goal)} onClick={() => onToggleSecondary(goal)}>{v(`goal_${goal}`)}</Button>)}</div><div className="oe-goal-save"><AuraButton onClick={onSaveSecondary} loading={busy}>Save</AuraButton><button type="button" className="v23-textlink" disabled={busy} onClick={onSkipSecondary}>Skip</button></div></AuraCard>;
-  if (expired && direction?.goal && !changing) return <AuraCard hover="none" className="oe-direction-card"><h2>Still <strong>{v(`goal_${direction.goal}`)}</strong>?</h2><div className="oe-actions"><AuraButton onClick={onReconfirm} loading={busy}>Yes</AuraButton><AuraButton variant="ghost" onClick={onChange} disabled={busy}>Change</AuraButton></div><button type="button" className="v23-textlink oe-direction-later" disabled={busy} onClick={onDefer}>{v("goal_not_now")}</button></AuraCard>;
-  return <AuraCard hover="none" className="oe-direction-card"><h2>{v("goal_question")}</h2><p>{v("goal_sub")}</p><div className="oe-direction-options">{goals.map((goal) => <Button key={goal} type="button" variant="outline" className={`oe-direction-option${proposed === goal ? " is-proposed" : ""}`} disabled={busy} onClick={() => onChoose(goal)} aria-pressed={false}><span><strong>{v(`goal_${goal}`)}</strong>{proposed === goal && <small>Our reading of your profile</small>}</span></Button>)}</div><button type="button" className="v23-textlink oe-direction-later" disabled={busy} onClick={onDefer}>{v("goal_not_now")}</button></AuraCard>;
+function OpportunityItem({ card, selected, declining, busy, v, onSelect, onDeclineStart, onDeclineBack, onDecide, onDecline, onRender }: { card: QueueCard; selected: boolean; declining: boolean; busy: boolean; v: ReturnType<typeof useVocab>; onSelect: () => void; onDeclineStart: () => void; onDeclineBack: () => void; onDecide: (action: "right" | "later") => Promise<void>; onDecline: (scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (node: HTMLElement | null) => void }) {
+  return <article ref={onRender} className={`oe-compact${selected ? " is-selected" : ""}`}><button type="button" className="oe-compact-trigger" aria-expanded={selected} onClick={onSelect}><CardSummary card={card} /></button>{selected && <div className="oe-mobile-detail"><OpportunityDetail card={card} declining={declining} busy={busy} v={v} onDeclineStart={onDeclineStart} onDeclineBack={onDeclineBack} onDecide={onDecide} onDecline={onDecline} /></div>}</article>;
+}
+function CardSummary({ card }: { card: QueueCard }) {
+  const lead = card.presentation_line ?? card.why_lines?.find((line) => String(line.text ?? "").trim())?.text ?? "";
+  return <><div className={`oe-state oe-state-${isClosing(card) ? "clock" : card.lane}`}><span aria-hidden />{card.access_state ? STATE_LABEL[card.access_state] : card.lane === "act" ? "Open now" : "Worth writing about"}{card.clock_text && <em>{card.clock_text}</em>}</div><h2>{card.title}</h2><p className="oe-meta">{[card.issuer_name, card.location].filter(Boolean).join(" · ")}</p><p className="oe-lead">{lead}</p></>;
+}
+function OpportunityDetail({ card, declining, busy, v, onDeclineStart, onDeclineBack, onDecide, onDecline }: { card: QueueCard; declining: boolean; busy: boolean; v: ReturnType<typeof useVocab>; onDeclineStart: () => void; onDeclineBack: () => void; onDecide: (action: "right" | "later") => Promise<void>; onDecline: (scope: string | null, value: string | null, truth: string | null) => Promise<void> }) {
+  const taste = [["Wrong level", "level", card.level_band], ["Wrong sector", "sector", card.sector], ["Not this organisation", "issuer", card.issuer_id], ["Wrong place", "place", card.location], ["Just this one", "just_this", card.opportunity_id]].filter((entry) => Boolean(entry[2])) as string[][];
+  const truths = [["The link does not work", "dead_route"], ["The quote is not on the page", "quote_absent"], ["It is a listing page", "listing_page"], ["This already happened", "already_happened"], ["Wrong organisation", "wrong_issuer"]];
+  return <div className="oe-card-detail"><div className="oe-detail-title"><CardSummary card={card} /></div><div className="oe-why-more">{(card.why_lines ?? []).map((line, index) => <p key={index}><span className="oe-dot-evidence" aria-hidden />{line.text}</p>)}{card.presentation_line && <p><span className="oe-dot-rule" aria-hidden />{card.presentation_line}</p>}{card.gap_line?.text && <p className="oe-risk"><span className="oe-dot-risk" aria-hidden /><strong>You would have to answer for:</strong> {card.gap_line.text}</p>}{card.quote && <blockquote>“{card.quote}” {card.source_url && <a href={card.source_url} target="_blank" rel="noreferrer">Source</a>}{card.last_checked && <small style={mono}>checked {String(card.last_checked).slice(0, 10)}</small>}</blockquote>}</div>{card.lane === "act" && <p className="oe-door-cost"><span aria-hidden />{card.cost_of_door ? v("door_cost_en").replace("{cost}", card.cost_of_door) : "Direct application. One form, no recruiter call first."}</p>}{!declining ? <div className="oe-actions"><AuraButton onClick={() => void onDecide("right")} loading={busy}>{card.lane === "act" ? "I will go for it" : "Draft it"}</AuraButton><div><AuraButton variant="ghost" onClick={() => void onDecide("later")} disabled={busy}>Later</AuraButton><AuraButton variant="ghost" onClick={onDeclineStart} disabled={busy}>Not for me</AuraButton></div></div> : <div className="oe-decline"><div><h3>Not for me because</h3><div className="oe-chip-row">{taste.map(([label, scope, value]) => <button key={label} type="button" style={chipBase} disabled={busy} onClick={() => void onDecline(scope, value, null)}>{label}</button>)}</div></div><div><h3>Or something is wrong with it</h3><div className="oe-chip-row">{truths.map(([label, truth]) => <button key={truth} type="button" className="oe-truth-chip" style={chipBase} disabled={busy} onClick={() => void onDecline(null, null, truth)}>{label}</button>)}</div></div><button type="button" className="v23-textlink oe-back" onClick={onDeclineBack}>Back</button></div>}</div>;
 }
 
-function DirectionCard({ kind, direction, busy, v, onChoose, onDefer }: { kind: Exclude<DirectionQuestion, null>; direction: Direction | null; busy: boolean; v: ReturnType<typeof useVocab>; onChoose: (value: Priority | Mix) => void; onDefer: () => void }) {
-  const isRenewal = kind === "priority" && Boolean(direction?.priority);
-  const options = kind === "priority" ? priorities : mixes;
-  return <AuraCard hover="none" className="oe-direction-card"><h2>{v(kind === "priority" ? (isRenewal ? "direction_priority_renew" : "direction_priority_question") : "direction_mix_question")}</h2><div className="oe-direction-options">{options.map((option) => { const selected = kind === "priority" && direction?.priority === option; return <Button key={option} type="button" variant="outline" className={`oe-direction-option${selected ? " is-selected" : ""}`} disabled={busy} onClick={() => onChoose(option)} aria-pressed={selected}><span><strong>{v(`${kind}_${option}`)}</strong>{kind === "priority" && <small>{v(`priority_${option}_sub`)}</small>}</span></Button>; })}</div>{kind === "priority" && !isRenewal && <button type="button" className="v23-textlink oe-direction-later" disabled={busy} onClick={onDefer}>{v("direction_not_now")}</button>}</AuraCard>;
+function ParkedView({ rows, busy, onBringBack }: { rows: Parked[]; busy: boolean; onBringBack: (id: string) => void }) {
+  return <section className="oe-view oe-view-narrow"><SectionHeader label="Parked" />{rows.length ? <div className="oe-parked-list">{rows.map((row) => <article key={row.opportunity_id} className="oe-parked-row"><div><h2>{row.title}</h2><p>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</p><small style={mono}>Parked {displayDay(row.parked_at)}{row.deadline ? ` · closes ${displayDay(row.deadline)}` : ""}</small></div><AuraButton variant="ghost" disabled={busy} onClick={() => onBringBack(row.opportunity_id)}>Bring back</AuraButton></article>)}</div> : <p className="oe-empty-copy">Nothing parked. “Later” puts things here.</p>}</section>;
+}
+function HistoryView({ rows, filter, onFilter }: { rows: History[]; filter: HistoryFilter; onFilter: (filter: HistoryFilter) => void }) {
+  const filtered = rows.filter((row) => filter === "all" || filter === "right" && row.tap === "right" || filter === "declined" && row.tap === "not_my_area" && !row.truth_code || filter === "flagged" && Boolean(row.truth_code));
+  const groups = new Map<string, History[]>(); filtered.forEach((row) => { const key = dayKey(row.shown_at); groups.set(key, [...(groups.get(key) ?? []), row]); });
+  return <section className="oe-view oe-view-narrow"><SectionHeader label="History" /><div className="oe-filter-row">{([["all", "All"], ["right", "Went for it"], ["declined", "Not for me"], ["flagged", "Flagged"]] as Array<[HistoryFilter, string]>).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => onFilter(value)}>{label}</button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{displayDay(`${day}T12:00:00Z`)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>Shown</span><strong>{row.title ?? "Opportunity"}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>You decided</span>{historyDecision(row)}</p><p><span>What happened</span>{historyOutcome(row)}</p></article>)}</section>) : <p className="oe-empty-copy">Nothing has been shown yet.</p>}</section>;
 }
 
-function RuleRow({ rule, onDeactivate }: { rule: Rule; onDeactivate: (recordId: string) => Promise<void> }) {
-  const [open, setOpen] = useState(false);
-  const from = rule.derived_from ?? {};
-  const comments = Array.isArray(from.comments) ? from.comments : [];
-  const fields = Array.isArray(from.profile) ? from.profile : [];
-  const legal = typeof from.legal_basis === "string" ? from.legal_basis : null;
-  const hasDerivation = comments.length > 0 || fields.length > 0 || Boolean(legal);
-  return <div className="oe-rule"><div><strong>{rule.rule_text}</strong><span><span style={mono}>{rule.stated_on}</span> · {FIELD_LABEL[rule.field ?? ""] ?? "Preference"}</span>{hasDerivation && <button type="button" className="v23-textlink oe-how" aria-expanded={open} onClick={() => setOpen((value) => !value)}>How we know</button>}{open && <span className="oe-rule-derivation">{comments.map((comment, index) => <span key={`${comment.id ?? index}`}>“{comment.text}” <span style={mono}>{comment.said_on}</span></span>)}{fields.map((field) => <span key={field}>{FIELD_LABEL[field] ?? "Profile"}</span>)}{legal && <span>{legal}</span>}</span>}</div><button type="button" className="v23-textlink" onClick={() => void onDeactivate(rule.id)}>Change</button></div>;
+function SettingsView({ data, busy, newRule, newRuleType, addingRule, showAllHeld, v, onDirection, onToggleRule, onNewRule, onRuleType, onAddingRule, onSaveRule, onShowAllHeld, onShowAnyway }: { data: QueueData; busy: boolean; newRule: string; newRuleType: "sector" | "issuer"; addingRule: boolean; showAllHeld: boolean; v: ReturnType<typeof useVocab>; onDirection: (step: DirectionStep) => void; onToggleRule: (rule: Rule) => Promise<void>; onNewRule: (value: string) => void; onRuleType: (value: "sector" | "issuer") => void; onAddingRule: (value: boolean) => void; onSaveRule: () => Promise<void>; onShowAllHeld: (value: boolean) => void; onShowAnyway: (id: string) => Promise<void> }) {
+  const d = data.direction;
+  const rows = [{ label: "Goal", value: d?.goal ? `${v(`goal_${d.goal}`)} · since ${dayKey(d.goal_confirmed_at ?? "")}${d.goal_secondary?.length ? ` · also watching: ${d.goal_secondary.map((goal) => v(`goal_${goal}`)).join(", ")}` : ""}` : "Not set", step: "goal" as DirectionStep }, { label: "Priority", value: d?.priority ? `${v(`priority_${d.priority}`)} · we ask again ${d.priority_expires_at ?? ""}` : "Not set", step: "priority" as DirectionStep }, { label: "Mix", value: d?.mix ? v(`mix_${d.mix}`) : "Not set", step: "mix" as DirectionStep }];
+  const held = showAllHeld ? data.held : data.held.slice(0, 3);
+  return <section className="oe-view oe-settings"><h2>What reaches you</h2><p className="oe-view-sub">Every rule the engine follows for you, in one place.</p><section><SectionHeader label="Your direction" /><div className="oe-settings-list">{rows.map((row) => <div key={row.label} className="oe-setting-row"><div><strong>{row.label}</strong><span>{row.value}</span></div><button type="button" className="v23-textlink" onClick={() => onDirection(row.step)}>{row.value === "Not set" ? "Set" : "Change"}</button></div>)}</div></section><RuleSection title="Must be true" rows={data.rules.filter((rule) => rule.kind === "hard")} onToggle={onToggleRule} /><section><SectionHeader label="Better if true" /><div className="oe-settings-list">{data.rules.filter((rule) => rule.kind === "soft").map((rule) => <RuleRow key={rule.id} rule={rule} onToggle={onToggleRule} />)}<button type="button" className="oe-add-reveal" onClick={() => onAddingRule(!addingRule)}>+ Add a sector or organisation</button>{addingRule && <div className="oe-add-rule"><select aria-label="Rule type" value={newRuleType} onChange={(event) => onRuleType(event.target.value as "sector" | "issuer")}><option value="sector">Sector</option><option value="issuer">Organisation</option></select><input aria-label="Rule value" value={newRule} onChange={(event) => onNewRule(event.target.value)} /><AuraButton variant="ghost" onClick={() => void onSaveRule()} disabled={!newRule.trim() || busy}>Add</AuraButton></div>}</div></section><section><div className="oe-section-count"><SectionHeader label="Held back this month" /><b>{data.held_count}</b></div><div className="oe-settings-list">{held.map((item) => <div key={item.id} className="oe-held"><div><strong>{item.title ?? "Untitled item"}</strong><span>{item.reason ?? "Held by a rule"}</span></div><AuraButton variant="ghost" onClick={() => void onShowAnyway(item.id)}>Show anyway</AuraButton></div>)}{data.held.length > 3 && <button type="button" className="oe-add-reveal" onClick={() => onShowAllHeld(!showAllHeld)}>{showAllHeld ? "Show less" : `See all ${data.held.length}`}</button>}</div></section><p className="oe-commitment">Filtering never locks you out. Anything held back can be reopened here.</p></section>;
+}
+function RuleSection({ title, rows, onToggle }: { title: string; rows: Rule[]; onToggle: (rule: Rule) => Promise<void> }) { return <section><SectionHeader label={title} /><div className="oe-settings-list">{rows.map((rule) => <RuleRow key={rule.id} rule={rule} onToggle={onToggle} />)}</div></section>; }
+function RuleRow({ rule, onToggle }: { rule: Rule; onToggle: (rule: Rule) => Promise<void> }) {
+  const [open, setOpen] = useState(false); const from = rule.derived_from ?? {}; const hasProof = Boolean(from.comments?.length || from.profile?.length || from.legal_basis);
+  return <div className="oe-rule"><div><strong>{rule.rule_text}</strong><span>{FIELD_LABEL[rule.field ?? ""] ?? "Preference"} · {from.profile?.length ? "from your profile" : `stated ${rule.stated_on}`}</span>{hasProof && <button type="button" className="v23-textlink oe-how" aria-expanded={open} onClick={() => setOpen(!open)}>How we know</button>}{open && <span className="oe-rule-derivation">{from.comments?.map((comment, index) => <span key={comment.id ?? index}>“{comment.text}” <span style={mono}>{comment.said_on}</span></span>)}{from.profile?.map((field) => <span key={field}>{FIELD_LABEL[field] ?? "Profile"}</span>)}{from.legal_basis && <span>{from.legal_basis}</span>}</span>}</div><button type="button" role="switch" aria-checked={rule.active !== false} className="oe-switch" onClick={() => void onToggle(rule)}><span /></button></div>;
+}
+
+function DirectionSheet({ step, direction, choice, primaryGoal, secondary, busy, v, onChoice, onSecondary, onNext, onBack, onSkip, onClose, onReconfirm, onChange }: { step: DirectionStep; direction: Direction | null; choice: Goal | Priority | Mix | null; primaryGoal: Goal | null; secondary: Set<Goal>; busy: boolean; v: ReturnType<typeof useVocab>; onChoice: (value: Goal | Priority | Mix) => void; onSecondary: (goal: Goal) => void; onNext: () => void; onBack: () => void; onSkip: () => void; onClose: () => void; onReconfirm: () => void; onChange: () => void }) {
+  const stepNumber = step === "goal" || step === "secondary" || step === "renew" ? 1 : step === "priority" ? 2 : 3;
+  const goal = primaryGoal ?? direction?.goal;
+  return <div className="oe-sheet-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="oe-sheet" role="dialog" aria-modal="true" aria-label="Set your direction"><div className="oe-sheet-handle" aria-hidden /><div className="oe-sheet-top"><span style={mono}>Set your direction · {stepNumber} / 3</span>{step !== "done" && <button type="button" className="v23-textlink" onClick={onSkip}>Skip for now</button>}</div>{step === "renew" && direction?.goal ? <><h2>Still {v(`goal_${direction.goal}`)}?</h2><div className="oe-sheet-actions"><AuraButton onClick={onReconfirm} loading={busy}>Yes</AuraButton><AuraButton variant="ghost" onClick={onChange}>Change</AuraButton></div></> : step === "goal" ? <><h2>{v("goal_question")}</h2><div className="oe-direction-options">{goals.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${direction?.goal_proposed === item ? " is-proposed" : ""}${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(`goal_${item}`)}</strong><small>{v(`goal_${item}_sub`)}</small>{direction?.goal_proposed === item && <em>Our reading of your profile</em>}</span></Button>)}</div><p className="oe-sheet-note">Nothing is chosen for you. The outlined one is our reading of your profile — tap it only if it is true.</p></> : step === "secondary" && goal ? <><h2>Anything else worth watching for?</h2><div className="oe-secondary-goals">{goals.filter((item) => item !== goal).map((item) => <Button key={item} type="button" variant="outline" className="oe-secondary-chip" aria-pressed={secondary.has(item)} onClick={() => onSecondary(item)}>{v(`goal_${item}`)}</Button>)}</div></> : step === "priority" ? <><h2>{v("direction_priority_question")}</h2><div className="oe-direction-options">{priorities.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(`priority_${item}`)}</strong><small>{v(`priority_${item}_sub`)}</small></span></Button>)}</div></> : step === "mix" ? <><h2>{v("direction_mix_question")}</h2><div className="oe-direction-options">{mixes.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}>{v(`mix_${item}`)}</Button>)}</div></> : <><h2>Set.</h2><p>We will ask again in <span style={mono}>90</span> days, or sooner if things change.</p></>}<div className="oe-sheet-actions">{step !== "goal" && step !== "renew" && step !== "done" && <button type="button" className="v23-textlink" onClick={onBack}>Back</button>}{step === "secondary" && <button type="button" className="v23-textlink" onClick={onNext}>Skip</button>}{step !== "renew" && <AuraButton onClick={step === "done" ? onClose : onNext} disabled={busy || ((step === "goal" || step === "priority" || step === "mix") && !choice)}>{step === "secondary" ? "Save" : step === "done" ? "Done" : "Next"}</AuraButton>}</div><button type="button" className="v23-textlink oe-sheet-close" onClick={onClose}>Close</button></section></div>;
 }
 
 export default OpportunityQueue;
