@@ -210,10 +210,16 @@ Deno.serve(async (req) => {
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),
         eligibility_outcome: licence.outcome, eligibility_fail: licence.fails,
         eligibility_unknowns: licence.unknowns, eligibility_conditions: licence.conditions,
+        // A record cannot both pass the gate and carry a rejection. The screen
+        // is the later word, so it closes the gate it just refused.
+        ...(g.outcome === "rejected"
+          ? { gate_passed: false, lane_final: "write" }
+          : {}),
         // The act lane is an intersection; a record he cannot hold leaves it.
         ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
         ...(g.outcome === "survivor" ? {} : { presentation_line: null }),
       }).eq("user_id", userId).eq("opportunity_id", o.id);
+
       if (upErr) {
         await logEfError(admin, {
           function_name: FN, error: new Error(`screen write failed: ${upErr.message}`),
