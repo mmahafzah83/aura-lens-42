@@ -251,11 +251,12 @@ export function OpportunityQueue() {
   const saveDirection = async (value: Priority | Mix) => { if (busy) return; setBusy(true); const params = directionQuestion === "priority" ? { p_priority: value } : { p_mix: value }; const { error } = await supabase.rpc("oe_direction_save" as never, params as never); setBusy(false); if (!error) { markDirectionAsked(); setQueueIndex(0); void load(); } };
   const deferDirection = async () => { if (busy) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_defer: true } as never); setBusy(false); if (!error) { markDirectionAsked(); void load(); } };
 
-  const choosePrimaryGoal = (value: Goal) => {
+  const choosePrimaryGoal = async (value: Goal) => {
     if (busy) return;
-    setPrimaryGoal(value);
-    setSecondaryGoals(new Set());
-    setGoalStep("secondary");
+    setBusy(true);
+    const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: value } as never);
+    setBusy(false);
+    if (!error) { setPrimaryGoal(value); setSecondaryGoals(new Set()); setGoalStep("secondary"); }
   };
   const finishGoal = async (secondary: Goal[] | null) => {
     const chosen = primaryGoal ?? data.direction?.goal;
@@ -303,7 +304,7 @@ export function OpportunityQueue() {
   const links = <div className="oe-end-links"><AuraButton onClick={() => setDrawerOpen(true)}>{t("queue_setup", "Review what reaches you")}</AuraButton><button type="button" className="v23-textlink" onClick={() => setHistoryOpen((open) => !open)}>{t("queue_history", "History")}</button></div>;
 
   return <section className="oe-queue" dir="ltr" aria-busy={loading}>
-    {showGoalCard && !loading && <GoalCard direction={data.direction} busy={busy} v={v} step={goalStep} primary={primaryGoal} secondary={secondaryGoals} expired={goalExpired} changing={goalChanging} onChoose={choosePrimaryGoal} onReconfirm={() => void reconfirmGoal()} onChange={() => { setDrawerOpen(false); setGoalChanging(true); setGoalStep("choose"); }} onToggleSecondary={(goal) => setSecondaryGoals((current) => { const next = new Set(current); next.has(goal) ? next.delete(goal) : next.add(goal); return next; })} onSaveSecondary={() => void finishGoal(Array.from(secondaryGoals))} onSkipSecondary={() => void finishGoal(null)} onDefer={() => void deferGoal()} />}
+    {showGoalCard && !loading && <GoalCard direction={data.direction} busy={busy} v={v} step={goalStep} primary={primaryGoal} secondary={secondaryGoals} expired={goalExpired} changing={goalChanging} onChoose={(goal) => void choosePrimaryGoal(goal)} onReconfirm={() => void reconfirmGoal()} onChange={() => { setDrawerOpen(false); setGoalChanging(true); setGoalStep("choose"); }} onToggleSecondary={(goal) => setSecondaryGoals((current) => { const next = new Set(current); next.has(goal) ? next.delete(goal) : next.add(goal); return next; })} onSaveSecondary={() => void finishGoal(Array.from(secondaryGoals))} onSkipSecondary={() => void finishGoal(null)} onDefer={() => void deferGoal()} />}
 
     <header className="oe-queue-header">
       <h1>{t("queue_morning", "Morning")}{firstName ? `, ${firstName}` : ""}</h1>
