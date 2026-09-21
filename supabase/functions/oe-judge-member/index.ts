@@ -921,6 +921,14 @@ Deno.serve(async (req) => {
       );
       for (const [idx, { o }] of ranked.slice(0, 3).entries()) {
         void idx;
+        const writeRefusal = queueRefusal(o);
+        if (writeRefusal) {
+          await admin.from("oe_learning_events").insert({
+            user_id: userId, process: "card_withheld", trigger_reason: writeRefusal,
+            detail: { lane: "write", opportunity_id: o.id, card_date: cardDate }, applied: false,
+          });
+          continue;
+        }
         const bands = judgedBands.get(o.id) ?? null;
         const writeBand = bands?.fit ?? null;
         if (!writeBand) {
