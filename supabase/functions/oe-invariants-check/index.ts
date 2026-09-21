@@ -273,6 +273,48 @@ Deno.serve(async (req) => {
   }
 
 
+  // 14. A card stands on the member's own record. A cited id that is not one
+  //     of his own documents, his own writing or an own-record evidence row is
+  //     somebody else's page being passed off as his experience.
+  {
+    const { data } = await admin.from("oe_card_cites_foreign_evidence").select("*").limit(50);
+    const bad = (data ?? []).map((r: any) => ({
+      card_id: r.card_id, user_id: r.user_id, opportunity_id: r.opportunity_id, cited_id: r.cited_id,
+    }));
+    record("card_cites_foreign_evidence", bad);
+  }
+
+  // 15. The two judges must agree. A served act card the rubric refuses —
+  //     eligibility not met, or a score below the gate — should have been a
+  //     rejection carrying the rubric's own sentence.
+  {
+    const { data } = await admin.from("oe_judge_disagreement").select("*").limit(50);
+    const bad = (data ?? []).map((r: any) => ({
+      match_id: r.match_id, user_id: r.user_id, opportunity_id: r.opportunity_id,
+      title: r.title, score_avg: r.score_avg,
+    }));
+    record("judge_disagreement", bad);
+  }
+
+  // 16. A verified quote is a quote anybody can find again in the text we
+  //     kept. Anything else is a claim about a page, not a reading of it.
+  {
+    const { data } = await admin.from("oe_quote_not_in_raw").select("*").limit(50);
+    const bad = (data ?? []).map((r: any) => ({
+      opportunity_id: r.id, language: r.language, title: r.title, source_url: r.source_url,
+    }));
+    record("quote_not_in_raw", bad);
+  }
+
+  // 17. The break-in test is only a control if it actually runs.
+  {
+    const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
+    const { count } = await admin.from("ef_error_log")
+      .select("id", { count: "exact", head: true })
+      .eq("function_name", "oe-rls-probe").gte("created_at", since);
+    record("rls_probe_ran_within_24h", (count ?? 0) > 0 ? [] : [{ last_24h_runs: count ?? 0 }]);
+  }
+
   for (const v of violations) {
 
     await admin.from("ef_error_log").insert({
@@ -286,10 +328,11 @@ Deno.serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: FN,
       severity: "info",
-      error_message: "OE_INVARIANTS ok — all thirteen assertions hold",
+      error_message: "OE_INVARIANTS ok — all seventeen assertions hold",
       context: {},
     });
   }
+
 
 
   return json({ ok: violations.length === 0, violations });
