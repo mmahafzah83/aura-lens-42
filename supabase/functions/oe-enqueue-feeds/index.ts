@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
   try {
     const { data: feeds, error: feedErr } = await admin
       .from("oe_feeds")
-      .select("id, name, lane, kind, url, cadence, terms_ok, active, last_fetched_at");
+      .select("id, name, lane, kind, url, cadence, terms_ok, active, last_fetched_at, country");
     if (feedErr) throw new Error(feedErr.message);
 
     for (const f of feeds ?? []) {
@@ -121,17 +121,61 @@ Deno.serve(async (req) => {
       }
     }
 
-    const counts = { enqueued, skipped_terms: skippedTerms, skipped_cadence: skippedCadence };
+    // ── The read backlog ────────────────────────────────────────────────────
+    // What passed triage and was never read is not a queue, it is a debt. A
+    // fixed number of the oldest are enqueued each run, Gulf-located first.
+    const { data: policy } = await admin
+      .from("oe_policy_versions")
+      .select("params")
+      .eq("active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const readCap = Number((policy?.params as any)?.read_cap_per_day ?? 200);
+    const feedCountry = new Map((feeds ?? []).map((f) => [f.id as string, String((f as any).country ?? "").toUpperCase()]));
+    const { data: backlogRows } = await admin
+      .from("oe_read_backlog")
+      .select("candidate_id, feed_id, url, created_at")
+      .order("created_at", { ascending: true })
+      .limit(Math.max(readCap * 4, 400));
+    const gulf = new Set(["SA", "AE", "QA", "KW", "BH", "OM"]);
+    const ordered = [...(backlogRows ?? [])].sort((a, b) => {
+      const ga = gulf.has(feedCountry.get(a.feed_id as string) ?? "") ? 0 : 1;
+      const gb = gulf.has(feedCountry.get(b.feed_id as string) ?? "") ? 0 : 1;
+      if (ga !== gb) return ga - gb;
+      return String(a.created_at).localeCompare(String(b.created_at));
+    });
+    let readEnqueued = 0;
+    for (const row of ordered.slice(0, readCap)) {
+      const before = enqueued;
+      await enqueue({
+        job_type: "oe_read_candidate",
+        user_id: null,
+        payload: { candidate_id: row.candidate_id, url: row.url, feed_id: row.feed_id },
+        priority: 2,
+        max_attempts: 3,
+      });
+      if (enqueued > before) readEnqueued++;
+    }
+
+    const counts = {
+      enqueued,
+      skipped_terms: skippedTerms,
+      skipped_cadence: skippedCadence,
+      read_enqueued: readEnqueued,
+      read_cap_per_day: readCap,
+    };
     await admin.from("oe_runs").insert({
       run_kind: "enqueue_feeds",
       started_at: startedAt,
       finished_at: new Date().toISOString(),
       outcome: "ok",
+      severity: "info",
       counts,
     });
     await logEfError(admin, {
       function_name: FN,
-      error: `OE_ENQUEUE_OK enqueued=${enqueued}`,
+      error: `OE_ENQUEUE_OK enqueued=${enqueued} read=${readEnqueued}`,
       severity: "info",
       context: counts,
     });
