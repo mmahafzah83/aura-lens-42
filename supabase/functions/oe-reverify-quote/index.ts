@@ -95,63 +95,96 @@ Deno.serve(async (req) => {
   const admin = createClient(url, service);
   let body: any = {};
   try { body = await req.json(); } catch { /* a cron sends nothing */ }
-  const limit = Math.min(Number(body?.limit ?? 20), 50);
+  const limit = Math.min(Number(body?.limit ?? 20), 500);
   const only: string[] = Array.isArray(body?.opportunity_ids) ? body.opportunity_ids : [];
+  // 'stored' reads nothing from the web: it holds every alive record against
+  // the text we actually kept. A quote nobody can read back in our own copy is
+  // not a verified quote, whatever a live page says today.
+  const mode: "fetch" | "stored" = body?.mode === "stored" ? "stored" : "fetch";
+  const SELECT = "id, source_url, evidence_quote, content_hash, quote_attempts, raw, kind, access_state, deadline, route_url, language, title";
 
   try {
     let due: any[] = [];
-    if (only.length) {
+    if (mode === "stored") {
+      const { data, error } = await admin.from("oe_opportunities")
+        .select(SELECT).eq("alive", true).limit(limit);
+      if (error) throw new Error(error.message);
+      due = data ?? [];
+    } else if (only.length) {
       // A named run ignores the backoff clock but not the attempt ceiling.
-      const { data } = await admin.from("oe_opportunities")
-        .select("id, source_url, evidence_quote, content_hash, quote_attempts")
-        .in("id", only);
+      const { data } = await admin.from("oe_opportunities").select(SELECT).in("id", only);
       due = data ?? [];
     } else {
       const { data, error } = await admin.rpc("oe_quote_recheck_due", { p_limit: limit, p_max_attempts: MAX_ATTEMPTS });
       if (error) throw new Error(error.message);
-      due = data ?? [];
+      const ids = (data ?? []).map((r: any) => r.id);
+      if (ids.length) {
+        const { data: rows } = await admin.from("oe_opportunities").select(SELECT).in("id", ids);
+        due = rows ?? [];
+      }
     }
 
     const results: any[] = [];
     for (const row of due) {
-      const attempts = Number(row.quote_attempts ?? 0) + 1;
-      let reason: "fetch_failed" | "page_changed" | "quote_absent" | null = null;
+      const quote = String(row.evidence_quote ?? "");
+      const stored = String(row.raw?.page_text ?? "");
+      const attempts = Number(row.quote_attempts ?? 0) + (mode === "stored" ? 0 : 1);
+      let reason: "fetch_failed" | "page_changed" | "quote_absent" | "quote_not_in_text" | "shell_page" | null = null;
       let detail = "";
       let verified = false;
       let hash: string | null = null;
+      let readResult: string | null = null;
+      let newStored: string | null = null;
 
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 20_000);
-        const res = await fetch(row.source_url, {
-          redirect: "follow",
-          signal: controller.signal,
-          headers: {
-            "user-agent": "Mozilla/5.0 (compatible; AuraBot/1.0; +https://aura-intel.org)",
-            "accept": "text/html,application/xhtml+xml",
-            "accept-language": "en,ar;q=0.9",
-          },
-        });
-        clearTimeout(timer);
-        if (!res.ok) {
-          reason = "fetch_failed";
-          detail = `HTTP ${res.status}`;
-        } else {
-          const text = pageText(await res.text());
-          hash = await sha256(text);
-          if (!text) { reason = "fetch_failed"; detail = "empty body"; }
-          else if (quoteIsPresent(String(row.evidence_quote ?? ""), text)) verified = true;
-          else if (row.content_hash && hash !== row.content_hash) {
-            reason = "page_changed";
-            detail = "page text differs from the copy we read";
-          } else {
-            reason = "quote_absent";
-            detail = "page reachable and unchanged; the quote is not in it";
-          }
+      if (mode === "stored") {
+        verified = quoteIsPresent(quote, stored);
+        if (!verified) {
+          reason = "quote_not_in_text";
+          detail = "the quote is not in the page text we kept";
         }
-      } catch (e) {
-        reason = "fetch_failed";
-        detail = String((e as Error)?.message ?? e).slice(0, 200);
+      } else {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 20_000);
+          const res = await fetch(row.source_url, {
+            redirect: "follow",
+            signal: controller.signal,
+            headers: {
+              "user-agent": "Mozilla/5.0 (compatible; AuraBot/1.0; +https://aura-intel.org)",
+              "accept": "text/html,application/xhtml+xml",
+              "accept-language": "en,ar;q=0.9",
+            },
+          });
+          clearTimeout(timer);
+          if (!res.ok) {
+            reason = "fetch_failed";
+            detail = `HTTP ${res.status}`;
+          } else {
+            const html = await res.text();
+            const text = pageText(html);
+            hash = await sha256(text);
+            if (!text) { reason = "fetch_failed"; detail = "empty body"; }
+            else if (isShellPage(html, text)) {
+              readResult = "shell_page";
+              reason = "shell_page";
+              detail = "a listing or menu page, not an article";
+            } else if (quoteIsPresent(quote, text)) {
+              verified = true;
+              readResult = "article";
+              // The verdict and the text we keep must agree from now on.
+              newStored = storedSlice(text, quote);
+            } else if (row.content_hash && hash !== row.content_hash) {
+              reason = "page_changed";
+              detail = "page text differs from the copy we read";
+            } else {
+              reason = "quote_absent";
+              detail = "page reachable and unchanged; the quote is not in it";
+            }
+          }
+        } catch (e) {
+          reason = "fetch_failed";
+          detail = String((e as Error)?.message ?? e).slice(0, 200);
+        }
       }
 
       const abandoned = !verified && attempts >= MAX_ATTEMPTS;
@@ -161,9 +194,25 @@ Deno.serve(async (req) => {
         quote_last_attempt_at: new Date().toISOString(),
         quote_fail_reason: verified ? null : reason,
         quote_fail_detail: verified ? null : detail,
+        verify_reason: verified ? null : reason,
         quote_abandoned: abandoned,
+        ...(readResult ? { read_result: readResult } : {}),
         ...(verified && hash ? { content_hash: hash } : {}),
+        ...(newStored ? { raw: { ...(row.raw ?? {}), page_text: newStored } } : {}),
       }).eq("id", row.id);
+
+      // A SHAPE MAY NOT OUTRANK ITS STATE. A seat that states no closing date
+      // and no way in is not a confirmed opportunity; it is something we saw.
+      let downgraded = false;
+      if (row.access_state === "confirmed_opportunity" && row.kind === "board_seat"
+        && (!row.deadline || !row.route_url)) {
+        await admin.from("oe_opportunities").update({
+          access_state: "observed_event",
+          access_state_reason: "board seat with no closing date and no way in — recorded as something we saw",
+          access_state_at: new Date().toISOString(),
+        }).eq("id", row.id);
+        downgraded = true;
+      }
 
       // A verdict of 'quote_not_verified' was reached on a quote that now
       // reads. It is stale, and the judge's own resume guard would keep it
@@ -179,7 +228,7 @@ Deno.serve(async (req) => {
           .eq("opportunity_id", row.id).eq("gate_reason", "quote_not_verified");
       }
 
-      if (!verified) {
+      if (!verified && mode !== "stored") {
         await admin.from("ef_error_log").insert({
           function_name: FN,
           severity: reason === "quote_absent" ? "error" : "warn",
@@ -187,10 +236,12 @@ Deno.serve(async (req) => {
           context: { opportunity_id: row.id, source_url: row.source_url, attempt: attempts, detail, abandoned },
         });
       }
-      results.push({ id: row.id, source_url: row.source_url, verified, reason, detail, attempt: attempts, abandoned });
+      results.push({ id: row.id, source_url: row.source_url, verified, reason, detail, attempt: attempts, abandoned, downgraded });
     }
 
-    return json({ ok: true, checked: results.length, results });
+    const verifiedCount = results.filter((r) => r.verified).length;
+    return json({ ok: true, mode, checked: results.length, verified: verifiedCount, results: mode === "stored" ? results.slice(0, 40) : results });
+
   } catch (e) {
     await admin.from("ef_error_log").insert({
       function_name: FN, severity: "error",
