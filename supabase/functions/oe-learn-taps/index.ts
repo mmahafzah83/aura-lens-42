@@ -68,18 +68,30 @@ Deno.serve(async (req) => {
 
 
       for (const tap of userTaps) {
-        const { data: card } = await admin.from("oe_cards")
-          .select("match_id,opportunity_id,oe_matches(scores),oe_opportunities(id,title,issuer_id,seniority_band,location,chair_type)")
-          .eq("id", tap.card_id).maybeSingle();
-        // A card can carry no record at all (a quiet day). A tap on one of
-        // those teaches nothing about the world, so there is nothing to write.
-        const opportunity = (card?.oe_opportunities ?? null) as any;
+        // A decision can be taken on a record that never became a card of its
+        // own, so the record is read from whichever the tap carries.
+        const { data: card } = tap.card_id
+          ? await admin.from("oe_cards")
+            .select("match_id,opportunity_id,oe_matches(scores),oe_opportunities(id,title,issuer_id,seniority_band,location,chair_type)")
+            .eq("id", tap.card_id).maybeSingle()
+          : { data: null as any };
+        let opportunity = (card?.oe_opportunities ?? null) as any;
+        if (!opportunity && tap.opportunity_id) {
+          const { data: direct } = await admin.from("oe_opportunities")
+            .select("id,title,issuer_id,seniority_band,location,chair_type").eq("id", tap.opportunity_id).maybeSingle();
+          opportunity = direct ?? null;
+        }
+        // Truth goes to the machine's notebook, taste to the member's. A
+        // report that something is wrong with a record says nothing about
+        // what he wants, so it never becomes one of his rules.
+        const isTruth = tap.source === "truth" || Boolean(tap.truth_code);
+        if (isTruth) counts.truth++; else counts.taste++;
 
         const match = card?.oe_matches as any;
         const title = String(opportunity?.title ?? "");
         const ids = citedFaceIds(match?.scores);
         const label = tap.tap === "right" ? "right" : tap.tap === "not_my_area" ? "not_my_area" : null;
-        for (const id of ids) {
+        for (const id of isTruth ? [] : ids) {
           const face = next.get(id);
           if (!face || face.face === "avoid") continue;
           if (!mayMoveWeights) { counts.held_at_stage++; continue; }
@@ -91,7 +103,7 @@ Deno.serve(async (req) => {
         }
 
 
-        if (opportunity && (tap.tap === "not_quite" || tap.tap === "not_my_area" || tap.tap === "less_from_here")) {
+        if (!isTruth && opportunity && (tap.tap === "not_quite" || tap.tap === "not_my_area" || tap.tap === "less_from_here")) {
           const reach = tap.scope || (tap.tap === "not_my_area" ? "type" : tap.tap === "less_from_here" ? "issuer" : "just_this");
           const reachValue = tap.scope_value || ({
             issuer: opportunity.issuer_id,
@@ -109,6 +121,7 @@ Deno.serve(async (req) => {
           });
           counts.corrections++;
         }
+
         await admin.from("oe_taps").update({ applied_at: new Date().toISOString() }).eq("id", tap.id).is("applied_at", null);
         counts.applied++;
       }
