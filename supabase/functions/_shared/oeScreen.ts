@@ -464,13 +464,14 @@ export function professionGate(identity: MemberIdentity, opportunity: any) {
   }
   const own = held.get(role);
   if (own?.length) {
-    return { role, relation: "same" as const, bridge: own[0], sentence: null };
+    return { role, read, relation: "same" as const, bridge: own[0], sentence: null };
   }
   for (const neighbour of ADJACENT[role] ?? []) {
     const via = held.get(neighbour);
     if (via?.length) {
       return {
         role,
+        read,
         relation: "adjacent" as const,
         bridge: `${via[0]} — ${PROFESSION_LABEL[neighbour]} bridges to ${PROFESSION_LABEL[role]}`,
         sentence: null,
@@ -480,6 +481,7 @@ export function professionGate(identity: MemberIdentity, opportunity: any) {
   const mine = identity.professions.map((p) => p.label).join(", ") || "not established from your history";
   return {
     role,
+    read,
     relation: "different" as const,
     bridge: null,
     sentence:
