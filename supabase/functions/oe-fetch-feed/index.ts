@@ -938,6 +938,9 @@ Deno.serve(async (req) => {
           language: rec.language === "ar" ? "ar" : "en",
           extraction_confidence: confidence,
           alive: true,
+          // What the page STATES about accountability, each fact carrying the
+          // sentence it came from; a quote not found in the page is dropped.
+          scope_evidence: verifyScopeEvidence(rec.scope_evidence, String(cand.text ?? "")),
           raw: {
             prompt_version: READER_VERSION,
             model: MODEL,
