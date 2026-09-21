@@ -316,6 +316,39 @@ Deno.serve(withRun("invariants_check", async (req) => {
     record("rls_probe_ran_within_24h", (count ?? 0) > 0 ? [] : [{ last_24h_runs: count ?? 0 }]);
   }
 
+  // 18. What passed triage and was never read is a debt, not a queue. The
+  //     threshold is the policy's own, never a number written here.
+  {
+    const { data: policy } = await admin.from("oe_policy_versions")
+      .select("params").eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const max = Number((policy?.params as any)?.read_backlog_max ?? 100);
+    const { count } = await admin.from("oe_read_backlog").select("candidate_id", { count: "exact", head: true });
+    record("read_backlog_above_threshold", (count ?? 0) > max ? [{ backlog: count ?? 0, read_backlog_max: max }] : []);
+  }
+
+  // 19. Lineage. A serve without its card, a card or a match without its
+  //     record — each is a row that can no longer say where it came from.
+  {
+    const { data } = await admin.from("oe_lineage_orphans").select("*").limit(50);
+    record("lineage_orphans", (data ?? []) as unknown[]);
+  }
+
+  // 20. A dead job and a request that never came back are failures the cron
+  //     log calls successes. They are counted here instead.
+  {
+    const { data } = await admin.from("oe_job_health").select("*").limit(200);
+    record("dead_jobs_or_timed_out_requests", (data ?? []) as unknown[]);
+  }
+
+  // 21. A job that has gone quiet for twice its own schedule is a job that
+  //     has stopped, whatever the schedule says.
+  {
+    const { data } = await admin.from("oe_heartbeat").select("*");
+    const bad = (data ?? []).filter((r: any) => r.stale === true)
+      .map((r: any) => ({ run_kind: r.run_kind, last_run_at: r.last_run_at, hours_since: r.hours_since }));
+    record("run_kind_silent", bad);
+  }
+
   for (const v of violations) {
 
     await admin.from("ef_error_log").insert({
