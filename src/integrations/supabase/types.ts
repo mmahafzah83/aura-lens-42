@@ -5801,6 +5801,7 @@ export type Database = {
           content_hash: string | null
           cost_of_door: string | null
           created_at: string
+          dead_reason: string | null
           deadline: string | null
           discovery_kind: string
           embedding: string | null
@@ -5856,6 +5857,7 @@ export type Database = {
           content_hash?: string | null
           cost_of_door?: string | null
           created_at?: string
+          dead_reason?: string | null
           deadline?: string | null
           discovery_kind?: string
           embedding?: string | null
@@ -5911,6 +5913,7 @@ export type Database = {
           content_hash?: string | null
           cost_of_door?: string | null
           created_at?: string
+          dead_reason?: string | null
           deadline?: string | null
           discovery_kind?: string
           embedding?: string | null
