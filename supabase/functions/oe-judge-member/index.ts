@@ -903,8 +903,8 @@ Deno.serve(async (req) => {
       // A card without a band cannot be ranked or presented, so it is not made.
       if (!pick.fitBand) {
         await admin.from("oe_learning_events").insert({
-          user_id: userId, kind: "card_withheld",
-          payload: { reason: "no_band_computable", lane: "act", opportunity_id: o.id, card_date: cardDate },
+          user_id: userId, process: "card_withheld", trigger_reason: "no_band_computable",
+          detail: { lane: "act", opportunity_id: o.id, card_date: cardDate }, applied: false,
         });
         continue;
       }
@@ -956,11 +956,9 @@ Deno.serve(async (req) => {
         const writeBand = bandForRank(idx + 1, ranked.length);
         if (!writeBand) {
           await admin.from("oe_learning_events").insert({
-            user_id: userId, kind: "card_withheld",
-            payload: {
-              reason: "no_band_computable", lane: "write",
-              opportunity_id: o.id, card_date: cardDate, pool_size: ranked.length,
-            },
+            user_id: userId, process: "card_withheld", trigger_reason: "no_band_computable",
+            detail: { lane: "write", opportunity_id: o.id, card_date: cardDate, pool_size: ranked.length },
+            applied: false,
           });
           continue;
         }
