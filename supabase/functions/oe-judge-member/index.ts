@@ -609,8 +609,14 @@ Deno.serve(async (req) => {
         const m = merged.get(o.id) ?? { score: 0, retrieval: { coverage: "outside_retrieval_top_k" } };
         const vec = asVector(o.embedding);
         const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
-        return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
+        const gw = goalWeight((o as any).kind);
+        return {
+          o,
+          score: (m.score - penalty) * gw,
+          retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4), goal: memberGoal || null, goal_weight: gw },
+        };
       }).sort((a, b) => b.score - a.score);
+
     // Retrieval runs BEFORE the model: the eligible pool is ordered, then cut
     // to the shortlist from params. The cut is a cost control, never a silent
     // one — a shortlist smaller than the eligible pool is logged and counted.
