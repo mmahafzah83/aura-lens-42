@@ -386,8 +386,11 @@ async function writeCard(
       .select("id").maybeSingle();
     cardId = data?.id ?? null;
   }
-  if (cardId) {
+  // An empty day is not something we sent him. No opportunity, no serve —
+  // otherwise his own history fills up with days on which nothing happened.
+  if (cardId && (fields.opportunity_id as string | null)) {
     await admin.from("oe_serves").upsert({
+
       user_id: userId,
       card_id: cardId,
       opportunity_id: (fields.opportunity_id as string | null) ?? null,

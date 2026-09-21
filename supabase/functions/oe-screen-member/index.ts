@@ -250,15 +250,23 @@ Deno.serve(async (req) => {
 
     for (const o of (opps ?? [])) {
       funnel.alive++;
-      // Place means different things to different kinds; the kind's own row says which.
+      // KIND IS NOT A PASS. A kind may relax place or level only when the
+      // record's access state was actually established. A record that claims a
+      // relaxed kind while stating no access state is a mis-kinded listing: it
+      // is screened as an ordinary seat and the doubt is recorded.
+      const stateSet = Boolean(String((o as any).access_state ?? "").trim());
+      const kindUnverified = !stateSet
+        && (sensitivityOf(sensitivity, (o as any).kind) !== "hard"
+          || levelGateApplies(levelApplies, (o as any).kind) === false);
       const withKind = {
         ...o,
-        location_sensitivity: sensitivityOf(sensitivity, (o as any).kind),
-        level_gate_applies: levelGateApplies(levelApplies, (o as any).kind),
+        location_sensitivity: stateSet ? sensitivityOf(sensitivity, (o as any).kind) : "hard",
+        level_gate_applies: stateSet ? levelGateApplies(levelApplies, (o as any).kind) : true,
       };
       const licence = screen(withKind, eligibility, evidence);
       const routeIsSpecific = hasRoute(o, (o as any).issuer?.domain ?? null)
         && String((o as any).access_state ?? "") === "identified_route";
+
       const g = runGates(identity, withKind, licence, routeIsSpecific, { ladder, member: memberPlace });
 
       if (licence.conditions.length) funnel.place_conditions++;
@@ -281,7 +289,9 @@ Deno.serve(async (req) => {
         role_profession: g.role_profession, profession_relation: g.profession_relation,
         profession_source: g.profession_source, profession_source_quote: g.profession_source_quote,
         grade_basis: g.grade_basis,
+        gate_note: kindUnverified ? "kind_unverified" : null,
         employer_tier: g.employer_tier, level_direction: g.level_direction,
+
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),
         eligibility_outcome: licence.outcome, eligibility_fail: licence.fails,
         eligibility_unknowns: licence.unknowns, eligibility_conditions: licence.conditions,
@@ -426,6 +436,50 @@ Deno.serve(async (req) => {
             if (!invError) mayAsk = false;
           }
         }
+      }
+    }
+
+    // ── THE WRITE LANE PRESENTS ON STANDING, NOT ON REQUIREMENTS ──────────
+    // A market signal states no requirements, so a requirement↔evidence line
+    // can never exist for it. What it needs is the member's own sentence on
+    // the subject. Same evidence, different question: not "can you meet this"
+    // but "what have you already said about this".
+    {
+      const { data: writeRows } = await admin.from("oe_matches")
+        .select("opportunity_id")
+        .eq("user_id", userId).eq("lane_final", "write");
+      const stop = new Set("the a an and or of for in on to with by from at is are was were this that these those new more into over under about your you his her their its it as be been".split(" "));
+      const words = (text: string) => new Set(
+        String(text ?? "").toLowerCase().replace(/[^a-z0-9\u0600-\u06FF ]+/g, " ")
+          .split(/\s+/).filter((w) => w.length > 3 && !stop.has(w)));
+      const oppById = new Map((opps ?? []).map((o: any) => [String(o.id), o]));
+
+      for (const row of (writeRows ?? [])) {
+        const o: any = oppById.get(String(row.opportunity_id));
+        if (!o) continue;
+        const subject = words(`${o.title ?? ""} ${o.scope ?? ""} ${o.sector ?? ""}`);
+        let best: { row: any; score: number } | null = null;
+        for (const e of memberEvidence) {
+          const mine = words(`${e.claim} ${e.quote}`);
+          let score = 0;
+          for (const w of subject) if (mine.has(w)) score++;
+          if (score >= 2 && (!best || score > best.score)) best = { row: e, score };
+        }
+        if (!best) {
+          await admin.from("oe_matches").update({
+            presentation_line: null, presentation_evidence_ids: [],
+            screen_gate: "presentation", screen_outcome: "rejected", gate_passed: false,
+            rejection_sentence: "presentation: no standing sentence",
+          }).eq("user_id", userId).eq("opportunity_id", o.id);
+          continue;
+        }
+        const angle = `Your angle: you ${secondPerson(best.row.claim)}` +
+          `${best.row.position_ref ? ` — ${best.row.position_ref}` : ""}.`;
+        await admin.from("oe_matches").update({
+          presentation_line: angle,
+          presentation_evidence_ids: [best.row.id],
+          rejection_sentence: null,
+        }).eq("user_id", userId).eq("opportunity_id", o.id);
       }
     }
 

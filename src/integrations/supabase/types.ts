@@ -5295,6 +5295,7 @@ export type Database = {
           employer_tier: string | null
           explore_slot: boolean
           fit_band: string | null
+          gate_note: string | null
           gate_passed: boolean
           gate_reason: string | null
           grade_basis: string | null
@@ -5339,6 +5340,7 @@ export type Database = {
           employer_tier?: string | null
           explore_slot?: boolean
           fit_band?: string | null
+          gate_note?: string | null
           gate_passed?: boolean
           gate_reason?: string | null
           grade_basis?: string | null
@@ -5383,6 +5385,7 @@ export type Database = {
           employer_tier?: string | null
           explore_slot?: boolean
           fit_band?: string | null
+          gate_note?: string | null
           gate_passed?: boolean
           gate_reason?: string | null
           grade_basis?: string | null
@@ -5647,9 +5650,11 @@ export type Database = {
           rule_text: string
           rule_text_ar: string | null
           stated_on: string
+          status: string
           updated_at: string
           user_id: string
           value: string | null
+          values: string[] | null
         }
         Insert: {
           active?: boolean
@@ -5668,9 +5673,11 @@ export type Database = {
           rule_text: string
           rule_text_ar?: string | null
           stated_on?: string
+          status?: string
           updated_at?: string
           user_id: string
           value?: string | null
+          values?: string[] | null
         }
         Update: {
           active?: boolean
@@ -5689,9 +5696,11 @@ export type Database = {
           rule_text?: string
           rule_text_ar?: string | null
           stated_on?: string
+          status?: string
           updated_at?: string
           user_id?: string
           value?: string | null
+          values?: string[] | null
         }
         Relationships: []
       }
@@ -6044,6 +6053,132 @@ export type Database = {
           holdout_n?: number
           id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      oe_ref_countries: {
+        Row: {
+          iso2: string
+          name_ar: string
+          name_en: string
+          region_codes: string[]
+        }
+        Insert: {
+          iso2: string
+          name_ar: string
+          name_en: string
+          region_codes?: string[]
+        }
+        Update: {
+          iso2?: string
+          name_ar?: string
+          name_en?: string
+          region_codes?: string[]
+        }
+        Relationships: []
+      }
+      oe_ref_engagements: {
+        Row: {
+          code: string
+          name_ar: string
+          name_en: string
+          sort: number
+        }
+        Insert: {
+          code: string
+          name_ar: string
+          name_en: string
+          sort?: number
+        }
+        Update: {
+          code?: string
+          name_ar?: string
+          name_en?: string
+          sort?: number
+        }
+        Relationships: []
+      }
+      oe_ref_levels: {
+        Row: {
+          code: string
+          name_ar: string
+          name_en: string
+          rank: number
+        }
+        Insert: {
+          code: string
+          name_ar: string
+          name_en: string
+          rank: number
+        }
+        Update: {
+          code?: string
+          name_ar?: string
+          name_en?: string
+          rank?: number
+        }
+        Relationships: []
+      }
+      oe_ref_org_types: {
+        Row: {
+          code: string
+          name_ar: string
+          name_en: string
+          sort: number
+        }
+        Insert: {
+          code: string
+          name_ar: string
+          name_en: string
+          sort?: number
+        }
+        Update: {
+          code?: string
+          name_ar?: string
+          name_en?: string
+          sort?: number
+        }
+        Relationships: []
+      }
+      oe_ref_regions: {
+        Row: {
+          code: string
+          name_ar: string
+          name_en: string
+          sort: number
+        }
+        Insert: {
+          code: string
+          name_ar: string
+          name_en: string
+          sort?: number
+        }
+        Update: {
+          code?: string
+          name_ar?: string
+          name_en?: string
+          sort?: number
+        }
+        Relationships: []
+      }
+      oe_ref_sectors: {
+        Row: {
+          code: string
+          name_ar: string
+          name_en: string
+          sort: number
+        }
+        Insert: {
+          code: string
+          name_ar: string
+          name_en: string
+          sort?: number
+        }
+        Update: {
+          code?: string
+          name_ar?: string
+          name_en?: string
+          sort?: number
         }
         Relationships: []
       }
@@ -10557,6 +10692,10 @@ export type Database = {
           sample_size: number
         }[]
       }
+      oe_filter_save: {
+        Args: { p_field: string; p_op: string; p_values: string[] }
+        Returns: Json
+      }
       oe_goal_propose: { Args: { p_user: string }; Returns: string }
       oe_goal_save: {
         Args: { p_defer?: boolean; p_goal?: string; p_secondary?: string[] }
@@ -10646,6 +10785,10 @@ export type Database = {
       oe_route_is_specific: {
         Args: { p_kind: string; p_url: string }
         Returns: boolean
+      }
+      oe_rule_decide: {
+        Args: { p_apply: boolean; p_id: string }
+        Returns: Json
       }
       oe_scan_shared_facts_private: { Args: never; Returns: number }
       oe_truth_report_resolve: {
