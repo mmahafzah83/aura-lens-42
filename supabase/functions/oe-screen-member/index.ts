@@ -289,7 +289,7 @@ Deno.serve(async (req) => {
         role_profession: g.role_profession, profession_relation: g.profession_relation,
         profession_source: g.profession_source, profession_source_quote: g.profession_source_quote,
         grade_basis: g.grade_basis,
-        gate_note: kindUnverified ? "kind_unverified" : null,
+        gate_note: kindUnverified ? "kind_unverified" : (g as any).gate_note ?? null,
         employer_tier: g.employer_tier, level_direction: g.level_direction,
 
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),

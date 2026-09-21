@@ -252,7 +252,7 @@ const GRADES: Array<[number, string, RegExp]> = [
   [8, "senior director or head of function", /senior director|head of\b|group director|رئيس قطاع/i],
   [7, "director", /\bdirector\b|مدير تنفيذي/i],
   [5, "senior manager", /senior manager|principal consultant|مدير أول/i],
-  [4, "manager", /\bmanager\b|head of department|مدير/i],
+  [4, "manager", /\bmanager\b|head of department|team leader|section head|مدير/i],
   [3, "lead or senior consultant", /\blead\b|senior consultant|senior .* consultant|senior specialist/i],
   [2, "consultant or specialist", /consultant|advisor|adviser|specialist|associate|analyst|officer|engineer|curator|speaker|researcher/i],
 ];
@@ -564,6 +564,10 @@ export type GateResult = {
   profession_source: "title" | "accountability_sentence" | "none" | null;
   profession_source_quote: string | null;
   grade_basis: "title" | "proxies" | "none" | null;
+  /** an unknown that was carried rather than dropped, and the line it must answer for */
+  gate_note?: string | null;
+  answer_for?: string | null;
+
 };
 
 /** GATE 2 — is this his profession? A sector match may never rescue it. */
@@ -624,14 +628,12 @@ export function levelGate(
       reason: !grade ? "role_grade_unreadable" : "member_standing_unreadable",
     };
   }
-  if (tier === "unknown") {
-    return {
-      direction: "unknown" as const, gap: null, tier, placed, basis,
-      sentence: null, reason: "employer_tier_unknown",
-    };
-  }
+  // The ladder ADJUSTS a grade; it never decides one. An employer we have not
+  // placed yet carries no bonus, and the title still reads.
+  const bonus = tier === "unknown" ? 0 : placed.bonus;
 
-  const standing = +(grade.rank + placed.bonus).toFixed(2);
+  const standing = +(grade.rank + bonus).toFixed(2);
+
   const gap = +(standing - mine.standing).toFixed(2);
   const held = `you held ${mine.title} at ${mine.company}${mine.period ? ` from ${mine.period}` : ""}`;
   const thisOne = `this is ${opportunity?.title} at ${opportunity?.issuer_raw ?? "an employer at the same tier"}`;
@@ -762,15 +764,20 @@ export function runGates(
     ...withProf, employer_tier: lvl.tier, level_direction: lvl.direction, standing_gap: lvl.gap,
     grade_basis: lvl.basis,
   };
-  if (lvl.direction === "below" || (lvl.direction === "lateral" && lvl.sentence)) {
+  // "At or above my level" includes equality: a lateral record is AT the
+  // member's level and passes. Only below the member's standing is a refusal.
+  if (lvl.direction === "below") {
     return { ...withLevel, gate: "level", outcome: "rejected", sentence: lvl.sentence };
   }
+  // Unknown is marked, carried and answered for — never silently dropped.
   if (lvl.direction === "unknown") {
     return {
-      ...withLevel, gate: "level", outcome: "unknown",
-      sentence: `Your standing against this seat could not be established — ${String(lvl.reason).replace(/_/g, " ")}; queued for investigation.`,
+      ...withLevel, gate: "scored", outcome: "survivor", sentence: null,
+      gate_note: "level_unconfirmed",
+      answer_for: "We could not confirm the level of this role",
     };
   }
+
   return {
     ...withLevel, gate: "scored", outcome: "survivor", sentence: null,
     stretch: lvl.direction === "two_plus",

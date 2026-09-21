@@ -115,3 +115,8 @@
 - Municipal: 17 amanat seeded from https://momah.gov.sa/ar/branches-secretariat (official denominator 17).
 - Chambers: not readable — fsc.org.sa publishes no member list (holding page); nothing seeded.
 - Listed: saudiexchange.sa still 403; cma.org.sa renders in JavaScript with no readable text; nothing seeded.
+
+## Step 36B — level gate faults (open)
+1. Lateral must pass the level gate (rank >= floor includes equality).
+2. Unknown level: title grade word read first (Director/GM -> executive 4; Manager/Team Leader -> manager 2); employer ladder only adjusts; any still-unknown passes with gate_note='level_unconfirmed' and the card line "We could not confirm the level of this role".
+3. Re-screen + judge on demand for the founder; paste breakdown, the eight records, survivors and today's card.
