@@ -161,7 +161,22 @@ export function OpportunityQueue() {
     if (!error && payload) setData(next);
     setLoading(false);
   }, []);
-  useEffect(() => { void load(); void loadRefLabels(); }, [load]);
+  const loadSuperseded = useCallback(async () => {
+    const { data: rows } = await (supabase.from("oe_notebook" as never) as any)
+      .select("id, rule_text, rule_text_ar, stated_on, field, value")
+      .eq("entry_kind", "comment").eq("status", "declined").eq("decline_reason", "superseded_by_question")
+      .order("stated_on", { ascending: false });
+    setSuperseded(((rows ?? []) as Array<Record<string, unknown>>).map((row) => ({
+      id: String(row.id), text: String(row.rule_text ?? ""), text_ar: (row.rule_text_ar as string) ?? null,
+      said_on: String(row.stated_on ?? ""), field: (row.field as string) ?? null, value: (row.value as string) ?? null,
+    })));
+  }, []);
+  useEffect(() => { void load(); void loadRefLabels(); void loadSuperseded(); }, [load, loadSuperseded]);
+  useEffect(() => { void (async () => {
+    const { data: rows } = await supabase.rpc("oe_ref_sector_list" as never);
+    const list = Array.isArray(rows) ? (rows as unknown as SectorOption[]) : [];
+    setSectorOptions(list.filter((row) => row && row.code));
+  })(); }, []);
   useEffect(() => { void (async () => { const { data: payload } = await supabase.rpc("oe_my_home" as never); if (payload) setHome(payload as unknown as Home); })(); }, []);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
 
