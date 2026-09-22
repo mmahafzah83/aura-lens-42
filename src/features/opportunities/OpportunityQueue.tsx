@@ -73,6 +73,14 @@ const dateText = (value: string) => {
   if (Number.isNaN(d.getTime())) return "";
   return `${d.getUTCDate()} ${MONTHS_EN[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
+/** When a read pass last finished: the clock today, the date before that. */
+const readTime = (value: string) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const clock = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay ? clock : `${dateText(d.toISOString())} ${clock}`;
+};
 const fill = (text: string, vars: Record<string, string | number>) =>
   Object.entries(vars).reduce((acc, [k, val]) => acc.split(`{${k}}`).join(String(val)), text);
 const hasWhy = (card: QueueCard) => (card.why_lines ?? []).some((line) => String(line.text ?? "").trim());
