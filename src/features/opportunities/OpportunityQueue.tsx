@@ -240,7 +240,7 @@ export function OpportunityQueue() {
   const answerComment = async (id: string, accept: boolean) => { if (busy) return; setBusy(true); await supabase.rpc(accept ? "oe_notebook_promote_comment" as never : "oe_notebook_decline_comment" as never, { p_id: id } as never); setBusy(false); await load(); };
   const removeRule = async (id: string) => { if (busy) return; setBusy(true); await supabase.rpc("oe_notebook_remove_rule" as never, { p_id: id } as never); setBusy(false); await load(); };
   const resetRules = async () => {
-    const prompt = v("rules_reset_confirm") || `${v("rules_remove")} ${v("rules_active_title")}. ${v("rules_comments_title")}`;
+    const prompt = v("rules_start_again_confirm");
     if (busy || !window.confirm(prompt)) return;
     setBusy(true);
     const { error } = await supabase.rpc("oe_rules_reset" as never);
