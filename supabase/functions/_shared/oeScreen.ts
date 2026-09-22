@@ -760,6 +760,15 @@ export function runGates(
     profession_source: prof.read.source, profession_source_quote: prof.read.quote,
   };
   if (prof.relation === "different") {
+    // A profession read off a label, because the posting's own body could not
+    // be read, is not a verdict. It is carried, marked, and answered for.
+    if (prof.read.source === "title") {
+      return {
+        ...withProf, gate: "scored", outcome: "survivor", sentence: null,
+        gate_note: "profession_unconfirmed",
+        answer_for: "We could not read what this role is accountable for",
+      };
+    }
     return { ...withProf, gate: "profession", outcome: "rejected", sentence: prof.sentence };
   }
 
