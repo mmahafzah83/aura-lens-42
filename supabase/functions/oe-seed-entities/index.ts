@@ -214,7 +214,9 @@ const WP_NOISE =
  */
 const TADAWUL_SOURCES: Array<{ label: string; url: string; kind: "category" | "table" }> = [
   { label: "Wikipedia — Companies listed on Tadawul", url: "https://en.wikipedia.org/wiki/Category:Companies_listed_on_Tadawul", kind: "category" },
-  { label: "Wikipedia — Tadawul All-Share Index", url: "https://en.wikipedia.org/wiki/Tadawul_All-Share_Index", kind: "table" },
+  // The index article was read on 22 Sep 2026 and states index methodology,
+  // not a constituent list: its tables name percentages and regions, never a
+  // company. It stays recorded as read, and it seeds nothing.
 ];
 
 async function seedTadawulListed(
