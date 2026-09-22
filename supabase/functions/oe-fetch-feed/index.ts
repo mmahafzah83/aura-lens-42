@@ -1020,13 +1020,17 @@ Deno.serve(async (req) => {
     }
 
     // ── 8. FEED STATE ──────────────────────────────────────────────────────
-    if (feedId) {
+    // Only a whole-feed read moves the cadence clock. Reading ONE backlog
+    // candidate borrows the feed for context; stamping last_fetched_at here
+    // made a weekly feed look as though it fetched every minute.
+    if (feedId && !candidateRow) {
       await admin.from("oe_feeds").update({
         last_fetched_at: new Date().toISOString(),
         ...(insertedAnything ? { last_changed_at: new Date().toISOString() } : {}),
         last_error: null,
       }).eq("id", feedId);
     }
+
     if (candidateRow) {
       await admin.from("oe_candidates").update({ triage_state: "read" }).eq("id", candidateRow.id);
     }
