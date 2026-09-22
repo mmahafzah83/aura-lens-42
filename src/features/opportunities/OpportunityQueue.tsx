@@ -248,8 +248,10 @@ export function OpportunityQueue() {
     if (!(raw as { ok?: boolean } | null)?.ok) return;
     if (action === "later") { setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id), parked: [{ opportunity_id: card.opportunity_id, title: card.title, issuer_name: card.issuer_name, location: card.location, deadline: card.deadline, parked_at: new Date().toISOString() }, ...current.parked] })); setSelectedId(null); showNotice(v("toast_later"), card.opportunity_id); return; }
     showNotice(v("toast_go"));
-    if (card.lane === "write") navigate(`/studio?opportunity=${card.opportunity_id}`);
-    else { const destination = card.route_url ?? card.source_url; if (destination) window.open(destination, "_blank", "noopener,noreferrer"); await load(); }
+    // Act lane only: this tab opens the door, it never hands off to drafting.
+    const destination = card.route_url ?? card.source_url;
+    if (destination) window.open(destination, "_blank", "noopener,noreferrer");
+    await load();
   };
   const decline = async (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => {
     if (busy) return; setBusy(true);
@@ -272,16 +274,35 @@ export function OpportunityQueue() {
     window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
   }, [selected, sheetOpen, busy]);
 
-  const openDirection = (step?: DirectionStep) => { setDirectionChoice(null); setPrimaryGoal(null); setSecondaryGoals(new Set(direction?.goal_secondary ?? [])); setDirectionStep(step ?? (goalExpired ? "renew" : !direction?.goal ? "goal" : !direction.priority ? "priority" : "mix")); setSheetOpen(true); };
-  const deferDirection = async () => { if (busy) return; setBusy(true); await supabase.rpc(directionStep === "goal" || directionStep === "renew" ? "oe_goal_save" as never : "oe_direction_save" as never, { p_defer: true } as never); setBusy(false); setSheetOpen(false); await load(); };
+  const openDirection = (step?: DirectionStep, opener?: HTMLElement | null) => {
+    openerRef.current = opener ?? (document.activeElement as HTMLElement | null);
+    setDirectionChoice(null); setMovePick(null); setPlacePick([]);
+    setDirectionStep(step ?? (!direction?.move_kind ? "move" : !direction.priority ? "priority" : "mix"));
+    setSheetOpen(true);
+  };
+  const closeDirection = () => { setSheetOpen(false); window.setTimeout(() => openerRef.current?.focus(), 0); };
+  const deferDirection = async () => {
+    if (busy) return; setBusy(true);
+    if (directionStep !== "move" && directionStep !== "place") await supabase.rpc("oe_direction_save" as never, { p_defer: true } as never);
+    setBusy(false); closeDirection(); await load();
+  };
   const nextDirection = async () => {
     if (busy) return;
-    if (directionStep === "goal") { if (!directionChoice) return; setBusy(true); const goal = directionChoice as Goal; const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: goal } as never); setBusy(false); if (!error) { setPrimaryGoal(goal); setDirectionChoice(null); setDirectionStep("secondary"); } return; }
-    if (directionStep === "secondary") { const goal = primaryGoal ?? direction?.goal; if (!goal) return; setBusy(true); const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: goal, p_secondary: Array.from(secondaryGoals) } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("priority"); await load(); } return; }
+    // Two questions: what would make you move, and where would you go.
+    if (directionStep === "move") { if (!directionChoice) return; setMovePick(directionChoice as MoveKind); setDirectionChoice(null); setDirectionStep("place"); return; }
+    if (directionStep === "place") {
+      const move = movePick ?? direction?.move_kind; if (!move) return;
+      setBusy(true);
+      const { error } = await supabase.rpc("oe_move_save" as never, { p_move: move, p_place: placePick.length ? placePick : null } as never);
+      setBusy(false);
+      if (!error) { setDirectionChoice(null); setDirectionStep(direction?.priority ? "done" : "priority"); await load(); }
+      return;
+    }
     if (directionStep === "priority") { if (!directionChoice) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_priority: directionChoice } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("mix"); await load(); } return; }
     if (directionStep === "mix") { if (!directionChoice) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_mix: directionChoice } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("done"); await load(); } }
   };
-  const reconfirm = async () => { if (!direction?.goal || busy) return; setBusy(true); await supabase.rpc("oe_goal_save" as never, { p_goal: direction.goal, p_secondary: direction.goal_secondary ?? null } as never); setBusy(false); setDirectionStep("done"); await load(); };
+  const reconfirm = async () => { if (!direction?.move_kind || busy) return; setBusy(true); await supabase.rpc("oe_move_save" as never, { p_move: direction.move_kind } as never); setBusy(false); setDirectionStep("done"); await load(); };
+  const promoteComment = async (id: string) => { if (busy) return; setBusy(true); await supabase.rpc("oe_notebook_promote_comment" as never, { p_id: id } as never); setBusy(false); await load(); };
   const showAnyway = async (id: string) => { await supabase.rpc("oe_app_show_anyway" as never, { p_suppressed: id } as never); await load(); };
   const setTabLanguage = async (next: Lang) => { if (busy) return; setBusy(true); await supabase.rpc("oe_direction_save" as never, { p_language: next } as never); setBusy(false); setLanguage(next); await load(); };
   const answerOutcome = async (id: string, outcome: string) => { if (!userId) return; await supabase.from("oe_serves" as never).update({ outcome, outcome_at: new Date().toISOString() } as never).eq("id", id).eq("user_id", userId); await load(); };
