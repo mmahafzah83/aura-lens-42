@@ -248,18 +248,14 @@ export function OpportunityQueue() {
     setBusy(false);
   };
   const saveBar = async () => {
-    if (busy || !editor) return;
-    if (editor === "move" && !movePick) return;
+    if (busy || !barDirty) return;
     setBusy(true);
-    const { error } = editor === "place"
-      ? await supabase.rpc("oe_filter_save" as never, { p_field: "place", p_op: "allow", p_values: placePick } as never)
-      : await supabase.rpc("oe_move_save" as never, { p_move: movePick } as never);
+    const { error } = await supabase.rpc("oe_bar_save" as never, { p_move: movePick, p_places: placePick, p_sectors: sectorPick } as never);
     if (!error) {
-      setData((current) => editor === "place"
-        ? { ...current, filters: { ...current.filters, place: { op: "allow", values: placePick } } }
-        : { ...current, direction: { ...(current.direction ?? { language, move_kind: null, move_confirmed_at: null, move_proposed: null }), move_kind: movePick, move_confirmed_at: new Date().toISOString() } });
-      setEditor(null); setMovePick(null); setPlacePick([]); setSavedBar(true);
+      baseline.current = { move: movePick, places: placePick, sectors: sectorPick };
+      setEditor(null); setSavedBar(true);
       await load();
+      window.setTimeout(() => { setSavedBar(false); closeRules(); }, 900);
     }
     setBusy(false);
   };
