@@ -170,7 +170,12 @@ export function OpportunityQueue() {
   const saveBar = async () => {
     const move = movePick ?? data.direction?.move_kind;
     if (!move || busy) return;
-    setBusy(true); const { error } = await supabase.rpc("oe_move_save" as never, { p_move: move, p_place: editor === "place" ? (placePick.length ? placePick : null) : undefined } as never); setBusy(false);
+    setBusy(true);
+    const { error } = editor === "place"
+      ? await supabase.rpc("oe_move_save" as never, { p_move: move, p_place: placePick.length ? placePick : null } as never)
+      : await supabase.rpc("oe_move_save" as never, { p_move: move } as never);
+    if (!error && editor === "place" && placePick.length === 0) await supabase.rpc("oe_filter_save" as never, { p_field: "place", p_op: "allow", p_values: [] } as never);
+    setBusy(false);
     if (!error) { setEditor(null); setMovePick(null); setPlacePick([]); await load(); }
   };
 
@@ -238,6 +243,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   const activeRules = data.rules.filter((rule) => rule.active).slice(0, 3);
   const moreRules = Math.max(0, data.rules.filter((rule) => rule.active).length - activeRules.length);
   const places = data.filters.place?.values ?? [];
+  const placeRule = data.rules.find((rule) => rule.active && rule.field === "place") ?? null;
   const placeText = places.length ? places.map((value) => value.startsWith("region:") ? refLabel("region", value.slice(7), language) : refLabel("place", value, language)).join(" · ") : v("move_place_any");
   const choices: Array<{ value: string; label: string }> = [...(home?.city && home.country ? [{ value: home.country, label: fill(v("move_place_home"), { city: home.city }) }] : []), ...(home?.regions ?? []).map((region) => ({ value: `region:${region.code}`, label: fill(v("move_place_region"), { region: language === "ar" ? (region.name_ar || region.name_en) : region.name_en }) }))];
   useEffect(() => {
@@ -258,7 +264,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   }, [onClose]);
   return <div className="oe-dialog-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section ref={dialogRef} className="oe-rules-dialog" dir={language === "ar" ? "rtl" : "ltr"} lang={language} role="dialog" aria-modal="true" aria-labelledby="oe-rules-title">
     <header><h2 id="oe-rules-title">{v("rules_dialog_title")}</h2><Button variant="ghost" size="icon" aria-label={v("sheet_close")} onClick={onClose}>×</Button></header>
-    <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span></div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
+    <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span>{placeRule && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(placeRule.stated_on, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(placeRule.stated_on).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
       {editor === "move" && <div className="oe-inline-editor">{moves.map((move) => <Button key={move} variant="outline" aria-pressed={movePick === move} className={`${data.direction?.move_proposed === move ? "is-proposed" : ""}`} onClick={() => onMove(move)}>{v(moveKey(move))}</Button>)}<AuraButton disabled={!movePick} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
       {editor === "place" && <div className="oe-inline-editor">{choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}<Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button><AuraButton loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
     </section>
