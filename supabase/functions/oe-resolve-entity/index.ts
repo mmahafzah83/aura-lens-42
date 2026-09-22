@@ -107,7 +107,9 @@ const NEWSROOM_TEXT = /newsroom|news\s*room|media\s*cent|press\s*release|press\s
  */
 type SurfaceType =
   | "careers" | "news" | "press" | "insights" | "events"
-  | "tenders" | "leadership" | "investor_relations" | "blog" | "podcast" | "directory";
+  | "tenders" | "leadership" | "investor_relations" | "blog" | "podcast" | "directory"
+  | "board_nominations";
+
 
 const SURFACE_RULES: Array<{
   type: SurfaceType;
@@ -146,7 +148,17 @@ const SURFACE_RULES: Array<{
   { type: "directory", text: /member directory|our members|licensee|licensed (firms|entities)|firm index|company directory|دليل الأعضاء|المرخص/i,
     path: /\/(directory|directories|members?|licensees?|licen[cs]es?-directory|firms?-index)(\/|$|\?)/i,
     yields: [], cadence: "weekly" },
+  /**
+   * Where a listed issuer must publish its board-nomination announcement. The
+   * regulation puts it on the issuer's own site, not on the exchange, so this
+   * is the page that matters and nobody indexes it.
+   */
+  { type: "board_nominations",
+    text: /board nomination|nomination period|nominat\w* (for|to) (the )?board|announcements?|investor relations|فتح باب الترشح|الترشح لعضوية|إعلانات|علاقات المستثمرين/i,
+    path: /\/(announcements?|disclosures?|board-?nominations?|nominations?|investor-?relations?\/announcements?|إعلانات)(\/|$|\?)/i,
+    yields: ["board"], cadence: "daily" },
 ];
+
 
 
 function json(body: unknown, status = 200) {
@@ -755,6 +767,10 @@ Deno.serve(async (req) => {
       q = q.in("resolve_error", body.recheck_error);
     }
     if (body.with_domain_only === true) q = q.not("domain", "is", null);
+    // One class of organisation at a time — listed issuers are worked first
+    // because a nomination window only exists on their own site.
+    if (typeof body.entity_kind === "string") q = q.eq("entity_kind", body.entity_kind);
+
 
     if (typeof body.seed_source === "string") q = q.eq("seed_source", body.seed_source);
 
@@ -840,7 +856,10 @@ Deno.serve(async (req) => {
             const reader = readerFor(page.finalUrl, page.body);
             kind = reader.kind;
             readUrl = reader.feed ?? page.finalUrl;
+            // A nomination page is read as announcements, whatever its markup.
+            if (rule.type === "board_nominations" && !reader.feed) kind = "announcements";
             health = "ok";
+
           } else {
             health = "unreadable";
             access = access ?? (page.status === 403 ? "bot_defended" : "no_response");
