@@ -136,11 +136,13 @@ export function OpportunityQueue() {
   const historyFilter: HistoryFilter = rawFilter && ["all", "right", "declined", "flagged"].includes(rawFilter) ? rawFilter : "all";
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [directionStep, setDirectionStep] = useState<DirectionStep>("goal");
-  const [directionChoice, setDirectionChoice] = useState<Goal | Priority | Mix | null>(null);
-  const [primaryGoal, setPrimaryGoal] = useState<Goal | null>(null);
-  const [secondaryGoals, setSecondaryGoals] = useState<Set<Goal>>(new Set());
+  const [directionStep, setDirectionStep] = useState<DirectionStep>("move");
+  const [directionChoice, setDirectionChoice] = useState<MoveKind | Priority | Mix | null>(null);
+  const [movePick, setMovePick] = useState<MoveKind | null>(null);
+  const [placePick, setPlacePick] = useState<string[]>([]);
+  const [home, setHome] = useState<Home | null>(null);
   const [showAllHeld, setShowAllHeld] = useState(false);
+  const openerRef = useRef<HTMLElement | null>(null);
   const renderedRef = useRef<Set<string>>(new Set());
   const noticeTimer = useRef<number | null>(null);
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -165,6 +167,14 @@ export function OpportunityQueue() {
     setLoading(false);
   }, []);
   useEffect(() => { void load(); void loadRefLabels(); }, [load]);
+  // His own city and region, so the question can offer them by name and no
+  // place is ever written into the product's words.
+  useEffect(() => {
+    void (async () => {
+      const { data: payload } = await supabase.rpc("oe_my_home" as never);
+      if (payload) setHome(payload as unknown as Home);
+    })();
+  }, []);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
   useEffect(() => {
     if (!sheetOpen) return;
@@ -175,26 +185,25 @@ export function OpportunityQueue() {
     return () => { document.body.style.overflow = old; window.removeEventListener("keydown", close); };
   }, [sheetOpen]);
 
-  const cards = data.cards.filter(hasWhy);
+  // One shape reaches this tab, and only the act lane. Anything worth writing
+  // about is still judged and stored; it never appears here.
+  const cards = data.cards.filter((card) => hasWhy(card) && card.lane === "act");
   const groups = useMemo(() => {
     const closing = cards.filter(isClosing);
     const used = new Set(closing.map((card) => card.id));
-    const act = cards.filter((card) => card.lane === "act" && !used.has(card.id)); act.forEach((card) => used.add(card.id));
-    const write = cards.filter((card) => card.lane === "write" && !used.has(card.id)); write.forEach((card) => used.add(card.id));
-    const happened = cards.filter((card) => !used.has(card.id) && (card.access_state === "observed_event" || card.access_state === "possible_need"));
+    const act = cards.filter((card) => !used.has(card.id) && !(card.access_state === "observed_event" || card.access_state === "possible_need"));
+    act.forEach((card) => used.add(card.id));
+    const happened = cards.filter((card) => !used.has(card.id));
     return [
       { key: "closing", labelKey: "group_closing", tone: "clock", cards: closing },
       { key: "act", labelKey: "group_open_now", tone: "act", cards: act },
-      { key: "write", labelKey: "group_write", tone: "write", cards: write },
       { key: "event", labelKey: "group_event", tone: "event", cards: happened },
     ].filter((group) => group.cards.length > 0);
   }, [cards]);
   const selected = cards.find((card) => card.id === selectedId) ?? null;
   const direction = data.direction;
-  const today = new Date().toISOString().slice(0, 10);
-  const goalExpired = Boolean(direction?.goal && direction.goal_expires_at && direction.goal_expires_at <= today);
-  const directionIncomplete = !direction?.goal || !direction.priority || !direction.mix || goalExpired;
-  const directionProgress = [Boolean(direction?.goal), Boolean(direction?.priority), Boolean(direction?.mix)];
+  const directionIncomplete = !direction?.move_kind || !direction.priority || !direction.mix;
+  const directionProgress = [Boolean(direction?.move_kind), Boolean(direction?.priority), Boolean(direction?.mix)];
 
   const showNotice = (text: string, undo?: string) => {
     setNotice({ text, undo });
