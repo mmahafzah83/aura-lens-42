@@ -54,7 +54,7 @@ type DirectionStep = "renew" | "goal" | "secondary" | "priority" | "mix" | "done
 type HistoryFilter = "all" | "right" | "declined" | "flagged";
 type Vocab = ReturnType<typeof useVocab>;
 
-const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [], also_watching: 0, also_watching_kinds: [] };
+const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [], also_watching: 0, also_watching_kinds: [], reading: null, card_kinds: [] };
 const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
 const mixes: Mix[] = ["win", "build", "explore"];
 const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "relationships", "knowledge"];
