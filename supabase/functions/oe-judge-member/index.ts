@@ -685,6 +685,7 @@ Deno.serve(async (req) => {
         const user = [
           `FACES:\n${faceBlock}`,
           `PAST JUDGEMENTS:\n${JSON.stringify(fewShots)}`,
+          ...(fieldsLine ? [fieldsLine] : []),
           `OPPORTUNITY:\n${oppBlock}`,
         ].join("\n\n");
         const out = await gateway(lovableKey, P3_SYSTEM, user);
@@ -900,6 +901,7 @@ Deno.serve(async (req) => {
       const userMsg = [
         `HIS OWN MATERIAL (cite these, quote from these):\n${mineBlock}`,
         `OPPORTUNITY:\n${oppBlock}`,
+        ...(fieldsLine ? [`${fieldsLine}\nWhen this record's sector is one of them, you may say so plainly in one line; when it is not, say nothing about fields.`] : []),
         `ALLOWED CITE IDS: ${[...allowedIds.keys()].join(", ")}`,
       ].join("\n\n");
 
