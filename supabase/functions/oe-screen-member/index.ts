@@ -335,6 +335,8 @@ Deno.serve(withRun("screen_member", async (req) => {
         // Only a refusal carries a refusal sentence. An unknown is an open
         // investigation, not a verdict, and must not read like one.
         screen_gate: g.gate, screen_outcome: g.outcome,
+        // Layer two of three. It orders the shelf; it never opens a door.
+        interest: interestOf(o as any, (interestFaces ?? []) as any, (captureRows ?? []) as any),
         rejection_sentence: g.outcome === "rejected" ? g.sentence : null,
 
         role_profession: g.role_profession, profession_relation: g.profession_relation,
