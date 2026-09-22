@@ -251,7 +251,8 @@ Deno.serve(async (req) => {
       const payload = answerBlocks.join("\n");
       if (payload.length > 80) {
         await run("assessment", MEMBER_EVIDENCE_INSTRUCTION.assessment, payload.slice(0, 20_000), payload, {
-          source_table: "diagnostic_profiles", source_id: null,
+          // His own answers, in his own words: the strongest record we hold.
+          source_table: "assessment_sessions", source_id: null,
           source_field: "brand_assessment_answers+assessment_sessions.state.answers", confidence: 1.0,
         });
       }
