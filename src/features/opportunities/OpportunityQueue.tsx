@@ -37,7 +37,11 @@ type Parked = { opportunity_id: string; title: string; issuer_name: string | nul
 type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
 type Mix = "win" | "build" | "explore";
 type Goal = "income_from_expertise" | "advancement" | "visibility" | "relationships" | "knowledge";
-type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null; goal: Goal | null; goal_secondary: Goal[] | null; goal_proposed: Goal | null; goal_confirmed_at: string | null; goal_expires_at: string | null; language: Lang | null };
+/** The one answer that sets the bar: what would make him move. */
+type MoveKind = "bigger_same" | "step_up" | "client_side" | "exceptional_only";
+type Home = { city: string | null; country: string | null; country_name: string | null; regions: Array<{ code: string; name_en: string }> };
+type Comment = { id: string; text: string; text_ar?: string | null; said_on: string; field: string | null; value: string | null };
+type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null; goal: Goal | null; goal_secondary: Goal[] | null; goal_proposed: Goal | null; goal_confirmed_at: string | null; goal_expires_at: string | null; language: Lang | null; move_kind: MoveKind | null; move_confirmed_at: string | null; move_proposed: MoveKind | null };
 type Window = { expected_by: string; declared_on: string | null; missed: boolean };
 type Derivation = { comments?: Array<{ id?: string; text?: string; said_on?: string }>; profile?: string[]; legal_basis?: string };
 type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; field: string | null; value: string | null; stated_on: string; active?: boolean; derived_from?: Derivation | null };
@@ -48,16 +52,18 @@ type Metrics = { sources_read: number; organisations: number; judged_week: numbe
 type Proposed = { id: string; rule_text: string; field: string | null };
 type AlsoKind = { kind: string; label: string; count: number };
 type Reading = { running: boolean; last_read_at: string | null };
-type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[]; metrics: Metrics | null; filters: FilterMap; proposed_rules: Proposed[]; also_watching: number; also_watching_kinds: AlsoKind[]; reading: Reading | null; card_kinds: string[] };
+type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[]; metrics: Metrics | null; filters: FilterMap; proposed_rules: Proposed[]; also_watching: number; also_watching_kinds: AlsoKind[]; reading: Reading | null; card_kinds: string[]; comments: Comment[] };
 type View = "today" | "parked" | "history" | "settings";
-type DirectionStep = "renew" | "goal" | "secondary" | "priority" | "mix" | "done";
+type DirectionStep = "renew" | "move" | "place" | "priority" | "mix" | "done";
 type HistoryFilter = "all" | "right" | "declined" | "flagged";
 type Vocab = ReturnType<typeof useVocab>;
 
-const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [], also_watching: 0, also_watching_kinds: [], reading: null, card_kinds: [] };
+const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [], also_watching: 0, also_watching_kinds: [], reading: null, card_kinds: [], comments: [] };
 const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
 const mixes: Mix[] = ["win", "build", "explore"];
-const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "relationships", "knowledge"];
+/** One answer, four shapes. The vocabulary key carries the sentence. */
+const moves: MoveKind[] = ["bigger_same", "step_up", "client_side", "exceptional_only"];
+const moveKey = (move: MoveKind) => move === "exceptional_only" ? "move_exceptional" : `move_${move}`;
 
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const chipBase = { minHeight: 44, padding: "8px 11px", borderRadius: 4, border: "1px solid var(--border-default)", background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
