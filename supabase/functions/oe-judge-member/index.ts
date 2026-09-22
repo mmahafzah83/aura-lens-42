@@ -442,7 +442,7 @@ Deno.serve(async (req) => {
     alive: 0, retrieved: 0, outside_retrieval: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
     no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
-    skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0, rescreened: 0,
+    skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0, rescreened: 0, unscreened: 0,
   };
 
   let costUsd = 0;
