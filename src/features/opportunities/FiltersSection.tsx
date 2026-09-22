@@ -117,7 +117,11 @@ export function FiltersSection({ filters, cardKinds = [], notShownNote = "", onS
     <SectionHeader label={t("filter_section", "Your filters")} />
     <div className="oe-settings-list">
       {rows.map((row) => <div key={row.field} className="oe-setting-row">
-        <div><strong>{row.label}</strong><span>{row.summary}</span></div>
+        <div>
+          <strong>{row.label}</strong>
+          <span>{row.summary}</span>
+          {row.field === "kind" && cardKinds.length > 0 && notShownNote && <span style={{ opacity: 0.6 }}>{notShownNote}</span>}
+        </div>
         <button type="button" className="v23-textlink" onClick={() => setOpen(row.field)}>{t("filter_change", "Change")}</button>
       </div>)}
     </div>
@@ -125,6 +129,7 @@ export function FiltersSection({ filters, cardKinds = [], notShownNote = "", onS
       field={open} filters={filters} t={t}
       countries={countries} regions={regions} sectors={sectors} levels={levels}
       engagements={engagements} orgTypes={orgTypes} kinds={kinds}
+      cardKinds={cardKinds} notShownNote={notShownNote}
       onClose={() => setOpen(null)}
       onSaved={async () => { setOpen(null); await onSaved(); }}
     />, document.body)}
