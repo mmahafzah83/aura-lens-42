@@ -11164,6 +11164,10 @@ export type Database = {
       oe_app_show_anyway: { Args: { p_suppressed: string }; Returns: undefined }
       oe_apply_shape_state: { Args: never; Returns: number }
       oe_assess_writing_value: { Args: { p_user: string }; Returns: number }
+      oe_bar_save: {
+        Args: { p_move?: string; p_places?: string[]; p_sectors?: string[] }
+        Returns: Json
+      }
       oe_candidates: {
         Args: { p_face: string; p_k: number; p_user_id: string }
         Returns: {
@@ -11334,6 +11338,7 @@ export type Database = {
         Args: { p_code: string; p_source?: string; p_token: string }
         Returns: Json
       }
+      oe_ref_sector_list: { Args: never; Returns: Json }
       oe_refresh_purpose: {
         Args: { p_user: string }
         Returns: {

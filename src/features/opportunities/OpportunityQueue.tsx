@@ -29,6 +29,9 @@ type QueueCard = {
 type Parked = { opportunity_id: string; title: string; issuer_name: string | null; location: string | null; deadline: string | null; parked_at: string };
 type History = { shown_at: string; lane: string | null; tap: string | null; tap_scope: string | null; truth_code: string | null; outcome: string | null; title: string | null; issuer_name: string | null; location: string | null; presentation_line: string | null };
 type Comment = { id: string; text: string; text_ar?: string | null; said_on: string; field: string | null; value: string | null };
+type SectorOption = { code: string; label_en: string; label_ar: string };
+type BarPick = { move: MoveKind | null; places: string[]; sectors: string[] };
+const sameSet = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
 type Rule = { id: string; rule_text: string; rule_text_ar?: string | null; field: string | null; value: string | null; stated_on: string; active?: boolean };
 type Direction = { language: Lang | null; move_kind: MoveKind | null; move_confirmed_at: string | null; move_proposed: MoveKind | null };
 type Home = { city: string | null; country: string | null; country_name: string | null; regions: Array<{ code: string; name_en: string; name_ar?: string | null }> };
@@ -129,9 +132,13 @@ export function OpportunityQueue() {
   const [busy, setBusy] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [heldOpen, setHeldOpen] = useState(false);
-  const [editor, setEditor] = useState<"move" | "place" | null>(null);
+  const [editor, setEditor] = useState<"move" | "place" | "sector" | null>(null);
   const [movePick, setMovePick] = useState<MoveKind | null>(null);
   const [placePick, setPlacePick] = useState<string[]>([]);
+  const [sectorPick, setSectorPick] = useState<string[]>([]);
+  const [sectorOptions, setSectorOptions] = useState<SectorOption[]>([]);
+  const [superseded, setSuperseded] = useState<Comment[]>([]);
+  const baseline = useRef<BarPick>({ move: null, places: [], sectors: [] });
   const [home, setHome] = useState<Home | null>(null);
   const [notice, setNotice] = useState<{ text: string; undo?: string } | null>(null);
   const [savedBar, setSavedBar] = useState(false);
@@ -154,7 +161,22 @@ export function OpportunityQueue() {
     if (!error && payload) setData(next);
     setLoading(false);
   }, []);
-  useEffect(() => { void load(); void loadRefLabels(); }, [load]);
+  const loadSuperseded = useCallback(async () => {
+    const { data: rows } = await (supabase.from("oe_notebook" as never) as any)
+      .select("id, rule_text, rule_text_ar, stated_on, field, value")
+      .eq("entry_kind", "comment").eq("status", "declined").eq("decline_reason", "superseded_by_question")
+      .order("stated_on", { ascending: false });
+    setSuperseded(((rows ?? []) as Array<Record<string, unknown>>).map((row) => ({
+      id: String(row.id), text: String(row.rule_text ?? ""), text_ar: (row.rule_text_ar as string) ?? null,
+      said_on: String(row.stated_on ?? ""), field: (row.field as string) ?? null, value: (row.value as string) ?? null,
+    })));
+  }, []);
+  useEffect(() => { void load(); void loadRefLabels(); void loadSuperseded(); }, [load, loadSuperseded]);
+  useEffect(() => { void (async () => {
+    const { data: rows } = await supabase.rpc("oe_ref_sector_list" as never);
+    const list = Array.isArray(rows) ? (rows as unknown as SectorOption[]) : [];
+    setSectorOptions(list.filter((row) => row && row.code));
+  })(); }, []);
   useEffect(() => { void (async () => { const { data: payload } = await supabase.rpc("oe_my_home" as never); if (payload) setHome(payload as unknown as Home); })(); }, []);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
 
@@ -168,10 +190,20 @@ export function OpportunityQueue() {
     if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 4000);
   };
-  const openRules = (opener: HTMLElement | null, nextEditor: "move" | "place" | null = null) => {
+  const openRules = (opener: HTMLElement | null, nextEditor: "move" | "place" | "sector" | null = null) => {
     openerRef.current = opener;
-    setMovePick(null); setPlacePick([]); setSavedBar(false); setEditor(nextEditor); setRulesOpen(true);
+    const seed: BarPick = {
+      move: data.direction?.move_kind ?? null,
+      places: data.filters.place?.values ?? [],
+      sectors: data.filters.sector?.values ?? [],
+    };
+    baseline.current = seed;
+    setMovePick(seed.move); setPlacePick(seed.places); setSectorPick(seed.sectors);
+    setSavedBar(false); setEditor(nextEditor); setRulesOpen(true);
   };
+  const togglePlace = (value: string) => setPlacePick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+  const toggleSector = (value: string) => setSectorPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+  const barDirty = movePick !== baseline.current.move || !sameSet(placePick, baseline.current.places) || !sameSet(sectorPick, baseline.current.sectors);
   const closeRules = () => { setRulesOpen(false); setEditor(null); window.setTimeout(() => openerRef.current?.focus(), 0); };
   const refresh = async () => { if (refreshing) return; setRefreshing(true); await supabase.rpc("oe_app_refresh" as never); renderedRef.current.clear(); await load(); setRefreshing(false); };
   const markRendered = useCallback((card: QueueCard, node: HTMLElement | null) => {
@@ -208,7 +240,7 @@ export function OpportunityQueue() {
   const answerComment = async (id: string, accept: boolean) => { if (busy) return; setBusy(true); await supabase.rpc(accept ? "oe_notebook_promote_comment" as never : "oe_notebook_decline_comment" as never, { p_id: id } as never); setBusy(false); await load(); };
   const removeRule = async (id: string) => { if (busy) return; setBusy(true); await supabase.rpc("oe_notebook_remove_rule" as never, { p_id: id } as never); setBusy(false); await load(); };
   const resetRules = async () => {
-    const prompt = v("rules_reset_confirm") || `${v("rules_remove")} ${v("rules_active_title")}. ${v("rules_comments_title")}`;
+    const prompt = v("rules_start_again_confirm");
     if (busy || !window.confirm(prompt)) return;
     setBusy(true);
     const { error } = await supabase.rpc("oe_rules_reset" as never);
@@ -216,18 +248,14 @@ export function OpportunityQueue() {
     setBusy(false);
   };
   const saveBar = async () => {
-    if (busy || !editor) return;
-    if (editor === "move" && !movePick) return;
+    if (busy || !barDirty) return;
     setBusy(true);
-    const { error } = editor === "place"
-      ? await supabase.rpc("oe_filter_save" as never, { p_field: "place", p_op: "allow", p_values: placePick } as never)
-      : await supabase.rpc("oe_move_save" as never, { p_move: movePick } as never);
+    const { error } = await supabase.rpc("oe_bar_save" as never, { p_move: movePick, p_places: placePick, p_sectors: sectorPick } as never);
     if (!error) {
-      setData((current) => editor === "place"
-        ? { ...current, filters: { ...current.filters, place: { op: "allow", values: placePick } } }
-        : { ...current, direction: { ...(current.direction ?? { language, move_kind: null, move_confirmed_at: null, move_proposed: null }), move_kind: movePick, move_confirmed_at: new Date().toISOString() } });
-      setEditor(null); setMovePick(null); setPlacePick([]); setSavedBar(true);
+      baseline.current = { move: movePick, places: placePick, sectors: sectorPick };
+      setEditor(null); setSavedBar(true);
       await load();
+      window.setTimeout(() => { setSavedBar(false); closeRules(); }, 900);
     }
     setBusy(false);
   };
@@ -244,7 +272,7 @@ export function OpportunityQueue() {
       {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
     </main><Aside data={data} language={language} v={v} heldOpen={heldOpen} onHeld={() => setHeldOpen((value) => !value)} onRules={(event) => openRules(event.currentTarget, "move")} /></div>
     <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span>{notice?.undo && <Button variant="link" onClick={() => void bringBack(notice.undo as string)}>{v("action_undo")}</Button>}</div>
-    {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} savedBar={savedBar} v={v} onEditor={(value) => { setSavedBar(false); setMovePick(null); setPlacePick([]); setEditor(value); }} onMove={setMovePick} onPlace={(value) => setPlacePick([value])} onPlaceAny={() => setPlacePick([])} onSaveBar={() => void saveBar()} onComment={(id, accept) => void answerComment(id, accept)} onRemove={(id) => void removeRule(id)} onReset={() => void resetRules()} onClose={closeRules} />, document.body)}
+    {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} sectorPick={sectorPick} sectorOptions={sectorOptions} superseded={superseded} savedBar={savedBar} barDirty={barDirty} v={v} onEditor={(value) => { setSavedBar(false); setEditor(value); }} onMove={setMovePick} onPlace={togglePlace} onPlaceAny={() => setPlacePick([])} onSector={toggleSector} onSectorAny={() => setSectorPick([])} onSaveBar={() => void saveBar()} onComment={(id, accept) => void answerComment(id, accept)} onRemove={(id) => void removeRule(id)} onReset={() => void resetRules()} onClose={closeRules} />, document.body)}
   </section>;
 }
 
@@ -289,7 +317,7 @@ function HistoryView({ rows, filter, v, language, onFilter }: { rows: History[];
   return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <Button key={value} variant="outline" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</Button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{dateText(day, language)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
 }
 
-function RulesDialog({ data, home, language, busy, editor, movePick, placePick, savedBar, v, onEditor, onMove, onPlace, onPlaceAny, onSaveBar, onComment, onRemove, onReset, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | null; movePick: MoveKind | null; placePick: string[]; savedBar: boolean; v: Vocab; onEditor: (value: "move" | "place" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSaveBar: () => void; onComment: (id: string, accept: boolean) => void; onRemove: (id: string) => void; onReset: () => void; onClose: () => void }) {
+function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, superseded, savedBar, barDirty, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onSaveBar, onComment, onRemove, onReset, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | "sector" | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; superseded: Comment[]; savedBar: boolean; barDirty: boolean; v: Vocab; onEditor: (value: "move" | "place" | "sector" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onSaveBar: () => void; onComment: (id: string, accept: boolean) => void; onRemove: (id: string) => void; onReset: () => void; onClose: () => void }) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const [allComments, setAllComments] = useState(false);
   const [allRules, setAllRules] = useState(false);
@@ -305,6 +333,12 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   const homeRegion = home?.regions?.[0];
   const regionChoice = homeRegion ? { value: `region:${homeRegion.code}`, label: fill(v("move_place_region"), { region: language === "ar" ? (homeRegion.name_ar || homeRegion.name_en) : homeRegion.name_en }) } : null;
   const choices: Array<{ value: string; label: string }> = [homeChoice, regionChoice].filter((choice): choice is { value: string; label: string } => Boolean(choice));
+  const [showSuperseded, setShowSuperseded] = useState(false);
+  const sectorLabel = (option: SectorOption) => language === "ar" ? (option.label_ar || option.label_en) : option.label_en;
+  const chosenSectors = data.filters.sector?.values ?? [];
+  const sectorText = chosenSectors.length
+    ? chosenSectors.map((code) => sectorLabel(sectorOptions.find((option) => option.code === code) ?? { code, label_en: code, label_ar: code })).join(" · ")
+    : v("bar_sector_any");
   useEffect(() => {
     const node = dialogRef.current; if (!node) return;
     const old = document.body.style.overflow; document.body.style.overflow = "hidden";
@@ -324,12 +358,16 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   return <div className="oe-dialog-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section ref={dialogRef} className="oe-rules-dialog" dir={language === "ar" ? "rtl" : "ltr"} lang={language} role="dialog" aria-modal="true" aria-labelledby="oe-rules-title">
     <header><h2 id="oe-rules-title">{v("rules_dialog_title")}</h2><Button variant="ghost" size="icon" aria-label={v("sheet_close")} onClick={onClose}><X aria-hidden="true" /></Button></header>
     <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span>{placeRule && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(placeRule.stated_on, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(placeRule.stated_on).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
-      {editor === "move" && <div className="oe-inline-editor">{moves.map((move) => <Button key={move} variant="outline" aria-pressed={movePick === move} className={`${data.direction?.move_proposed === move ? "is-proposed" : ""}`} onClick={() => onMove(move)}>{v(moveKey(move))}</Button>)}<AuraButton disabled={!movePick} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
-      {editor === "place" && <div className="oe-inline-editor">{choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}<Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button><AuraButton loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
-      {savedBar && <p role="status">{v("rules_saved") || v("gap_answer_saved")}</p>}
+      {sectorOptions.length > 0 && <div className="oe-dialog-row"><div><strong>{v("settings_sectors")}</strong><span>{sectorText}</span></div><Button variant="link" onClick={() => onEditor("sector")}>{v("action_change")}</Button></div>}
+      {editor === "move" && <div className="oe-inline-editor">{moves.map((move) => <Button key={move} variant="outline" aria-pressed={movePick === move} className={`${data.direction?.move_proposed === move ? "is-proposed" : ""}`} onClick={() => onMove(move)}>{v(moveKey(move))}</Button>)}</div>}
+      {editor === "place" && <div className="oe-inline-editor"><p>{v("move_place_question")}</p>{choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}<Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button></div>}
+      {editor === "sector" && sectorOptions.length > 0 && <div className="oe-inline-editor"><p>{v("bar_sector_question")}</p><small>{v("bar_sector_sub")}</small>{sectorOptions.map((option) => <Button key={option.code} variant="outline" aria-pressed={sectorPick.includes(option.code)} onClick={() => onSector(option.code)}>{sectorLabel(option)}</Button>)}<Button variant="outline" aria-pressed={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_any")}</Button></div>}
+      {editor && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
+      {savedBar && <p role="status">{v("bar_saved")}</p>}
     </section>
     <section className="oe-dialog-section"><h3>{v("rules_comments_title")}</h3>{comments.length ? <>{comments.map((comment) => <div className="oe-comment" key={comment.id}><blockquote dir="auto">“{language === "ar" && comment.text_ar ? comment.text_ar : comment.text}”</blockquote><time style={mono}>{dateText(comment.said_on, language)}</time><div><AuraButton size="sm" loading={busy} onClick={() => onComment(comment.id, true)}>{v("rules_make_rule")}</AuraButton><AuraButton size="sm" variant="ghost" disabled={busy} onClick={() => onComment(comment.id, false)}>{v("proposal_no")}</AuraButton></div></div>)}{hiddenComments > 0 && <Button variant="link" style={mono} onClick={() => setAllComments(true)}>{fill(v("rules_more"), { n: hiddenComments })}</Button>}</> : <p>{v("rules_comments_empty")}</p>}</section>
-    <section className="oe-dialog-section"><h3>{v("rules_active_title")}</h3>{activeRules.length ? activeRules.map((rule) => <div key={rule.id} className="oe-dialog-row"><span>{readableRule(rule, language, v)}</span><Button variant="link" disabled={busy} onClick={() => onRemove(rule.id)}>{v("rules_remove")}</Button></div>) : <p>{v("rules_active_empty")}</p>}{hiddenRules > 0 && <Button variant="link" style={mono} onClick={() => setAllRules(true)}>{fill(v("rules_more"), { n: hiddenRules })}</Button>}<Button variant="link" disabled={busy || allActiveRules.length === 0} onClick={onReset}>{v("rules_start_again") || v("rules_remove")}</Button></section>
+    <section className="oe-dialog-section"><h3>{v("rules_active_title")}</h3>{activeRules.length ? activeRules.map((rule) => <div key={rule.id} className="oe-dialog-row"><span>{readableRule(rule, language, v)}</span><Button variant="link" disabled={busy} onClick={() => onRemove(rule.id)}>{v("rules_remove")}</Button></div>) : <p>{v("rules_active_empty")}</p>}{hiddenRules > 0 && <Button variant="link" style={mono} onClick={() => setAllRules(true)}>{fill(v("rules_more"), { n: hiddenRules })}</Button>}<Button variant="link" disabled={busy} onClick={onReset}>{v("rules_start_again")}</Button></section>
+    {superseded.length > 0 && <section className="oe-dialog-section"><Button variant="link" aria-expanded={showSuperseded} onClick={() => setShowSuperseded((value) => !value)}>{v("rules_superseded_title")}</Button>{showSuperseded && <><p>{v("rules_superseded_note")}</p>{superseded.map((item) => <p key={item.id}><span dir="auto">{language === "ar" && item.text_ar ? item.text_ar : item.text}</span> <time style={mono}>{dateText(item.said_on, language)}</time></p>)}</>}</section>}
     <footer><p>{v("rules_private")}</p><div><Button variant="outline" onClick={onClose}>{v("sheet_close")}</Button></div></footer>
   </section></div>;
 }
