@@ -285,7 +285,7 @@ export function OpportunityQueue() {
           {data.metrics?.first_card_expected && <div><dt>{v("metric_first_card_expected")}</dt><dd style={mono}>{dateText(data.metrics.first_card_expected)}</dd></div>}
         </dl>
       </div>
-      <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? v("machine_looking_again") : v("machine_still_reading")}</span><button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>{refreshing ? v("action_refreshing") : v("action_refresh")}</button></div>
+      <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing || data.reading?.running ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? v("machine_looking_again") : data.reading?.running ? v("machine_reading_now") : data.reading?.last_read_at ? fill(v("machine_last_read"), { time: readTime(data.reading.last_read_at) }) : v("machine_still_reading")}</span><button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>{refreshing ? v("action_refreshing") : v("action_refresh")}</button></div>
       {refreshNote && <p className="oe-refresh-note">{refreshNote}</p>}
     </header>
 
