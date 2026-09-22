@@ -81,11 +81,11 @@ function readableRule(rule: Rule, language: Lang, v: Vocab): string {
   const values = ruleValues(rule);
   if (!field || values.length === 0) {
     const original = language === "ar" && rule.rule_text_ar ? rule.rule_text_ar : rule.rule_text;
-    return original.replaceAll("_", " ");
+    return original.split("_").join(" ");
   }
   const labels = values.map((value) => {
     if (value.startsWith("region:")) return refLabel("region", value.slice(7), language);
-    return refLabel(field, value, language).replaceAll("_", " ");
+    return refLabel(field, value, language).split("_").join(" ");
   }).join(" · ");
   const subject = v(ruleFieldKey[field] ?? "settings_held_reason");
   return subject ? `${subject}: ${labels}` : labels;
@@ -157,7 +157,7 @@ export function OpportunityQueue() {
   useEffect(() => { void (async () => { const { data: payload } = await supabase.rpc("oe_my_home" as never); if (payload) setHome(payload as unknown as Home); })(); }, []);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
 
-  const cards = useMemo(() => data.cards.filter((card) => card.lane === "act" && hasWhy(card)).slice(0, 3), [data.cards]);
+  const cards = useMemo(() => data.cards.filter((card) => card.lane === "act" && hasWhy(card)).filter((_, index) => index < 3), [data.cards]);
   const active = cards.find((card) => card.id === activeId) ?? cards[0] ?? null;
   const compact = active ? cards.filter((card) => card.id !== active.id).slice(0, 2) : [];
   const waiting = data.comments.length;
@@ -261,7 +261,7 @@ function Aside({ data, language, v, heldOpen, onHeld, onRules }: { data: QueueDa
   const places = data.filters.place?.values ?? [];
   const place = places.length ? places.map((value) => value.startsWith("region:") ? refLabel("region", value.slice(7), language) : refLabel("place", value, language)).join(" · ") : v("move_place_any");
   return <aside className="oe-side">
-    <section className="oe-held-panel"><span>{v("held_back_title")}</span><strong style={mono}>{data.held_count}</strong><Button variant="link" onClick={onHeld}>{v(heldOpen ? "held_hide_why" : "held_see_why")}</Button>{heldOpen && <div style={{ maxHeight: 300, overflowY: "auto" }}>{data.held.map((row) => <p key={row.id}><b>{row.title ?? v("settings_untitled")}</b><span>{v(heldReasonKey[String(row.reason ?? "")] ?? "settings_held_reason") || `${v("settings_held_reason")}: ${String(row.reason ?? "").replaceAll("_", " ")}`}</span></p>)}</div>}</section>
+    <section className="oe-held-panel"><span>{v("held_back_title")}</span><strong style={mono}>{data.held_count}</strong><Button variant="link" onClick={onHeld}>{v(heldOpen ? "held_hide_why" : "held_see_why")}</Button>{heldOpen && <div style={{ maxHeight: 300, overflowY: "auto" }}>{data.held.map((row) => <p key={row.id}><b>{row.title ?? v("settings_untitled")}</b><span>{v(heldReasonKey[String(row.reason ?? "")] ?? "settings_held_reason") || `${v("settings_held_reason")}: ${String(row.reason ?? "").split("_").join(" ")}`}</span></p>)}</div>}</section>
     <section className="oe-bar-panel"><div><span>{v("current_bar_title")}</span><Button variant="link" onClick={onRules}>{v("action_change")}</Button></div><p><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span></p><p><strong>{v("settings_place")}</strong><span>{place}</span></p></section>
   </aside>;
 }
@@ -294,7 +294,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   const comments = allComments ? data.comments : data.comments.slice(0, 1);
   const hiddenComments = Math.max(0, data.comments.length - comments.length);
   const allActiveRules = data.rules.filter((rule) => rule.active);
-  const activeRules = allRules ? allActiveRules : allActiveRules.slice(0, 3);
+  const activeRules = allRules ? allActiveRules : allActiveRules.filter((_, index) => index < 3);
   const hiddenRules = Math.max(0, allActiveRules.length - activeRules.length);
   const places = data.filters.place?.values ?? [];
   const placeRule = data.rules.find((rule) => rule.active && rule.field === "place") ?? null;
