@@ -131,9 +131,10 @@
 ## Step 37 — the seven audit blockers (21 Sep 2026)
 - Done: learning ledger reset and weight guard, daily RLS probe cron, feed access law, own-record evidence + rubric agreement (screen and judge), quote-in-text verification, Arabic/board-seat classifier.
 - Open: item 7 of the remediation order (not in this step); Upwork API key pending founder action.
-## Roles-only opportunity surface (in progress)
-- [ ] Three views only: Today, Parked, History
-- [ ] Three-role stack, quiet-day state, held-back and current-bar panels
-- [ ] Gear dialog for bar, comments, active rules, privacy actions
-- [ ] Bilingual vocabulary, 375px and database self-checks
+## Roles-only opportunity surface
+- [x] Three views only: Today, Parked, History
+- [x] Three-role stack, quiet-day state, held-back and current-bar panels
+- [x] Gear dialog for bar, comments, active rules, privacy actions
+- [x] Bilingual vocabulary and database self-checks
+- [ ] Authenticated 375px visual verification — preview remains at password setup
 
