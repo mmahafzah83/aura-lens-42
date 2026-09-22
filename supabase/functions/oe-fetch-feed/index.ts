@@ -1052,11 +1052,12 @@ Deno.serve(async (req) => {
     return json({ ok: true, feed: feed.name, counts, run_id: run?.id ?? null });
   } catch (e) {
     const msg = String((e as Error).message ?? e).slice(0, 500);
-    if (feedId) {
+    if (feedId && !candidateRow) {
       await admin.from("oe_feeds").update({
         last_fetched_at: new Date().toISOString(), last_error: msg,
       }).eq("id", feedId);
     }
+
     if (candidateRow) {
       await admin.from("oe_candidates").update({ triage_state: "error", rejected_reason: msg.slice(0, 200) })
         .eq("id", candidateRow.id);
