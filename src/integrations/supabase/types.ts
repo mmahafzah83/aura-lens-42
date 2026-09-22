@@ -4467,6 +4467,7 @@ export type Database = {
           goal_proposed: string | null
           goal_proposed_reason: Json | null
           goal_secondary: string[] | null
+          language: string | null
           mix: string | null
           mix_set_on: string | null
           priority: string | null
@@ -4485,6 +4486,7 @@ export type Database = {
           goal_proposed?: string | null
           goal_proposed_reason?: Json | null
           goal_secondary?: string[] | null
+          language?: string | null
           mix?: string | null
           mix_set_on?: string | null
           priority?: string | null
@@ -4503,6 +4505,7 @@ export type Database = {
           goal_proposed?: string | null
           goal_proposed_reason?: Json | null
           goal_secondary?: string[] | null
+          language?: string | null
           mix?: string | null
           mix_set_on?: string | null
           priority?: string | null
@@ -5369,6 +5372,7 @@ export type Database = {
           gate_reason: string | null
           grade_basis: string | null
           id: string
+          interest: Json | null
           judged_at: string
           lane: string | null
           lane_final: string | null
@@ -5416,6 +5420,7 @@ export type Database = {
           gate_reason?: string | null
           grade_basis?: string | null
           id?: string
+          interest?: Json | null
           judged_at?: string
           lane?: string | null
           lane_final?: string | null
@@ -5463,6 +5468,7 @@ export type Database = {
           gate_reason?: string | null
           grade_basis?: string | null
           id?: string
+          interest?: Json | null
           judged_at?: string
           lane?: string | null
           lane_final?: string | null
@@ -10405,6 +10411,20 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_member_metrics: {
+        Row: {
+          activated_at: string | null
+          cards_served: number | null
+          organisations_watched: number | null
+          outcomes: Json | null
+          records_judged: number | null
+          surfaces_read_week: number | null
+          survivors: number | null
+          taps_by_kind: Json | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       oe_quote_not_in_raw: {
         Row: {
           id: string | null
@@ -11029,6 +11049,7 @@ export type Database = {
           vec_rank: number
         }[]
       }
+      oe_card_kinds: { Args: never; Returns: string[] }
       oe_card_public: {
         Args: { p_token: string }
         Returns: {
@@ -11056,7 +11077,12 @@ export type Database = {
       oe_derive_access_state: { Args: never; Returns: number }
       oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {
-        Args: { p_defer?: boolean; p_mix?: string; p_priority?: string }
+        Args: {
+          p_defer?: boolean
+          p_language?: string
+          p_mix?: string
+          p_priority?: string
+        }
         Returns: Json
       }
       oe_eligibility_orphans: {

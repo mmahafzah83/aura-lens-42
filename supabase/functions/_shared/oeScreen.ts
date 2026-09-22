@@ -92,33 +92,49 @@ export type ProfessionRead = {
   profession: Profession | null;
   source: "title" | "accountability_sentence" | "none";
   quote: string | null;
+  /** whether the posting's own body could be read at all */
+  body_readable?: boolean;
 };
 
 /**
- * The profession a RECORD carries. The title is read first, because a title is
- * an employer's own statement of accountability. Only when the title says
- * nothing, or says nothing more than "general management", may the record's
- * accountability sentences be read — and only those sentences, never the whole
- * body, which names every technology the employer sells. A profession
- * established that way is recorded with the sentence that established it.
+ * THE PROFESSION IS READ, NOT GUESSED.
+ *
+ * The posting's own body is read first — the sentences that say what the holder
+ * is accountable for, and the requirements it states — and the sentence that
+ * established the profession is carried with it. A title is a label an employer
+ * chose; it is read ONLY when there is no body to read, and a record read that
+ * way can never be refused on profession. It passes as unconfirmed and says so.
  */
 export function professionOf(opportunity: any): ProfessionRead {
-  const fromTitle = classifyProfession(opportunity?.title, opportunity?.scope);
-  if (fromTitle && fromTitle !== "general_management") {
-    return { profession: fromTitle, source: "title", quote: null };
-  }
-  const sentences: string[] = Array.isArray(opportunity?.scope_evidence?.accountability_sentences)
-    ? opportunity.scope_evidence.accountability_sentences
-    : [];
-  for (const sentence of sentences) {
-    const p = classifyProfession(sentence);
-    if (p && p !== "general_management") {
-      return { profession: p, source: "accountability_sentence", quote: String(sentence).slice(0, 400) };
+  const ev = opportunity?.scope_evidence ?? {};
+  const body: string[] = [
+    ...(Array.isArray(ev?.accountability_sentences) ? ev.accountability_sentences : []),
+    ...(Array.isArray(ev?.stated_requirements) ? ev.stated_requirements : []),
+    ...String(opportunity?.scope ?? "").split(/(?<=[.!?])\s+/),
+  ].map((s) => String(s ?? "").replace(/\s+/g, " ").trim()).filter((s) => s.length > 25);
+
+  if (body.length) {
+    for (const sentence of body) {
+      const p = classifyProfession(sentence);
+      if (p && p !== "general_management") {
+        return { profession: p, source: "accountability_sentence", quote: sentence.slice(0, 400), body_readable: true };
+      }
     }
+    for (const sentence of body) {
+      const p = classifyProfession(sentence);
+      if (p) {
+        return { profession: p, source: "accountability_sentence", quote: sentence.slice(0, 400), body_readable: true };
+      }
+    }
+    // The body was read and it names no profession. That is an unstated
+    // profession, not a title to fall back on.
+    return { profession: null, source: "none", quote: null, body_readable: true };
   }
+
+  const fromTitle = classifyProfession(opportunity?.title, opportunity?.scope);
   return fromTitle
-    ? { profession: fromTitle, source: "title", quote: null }
-    : { profession: null, source: "none", quote: null };
+    ? { profession: fromTitle, source: "title", quote: null, body_readable: false }
+    : { profession: null, source: "none", quote: null, body_readable: false };
 }
 
 
@@ -744,6 +760,15 @@ export function runGates(
     profession_source: prof.read.source, profession_source_quote: prof.read.quote,
   };
   if (prof.relation === "different") {
+    // A profession read off a label, because the posting's own body could not
+    // be read, is not a verdict. It is carried, marked, and answered for.
+    if (prof.read.source === "title") {
+      return {
+        ...withProf, gate: "scored", outcome: "survivor", sentence: null,
+        gate_note: "profession_unconfirmed",
+        answer_for: "We could not read what this role is accountable for",
+      };
+    }
     return { ...withProf, gate: "profession", outcome: "rejected", sentence: prof.sentence };
   }
 

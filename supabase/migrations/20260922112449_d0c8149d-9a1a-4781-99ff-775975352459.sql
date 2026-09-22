@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.oe_direction_save(text, text, boolean);

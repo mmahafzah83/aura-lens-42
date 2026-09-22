@@ -17,6 +17,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
 import { secondPersonClause } from "../_shared/secondPerson.ts";
 import { bestStanding, writeTests } from "../_shared/writeValue.ts";
+import { interestOf } from "../_shared/interest.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 import {
   deriveIdentity, runGates, writingStanding,
@@ -229,6 +230,13 @@ Deno.serve(withRun("screen_member", async (req) => {
     const { data: standsFace } = await admin.from("oe_faces")
       .select("summary").eq("user_id", userId).eq("face", "stands").maybeSingle();
 
+    // ── WHAT HE READS AND WANTS — ranking only, never proof, never a gate ──
+    const { data: interestFaces } = await admin.from("oe_faces")
+      .select("face, summary, keywords").eq("user_id", userId).in("face", ["reads", "wants"]);
+    const { data: captureRows } = await admin.from("entries")
+      .select("title, summary, content, created_at")
+      .eq("user_id", userId).order("created_at", { ascending: false }).limit(400);
+
     // ── every live record ────────────────────────────────────────────────
     const { data: opps, error: oppsError } = await admin.from("oe_opportunities")
       .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
@@ -327,6 +335,8 @@ Deno.serve(withRun("screen_member", async (req) => {
         // Only a refusal carries a refusal sentence. An unknown is an open
         // investigation, not a verdict, and must not read like one.
         screen_gate: g.gate, screen_outcome: g.outcome,
+        // Layer two of three. It orders the shelf; it never opens a door.
+        interest: interestOf(o as any, (interestFaces ?? []) as any, (captureRows ?? []) as any),
         rejection_sentence: g.outcome === "rejected" ? g.sentence : null,
 
         role_profession: g.role_profession, profession_relation: g.profession_relation,
