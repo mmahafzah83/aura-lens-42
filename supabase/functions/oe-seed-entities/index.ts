@@ -203,6 +203,95 @@ async function wpApi(params: Record<string, string>): Promise<any> {
 const WP_NOISE =
   /^(list of|economy of|history of|geography of|politics of|military of|transport in|communications in|culture of|demographics of|outline of|index of|telecommunications in|tourism in|education in|energy in|mining in|agriculture in|health in|religion in)\b|^saudi arabia$|^(category|template|portal|wikipedia):/i;
 
+/**
+ * THE LISTED ISSUERS, FROM A PAGE WE ACTUALLY READ.
+ *
+ * The regulator publishes no machine-readable list and the exchange refuses
+ * machines; both refusals are already on record. Company NAMES, though, are
+ * public knowledge, and Wikipedia both allows machines and states the ticker.
+ * Every attempt here — success or refusal — is written to oe_feeds with the
+ * finding it produced, and nothing is seeded from a page that did not answer.
+ */
+const TADAWUL_SOURCES: Array<{ label: string; url: string; kind: "category" | "table" }> = [
+  { label: "Wikipedia — Companies listed on Tadawul", url: "https://en.wikipedia.org/wiki/Category:Companies_listed_on_Tadawul", kind: "category" },
+  { label: "Wikipedia — Tadawul All-Share Index", url: "https://en.wikipedia.org/wiki/Tadawul_All-Share_Index", kind: "table" },
+];
+
+async function seedTadawulListed(
+  admin: any,
+): Promise<{ ents: Ent[]; notes: string[] }> {
+  const notes: string[] = [];
+  const titles = new Set<string>();
+
+  for (const src of TADAWUL_SOURCES) {
+    let status = 0;
+    let finding = "unreachable";
+    let found = 0;
+    try {
+      if (src.kind === "category") {
+        let cont: Record<string, string> = {};
+        for (let page = 0; page < 8; page++) {
+          const d = await wpApi({
+            action: "query", list: "categorymembers",
+            cmtitle: "Category:Companies_listed_on_Tadawul",
+            cmlimit: "500", cmtype: "page|subcat", ...cont,
+          });
+          status = 200;
+          for (const m of d?.query?.categorymembers ?? []) {
+            if (m.ns === 14) continue;
+            if (m.ns === 0 && !WP_NOISE.test(m.title)) { titles.add(m.title); found++; }
+          }
+          if (d?.continue) cont = d.continue; else break;
+          await sleep(150);
+        }
+        finding = found ? "robots_allows" : "no_public_listing";
+      } else {
+        const r = await getText(src.url, UA);
+        status = r.status;
+        if (!r.ok) finding = r.status === 403 ? "bot_defended" : "unreachable";
+        else {
+          for (const name of tableRowNames(r.text)) {
+            if (WP_NOISE.test(name)) continue;
+            if (!/\s/.test(name)) continue;
+            titles.add(name); found++;
+          }
+          finding = found ? "robots_allows" : "no_public_listing";
+        }
+      }
+    } catch (e) {
+      finding = "unreachable";
+      notes.push(`${src.label}: ${String((e as Error).message ?? e).slice(0, 120)}`);
+    }
+    notes.push(`${src.label}: HTTP ${status || "no response"} · ${finding} · ${found} names`);
+    await admin.from("oe_feeds").upsert({
+      name: src.label, url: src.url, kind: "directory",
+      active: false, terms_ok: finding === "robots_allows",
+      access_finding: finding, last_fetched_at: new Date().toISOString(),
+      terms_note: `Read for company names only on ${new Date().toISOString().slice(0, 10)}: HTTP ${status || "no response"}, ${found} names.`,
+    }, { onConflict: "url" });
+  }
+
+  if (!titles.size) return { ents: [], notes };
+
+  // Wikidata carries the ticker and the official site for these same pages.
+  const extra = await wikidataForTitles([...titles]);
+  const ents: Ent[] = [...titles].map((t) => {
+    const more = extra.get(t) ?? {};
+    return {
+      name: t.replace(/\s*\([^)]*\)\s*$/, "").trim(),
+      name_ar: more.name_ar ?? null,
+      domain: more.domain ?? null,
+      listed_symbol: more.listed_symbol ?? null,
+      entity_kind: "listed",
+      sector_code: "listed",
+      country: "SA",
+      seed_source: TADAWUL_SOURCES[0].url,
+    };
+  });
+  notes.push(`seeded shape: ${ents.length} names, ${ents.filter((e) => e.listed_symbol).length} with a stated ticker`);
+  return { ents, notes };
+}
+
 /** Titles → Wikidata ids → labels, Arabic labels, official websites, tickers. */
 async function wikidataForTitles(titles: string[]): Promise<Map<string, Partial<Ent>>> {
   const byTitle = new Map<string, Partial<Ent>>();
