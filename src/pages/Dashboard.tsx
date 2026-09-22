@@ -193,6 +193,10 @@ const Dashboard = () => {
   const [brandAssessmentOpen, setBrandAssessmentOpen] = useState(false);
   const [editProfileField, setEditProfileField] = useState<EditProfileField | undefined>(undefined);
 
+  useEffect(() => {
+    if (location.pathname === "/opportunities") setActiveTab("opportunities");
+  }, [location.pathname]);
+
   // Force-enable elevation motion globally (count-up + ring draw-in).
   useEffect(() => {
     document.documentElement.setAttribute("data-fx-score-ring", "true");

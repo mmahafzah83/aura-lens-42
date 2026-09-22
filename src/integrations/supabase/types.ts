@@ -11349,6 +11349,7 @@ export type Database = {
         Args: { p_apply: boolean; p_id: string }
         Returns: Json
       }
+      oe_rules_reset: { Args: never; Returns: Json }
       oe_scan_shared_facts_private: { Args: never; Returns: number }
       oe_truth_report_resolve: {
         Args: {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Settings2, X } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { AuraCard } from "@/components/ui/AuraCard";
@@ -51,6 +51,46 @@ const dayKey = (value: string) => String(value).slice(0, 10);
 const fill = (text: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((value, [key, item]) => value.split(`{${key}}`).join(String(item)), text);
 const hasWhy = (card: QueueCard) => (card.why_lines ?? []).some((line) => String(line.text ?? "").trim());
 const checkedAt = (card: QueueCard) => [card.quote_verified_at, card.route_checked_at, card.last_checked].filter(Boolean).map(String).sort().slice(-1)[0] ?? null;
+const heldReasonKey: Record<string, string> = {
+  outranked: "settings_held_reason",
+  place: "queue_wrong_place",
+  level: "queue_wrong_level",
+  sector: "queue_wrong_sector",
+};
+const ruleFieldKey: Record<string, string> = {
+  place: "settings_place",
+  level: "taste_level",
+  sector: "taste_sector",
+  kind: "chair_kind",
+  engagement: "chair_engagement",
+  org_type: "chair_org_type",
+  language: "settings_language",
+  nationality: "filter_nationality",
+};
+
+function ruleValues(rule: Rule): string[] {
+  if (!rule.value) return [];
+  try {
+    const parsed = JSON.parse(rule.value);
+    if (Array.isArray(parsed)) return parsed.map(String);
+  } catch { /* stored scalar */ }
+  return rule.value.split(",").map((value) => value.trim()).filter(Boolean);
+}
+function readableRule(rule: Rule, language: Lang, v: Vocab): string {
+  const field = String(rule.field ?? "").trim();
+  const values = ruleValues(rule);
+  if (!field || values.length === 0) {
+    const original = language === "ar" && rule.rule_text_ar ? rule.rule_text_ar : rule.rule_text;
+    return original.split("_").join(" ");
+  }
+  const labels = values.map((value) => {
+    if (value.startsWith("region:")) return refLabel("region", value.slice(7), language);
+    const vocabularyLabel = v(`${field}_${value}`);
+    return (vocabularyLabel || refLabel(field, value, language)).split("_").join(" ");
+  }).join(" · ");
+  const subject = v(ruleFieldKey[field] ?? "settings_held_reason");
+  return subject ? `${subject}: ${labels}` : labels;
+}
 
 function dateText(value: string, language: Lang) {
   const date = new Date(`${String(value).slice(0, 10)}T12:00:00Z`);
@@ -76,7 +116,6 @@ function historyOutcome(row: History, v: Vocab) {
 }
 
 export function OpportunityQueue() {
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const requested = params.get("view") as View | null;
   const view: View = requested && validViews.has(requested) ? requested : "today";
@@ -95,6 +134,7 @@ export function OpportunityQueue() {
   const [placePick, setPlacePick] = useState<string[]>([]);
   const [home, setHome] = useState<Home | null>(null);
   const [notice, setNotice] = useState<{ text: string; undo?: string } | null>(null);
+  const [savedBar, setSavedBar] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const openerRef = useRef<HTMLElement | null>(null);
   const renderedRef = useRef<Set<string>>(new Set());
@@ -118,7 +158,7 @@ export function OpportunityQueue() {
   useEffect(() => { void (async () => { const { data: payload } = await supabase.rpc("oe_my_home" as never); if (payload) setHome(payload as unknown as Home); })(); }, []);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
 
-  const cards = useMemo(() => data.cards.filter((card) => card.lane === "act" && hasWhy(card)).slice(0, 3), [data.cards]);
+  const cards = useMemo(() => data.cards.filter((card) => card.lane === "act" && hasWhy(card)).filter((_, index) => index < 3), [data.cards]);
   const active = cards.find((card) => card.id === activeId) ?? cards[0] ?? null;
   const compact = active ? cards.filter((card) => card.id !== active.id).slice(0, 2) : [];
   const waiting = data.comments.length;
@@ -130,7 +170,7 @@ export function OpportunityQueue() {
   };
   const openRules = (opener: HTMLElement | null, nextEditor: "move" | "place" | null = null) => {
     openerRef.current = opener;
-    setMovePick(null); setPlacePick([]); setEditor(nextEditor); setRulesOpen(true);
+    setMovePick(null); setPlacePick([]); setSavedBar(false); setEditor(nextEditor); setRulesOpen(true);
   };
   const closeRules = () => { setRulesOpen(false); setEditor(null); window.setTimeout(() => openerRef.current?.focus(), 0); };
   const refresh = async () => { if (refreshing) return; setRefreshing(true); await supabase.rpc("oe_app_refresh" as never); renderedRef.current.clear(); await load(); setRefreshing(false); };
@@ -167,16 +207,29 @@ export function OpportunityQueue() {
   };
   const answerComment = async (id: string, accept: boolean) => { if (busy) return; setBusy(true); await supabase.rpc(accept ? "oe_notebook_promote_comment" as never : "oe_notebook_decline_comment" as never, { p_id: id } as never); setBusy(false); await load(); };
   const removeRule = async (id: string) => { if (busy) return; setBusy(true); await supabase.rpc("oe_notebook_remove_rule" as never, { p_id: id } as never); setBusy(false); await load(); };
+  const resetRules = async () => {
+    const prompt = v("rules_reset_confirm") || `${v("rules_remove")} ${v("rules_active_title")}. ${v("rules_comments_title")}`;
+    if (busy || !window.confirm(prompt)) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("oe_rules_reset" as never);
+    if (!error) await load();
+    setBusy(false);
+  };
   const saveBar = async () => {
-    const move = movePick ?? data.direction?.move_kind;
-    if (!move || busy) return;
+    if (busy || !editor) return;
+    if (editor === "move" && !movePick) return;
     setBusy(true);
     const { error } = editor === "place"
-      ? await supabase.rpc("oe_move_save" as never, { p_move: move, p_place: placePick.length ? placePick : null } as never)
-      : await supabase.rpc("oe_move_save" as never, { p_move: move } as never);
-    if (!error && editor === "place" && placePick.length === 0) await supabase.rpc("oe_filter_save" as never, { p_field: "place", p_op: "allow", p_values: [] } as never);
+      ? await supabase.rpc("oe_filter_save" as never, { p_field: "place", p_op: "allow", p_values: placePick } as never)
+      : await supabase.rpc("oe_move_save" as never, { p_move: movePick } as never);
+    if (!error) {
+      setData((current) => editor === "place"
+        ? { ...current, filters: { ...current.filters, place: { op: "allow", values: placePick } } }
+        : { ...current, direction: { ...(current.direction ?? { language, move_kind: null, move_confirmed_at: null, move_proposed: null }), move_kind: movePick, move_confirmed_at: new Date().toISOString() } });
+      setEditor(null); setMovePick(null); setPlacePick([]); setSavedBar(true);
+      await load();
+    }
     setBusy(false);
-    if (!error) { setEditor(null); setMovePick(null); setPlacePick([]); await load(); }
   };
 
   return <section className="oe-queue" dir={rtl ? "rtl" : "ltr"} lang={language} aria-busy={loading}>
@@ -189,9 +242,9 @@ export function OpportunityQueue() {
       {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
       {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
       {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
-    </main><Aside data={data} language={language} v={v} heldOpen={heldOpen} onHeld={() => setHeldOpen((value) => !value)} onRules={(event) => openRules(event.currentTarget)} /></div>
+    </main><Aside data={data} language={language} v={v} heldOpen={heldOpen} onHeld={() => setHeldOpen((value) => !value)} onRules={(event) => openRules(event.currentTarget, "move")} /></div>
     <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span>{notice?.undo && <Button variant="link" onClick={() => void bringBack(notice.undo as string)}>{v("action_undo")}</Button>}</div>
-    {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} v={v} onEditor={setEditor} onMove={setMovePick} onPlace={(value) => setPlacePick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])} onPlaceAny={() => setPlacePick([])} onSaveBar={() => void saveBar()} onComment={(id, accept) => void answerComment(id, accept)} onRemove={(id) => void removeRule(id)} onClose={closeRules} onAccount={() => { closeRules(); navigate("/settings?tab=account"); }} />, document.body)}
+    {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} savedBar={savedBar} v={v} onEditor={(value) => { setSavedBar(false); setMovePick(null); setPlacePick([]); setEditor(value); }} onMove={setMovePick} onPlace={(value) => setPlacePick([value])} onPlaceAny={() => setPlacePick([])} onSaveBar={() => void saveBar()} onComment={(id, accept) => void answerComment(id, accept)} onRemove={(id) => void removeRule(id)} onReset={() => void resetRules()} onClose={closeRules} />, document.body)}
   </section>;
 }
 
@@ -210,7 +263,7 @@ function Aside({ data, language, v, heldOpen, onHeld, onRules }: { data: QueueDa
   const places = data.filters.place?.values ?? [];
   const place = places.length ? places.map((value) => value.startsWith("region:") ? refLabel("region", value.slice(7), language) : refLabel("place", value, language)).join(" · ") : v("move_place_any");
   return <aside className="oe-side">
-    <section className="oe-held-panel"><span>{v("held_back_title")}</span><strong style={mono}>{data.held_count}</strong><Button variant="link" onClick={onHeld}>{v(heldOpen ? "held_hide_why" : "held_see_why")}</Button>{heldOpen && <div>{data.held.slice(0, 3).map((row) => <p key={row.id}>{row.reason || v("settings_held_reason")}</p>)}</div>}</section>
+    <section className="oe-held-panel"><span>{v("held_back_title")}</span><strong style={mono}>{data.held_count}</strong><Button variant="link" onClick={onHeld}>{v(heldOpen ? "held_hide_why" : "held_see_why")}</Button>{heldOpen && <div style={{ maxHeight: 300, overflowY: "auto" }}>{data.held.map((row) => <p key={row.id}><b>{row.title ?? v("settings_untitled")}</b><span>{v(heldReasonKey[String(row.reason ?? "")] ?? "settings_held_reason") || `${v("settings_held_reason")}: ${String(row.reason ?? "").split("_").join(" ")}`}</span></p>)}</div>}</section>
     <section className="oe-bar-panel"><div><span>{v("current_bar_title")}</span><Button variant="link" onClick={onRules}>{v("action_change")}</Button></div><p><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span></p><p><strong>{v("settings_place")}</strong><span>{place}</span></p></section>
   </aside>;
 }
@@ -236,16 +289,22 @@ function HistoryView({ rows, filter, v, language, onFilter }: { rows: History[];
   return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <Button key={value} variant="outline" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</Button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{dateText(day, language)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
 }
 
-function RulesDialog({ data, home, language, busy, editor, movePick, placePick, v, onEditor, onMove, onPlace, onPlaceAny, onSaveBar, onComment, onRemove, onClose, onAccount }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | null; movePick: MoveKind | null; placePick: string[]; v: Vocab; onEditor: (value: "move" | "place" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSaveBar: () => void; onComment: (id: string, accept: boolean) => void; onRemove: (id: string) => void; onClose: () => void; onAccount: () => void }) {
+function RulesDialog({ data, home, language, busy, editor, movePick, placePick, savedBar, v, onEditor, onMove, onPlace, onPlaceAny, onSaveBar, onComment, onRemove, onReset, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | null; movePick: MoveKind | null; placePick: string[]; savedBar: boolean; v: Vocab; onEditor: (value: "move" | "place" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSaveBar: () => void; onComment: (id: string, accept: boolean) => void; onRemove: (id: string) => void; onReset: () => void; onClose: () => void }) {
   const dialogRef = useRef<HTMLElement | null>(null);
-  const firstComment = data.comments[0] ?? null;
-  const moreComments = Math.max(0, data.comments.length - 1);
-  const activeRules = data.rules.filter((rule) => rule.active).slice(0, 3);
-  const moreRules = Math.max(0, data.rules.filter((rule) => rule.active).length - activeRules.length);
+  const [allComments, setAllComments] = useState(false);
+  const [allRules, setAllRules] = useState(false);
+  const comments = allComments ? data.comments : data.comments.slice(0, 1);
+  const hiddenComments = Math.max(0, data.comments.length - comments.length);
+  const allActiveRules = data.rules.filter((rule) => rule.active);
+  const activeRules = allRules ? allActiveRules : allActiveRules.filter((_, index) => index < 3);
+  const hiddenRules = Math.max(0, allActiveRules.length - activeRules.length);
   const places = data.filters.place?.values ?? [];
   const placeRule = data.rules.find((rule) => rule.active && rule.field === "place") ?? null;
   const placeText = places.length ? places.map((value) => value.startsWith("region:") ? refLabel("region", value.slice(7), language) : refLabel("place", value, language)).join(" · ") : v("move_place_any");
-  const choices: Array<{ value: string; label: string }> = [...(home?.city && home.country ? [{ value: home.country, label: fill(v("move_place_home"), { city: home.city }) }] : []), ...(home?.regions ?? []).map((region) => ({ value: `region:${region.code}`, label: fill(v("move_place_region"), { region: language === "ar" ? (region.name_ar || region.name_en) : region.name_en }) }))];
+  const homeChoice = home?.city && home.country ? { value: home.country, label: fill(v("move_place_home"), { city: home.city }) } : null;
+  const homeRegion = home?.regions?.[0];
+  const regionChoice = homeRegion ? { value: `region:${homeRegion.code}`, label: fill(v("move_place_region"), { region: language === "ar" ? (homeRegion.name_ar || homeRegion.name_en) : homeRegion.name_en }) } : null;
+  const choices: Array<{ value: string; label: string }> = [homeChoice, regionChoice].filter((choice): choice is { value: string; label: string } => Boolean(choice));
   useEffect(() => {
     const node = dialogRef.current; if (!node) return;
     const old = document.body.style.overflow; document.body.style.overflow = "hidden";
@@ -267,10 +326,11 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
     <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span>{placeRule && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(placeRule.stated_on, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(placeRule.stated_on).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
       {editor === "move" && <div className="oe-inline-editor">{moves.map((move) => <Button key={move} variant="outline" aria-pressed={movePick === move} className={`${data.direction?.move_proposed === move ? "is-proposed" : ""}`} onClick={() => onMove(move)}>{v(moveKey(move))}</Button>)}<AuraButton disabled={!movePick} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
       {editor === "place" && <div className="oe-inline-editor">{choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}<Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button><AuraButton loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
+      {savedBar && <p role="status">{v("rules_saved") || v("gap_answer_saved")}</p>}
     </section>
-    <section className="oe-dialog-section"><h3>{v("rules_comments_title")}</h3>{firstComment ? <div className="oe-comment"><blockquote dir="auto">“{language === "ar" && firstComment.text_ar ? firstComment.text_ar : firstComment.text}”</blockquote><time style={mono}>{dateText(firstComment.said_on, language)}</time><div><AuraButton size="sm" loading={busy} onClick={() => onComment(firstComment.id, true)}>{v("rules_make_rule")}</AuraButton><AuraButton size="sm" variant="ghost" disabled={busy} onClick={() => onComment(firstComment.id, false)}>{v("proposal_no")}</AuraButton></div>{moreComments > 0 && <p style={mono}>{fill(v("rules_more"), { n: moreComments })}</p>}</div> : <p>{v("rules_comments_empty")}</p>}</section>
-    <section className="oe-dialog-section"><h3>{v("rules_active_title")}</h3>{activeRules.length ? activeRules.map((rule) => <div key={rule.id} className="oe-dialog-row"><span dir="auto">{language === "ar" && rule.rule_text_ar ? rule.rule_text_ar : rule.rule_text}</span><Button variant="link" disabled={busy} onClick={() => onRemove(rule.id)}>{v("rules_remove")}</Button></div>) : <p>{v("rules_active_empty")}</p>}{moreRules > 0 && <p style={mono}>{fill(v("rules_more"), { n: moreRules })}</p>}</section>
-    <footer><p>{v("rules_private")}</p><div className="oe-dialog-account"><Button variant="link" onClick={onAccount}>{v("rules_export")}</Button><Button variant="link" onClick={onAccount}>{v("rules_delete")}</Button></div><div><Button variant="outline" onClick={onClose}>{v("sheet_close")}</Button><AuraButton onClick={onClose}>{v("save")}</AuraButton></div></footer>
+    <section className="oe-dialog-section"><h3>{v("rules_comments_title")}</h3>{comments.length ? <>{comments.map((comment) => <div className="oe-comment" key={comment.id}><blockquote dir="auto">“{language === "ar" && comment.text_ar ? comment.text_ar : comment.text}”</blockquote><time style={mono}>{dateText(comment.said_on, language)}</time><div><AuraButton size="sm" loading={busy} onClick={() => onComment(comment.id, true)}>{v("rules_make_rule")}</AuraButton><AuraButton size="sm" variant="ghost" disabled={busy} onClick={() => onComment(comment.id, false)}>{v("proposal_no")}</AuraButton></div></div>)}{hiddenComments > 0 && <Button variant="link" style={mono} onClick={() => setAllComments(true)}>{fill(v("rules_more"), { n: hiddenComments })}</Button>}</> : <p>{v("rules_comments_empty")}</p>}</section>
+    <section className="oe-dialog-section"><h3>{v("rules_active_title")}</h3>{activeRules.length ? activeRules.map((rule) => <div key={rule.id} className="oe-dialog-row"><span>{readableRule(rule, language, v)}</span><Button variant="link" disabled={busy} onClick={() => onRemove(rule.id)}>{v("rules_remove")}</Button></div>) : <p>{v("rules_active_empty")}</p>}{hiddenRules > 0 && <Button variant="link" style={mono} onClick={() => setAllRules(true)}>{fill(v("rules_more"), { n: hiddenRules })}</Button>}<Button variant="link" disabled={busy || allActiveRules.length === 0} onClick={onReset}>{v("rules_start_again") || v("rules_remove")}</Button></section>
+    <footer><p>{v("rules_private")}</p><div><Button variant="outline" onClick={onClose}>{v("sheet_close")}</Button></div></footer>
   </section></div>;
 }
 
