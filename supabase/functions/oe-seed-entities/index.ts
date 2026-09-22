@@ -490,6 +490,11 @@ Deno.serve(async (req) => {
       collected.push(...r.ents);
       notes.wikipedia_category = r.notes;
     }
+    if (want("tadawul_listed")) {
+      const r = await seedTadawulListed(admin);
+      collected.push(...r.ents);
+      notes.tadawul_listed = r.notes;
+    }
     if (want("argaam")) {
       const a = await seedHtmlDirectory(
         "Argaam issuer list", "https://www.argaam.com/en/company/companies-prices/3", "argaam", "listed",
