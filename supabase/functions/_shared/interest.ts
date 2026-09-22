@@ -44,8 +44,8 @@ export function interestOf(
     const body = textOf(face);
     if (!body) continue;
     const overlap = subjectOverlap(subject, body);
-    if (overlap.cosine > score) score = overlap.cosine;
-    if (overlap.cosine >= SUBJECT_OVERLAP_MIN) {
+    if (overlap.score > score) score = overlap.score;
+    if (overlap.score >= SUBJECT_OVERLAP_MIN) {
       hitFaces.push(String(face.face));
       for (const term of overlap.shared ?? []) terms.add(term);
     }
@@ -56,7 +56,7 @@ export function interestOf(
   for (const row of captures) {
     const body = [row.title, row.summary, row.content].filter(Boolean).join(" ").slice(0, 2_000);
     if (!body) continue;
-    if (subjectOverlap(subject, body).cosine < SUBJECT_OVERLAP_MIN) continue;
+    if (subjectOverlap(subject, body).score < SUBJECT_OVERLAP_MIN) continue;
     captureCount++;
     const at = row.created_at ? String(row.created_at) : null;
     if (at && (!since || at < since)) since = at;
