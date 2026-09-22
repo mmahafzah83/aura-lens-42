@@ -341,7 +341,11 @@ Deno.serve(async (req) => {
 
   const { data: policy } = await admin
     .from("oe_policy_versions").select("params").eq("active", true).maybeSingle();
-  const neverRead: string[] = (policy?.params as any)?.never_read ?? [];
+  // One skip list, read by every door: what robots refuse AND what policy skips.
+  const neverRead: string[] = [
+    ...(((policy?.params as any)?.never_read ?? []) as string[]),
+    ...(((policy?.params as any)?.discovery_skip_hosts ?? []) as string[]),
+  ];
 
   const HARVEST_KINDS = [
     "rss", "atom", "sitemap", "json_api", "html_list", "embedded_json", "telegram",
