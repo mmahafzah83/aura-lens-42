@@ -85,7 +85,8 @@ function readableRule(rule: Rule, language: Lang, v: Vocab): string {
   }
   const labels = values.map((value) => {
     if (value.startsWith("region:")) return refLabel("region", value.slice(7), language);
-    return refLabel(field, value, language).split("_").join(" ");
+    const vocabularyLabel = v(`${field}_${value}`);
+    return (vocabularyLabel || refLabel(field, value, language)).split("_").join(" ");
   }).join(" · ");
   const subject = v(ruleFieldKey[field] ?? "settings_held_reason");
   return subject ? `${subject}: ${labels}` : labels;
@@ -207,7 +208,8 @@ export function OpportunityQueue() {
   const answerComment = async (id: string, accept: boolean) => { if (busy) return; setBusy(true); await supabase.rpc(accept ? "oe_notebook_promote_comment" as never : "oe_notebook_decline_comment" as never, { p_id: id } as never); setBusy(false); await load(); };
   const removeRule = async (id: string) => { if (busy) return; setBusy(true); await supabase.rpc("oe_notebook_remove_rule" as never, { p_id: id } as never); setBusy(false); await load(); };
   const resetRules = async () => {
-    if (busy || !window.confirm(v("rules_reset_confirm") || v("rules_private"))) return;
+    const prompt = v("rules_reset_confirm") || `${v("rules_remove")} ${v("rules_active_title")}. ${v("rules_comments_title")}`;
+    if (busy || !window.confirm(prompt)) return;
     setBusy(true);
     const { error } = await supabase.rpc("oe_rules_reset" as never);
     if (!error) await load();
