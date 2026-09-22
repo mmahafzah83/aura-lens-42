@@ -604,6 +604,7 @@ Deno.serve(async (req) => {
       listed_symbol: e.listed_symbol ?? null,
       size_hint: e.size_hint ?? null,
       seed_source: e.seed_source,
+      sector_code: e.sector_code ?? null,
     }));
 
     const perSource: Record<string, number> = {};
