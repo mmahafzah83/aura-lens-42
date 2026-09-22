@@ -306,8 +306,11 @@ export function screen(
   return done();
 }
 
-/** The route kinds that count as a real door. */
-export const OPEN_ROUTE_KINDS = ["application", "contact", "call_for_speakers", "registration"];
+/**
+ * The route kinds that count as a real door. A named person counts as a door
+ * when the page is the issuer's own and names someone specific.
+ */
+export const OPEN_ROUTE_KINDS = ["application", "contact", "named_person", "call_for_speakers", "registration"];
 
 /** A site-root contact or about page is a wall, not a door. */
 const GENERIC_ROUTE_PATH = /^\/?(contact|contact-us|contactus|get-in-touch|about|about-us|اتصل-بنا|اتصل|من-نحن)\/?$/i;
@@ -331,15 +334,16 @@ export function levelOf(o: any): Level | null {
 
 
 /**
- * A real door. `contact` only counts when the page belongs to the issuer's own
- * site and points at something more specific than its front-door contact page;
- * anything else is a wall a member would tap into nothing.
+ * A real door. `contact` and `named_person` count only when the page belongs
+ * to the issuer's own site and points at something more specific than its
+ * front-door contact page; anything else is a wall a member would tap into
+ * nothing.
  */
 export function hasRoute(o: any, issuerDomain?: string | null): boolean {
   if (!o?.route_url || o?.route_dead === true) return false;
   const kind = String(o?.route_kind ?? "");
   if (!OPEN_ROUTE_KINDS.includes(kind)) return false;
-  if (kind !== "contact") return true;
+  if (kind !== "contact" && kind !== "named_person") return true;
 
   const host = hostOf(o.route_url);
   if (!host) return false;
