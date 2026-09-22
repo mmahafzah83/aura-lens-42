@@ -37,7 +37,11 @@ type Parked = { opportunity_id: string; title: string; issuer_name: string | nul
 type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
 type Mix = "win" | "build" | "explore";
 type Goal = "income_from_expertise" | "advancement" | "visibility" | "relationships" | "knowledge";
-type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null; goal: Goal | null; goal_secondary: Goal[] | null; goal_proposed: Goal | null; goal_confirmed_at: string | null; goal_expires_at: string | null; language: Lang | null };
+/** The one answer that sets the bar: what would make him move. */
+type MoveKind = "bigger_same" | "step_up" | "client_side" | "exceptional_only";
+type Home = { city: string | null; country: string | null; country_name: string | null; regions: Array<{ code: string; name_en: string }> };
+type Comment = { id: string; text: string; text_ar?: string | null; said_on: string; field: string | null; value: string | null };
+type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null; goal: Goal | null; goal_secondary: Goal[] | null; goal_proposed: Goal | null; goal_confirmed_at: string | null; goal_expires_at: string | null; language: Lang | null; move_kind: MoveKind | null; move_confirmed_at: string | null; move_proposed: MoveKind | null };
 type Window = { expected_by: string; declared_on: string | null; missed: boolean };
 type Derivation = { comments?: Array<{ id?: string; text?: string; said_on?: string }>; profile?: string[]; legal_basis?: string };
 type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; field: string | null; value: string | null; stated_on: string; active?: boolean; derived_from?: Derivation | null };
@@ -48,16 +52,18 @@ type Metrics = { sources_read: number; organisations: number; judged_week: numbe
 type Proposed = { id: string; rule_text: string; field: string | null };
 type AlsoKind = { kind: string; label: string; count: number };
 type Reading = { running: boolean; last_read_at: string | null };
-type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[]; metrics: Metrics | null; filters: FilterMap; proposed_rules: Proposed[]; also_watching: number; also_watching_kinds: AlsoKind[]; reading: Reading | null; card_kinds: string[] };
+type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[]; metrics: Metrics | null; filters: FilterMap; proposed_rules: Proposed[]; also_watching: number; also_watching_kinds: AlsoKind[]; reading: Reading | null; card_kinds: string[]; comments: Comment[] };
 type View = "today" | "parked" | "history" | "settings";
-type DirectionStep = "renew" | "goal" | "secondary" | "priority" | "mix" | "done";
+type DirectionStep = "renew" | "move" | "place" | "priority" | "mix" | "done";
 type HistoryFilter = "all" | "right" | "declined" | "flagged";
 type Vocab = ReturnType<typeof useVocab>;
 
-const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [], also_watching: 0, also_watching_kinds: [], reading: null, card_kinds: [] };
+const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [], also_watching: 0, also_watching_kinds: [], reading: null, card_kinds: [], comments: [] };
 const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
 const mixes: Mix[] = ["win", "build", "explore"];
-const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "relationships", "knowledge"];
+/** One answer, four shapes. The vocabulary key carries the sentence. */
+const moves: MoveKind[] = ["bigger_same", "step_up", "client_side", "exceptional_only"];
+const moveKey = (move: MoveKind) => move === "exceptional_only" ? "move_exceptional" : `move_${move}`;
 
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const chipBase = { minHeight: 44, padding: "8px 11px", borderRadius: 4, border: "1px solid var(--border-default)", background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
@@ -130,11 +136,13 @@ export function OpportunityQueue() {
   const historyFilter: HistoryFilter = rawFilter && ["all", "right", "declined", "flagged"].includes(rawFilter) ? rawFilter : "all";
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [directionStep, setDirectionStep] = useState<DirectionStep>("goal");
-  const [directionChoice, setDirectionChoice] = useState<Goal | Priority | Mix | null>(null);
-  const [primaryGoal, setPrimaryGoal] = useState<Goal | null>(null);
-  const [secondaryGoals, setSecondaryGoals] = useState<Set<Goal>>(new Set());
+  const [directionStep, setDirectionStep] = useState<DirectionStep>("move");
+  const [directionChoice, setDirectionChoice] = useState<MoveKind | Priority | Mix | null>(null);
+  const [movePick, setMovePick] = useState<MoveKind | null>(null);
+  const [placePick, setPlacePick] = useState<string[]>([]);
+  const [home, setHome] = useState<Home | null>(null);
   const [showAllHeld, setShowAllHeld] = useState(false);
+  const openerRef = useRef<HTMLElement | null>(null);
   const renderedRef = useRef<Set<string>>(new Set());
   const noticeTimer = useRef<number | null>(null);
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -159,6 +167,14 @@ export function OpportunityQueue() {
     setLoading(false);
   }, []);
   useEffect(() => { void load(); void loadRefLabels(); }, [load]);
+  // His own city and region, so the question can offer them by name and no
+  // place is ever written into the product's words.
+  useEffect(() => {
+    void (async () => {
+      const { data: payload } = await supabase.rpc("oe_my_home" as never);
+      if (payload) setHome(payload as unknown as Home);
+    })();
+  }, []);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
   useEffect(() => {
     if (!sheetOpen) return;
@@ -169,26 +185,25 @@ export function OpportunityQueue() {
     return () => { document.body.style.overflow = old; window.removeEventListener("keydown", close); };
   }, [sheetOpen]);
 
-  const cards = data.cards.filter(hasWhy);
+  // One shape reaches this tab, and only the act lane. Anything worth writing
+  // about is still judged and stored; it never appears here.
+  const cards = data.cards.filter((card) => hasWhy(card) && card.lane === "act");
   const groups = useMemo(() => {
     const closing = cards.filter(isClosing);
     const used = new Set(closing.map((card) => card.id));
-    const act = cards.filter((card) => card.lane === "act" && !used.has(card.id)); act.forEach((card) => used.add(card.id));
-    const write = cards.filter((card) => card.lane === "write" && !used.has(card.id)); write.forEach((card) => used.add(card.id));
-    const happened = cards.filter((card) => !used.has(card.id) && (card.access_state === "observed_event" || card.access_state === "possible_need"));
+    const act = cards.filter((card) => !used.has(card.id) && !(card.access_state === "observed_event" || card.access_state === "possible_need"));
+    act.forEach((card) => used.add(card.id));
+    const happened = cards.filter((card) => !used.has(card.id));
     return [
       { key: "closing", labelKey: "group_closing", tone: "clock", cards: closing },
       { key: "act", labelKey: "group_open_now", tone: "act", cards: act },
-      { key: "write", labelKey: "group_write", tone: "write", cards: write },
       { key: "event", labelKey: "group_event", tone: "event", cards: happened },
     ].filter((group) => group.cards.length > 0);
   }, [cards]);
   const selected = cards.find((card) => card.id === selectedId) ?? null;
   const direction = data.direction;
-  const today = new Date().toISOString().slice(0, 10);
-  const goalExpired = Boolean(direction?.goal && direction.goal_expires_at && direction.goal_expires_at <= today);
-  const directionIncomplete = !direction?.goal || !direction.priority || !direction.mix || goalExpired;
-  const directionProgress = [Boolean(direction?.goal), Boolean(direction?.priority), Boolean(direction?.mix)];
+  const directionIncomplete = !direction?.move_kind || !direction.priority || !direction.mix;
+  const directionProgress = [Boolean(direction?.move_kind), Boolean(direction?.priority), Boolean(direction?.mix)];
 
   const showNotice = (text: string, undo?: string) => {
     setNotice({ text, undo });
@@ -233,8 +248,10 @@ export function OpportunityQueue() {
     if (!(raw as { ok?: boolean } | null)?.ok) return;
     if (action === "later") { setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id), parked: [{ opportunity_id: card.opportunity_id, title: card.title, issuer_name: card.issuer_name, location: card.location, deadline: card.deadline, parked_at: new Date().toISOString() }, ...current.parked] })); setSelectedId(null); showNotice(v("toast_later"), card.opportunity_id); return; }
     showNotice(v("toast_go"));
-    if (card.lane === "write") navigate(`/studio?opportunity=${card.opportunity_id}`);
-    else { const destination = card.route_url ?? card.source_url; if (destination) window.open(destination, "_blank", "noopener,noreferrer"); await load(); }
+    // Act lane only: this tab opens the door, it never hands off to drafting.
+    const destination = card.route_url ?? card.source_url;
+    if (destination) window.open(destination, "_blank", "noopener,noreferrer");
+    await load();
   };
   const decline = async (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => {
     if (busy) return; setBusy(true);
@@ -257,16 +274,35 @@ export function OpportunityQueue() {
     window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
   }, [selected, sheetOpen, busy]);
 
-  const openDirection = (step?: DirectionStep) => { setDirectionChoice(null); setPrimaryGoal(null); setSecondaryGoals(new Set(direction?.goal_secondary ?? [])); setDirectionStep(step ?? (goalExpired ? "renew" : !direction?.goal ? "goal" : !direction.priority ? "priority" : "mix")); setSheetOpen(true); };
-  const deferDirection = async () => { if (busy) return; setBusy(true); await supabase.rpc(directionStep === "goal" || directionStep === "renew" ? "oe_goal_save" as never : "oe_direction_save" as never, { p_defer: true } as never); setBusy(false); setSheetOpen(false); await load(); };
+  const openDirection = (step?: DirectionStep, opener?: HTMLElement | null) => {
+    openerRef.current = opener ?? (document.activeElement as HTMLElement | null);
+    setDirectionChoice(null); setMovePick(null); setPlacePick([]);
+    setDirectionStep(step ?? (!direction?.move_kind ? "move" : !direction.priority ? "priority" : "mix"));
+    setSheetOpen(true);
+  };
+  const closeDirection = () => { setSheetOpen(false); window.setTimeout(() => openerRef.current?.focus(), 0); };
+  const deferDirection = async () => {
+    if (busy) return; setBusy(true);
+    if (directionStep !== "move" && directionStep !== "place") await supabase.rpc("oe_direction_save" as never, { p_defer: true } as never);
+    setBusy(false); closeDirection(); await load();
+  };
   const nextDirection = async () => {
     if (busy) return;
-    if (directionStep === "goal") { if (!directionChoice) return; setBusy(true); const goal = directionChoice as Goal; const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: goal } as never); setBusy(false); if (!error) { setPrimaryGoal(goal); setDirectionChoice(null); setDirectionStep("secondary"); } return; }
-    if (directionStep === "secondary") { const goal = primaryGoal ?? direction?.goal; if (!goal) return; setBusy(true); const { error } = await supabase.rpc("oe_goal_save" as never, { p_goal: goal, p_secondary: Array.from(secondaryGoals) } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("priority"); await load(); } return; }
+    // Two questions: what would make you move, and where would you go.
+    if (directionStep === "move") { if (!directionChoice) return; setMovePick(directionChoice as MoveKind); setDirectionChoice(null); setDirectionStep("place"); return; }
+    if (directionStep === "place") {
+      const move = movePick ?? direction?.move_kind; if (!move) return;
+      setBusy(true);
+      const { error } = await supabase.rpc("oe_move_save" as never, { p_move: move, p_place: placePick.length ? placePick : null } as never);
+      setBusy(false);
+      if (!error) { setDirectionChoice(null); setDirectionStep(direction?.priority ? "done" : "priority"); await load(); }
+      return;
+    }
     if (directionStep === "priority") { if (!directionChoice) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_priority: directionChoice } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("mix"); await load(); } return; }
     if (directionStep === "mix") { if (!directionChoice) return; setBusy(true); const { error } = await supabase.rpc("oe_direction_save" as never, { p_mix: directionChoice } as never); setBusy(false); if (!error) { setDirectionChoice(null); setDirectionStep("done"); await load(); } }
   };
-  const reconfirm = async () => { if (!direction?.goal || busy) return; setBusy(true); await supabase.rpc("oe_goal_save" as never, { p_goal: direction.goal, p_secondary: direction.goal_secondary ?? null } as never); setBusy(false); setDirectionStep("done"); await load(); };
+  const reconfirm = async () => { if (!direction?.move_kind || busy) return; setBusy(true); await supabase.rpc("oe_move_save" as never, { p_move: direction.move_kind } as never); setBusy(false); setDirectionStep("done"); await load(); };
+  const promoteComment = async (id: string) => { if (busy) return; setBusy(true); await supabase.rpc("oe_notebook_promote_comment" as never, { p_id: id } as never); setBusy(false); await load(); };
   const showAnyway = async (id: string) => { await supabase.rpc("oe_app_show_anyway" as never, { p_suppressed: id } as never); await load(); };
   const setTabLanguage = async (next: Lang) => { if (busy) return; setBusy(true); await supabase.rpc("oe_direction_save" as never, { p_language: next } as never); setBusy(false); setLanguage(next); await load(); };
   const answerOutcome = async (id: string, outcome: string) => { if (!userId) return; await supabase.from("oe_serves" as never).update({ outcome, outcome_at: new Date().toISOString() } as never).eq("id", id).eq("user_id", userId); await load(); };
@@ -299,17 +335,17 @@ export function OpportunityQueue() {
 
     <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history", "settings"] as View[]).map((item) => <button key={item} type="button" aria-current={view === item ? ARIA_CURRENT : undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b>{data.parked.length}</b>}</button>)}</nav>
 
-    {view === "today" && directionIncomplete && <button type="button" className="oe-setup-strip" onClick={() => openDirection()}><span><strong>{v("setup_title")}</strong><small>{direction?.goal ? v(!direction.priority ? "setup_sub_priority" : "setup_sub_mix") : v("setup_sub_full")}</small></span><span className="oe-progress" aria-label={fill(v("setup_progress_aria"), { done: directionProgress.filter(Boolean).length })}>{directionProgress.map((done, index) => <i key={index} className={done ? "is-set" : ""} />)}</span></button>}
+    {view === "today" && directionIncomplete && <button type="button" className="oe-setup-strip" onClick={(event) => openDirection(undefined, event.currentTarget)}><span><strong>{v("setup_title")}</strong><small>{direction?.move_kind ? v(!direction.priority ? "setup_sub_priority" : "setup_sub_mix") : v("setup_sub_full")}</small></span><span className="oe-progress" aria-label={fill(v("setup_progress_aria"), { done: directionProgress.filter(Boolean).length })}>{directionProgress.map((done, index) => <i key={index} className={done ? "is-set" : ""} />)}</span></button>}
 
     {proposal && <AuraCard hover="none" className="oe-proposal"><p><strong>{fill(v("proposal_headline"), { ordinal: ordinal(proposal.count, language), value: refLabel(proposal.field, proposal.value, language) })}</strong></p><p>{v("proposal_question")}</p><div className="oe-actions"><AuraButton onClick={() => void answerProposal(true)} loading={busy}>{v("proposal_yes")}</AuraButton><AuraButton variant="ghost" onClick={() => void answerProposal(false)}>{v("proposal_no")}</AuraButton></div></AuraCard>}
 
     {view === "today" && <TodayView groups={groups} selected={selected} decliningId={decliningId} data={data} busy={busy} v={v} language={language} onSelect={selectCard} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} onOutcome={answerOutcome} onSettings={() => setView("settings")} onHistory={() => setView("history")} />}
     {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} onBringBack={(id) => void bringBack(id, true)} />}
     {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} onFilter={setHistoryFilter} />}
-    {view === "settings" && <SettingsView data={data} showAllHeld={showAllHeld} language={language} v={v} t={t} onDirection={openDirection} onShowAllHeld={setShowAllHeld} onShowAnyway={showAnyway} onReload={load} onLanguage={setTabLanguage} />}
+    {view === "settings" && <SettingsView data={data} showAllHeld={showAllHeld} language={language} busy={busy} v={v} t={t} onDirection={(step, opener) => openDirection(step, opener)} onShowAllHeld={setShowAllHeld} onShowAnyway={showAnyway} onReload={load} onLanguage={setTabLanguage} onPromote={promoteComment} />}
 
     <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span>{notice?.undo && <button type="button" onClick={() => void bringBack(notice.undo as string)}>{v("action_undo")}</button>}</div>
-    {sheetOpen && createPortal(<DirectionSheet step={directionStep} direction={direction} choice={directionChoice} primaryGoal={primaryGoal} secondary={secondaryGoals} busy={busy} v={v} onChoice={setDirectionChoice} onSecondary={(goal) => setSecondaryGoals((current) => { const next = new Set(current); next.has(goal) ? next.delete(goal) : next.add(goal); return next; })} onNext={() => void nextDirection()} onBack={() => { setDirectionChoice(null); setDirectionStep(directionStep === "mix" ? "priority" : "goal"); }} onSkip={() => void deferDirection()} onClose={() => setSheetOpen(false)} onReconfirm={() => void reconfirm()} onChange={() => setDirectionStep("goal")} />, document.body)}
+    {sheetOpen && createPortal(<DirectionSheet step={directionStep} direction={direction} choice={directionChoice} placePick={placePick} home={home} busy={busy} v={v} language={language} onChoice={setDirectionChoice} onPlace={(value) => setPlacePick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])} onPlaceAny={() => setPlacePick([])} onNext={() => void nextDirection()} onBack={() => { setDirectionChoice(null); setDirectionStep(directionStep === "mix" ? "priority" : directionStep === "priority" ? "place" : "move"); }} onSkip={() => void deferDirection()} onClose={closeDirection} onReconfirm={() => void reconfirm()} onChange={() => setDirectionStep("move")} />, document.body)}
   </section>;
 }
 
@@ -361,20 +397,31 @@ function HistoryView({ rows, filter, v, onFilter }: { rows: History[]; filter: H
   return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{displayDay(`${day}T12:00:00Z`)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
 }
 
-function SettingsView({ data, showAllHeld, language, v, t, onDirection, onShowAllHeld, onShowAnyway, onReload, onLanguage }: { data: QueueData; showAllHeld: boolean; language: Lang; v: Vocab; t: (key: string, fallback: string) => string; onDirection: (step: DirectionStep) => void; onShowAllHeld: (value: boolean) => void; onShowAnyway: (id: string) => Promise<void>; onReload: () => Promise<void>; onLanguage: (next: Lang) => Promise<void> }) {
+function SettingsView({ data, showAllHeld, language, busy, v, t, onDirection, onShowAllHeld, onShowAnyway, onReload, onLanguage, onPromote }: { data: QueueData; showAllHeld: boolean; language: Lang; busy: boolean; v: Vocab; t: (key: string, fallback: string) => string; onDirection: (step: DirectionStep, opener?: HTMLElement | null) => void; onShowAllHeld: (value: boolean) => void; onShowAnyway: (id: string) => Promise<void>; onReload: () => Promise<void>; onLanguage: (next: Lang) => Promise<void>; onPromote: (id: string) => Promise<void> }) {
   const d = data.direction;
   const notSet = v("settings_not_set");
   const other: Lang = language === "ar" ? "en" : "ar";
   const rows = [
-    { label: v("settings_goal"), value: d?.goal ? `${v(`goal_${d.goal}`)} · ${fill(v("settings_since"), { date: dateText(d.goal_confirmed_at ?? "") })}${d.goal_secondary?.length ? ` · ${fill(v("settings_also_watching"), { list: d.goal_secondary.map((goal) => v(`goal_${goal}`)).join("، ") })}` : ""}` : notSet, step: "goal" as DirectionStep },
+    { label: v("settings_move"), value: d?.move_kind ? `${v(moveKey(d.move_kind))} · ${fill(v("settings_since"), { date: dateText(d.move_confirmed_at ?? "") })}` : notSet, step: "move" as DirectionStep },
     { label: v("settings_priority"), value: d?.priority ? `${v(`priority_${d.priority}`)}${d.priority_expires_at ? ` · ${fill(v("settings_ask_again"), { date: dateText(d.priority_expires_at) })}` : ""}` : notSet, step: "priority" as DirectionStep },
     { label: v("settings_mix"), value: d?.mix ? v(`mix_${d.mix}`) : notSet, step: "mix" as DirectionStep },
   ];
   const held = showAllHeld ? data.held : data.held.slice(0, 3);
+  const comments = data.comments ?? [];
   return <section className="oe-view oe-settings">
     <h2>{v("settings_title")}</h2>
     <p className="oe-view-sub">{v("settings_sub")}</p>
-    <section><SectionHeader label={v("settings_direction")} /><div className="oe-settings-list">{rows.map((row) => <div key={row.label} className="oe-setting-row"><div><strong>{row.label}</strong><span style={row.value === notSet ? undefined : mono}>{row.value}</span></div><button type="button" className="v23-textlink" onClick={() => onDirection(row.step)}>{v(row.value === notSet ? "action_set" : "action_change")}</button></div>)}<div className="oe-setting-row"><div><strong>{v("settings_language")}</strong><span>{v(`language_${language}`)}</span></div><button type="button" className="v23-textlink" onClick={() => void onLanguage(other)}>{v(`language_${other}`)}</button></div></div></section>
+    <section><SectionHeader label={v("settings_direction")} /><div className="oe-settings-list">{rows.map((row) => <div key={row.label} className="oe-setting-row"><div><strong>{row.label}</strong><span style={row.value === notSet ? undefined : mono}>{row.value}</span></div><button type="button" className="v23-textlink" onClick={(event) => onDirection(row.step, event.currentTarget)}>{v(row.value === notSet ? "action_set" : "action_change")}</button></div>)}<div className="oe-setting-row"><div><strong>{v("settings_language")}</strong><span>{v(`language_${language}`)}</span></div><button type="button" className="v23-textlink" onClick={() => void onLanguage(other)}>{v(`language_${other}`)}</button></div></div></section>
+    {/* A remark made one afternoon is not a ceiling on a career. It becomes a
+        rule only when he says so, here, in his own sentence. */}
+    {comments.length > 0 && <section>
+      <SectionHeader label={v("settings_comments")} />
+      <p className="oe-view-sub">{v("settings_comments_sub")}</p>
+      <div className="oe-settings-list">{comments.map((row) => <div key={row.id} className="oe-setting-row">
+        <div><strong dir="auto">{language === "ar" && row.text_ar ? row.text_ar : row.text}</strong><span style={mono}>{dateText(row.said_on)}</span></div>
+        <AuraButton variant="ghost" disabled={busy} onClick={() => void onPromote(row.id)}>{v("settings_comment_confirm")}</AuraButton>
+      </div>)}</div>
+    </section>}
     <SuggestedRules rows={(data.proposed_rules ?? []).map((row) => ({ ...row, rule_text: youText(row.rule_text) }))} onDecided={onReload} t={t} />
     <FiltersSection filters={data.filters ?? {}} cardKinds={data.card_kinds ?? []} notShownNote={v("settings_kind_watched_not_shown")} onSaved={onReload} t={t} />
     <section><div className="oe-section-count"><SectionHeader label={v("settings_held")} /><b>{data.held_count}</b></div><div className="oe-settings-list">{held.map((item) => <div key={item.id} className="oe-held"><div><strong>{item.title ?? v("settings_untitled")}</strong><span>{youText(item.reason ?? v("settings_held_reason"))}</span></div><AuraButton variant="ghost" onClick={() => void onShowAnyway(item.id)}>{v("settings_show_anyway")}</AuraButton></div>)}{data.held.length > 3 && <button type="button" className="oe-add-reveal" onClick={() => onShowAllHeld(!showAllHeld)}>{showAllHeld ? v("settings_show_less") : fill(v("settings_see_all"), { n: data.held.length })}</button>}</div></section>
@@ -383,10 +430,56 @@ function SettingsView({ data, showAllHeld, language, v, t, onDirection, onShowAl
 }
 
 
-function DirectionSheet({ step, direction, choice, primaryGoal, secondary, busy, v, onChoice, onSecondary, onNext, onBack, onSkip, onClose, onReconfirm, onChange }: { step: DirectionStep; direction: Direction | null; choice: Goal | Priority | Mix | null; primaryGoal: Goal | null; secondary: Set<Goal>; busy: boolean; v: Vocab; onChoice: (value: Goal | Priority | Mix) => void; onSecondary: (goal: Goal) => void; onNext: () => void; onBack: () => void; onSkip: () => void; onClose: () => void; onReconfirm: () => void; onChange: () => void }) {
-  const stepNumber = step === "goal" || step === "secondary" || step === "renew" ? 1 : step === "priority" ? 2 : 3;
-  const goal = primaryGoal ?? direction?.goal;
-  return <div className="oe-sheet-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="oe-sheet" role="dialog" aria-modal="true" aria-label={v("sheet_aria")}><div className="oe-sheet-handle" aria-hidden /><div className="oe-sheet-top"><span style={mono}>{fill(v("sheet_title"), { step: stepNumber })}</span>{step !== "done" && <button type="button" className="v23-textlink" onClick={onSkip}>{v("sheet_skip")}</button>}</div>{step === "renew" && direction?.goal ? <><h2>{fill(v("sheet_renew"), { goal: v(`goal_${direction.goal}`) })}</h2><div className="oe-sheet-actions"><AuraButton onClick={onReconfirm} loading={busy}>{v("sheet_yes")}</AuraButton><AuraButton variant="ghost" onClick={onChange}>{v("sheet_change")}</AuraButton></div></> : step === "goal" ? <><h2>{v("goal_question")}</h2><div className="oe-direction-options">{goals.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${direction?.goal_proposed === item ? " is-proposed" : ""}${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(`goal_${item}`)}</strong><small>{v(`goal_${item}_sub`)}</small>{direction?.goal_proposed === item && <em>{v("sheet_proposed")}</em>}</span></Button>)}</div><p className="oe-sheet-note">{v("sheet_note")}</p></> : step === "secondary" && goal ? <><h2>{v("sheet_secondary")}</h2><div className="oe-secondary-goals">{goals.filter((item) => item !== goal).map((item) => <Button key={item} type="button" variant="outline" className="oe-secondary-chip" aria-pressed={secondary.has(item)} onClick={() => onSecondary(item)}>{v(`goal_${item}`)}</Button>)}</div></> : step === "priority" ? <><h2>{v("direction_priority_question")}</h2><div className="oe-direction-options">{priorities.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(`priority_${item}`)}</strong><small>{v(`priority_${item}_sub`)}</small></span></Button>)}</div></> : step === "mix" ? <><h2>{v("direction_mix_question")}</h2><div className="oe-direction-options">{mixes.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}>{v(`mix_${item}`)}</Button>)}</div></> : <><h2>{v("sheet_done_title")}</h2><p>{fill(v("sheet_done_body"), { days: 90 })}</p></>}<div className="oe-sheet-actions">{step !== "goal" && step !== "renew" && step !== "done" && <button type="button" className="v23-textlink" onClick={onBack}>{v("action_back")}</button>}{step === "secondary" && <button type="button" className="v23-textlink" onClick={onNext}>{v("sheet_skip_short")}</button>}{step !== "renew" && <AuraButton onClick={step === "done" ? onClose : onNext} disabled={busy || ((step === "goal" || step === "priority" || step === "mix") && !choice)}>{v(step === "secondary" ? "sheet_save" : step === "done" ? "sheet_done" : "sheet_save_continue")}</AuraButton>}</div><button type="button" className="v23-textlink oe-sheet-close" onClick={onClose}>{v("sheet_close")}</button></section></div>;
+function DirectionSheet({ step, direction, choice, placePick, home, busy, v, language, onChoice, onPlace, onPlaceAny, onNext, onBack, onSkip, onClose, onReconfirm, onChange }: { step: DirectionStep; direction: Direction | null; choice: MoveKind | Priority | Mix | null; placePick: string[]; home: Home | null; busy: boolean; v: Vocab; language: Lang; onChoice: (value: MoveKind | Priority | Mix) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onNext: () => void; onBack: () => void; onSkip: () => void; onClose: () => void; onReconfirm: () => void; onChange: () => void }) {
+  const stepNumber = step === "move" || step === "place" || step === "renew" ? 1 : step === "priority" ? 2 : 3;
+  const sheetRef = useRef<HTMLElement | null>(null);
+  const rtl = language === "ar";
+  // Focus the first option on open, and keep Tab inside the sheet.
+  useEffect(() => {
+    const node = sheetRef.current;
+    if (!node) return;
+    const focusable = () => Array.from(node.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'));
+    focusable()[0]?.focus();
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0]; const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    node.addEventListener("keydown", trap);
+    return () => node.removeEventListener("keydown", trap);
+  }, [step]);
+
+  // Where he would actually go: his own city, his own regions, or anywhere.
+  const places: Array<{ value: string; label: string }> = [
+    ...(home?.city && home?.country ? [{ value: home.country, label: fill(v("move_place_home"), { city: home.city }) }] : []),
+    ...(home?.regions ?? []).map((region) => ({ value: `region:${region.code}`, label: fill(v("move_place_region"), { region: region.name_en }) })),
+  ];
+
+  return <div className="oe-sheet-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="oe-sheet" ref={sheetRef} dir={rtl ? "rtl" : "ltr"} lang={language} role="dialog" aria-modal="true" aria-label={v("sheet_aria")}>
+      <div className="oe-sheet-handle" aria-hidden />
+      <div className="oe-sheet-top"><span style={mono}>{fill(v("sheet_title"), { step: stepNumber })}</span>{step !== "done" && <button type="button" className="v23-textlink" onClick={onSkip}>{v("sheet_skip")}</button>}</div>
+      {step === "renew" && direction?.move_kind
+        ? <><h2>{fill(v("sheet_renew"), { goal: v(moveKey(direction.move_kind)) })}</h2><div className="oe-sheet-actions"><AuraButton onClick={onReconfirm} loading={busy}>{v("sheet_yes")}</AuraButton><AuraButton variant="ghost" onClick={onChange}>{v("sheet_change")}</AuraButton></div></>
+        : step === "move"
+        ? <><h2>{v("move_question")}</h2><p className="oe-sheet-note">{v("move_sub")}</p><div className="oe-direction-options">{moves.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${direction?.move_proposed === item ? " is-proposed" : ""}${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(moveKey(item))}</strong>{direction?.move_proposed === item && <em>{v("move_proposed")}</em>}</span></Button>)}</div></>
+        : step === "place"
+        ? <><h2>{v("move_place_question")}</h2><div className="oe-direction-options">{places.map((place) => <Button key={place.value} type="button" variant="outline" className={`oe-direction-option${placePick.includes(place.value) ? " is-selected" : ""}`} aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}><span><strong>{place.label}</strong></span></Button>)}<Button type="button" variant="outline" className={`oe-direction-option${placePick.length === 0 ? " is-selected" : ""}`} aria-pressed={placePick.length === 0} onClick={onPlaceAny}><span><strong>{v("move_place_any")}</strong></span></Button></div></>
+        : step === "priority"
+        ? <><h2>{v("direction_priority_question")}</h2><div className="oe-direction-options">{priorities.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(`priority_${item}`)}</strong><small>{v(`priority_${item}_sub`)}</small></span></Button>)}</div></>
+        : step === "mix"
+        ? <><h2>{v("direction_mix_question")}</h2><div className="oe-direction-options">{mixes.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}>{v(`mix_${item}`)}</Button>)}</div></>
+        : <><h2>{v("sheet_done_title")}</h2><p>{fill(v("sheet_done_body"), { days: 90 })}</p></>}
+      <div className="oe-sheet-actions">
+        {step !== "move" && step !== "renew" && step !== "done" && <button type="button" className="v23-textlink" onClick={onBack}>{v("action_back")}</button>}
+        {step !== "renew" && <AuraButton onClick={step === "done" ? onClose : onNext} disabled={busy || ((step === "move" || step === "priority" || step === "mix") && !choice)}>{v(step === "place" ? "sheet_save" : step === "done" ? "sheet_done" : "sheet_save_continue")}</AuraButton>}
+      </div>
+      <button type="button" className="v23-textlink oe-sheet-close" onClick={onClose}>{v("sheet_close")}</button>
+    </section>
+  </div>;
 }
 
 export default OpportunityQueue;

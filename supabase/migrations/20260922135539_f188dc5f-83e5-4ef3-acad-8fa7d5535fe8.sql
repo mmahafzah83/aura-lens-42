@@ -1,0 +1,12 @@
+REVOKE ALL ON FUNCTION public.oe_is_agency(text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.oe_gate_min_avg(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.oe_goal_weight(uuid, text, text, text, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.oe_place_weight(uuid, text, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.oe_move_save(text, text[]) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.oe_notebook_promote_comment(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.oe_is_agency(text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.oe_gate_min_avg(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.oe_goal_weight(uuid, text, text, text, text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.oe_place_weight(uuid, text, text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.oe_move_save(text, text[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.oe_notebook_promote_comment(uuid) TO authenticated;

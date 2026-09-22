@@ -499,12 +499,16 @@ const AUTHORITY_NOUN_RE = /\bauthority\b(?!\s*=)/i;
  * must not stand for an ordinary director, and «الفجوة» is a gap named as a
  * thing instead of said plainly.
  */
-const ARABIC_BANNED_RE = /(تم\s|\bباب\b|باب\s|مدير تنفيذي|الفجوة)/;
+const ARABIC_BANNED_RE = /(تم\s|يتم\s|\bباب\b|باب\s|مدير تنفيذي|الفجوة|فجوة|علامة شخصية|قائد فكر)/;
 const ARABIC_SAY = {
   "تم": "use the verb itself (حُفظ، أُرسل)",
+  "يتم": "use the verb itself, not the passive scaffold",
   "باب": "say the way in, not the door",
   "مدير تنفيذي": "that is a chief executive — a director is مدير",
   "الفجوة": "say what is missing",
+  "فجوة": "say what is missing",
+  "علامة شخصية": "we do not sell a personal brand",
+  "قائد فكر": "we do not call anyone a thought leader",
 };
 /** "leverage" used as a verb: followed by an article or a noun phrase. */
 const LEVERAGE_VERB_RE = /\bleverage(?:s|d|ing)?\s+(?:the|your|our|his|her|its|their|a|an|this|these)\b/i;
