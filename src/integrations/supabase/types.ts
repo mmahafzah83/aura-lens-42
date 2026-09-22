@@ -4180,6 +4180,58 @@ export type Database = {
           },
         ]
       }
+      oe_card_refusals: {
+        Row: {
+          card_date: string
+          created_at: string
+          detail: string | null
+          id: string
+          opportunity_id: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          card_date?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          opportunity_id?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          card_date?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          opportunity_id?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_card_refusals_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_card_refusals_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_quote_not_in_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_card_refusals_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
+          },
+        ]
+      }
       oe_cards: {
         Row: {
           card_date: string
@@ -4470,6 +4522,9 @@ export type Database = {
           language: string | null
           mix: string | null
           mix_set_on: string | null
+          move_confirmed_at: string | null
+          move_kind: string | null
+          move_proposed: string | null
           priority: string | null
           priority_expires_at: string | null
           priority_set_on: string | null
@@ -4489,6 +4544,9 @@ export type Database = {
           language?: string | null
           mix?: string | null
           mix_set_on?: string | null
+          move_confirmed_at?: string | null
+          move_kind?: string | null
+          move_proposed?: string | null
           priority?: string | null
           priority_expires_at?: string | null
           priority_set_on?: string | null
@@ -4508,6 +4566,9 @@ export type Database = {
           language?: string | null
           mix?: string | null
           mix_set_on?: string | null
+          move_confirmed_at?: string | null
+          move_kind?: string | null
+          move_proposed?: string | null
           priority?: string | null
           priority_expires_at?: string | null
           priority_set_on?: string | null
@@ -10481,6 +10542,36 @@ export type Database = {
           },
         ]
       }
+      oe_rule_state_mismatch: {
+        Row: {
+          active: boolean | null
+          entry_kind: string | null
+          id: string | null
+          origin: string | null
+          ratified_at: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          entry_kind?: string | null
+          id?: string | null
+          origin?: string | null
+          ratified_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          entry_kind?: string | null
+          id?: string | null
+          origin?: string | null
+          ratified_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       oe_serves_untapped: {
         Row: {
           card_id: string | null
@@ -10545,6 +10636,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_opportunity_kinds"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      oe_write_lane_served: {
+        Row: {
+          card_id: string | null
+          opportunity_id: string | null
+          serve_id: string | null
+          shown_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_card_cites_foreign_evidence"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_card_queue_refused"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "oe_serves_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_cards"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -11104,13 +11227,20 @@ export type Database = {
         Args: { p_field: string; p_op: string; p_values: string[] }
         Returns: Json
       }
+      oe_gate_min_avg: { Args: { p_user: string }; Returns: number }
       oe_goal_propose: { Args: { p_user: string }; Returns: string }
       oe_goal_save: {
         Args: { p_defer?: boolean; p_goal?: string; p_secondary?: string[] }
         Returns: Json
       }
       oe_goal_weight: {
-        Args: { p_kind: string; p_user: string }
+        Args: {
+          p_decision_rights?: string
+          p_kind: string
+          p_level_direction?: string
+          p_profession_relation?: string
+          p_user: string
+        }
         Returns: number
       }
       oe_goal_window: { Args: { p_user: string }; Returns: Json }
@@ -11152,8 +11282,13 @@ export type Database = {
           title: string
         }[]
       }
+      oe_move_save: {
+        Args: { p_move?: string; p_place?: string[] }
+        Returns: Json
+      }
       oe_norm_text: { Args: { p: string }; Returns: string }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
+      oe_notebook_promote_comment: { Args: { p_id: string }; Returns: Json }
       oe_place_country: { Args: { p_location: string }; Returns: string }
       oe_place_weight: {
         Args: { p_location: string; p_sector: string; p_user: string }
