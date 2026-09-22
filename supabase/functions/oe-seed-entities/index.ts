@@ -290,7 +290,18 @@ async function seedTadawulListed(
       seed_source: TADAWUL_SOURCES[0].url,
     };
   });
-  notes.push(`seeded shape: ${ents.length} names, ${ents.filter((e) => e.listed_symbol).length} with a stated ticker`);
+  // An organisation we already hold, named on a page that lists the exchange's
+  // companies, is a listed issuer. That is a fact the page states, so it is
+  // recorded on the row we already have rather than seeded a second time.
+  const names = ents.map((e) => e.name);
+  let marked = 0;
+  for (let i = 0; i < names.length; i += 100) {
+    const { data } = await admin.from("oe_entities")
+      .update({ sector_code: "listed", entity_kind: "listed" })
+      .in("name", names.slice(i, i + 100)).is("sector_code", null).select("id");
+    marked += data?.length ?? 0;
+  }
+  notes.push(`seeded shape: ${ents.length} names, ${ents.filter((e) => e.listed_symbol).length} with a stated ticker, ${marked} already held and now marked listed`);
   return { ents, notes };
 }
 
