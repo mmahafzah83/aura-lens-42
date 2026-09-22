@@ -136,10 +136,11 @@ export function FiltersSection({ filters, cardKinds = [], notShownNote = "", onS
   </section>;
 }
 
-function FilterSheet({ field, filters, t, countries, regions, sectors, levels, engagements, orgTypes, kinds, onClose, onSaved }: {
+function FilterSheet({ field, filters, t, countries, regions, sectors, levels, engagements, orgTypes, kinds, cardKinds = [], notShownNote = "", onClose, onSaved }: {
   field: Field; filters: FilterMap; t: (key: string, fallback: string) => string;
   countries: Country[]; regions: Region[]; sectors: Named[]; levels: Named[];
   engagements: Named[]; orgTypes: Named[]; kinds: Named[];
+  cardKinds?: string[]; notShownNote?: string;
   onClose: () => void; onSaved: () => Promise<void>;
 }) {
   const current = filters[field];
