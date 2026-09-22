@@ -190,10 +190,20 @@ export function OpportunityQueue() {
     if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 4000);
   };
-  const openRules = (opener: HTMLElement | null, nextEditor: "move" | "place" | null = null) => {
+  const openRules = (opener: HTMLElement | null, nextEditor: "move" | "place" | "sector" | null = null) => {
     openerRef.current = opener;
-    setMovePick(null); setPlacePick([]); setSavedBar(false); setEditor(nextEditor); setRulesOpen(true);
+    const seed: BarPick = {
+      move: data.direction?.move_kind ?? null,
+      places: data.filters.place?.values ?? [],
+      sectors: data.filters.sector?.values ?? [],
+    };
+    baseline.current = seed;
+    setMovePick(seed.move); setPlacePick(seed.places); setSectorPick(seed.sectors);
+    setSavedBar(false); setEditor(nextEditor); setRulesOpen(true);
   };
+  const togglePlace = (value: string) => setPlacePick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+  const toggleSector = (value: string) => setSectorPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+  const barDirty = movePick !== baseline.current.move || !sameSet(placePick, baseline.current.places) || !sameSet(sectorPick, baseline.current.sectors);
   const closeRules = () => { setRulesOpen(false); setEditor(null); window.setTimeout(() => openerRef.current?.focus(), 0); };
   const refresh = async () => { if (refreshing) return; setRefreshing(true); await supabase.rpc("oe_app_refresh" as never); renderedRef.current.clear(); await load(); setRefreshing(false); };
   const markRendered = useCallback((card: QueueCard, node: HTMLElement | null) => {
