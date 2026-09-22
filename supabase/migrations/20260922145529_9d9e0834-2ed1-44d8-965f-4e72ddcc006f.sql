@@ -1,0 +1,10 @@
+REVOKE ALL ON FUNCTION public.oe_app_queue_before_roles_surface() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.oe_app_queue_before_roles_surface() TO service_role;
+REVOKE ALL ON FUNCTION public.oe_app_queue() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.oe_app_queue() TO authenticated;
+REVOKE ALL ON FUNCTION public.oe_notebook_decline_comment(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.oe_notebook_decline_comment(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.oe_notebook_remove_rule(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.oe_notebook_remove_rule(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.oe_member_home(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.oe_member_home(uuid) TO service_role;
