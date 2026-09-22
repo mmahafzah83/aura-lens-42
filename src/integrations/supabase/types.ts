@@ -11255,6 +11255,7 @@ export type Database = {
           o_title: string
         }[]
       }
+      oe_is_agency: { Args: { p_issuer: string }; Returns: boolean }
       oe_kind_field_present: {
         Args: {
           o: Database["public"]["Tables"]["oe_opportunities"]["Row"]
