@@ -222,7 +222,20 @@ function FilterSheet({ field, filters, t, countries, regions, sectors, levels, e
         </div>
       </div>}
 
-      {field === "kind" && <div className="oe-filter-body">{simple(kinds)}</div>}
+      {field === "kind" && <div className="oe-filter-body">
+        {/* A kind outside the served set is watched, not shown. It is greyed,
+            not removed, and the line says so in the member's own words. */}
+        <div className="oe-chip-row">
+          {kinds.map((row) => {
+            const shown = cardKinds.length === 0 || cardKinds.includes(row.code);
+            return <button key={row.code} type="button" disabled={!shown}
+              style={{ ...(chosen.includes(row.code) ? chipOn : chip), ...(shown ? {} : { opacity: 0.45, cursor: "default" }) }}
+              aria-pressed={chosen.includes(row.code)} aria-disabled={!shown}
+              onClick={() => { if (shown) toggle(row.code); }}>{row.name_en}</button>;
+          })}
+        </div>
+        {cardKinds.length > 0 && notShownNote && <p style={{ opacity: 0.7, fontSize: 13 }}>{notShownNote}</p>}
+      </div>}
       {field === "engagement" && <div className="oe-filter-body">{simple(engagements)}</div>}
       {field === "org_type" && <div className="oe-filter-body">{simple(orgTypes)}</div>}
       {field === "language" && <div className="oe-filter-body">{simple(LANGUAGES)}</div>}
