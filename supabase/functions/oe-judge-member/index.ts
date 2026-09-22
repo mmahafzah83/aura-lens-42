@@ -854,9 +854,14 @@ Deno.serve(async (req) => {
     const eligible = storedAct
       .map((j) => freshAct.get(String(j.o.id)) ?? j)
       .filter((j) => !j.unstable)
-      .sort((a, b) => Math.abs(b.scoreAvg - a.scoreAvg) < 0.01
-        ? (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0)
-        : b.scoreAvg - a.scoreAvg);
+      .sort((a, b) => {
+        if (Math.abs(b.scoreAvg - a.scoreAvg) >= 0.01) return b.scoreAvg - a.scoreAvg;
+        // All else equal, a declared field comes first. With no declared
+        // fields both sides are false and the old order is unchanged.
+        const fieldGap = Number(inDeclaredFields(b.o.sector)) - Number(inDeclaredFields(a.o.sector));
+        if (fieldGap !== 0) return fieldGap;
+        return (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0);
+      });
     counts.lane_forming = judged.filter((j) => j.lane === "lane_forming").length;
     let order = eligible.map((j) => ({ ...j, explore: false }));
     if (order.length > 1 && Math.random() < exploreShare) {
