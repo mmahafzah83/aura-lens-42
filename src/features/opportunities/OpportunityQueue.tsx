@@ -47,13 +47,14 @@ type DueOutcome = { id: string; title: string | null };
 type Metrics = { sources_read: number; organisations: number; judged_week: number; survived: number; shown: number; first_card_expected: string | null };
 type Proposed = { id: string; rule_text: string; field: string | null };
 type AlsoKind = { kind: string; label: string; count: number };
-type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[]; metrics: Metrics | null; filters: FilterMap; proposed_rules: Proposed[]; also_watching: number; also_watching_kinds: AlsoKind[] };
+type Reading = { running: boolean; last_read_at: string | null };
+type QueueData = { cards: QueueCard[]; parked: Parked[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[]; metrics: Metrics | null; filters: FilterMap; proposed_rules: Proposed[]; also_watching: number; also_watching_kinds: AlsoKind[]; reading: Reading | null; card_kinds: string[] };
 type View = "today" | "parked" | "history" | "settings";
 type DirectionStep = "renew" | "goal" | "secondary" | "priority" | "mix" | "done";
 type HistoryFilter = "all" | "right" | "declined" | "flagged";
 type Vocab = ReturnType<typeof useVocab>;
 
-const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [], also_watching: 0, also_watching_kinds: [] };
+const emptyData: QueueData = { cards: [], parked: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [], metrics: null, filters: {}, proposed_rules: [], also_watching: 0, also_watching_kinds: [], reading: null, card_kinds: [] };
 const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
 const mixes: Mix[] = ["win", "build", "explore"];
 const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "relationships", "knowledge"];
@@ -71,6 +72,14 @@ const dateText = (value: string) => {
   const d = new Date(`${String(value).slice(0, 10)}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return "";
   return `${d.getUTCDate()} ${MONTHS_EN[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+};
+/** When a read pass last finished: the clock today, the date before that. */
+const readTime = (value: string) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const clock = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay ? clock : `${dateText(d.toISOString())} ${clock}`;
 };
 const fill = (text: string, vars: Record<string, string | number>) =>
   Object.entries(vars).reduce((acc, [k, val]) => acc.split(`{${k}}`).join(String(val)), text);
@@ -284,7 +293,7 @@ export function OpportunityQueue() {
           {data.metrics?.first_card_expected && <div><dt>{v("metric_first_card_expected")}</dt><dd style={mono}>{dateText(data.metrics.first_card_expected)}</dd></div>}
         </dl>
       </div>
-      <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? v("machine_looking_again") : v("machine_still_reading")}</span><button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>{refreshing ? v("action_refreshing") : v("action_refresh")}</button></div>
+      <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing || data.reading?.running ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? v("machine_looking_again") : data.reading?.running ? v("machine_reading_now") : data.reading?.last_read_at ? fill(v("machine_last_read"), { time: readTime(data.reading.last_read_at) }) : v("machine_still_reading")}</span><button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>{refreshing ? v("action_refreshing") : v("action_refresh")}</button></div>
       {refreshNote && <p className="oe-refresh-note">{refreshNote}</p>}
     </header>
 
@@ -367,7 +376,7 @@ function SettingsView({ data, showAllHeld, language, v, t, onDirection, onShowAl
     <p className="oe-view-sub">{v("settings_sub")}</p>
     <section><SectionHeader label={v("settings_direction")} /><div className="oe-settings-list">{rows.map((row) => <div key={row.label} className="oe-setting-row"><div><strong>{row.label}</strong><span style={row.value === notSet ? undefined : mono}>{row.value}</span></div><button type="button" className="v23-textlink" onClick={() => onDirection(row.step)}>{v(row.value === notSet ? "action_set" : "action_change")}</button></div>)}<div className="oe-setting-row"><div><strong>{v("settings_language")}</strong><span>{v(`language_${language}`)}</span></div><button type="button" className="v23-textlink" onClick={() => void onLanguage(other)}>{v(`language_${other}`)}</button></div></div></section>
     <SuggestedRules rows={(data.proposed_rules ?? []).map((row) => ({ ...row, rule_text: youText(row.rule_text) }))} onDecided={onReload} t={t} />
-    <FiltersSection filters={data.filters ?? {}} onSaved={onReload} t={t} />
+    <FiltersSection filters={data.filters ?? {}} cardKinds={data.card_kinds ?? []} notShownNote={v("settings_kind_watched_not_shown")} onSaved={onReload} t={t} />
     <section><div className="oe-section-count"><SectionHeader label={v("settings_held")} /><b>{data.held_count}</b></div><div className="oe-settings-list">{held.map((item) => <div key={item.id} className="oe-held"><div><strong>{item.title ?? v("settings_untitled")}</strong><span>{youText(item.reason ?? v("settings_held_reason"))}</span></div><AuraButton variant="ghost" onClick={() => void onShowAnyway(item.id)}>{v("settings_show_anyway")}</AuraButton></div>)}{data.held.length > 3 && <button type="button" className="oe-add-reveal" onClick={() => onShowAllHeld(!showAllHeld)}>{showAllHeld ? v("settings_show_less") : fill(v("settings_see_all"), { n: data.held.length })}</button>}</div></section>
     <p className="oe-commitment">{v("queue_never_locked")}</p>
   </section>;

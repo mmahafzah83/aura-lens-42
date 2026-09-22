@@ -11114,6 +11114,7 @@ export type Database = {
         Returns: number
       }
       oe_goal_window: { Args: { p_user: string }; Returns: Json }
+      oe_host_is_skipped: { Args: { p_url: string }; Returns: boolean }
       oe_investigate_unknowns: {
         Args: { p_user: string }
         Returns: {

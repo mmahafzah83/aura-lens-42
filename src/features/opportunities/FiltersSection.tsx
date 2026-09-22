@@ -31,8 +31,11 @@ const chipOn = { ...chip, borderColor: "var(--accent-line)", background: "var(--
 const LANGUAGES: Named[] = [{ code: "en", name_en: "English" }, { code: "ar", name_en: "Arabic" }];
 const REMOTE = "REMOTE";
 
-export function FiltersSection({ filters, onSaved, t }: {
+export function FiltersSection({ filters, cardKinds = [], notShownNote = "", onSaved, t }: {
   filters: FilterMap;
+  /** The kinds that can reach Today. Everything else is watched, not shown. */
+  cardKinds?: string[];
+  notShownNote?: string;
   onSaved: () => Promise<void> | void;
   t: (key: string, fallback: string) => string;
 }) {
@@ -114,7 +117,11 @@ export function FiltersSection({ filters, onSaved, t }: {
     <SectionHeader label={t("filter_section", "Your filters")} />
     <div className="oe-settings-list">
       {rows.map((row) => <div key={row.field} className="oe-setting-row">
-        <div><strong>{row.label}</strong><span>{row.summary}</span></div>
+        <div>
+          <strong>{row.label}</strong>
+          <span>{row.summary}</span>
+          {row.field === "kind" && cardKinds.length > 0 && notShownNote && <span style={{ opacity: 0.6 }}>{notShownNote}</span>}
+        </div>
         <button type="button" className="v23-textlink" onClick={() => setOpen(row.field)}>{t("filter_change", "Change")}</button>
       </div>)}
     </div>
@@ -122,16 +129,18 @@ export function FiltersSection({ filters, onSaved, t }: {
       field={open} filters={filters} t={t}
       countries={countries} regions={regions} sectors={sectors} levels={levels}
       engagements={engagements} orgTypes={orgTypes} kinds={kinds}
+      cardKinds={cardKinds} notShownNote={notShownNote}
       onClose={() => setOpen(null)}
       onSaved={async () => { setOpen(null); await onSaved(); }}
     />, document.body)}
   </section>;
 }
 
-function FilterSheet({ field, filters, t, countries, regions, sectors, levels, engagements, orgTypes, kinds, onClose, onSaved }: {
+function FilterSheet({ field, filters, t, countries, regions, sectors, levels, engagements, orgTypes, kinds, cardKinds = [], notShownNote = "", onClose, onSaved }: {
   field: Field; filters: FilterMap; t: (key: string, fallback: string) => string;
   countries: Country[]; regions: Region[]; sectors: Named[]; levels: Named[];
   engagements: Named[]; orgTypes: Named[]; kinds: Named[];
+  cardKinds?: string[]; notShownNote?: string;
   onClose: () => void; onSaved: () => Promise<void>;
 }) {
   const current = filters[field];
@@ -213,7 +222,20 @@ function FilterSheet({ field, filters, t, countries, regions, sectors, levels, e
         </div>
       </div>}
 
-      {field === "kind" && <div className="oe-filter-body">{simple(kinds)}</div>}
+      {field === "kind" && <div className="oe-filter-body">
+        {/* A kind outside the served set is watched, not shown. It is greyed,
+            not removed, and the line says so in the member's own words. */}
+        <div className="oe-chip-row">
+          {kinds.map((row) => {
+            const shown = cardKinds.length === 0 || cardKinds.includes(row.code);
+            return <button key={row.code} type="button" disabled={!shown}
+              style={{ ...(chosen.includes(row.code) ? chipOn : chip), ...(shown ? {} : { opacity: 0.45, cursor: "default" }) }}
+              aria-pressed={chosen.includes(row.code)} aria-disabled={!shown}
+              onClick={() => { if (shown) toggle(row.code); }}>{row.name_en}</button>;
+          })}
+        </div>
+        {cardKinds.length > 0 && notShownNote && <p style={{ opacity: 0.7, fontSize: 13 }}>{notShownNote}</p>}
+      </div>}
       {field === "engagement" && <div className="oe-filter-body">{simple(engagements)}</div>}
       {field === "org_type" && <div className="oe-filter-body">{simple(orgTypes)}</div>}
       {field === "language" && <div className="oe-filter-body">{simple(LANGUAGES)}</div>}
