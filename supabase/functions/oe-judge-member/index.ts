@@ -494,6 +494,20 @@ Deno.serve(async (req) => {
     const lang = (profile?.content_language === "ar" ? "ar" : "en") as "ar" | "en";
     const cardDate = localToday(profile?.timezone);
 
+    // The fields he said he wants to be found in. RANKING ONLY: it never
+    // excludes, never gates, never moves a record to the write lane. Empty or
+    // null means no preference and changes nothing.
+    const { data: eligibilityRow } = await admin
+      .from("oe_eligibility").select("sectors_core").eq("user_id", userId).maybeSingle();
+    const sectorsCore: string[] = Array.isArray(eligibilityRow?.sectors_core)
+      ? (eligibilityRow!.sectors_core as any[]).map((s) => String(s).trim().toLowerCase()).filter(Boolean)
+      : [];
+    const inDeclaredFields = (sector: unknown) =>
+      sectorsCore.length > 0 && !!sector && sectorsCore.includes(String(sector).trim().toLowerCase());
+    const fieldsLine = sectorsCore.length
+      ? `FIELDS HE SAID HE WANTS TO BE FOUND IN (a preference for ordering and for a plain sentence; never a requirement, never a reason to exclude):\n${JSON.stringify(sectorsCore)}`
+      : null;
+
     // Past judgements, in his words.
     const { data: labelled } = await admin
       .from("oe_taps")
