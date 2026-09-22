@@ -333,6 +333,12 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   const homeRegion = home?.regions?.[0];
   const regionChoice = homeRegion ? { value: `region:${homeRegion.code}`, label: fill(v("move_place_region"), { region: language === "ar" ? (homeRegion.name_ar || homeRegion.name_en) : homeRegion.name_en }) } : null;
   const choices: Array<{ value: string; label: string }> = [homeChoice, regionChoice].filter((choice): choice is { value: string; label: string } => Boolean(choice));
+  const [showSuperseded, setShowSuperseded] = useState(false);
+  const sectorLabel = (option: SectorOption) => language === "ar" ? (option.label_ar || option.label_en) : option.label_en;
+  const chosenSectors = data.filters.sector?.values ?? [];
+  const sectorText = chosenSectors.length
+    ? chosenSectors.map((code) => sectorLabel(sectorOptions.find((option) => option.code === code) ?? { code, label_en: code, label_ar: code })).join(" · ")
+    : v("bar_sector_any");
   useEffect(() => {
     const node = dialogRef.current; if (!node) return;
     const old = document.body.style.overflow; document.body.style.overflow = "hidden";
