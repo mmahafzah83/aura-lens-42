@@ -397,20 +397,31 @@ function HistoryView({ rows, filter, v, onFilter }: { rows: History[]; filter: H
   return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{displayDay(`${day}T12:00:00Z`)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
 }
 
-function SettingsView({ data, showAllHeld, language, v, t, onDirection, onShowAllHeld, onShowAnyway, onReload, onLanguage }: { data: QueueData; showAllHeld: boolean; language: Lang; v: Vocab; t: (key: string, fallback: string) => string; onDirection: (step: DirectionStep) => void; onShowAllHeld: (value: boolean) => void; onShowAnyway: (id: string) => Promise<void>; onReload: () => Promise<void>; onLanguage: (next: Lang) => Promise<void> }) {
+function SettingsView({ data, showAllHeld, language, busy, v, t, onDirection, onShowAllHeld, onShowAnyway, onReload, onLanguage, onPromote }: { data: QueueData; showAllHeld: boolean; language: Lang; busy: boolean; v: Vocab; t: (key: string, fallback: string) => string; onDirection: (step: DirectionStep, opener?: HTMLElement | null) => void; onShowAllHeld: (value: boolean) => void; onShowAnyway: (id: string) => Promise<void>; onReload: () => Promise<void>; onLanguage: (next: Lang) => Promise<void>; onPromote: (id: string) => Promise<void> }) {
   const d = data.direction;
   const notSet = v("settings_not_set");
   const other: Lang = language === "ar" ? "en" : "ar";
   const rows = [
-    { label: v("settings_goal"), value: d?.goal ? `${v(`goal_${d.goal}`)} · ${fill(v("settings_since"), { date: dateText(d.goal_confirmed_at ?? "") })}${d.goal_secondary?.length ? ` · ${fill(v("settings_also_watching"), { list: d.goal_secondary.map((goal) => v(`goal_${goal}`)).join("، ") })}` : ""}` : notSet, step: "goal" as DirectionStep },
+    { label: v("settings_move"), value: d?.move_kind ? `${v(moveKey(d.move_kind))} · ${fill(v("settings_since"), { date: dateText(d.move_confirmed_at ?? "") })}` : notSet, step: "move" as DirectionStep },
     { label: v("settings_priority"), value: d?.priority ? `${v(`priority_${d.priority}`)}${d.priority_expires_at ? ` · ${fill(v("settings_ask_again"), { date: dateText(d.priority_expires_at) })}` : ""}` : notSet, step: "priority" as DirectionStep },
     { label: v("settings_mix"), value: d?.mix ? v(`mix_${d.mix}`) : notSet, step: "mix" as DirectionStep },
   ];
   const held = showAllHeld ? data.held : data.held.slice(0, 3);
+  const comments = data.comments ?? [];
   return <section className="oe-view oe-settings">
     <h2>{v("settings_title")}</h2>
     <p className="oe-view-sub">{v("settings_sub")}</p>
-    <section><SectionHeader label={v("settings_direction")} /><div className="oe-settings-list">{rows.map((row) => <div key={row.label} className="oe-setting-row"><div><strong>{row.label}</strong><span style={row.value === notSet ? undefined : mono}>{row.value}</span></div><button type="button" className="v23-textlink" onClick={() => onDirection(row.step)}>{v(row.value === notSet ? "action_set" : "action_change")}</button></div>)}<div className="oe-setting-row"><div><strong>{v("settings_language")}</strong><span>{v(`language_${language}`)}</span></div><button type="button" className="v23-textlink" onClick={() => void onLanguage(other)}>{v(`language_${other}`)}</button></div></div></section>
+    <section><SectionHeader label={v("settings_direction")} /><div className="oe-settings-list">{rows.map((row) => <div key={row.label} className="oe-setting-row"><div><strong>{row.label}</strong><span style={row.value === notSet ? undefined : mono}>{row.value}</span></div><button type="button" className="v23-textlink" onClick={(event) => onDirection(row.step, event.currentTarget)}>{v(row.value === notSet ? "action_set" : "action_change")}</button></div>)}<div className="oe-setting-row"><div><strong>{v("settings_language")}</strong><span>{v(`language_${language}`)}</span></div><button type="button" className="v23-textlink" onClick={() => void onLanguage(other)}>{v(`language_${other}`)}</button></div></div></section>
+    {/* A remark made one afternoon is not a ceiling on a career. It becomes a
+        rule only when he says so, here, in his own sentence. */}
+    {comments.length > 0 && <section>
+      <SectionHeader label={v("settings_comments")} />
+      <p className="oe-view-sub">{v("settings_comments_sub")}</p>
+      <div className="oe-settings-list">{comments.map((row) => <div key={row.id} className="oe-setting-row">
+        <div><strong dir="auto">{language === "ar" && row.text_ar ? row.text_ar : row.text}</strong><span style={mono}>{dateText(row.said_on)}</span></div>
+        <AuraButton variant="ghost" disabled={busy} onClick={() => void onPromote(row.id)}>{v("settings_comment_confirm")}</AuraButton>
+      </div>)}</div>
+    </section>}
     <SuggestedRules rows={(data.proposed_rules ?? []).map((row) => ({ ...row, rule_text: youText(row.rule_text) }))} onDecided={onReload} t={t} />
     <FiltersSection filters={data.filters ?? {}} cardKinds={data.card_kinds ?? []} notShownNote={v("settings_kind_watched_not_shown")} onSaved={onReload} t={t} />
     <section><div className="oe-section-count"><SectionHeader label={v("settings_held")} /><b>{data.held_count}</b></div><div className="oe-settings-list">{held.map((item) => <div key={item.id} className="oe-held"><div><strong>{item.title ?? v("settings_untitled")}</strong><span>{youText(item.reason ?? v("settings_held_reason"))}</span></div><AuraButton variant="ghost" onClick={() => void onShowAnyway(item.id)}>{v("settings_show_anyway")}</AuraButton></div>)}{data.held.length > 3 && <button type="button" className="oe-add-reveal" onClick={() => onShowAllHeld(!showAllHeld)}>{showAllHeld ? v("settings_show_less") : fill(v("settings_see_all"), { n: data.held.length })}</button>}</div></section>
@@ -419,10 +430,56 @@ function SettingsView({ data, showAllHeld, language, v, t, onDirection, onShowAl
 }
 
 
-function DirectionSheet({ step, direction, choice, primaryGoal, secondary, busy, v, onChoice, onSecondary, onNext, onBack, onSkip, onClose, onReconfirm, onChange }: { step: DirectionStep; direction: Direction | null; choice: Goal | Priority | Mix | null; primaryGoal: Goal | null; secondary: Set<Goal>; busy: boolean; v: Vocab; onChoice: (value: Goal | Priority | Mix) => void; onSecondary: (goal: Goal) => void; onNext: () => void; onBack: () => void; onSkip: () => void; onClose: () => void; onReconfirm: () => void; onChange: () => void }) {
-  const stepNumber = step === "goal" || step === "secondary" || step === "renew" ? 1 : step === "priority" ? 2 : 3;
-  const goal = primaryGoal ?? direction?.goal;
-  return <div className="oe-sheet-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="oe-sheet" role="dialog" aria-modal="true" aria-label={v("sheet_aria")}><div className="oe-sheet-handle" aria-hidden /><div className="oe-sheet-top"><span style={mono}>{fill(v("sheet_title"), { step: stepNumber })}</span>{step !== "done" && <button type="button" className="v23-textlink" onClick={onSkip}>{v("sheet_skip")}</button>}</div>{step === "renew" && direction?.goal ? <><h2>{fill(v("sheet_renew"), { goal: v(`goal_${direction.goal}`) })}</h2><div className="oe-sheet-actions"><AuraButton onClick={onReconfirm} loading={busy}>{v("sheet_yes")}</AuraButton><AuraButton variant="ghost" onClick={onChange}>{v("sheet_change")}</AuraButton></div></> : step === "goal" ? <><h2>{v("goal_question")}</h2><div className="oe-direction-options">{goals.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${direction?.goal_proposed === item ? " is-proposed" : ""}${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(`goal_${item}`)}</strong><small>{v(`goal_${item}_sub`)}</small>{direction?.goal_proposed === item && <em>{v("sheet_proposed")}</em>}</span></Button>)}</div><p className="oe-sheet-note">{v("sheet_note")}</p></> : step === "secondary" && goal ? <><h2>{v("sheet_secondary")}</h2><div className="oe-secondary-goals">{goals.filter((item) => item !== goal).map((item) => <Button key={item} type="button" variant="outline" className="oe-secondary-chip" aria-pressed={secondary.has(item)} onClick={() => onSecondary(item)}>{v(`goal_${item}`)}</Button>)}</div></> : step === "priority" ? <><h2>{v("direction_priority_question")}</h2><div className="oe-direction-options">{priorities.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(`priority_${item}`)}</strong><small>{v(`priority_${item}_sub`)}</small></span></Button>)}</div></> : step === "mix" ? <><h2>{v("direction_mix_question")}</h2><div className="oe-direction-options">{mixes.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}>{v(`mix_${item}`)}</Button>)}</div></> : <><h2>{v("sheet_done_title")}</h2><p>{fill(v("sheet_done_body"), { days: 90 })}</p></>}<div className="oe-sheet-actions">{step !== "goal" && step !== "renew" && step !== "done" && <button type="button" className="v23-textlink" onClick={onBack}>{v("action_back")}</button>}{step === "secondary" && <button type="button" className="v23-textlink" onClick={onNext}>{v("sheet_skip_short")}</button>}{step !== "renew" && <AuraButton onClick={step === "done" ? onClose : onNext} disabled={busy || ((step === "goal" || step === "priority" || step === "mix") && !choice)}>{v(step === "secondary" ? "sheet_save" : step === "done" ? "sheet_done" : "sheet_save_continue")}</AuraButton>}</div><button type="button" className="v23-textlink oe-sheet-close" onClick={onClose}>{v("sheet_close")}</button></section></div>;
+function DirectionSheet({ step, direction, choice, placePick, home, busy, v, language, onChoice, onPlace, onPlaceAny, onNext, onBack, onSkip, onClose, onReconfirm, onChange }: { step: DirectionStep; direction: Direction | null; choice: MoveKind | Priority | Mix | null; placePick: string[]; home: Home | null; busy: boolean; v: Vocab; language: Lang; onChoice: (value: MoveKind | Priority | Mix) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onNext: () => void; onBack: () => void; onSkip: () => void; onClose: () => void; onReconfirm: () => void; onChange: () => void }) {
+  const stepNumber = step === "move" || step === "place" || step === "renew" ? 1 : step === "priority" ? 2 : 3;
+  const sheetRef = useRef<HTMLElement | null>(null);
+  const rtl = language === "ar";
+  // Focus the first option on open, and keep Tab inside the sheet.
+  useEffect(() => {
+    const node = sheetRef.current;
+    if (!node) return;
+    const focusable = () => Array.from(node.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'));
+    focusable()[0]?.focus();
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0]; const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    node.addEventListener("keydown", trap);
+    return () => node.removeEventListener("keydown", trap);
+  }, [step]);
+
+  // Where he would actually go: his own city, his own regions, or anywhere.
+  const places: Array<{ value: string; label: string }> = [
+    ...(home?.city && home?.country ? [{ value: home.country, label: fill(v("move_place_home"), { city: home.city }) }] : []),
+    ...(home?.regions ?? []).map((region) => ({ value: `region:${region.code}`, label: fill(v("move_place_region"), { region: region.name_en }) })),
+  ];
+
+  return <div className="oe-sheet-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="oe-sheet" ref={sheetRef} dir={rtl ? "rtl" : "ltr"} lang={language} role="dialog" aria-modal="true" aria-label={v("sheet_aria")}>
+      <div className="oe-sheet-handle" aria-hidden />
+      <div className="oe-sheet-top"><span style={mono}>{fill(v("sheet_title"), { step: stepNumber })}</span>{step !== "done" && <button type="button" className="v23-textlink" onClick={onSkip}>{v("sheet_skip")}</button>}</div>
+      {step === "renew" && direction?.move_kind
+        ? <><h2>{fill(v("sheet_renew"), { goal: v(moveKey(direction.move_kind)) })}</h2><div className="oe-sheet-actions"><AuraButton onClick={onReconfirm} loading={busy}>{v("sheet_yes")}</AuraButton><AuraButton variant="ghost" onClick={onChange}>{v("sheet_change")}</AuraButton></div></>
+        : step === "move"
+        ? <><h2>{v("move_question")}</h2><p className="oe-sheet-note">{v("move_sub")}</p><div className="oe-direction-options">{moves.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${direction?.move_proposed === item ? " is-proposed" : ""}${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(moveKey(item))}</strong>{direction?.move_proposed === item && <em>{v("move_proposed")}</em>}</span></Button>)}</div></>
+        : step === "place"
+        ? <><h2>{v("move_place_question")}</h2><div className="oe-direction-options">{places.map((place) => <Button key={place.value} type="button" variant="outline" className={`oe-direction-option${placePick.includes(place.value) ? " is-selected" : ""}`} aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}><span><strong>{place.label}</strong></span></Button>)}<Button type="button" variant="outline" className={`oe-direction-option${placePick.length === 0 ? " is-selected" : ""}`} aria-pressed={placePick.length === 0} onClick={onPlaceAny}><span><strong>{v("move_place_any")}</strong></span></Button></div></>
+        : step === "priority"
+        ? <><h2>{v("direction_priority_question")}</h2><div className="oe-direction-options">{priorities.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}><span><strong>{v(`priority_${item}`)}</strong><small>{v(`priority_${item}_sub`)}</small></span></Button>)}</div></>
+        : step === "mix"
+        ? <><h2>{v("direction_mix_question")}</h2><div className="oe-direction-options">{mixes.map((item) => <Button key={item} type="button" variant="outline" className={`oe-direction-option${choice === item ? " is-selected" : ""}`} aria-pressed={choice === item} onClick={() => onChoice(item)}>{v(`mix_${item}`)}</Button>)}</div></>
+        : <><h2>{v("sheet_done_title")}</h2><p>{fill(v("sheet_done_body"), { days: 90 })}</p></>}
+      <div className="oe-sheet-actions">
+        {step !== "move" && step !== "renew" && step !== "done" && <button type="button" className="v23-textlink" onClick={onBack}>{v("action_back")}</button>}
+        {step !== "renew" && <AuraButton onClick={step === "done" ? onClose : onNext} disabled={busy || ((step === "move" || step === "priority" || step === "mix") && !choice)}>{v(step === "place" ? "sheet_save" : step === "done" ? "sheet_done" : "sheet_save_continue")}</AuraButton>}
+      </div>
+      <button type="button" className="v23-textlink oe-sheet-close" onClick={onClose}>{v("sheet_close")}</button>
+    </section>
+  </div>;
 }
 
 export default OpportunityQueue;
