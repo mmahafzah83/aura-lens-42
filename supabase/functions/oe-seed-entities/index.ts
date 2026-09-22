@@ -33,6 +33,7 @@ type Ent = {
   size_hint?: string | null;
   seed_source: string;
   country?: string | null;
+  sector_code?: string | null;
 
 };
 
