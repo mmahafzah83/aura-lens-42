@@ -494,6 +494,20 @@ Deno.serve(async (req) => {
     const lang = (profile?.content_language === "ar" ? "ar" : "en") as "ar" | "en";
     const cardDate = localToday(profile?.timezone);
 
+    // The fields he said he wants to be found in. RANKING ONLY: it never
+    // excludes, never gates, never moves a record to the write lane. Empty or
+    // null means no preference and changes nothing.
+    const { data: eligibilityRow } = await admin
+      .from("oe_eligibility").select("sectors_core").eq("user_id", userId).maybeSingle();
+    const sectorsCore: string[] = Array.isArray(eligibilityRow?.sectors_core)
+      ? (eligibilityRow!.sectors_core as any[]).map((s) => String(s).trim().toLowerCase()).filter(Boolean)
+      : [];
+    const inDeclaredFields = (sector: unknown) =>
+      sectorsCore.length > 0 && !!sector && sectorsCore.includes(String(sector).trim().toLowerCase());
+    const fieldsLine = sectorsCore.length
+      ? `FIELDS HE SAID HE WANTS TO BE FOUND IN (a preference for ordering and for a plain sentence; never a requirement, never a reason to exclude):\n${JSON.stringify(sectorsCore)}`
+      : null;
+
     // Past judgements, in his words.
     const { data: labelled } = await admin
       .from("oe_taps")
@@ -671,6 +685,7 @@ Deno.serve(async (req) => {
         const user = [
           `FACES:\n${faceBlock}`,
           `PAST JUDGEMENTS:\n${JSON.stringify(fewShots)}`,
+          ...(fieldsLine ? [fieldsLine] : []),
           `OPPORTUNITY:\n${oppBlock}`,
         ].join("\n\n");
         const out = await gateway(lovableKey, P3_SYSTEM, user);
@@ -839,9 +854,14 @@ Deno.serve(async (req) => {
     const eligible = storedAct
       .map((j) => freshAct.get(String(j.o.id)) ?? j)
       .filter((j) => !j.unstable)
-      .sort((a, b) => Math.abs(b.scoreAvg - a.scoreAvg) < 0.01
-        ? (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0)
-        : b.scoreAvg - a.scoreAvg);
+      .sort((a, b) => {
+        if (Math.abs(b.scoreAvg - a.scoreAvg) >= 0.01) return b.scoreAvg - a.scoreAvg;
+        // All else equal, a declared field comes first. With no declared
+        // fields both sides are false and the old order is unchanged.
+        const fieldGap = Number(inDeclaredFields(b.o.sector)) - Number(inDeclaredFields(a.o.sector));
+        if (fieldGap !== 0) return fieldGap;
+        return (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0);
+      });
     counts.lane_forming = judged.filter((j) => j.lane === "lane_forming").length;
     let order = eligible.map((j) => ({ ...j, explore: false }));
     if (order.length > 1 && Math.random() < exploreShare) {
@@ -886,6 +906,7 @@ Deno.serve(async (req) => {
       const userMsg = [
         `HIS OWN MATERIAL (cite these, quote from these):\n${mineBlock}`,
         `OPPORTUNITY:\n${oppBlock}`,
+        ...(fieldsLine ? [`${fieldsLine}\nWhen this record's sector is one of them, you may say so plainly in one line; when it is not, say nothing about fields.`] : []),
         `ALLOWED CITE IDS: ${[...allowedIds.keys()].join(", ")}`,
       ].join("\n\n");
 

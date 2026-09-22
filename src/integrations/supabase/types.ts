@@ -11296,8 +11296,6 @@ export type Database = {
       oe_my_home: { Args: never; Returns: Json }
       oe_norm_text: { Args: { p: string }; Returns: string }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
-      oe_notebook_decline_comment: { Args: { p_id: string }; Returns: Json }
-      oe_notebook_promote_comment: { Args: { p_id: string }; Returns: Json }
       oe_notebook_remove_rule: { Args: { p_id: string }; Returns: Json }
       oe_place_country: { Args: { p_location: string }; Returns: string }
       oe_place_weight: {
@@ -11354,7 +11352,6 @@ export type Database = {
         Args: { p_apply: boolean; p_id: string }
         Returns: Json
       }
-      oe_rules_reset: { Args: never; Returns: Json }
       oe_scan_shared_facts_private: { Args: never; Returns: number }
       oe_truth_report_resolve: {
         Args: {
