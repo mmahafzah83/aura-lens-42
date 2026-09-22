@@ -11283,6 +11283,7 @@ export type Database = {
           title: string
         }[]
       }
+      oe_member_home: { Args: { p_user: string }; Returns: Json }
       oe_move_save: {
         Args: { p_move?: string; p_place?: string[] }
         Returns: Json
