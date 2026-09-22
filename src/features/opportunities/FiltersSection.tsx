@@ -31,8 +31,11 @@ const chipOn = { ...chip, borderColor: "var(--accent-line)", background: "var(--
 const LANGUAGES: Named[] = [{ code: "en", name_en: "English" }, { code: "ar", name_en: "Arabic" }];
 const REMOTE = "REMOTE";
 
-export function FiltersSection({ filters, onSaved, t }: {
+export function FiltersSection({ filters, cardKinds = [], notShownNote = "", onSaved, t }: {
   filters: FilterMap;
+  /** The kinds that can reach Today. Everything else is watched, not shown. */
+  cardKinds?: string[];
+  notShownNote?: string;
   onSaved: () => Promise<void> | void;
   t: (key: string, fallback: string) => string;
 }) {
