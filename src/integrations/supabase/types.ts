@@ -11288,6 +11288,7 @@ export type Database = {
         Args: { p_move?: string; p_place?: string[] }
         Returns: Json
       }
+      oe_my_home: { Args: never; Returns: Json }
       oe_norm_text: { Args: { p: string }; Returns: string }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
       oe_notebook_promote_comment: { Args: { p_id: string }; Returns: Json }
