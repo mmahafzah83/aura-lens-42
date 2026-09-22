@@ -264,7 +264,7 @@ async function seedTadawulListed(
     }
     notes.push(`${src.label}: HTTP ${status || "no response"} · ${finding} · ${found} names`);
     await admin.from("oe_feeds").upsert({
-      name: src.label, url: src.url, kind: "directory",
+      name: src.label, url: src.url, kind: "html_list",
       active: false, terms_ok: finding === "robots_allows",
       access_finding: finding, last_fetched_at: new Date().toISOString(),
       terms_note: `Read for company names only on ${new Date().toISOString().slice(0, 10)}: HTTP ${status || "no response"}, ${found} names.`,
