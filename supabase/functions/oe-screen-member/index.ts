@@ -230,6 +230,13 @@ Deno.serve(withRun("screen_member", async (req) => {
     const { data: standsFace } = await admin.from("oe_faces")
       .select("summary").eq("user_id", userId).eq("face", "stands").maybeSingle();
 
+    // ── WHAT HE READS AND WANTS — ranking only, never proof, never a gate ──
+    const { data: interestFaces } = await admin.from("oe_faces")
+      .select("face, summary, keywords").eq("user_id", userId).in("face", ["reads", "wants"]);
+    const { data: captureRows } = await admin.from("entries")
+      .select("title, summary, content, created_at")
+      .eq("user_id", userId).order("created_at", { ascending: false }).limit(400);
+
     // ── every live record ────────────────────────────────────────────────
     const { data: opps, error: oppsError } = await admin.from("oe_opportunities")
       .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
