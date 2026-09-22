@@ -132,9 +132,13 @@ export function OpportunityQueue() {
   const [busy, setBusy] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [heldOpen, setHeldOpen] = useState(false);
-  const [editor, setEditor] = useState<"move" | "place" | null>(null);
+  const [editor, setEditor] = useState<"move" | "place" | "sector" | null>(null);
   const [movePick, setMovePick] = useState<MoveKind | null>(null);
   const [placePick, setPlacePick] = useState<string[]>([]);
+  const [sectorPick, setSectorPick] = useState<string[]>([]);
+  const [sectorOptions, setSectorOptions] = useState<SectorOption[]>([]);
+  const [superseded, setSuperseded] = useState<Comment[]>([]);
+  const baseline = useRef<BarPick>({ move: null, places: [], sectors: [] });
   const [home, setHome] = useState<Home | null>(null);
   const [notice, setNotice] = useState<{ text: string; undo?: string } | null>(null);
   const [savedBar, setSavedBar] = useState(false);
