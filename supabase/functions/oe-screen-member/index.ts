@@ -17,6 +17,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
 import { secondPersonClause } from "../_shared/secondPerson.ts";
 import { bestStanding, writeTests } from "../_shared/writeValue.ts";
+import { interestOf } from "../_shared/interest.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 import {
   deriveIdentity, runGates, writingStanding,
