@@ -29,6 +29,9 @@ type QueueCard = {
 type Parked = { opportunity_id: string; title: string; issuer_name: string | null; location: string | null; deadline: string | null; parked_at: string };
 type History = { shown_at: string; lane: string | null; tap: string | null; tap_scope: string | null; truth_code: string | null; outcome: string | null; title: string | null; issuer_name: string | null; location: string | null; presentation_line: string | null };
 type Comment = { id: string; text: string; text_ar?: string | null; said_on: string; field: string | null; value: string | null };
+type SectorOption = { code: string; label_en: string; label_ar: string };
+type BarPick = { move: MoveKind | null; places: string[]; sectors: string[] };
+const sameSet = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
 type Rule = { id: string; rule_text: string; rule_text_ar?: string | null; field: string | null; value: string | null; stated_on: string; active?: boolean };
 type Direction = { language: Lang | null; move_kind: MoveKind | null; move_confirmed_at: string | null; move_proposed: MoveKind | null };
 type Home = { city: string | null; country: string | null; country_name: string | null; regions: Array<{ code: string; name_en: string; name_ar?: string | null }> };
