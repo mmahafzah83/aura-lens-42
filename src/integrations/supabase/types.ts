@@ -11277,6 +11277,7 @@ export type Database = {
         }
         Returns: Json
       }
+      oe_app_found: { Args: { p_days?: number }; Returns: Json }
       oe_app_proposal: {
         Args: { p_accept: boolean; p_id: string }
         Returns: undefined
