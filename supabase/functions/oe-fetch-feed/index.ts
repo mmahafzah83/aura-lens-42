@@ -1121,12 +1121,15 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         counts.errors++;
+        recordSeen(cand.url, "error");
         await logEfError(admin, {
           function_name: FN, error: e, severity: "low",
           context: { feed_id: feedId, url: cand.url },
         });
       }
     }
+    await flushSeen();
+
 
     // ── 7. ALIVE sweep for listing feeds ───────────────────────────────────
     if (kind === "listing") {
