@@ -1205,10 +1205,15 @@ Deno.serve(async (req) => {
     if (feedId && !candidateRow) {
       await admin.from("oe_feeds").update({
         last_fetched_at: new Date().toISOString(),
+        // The link set is remembered only now, when every detail page and every
+        // candidate write has finished without throwing. A fingerprint stored
+        // before the work would skip a page whose records were never written.
+        ...(pendingFingerprint ? { links_fingerprint: pendingFingerprint } : {}),
         ...(insertedAnything ? { last_changed_at: new Date().toISOString() } : {}),
         last_error: null,
       }).eq("id", feedId);
     }
+
 
     if (candidateRow) {
       await admin.from("oe_candidates").update({ triage_state: "read" }).eq("id", candidateRow.id);
