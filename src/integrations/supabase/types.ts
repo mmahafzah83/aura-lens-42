@@ -11625,6 +11625,14 @@ export type Database = {
           name_en: string
         }[]
       }
+      oe_ref_entity_names: {
+        Args: { p_ids: string[] }
+        Returns: {
+          id: string
+          name: string
+          sector_code: string
+        }[]
+      }
       oe_ref_entity_search: {
         Args: { p_q: string }
         Returns: {
