@@ -21,13 +21,15 @@ import { bestStanding, writeTests } from "../_shared/writeValue.ts";
 import { interestOf } from "../_shared/interest.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 import {
-  deriveIdentity, runGates, writingStanding,
-  type LadderRow, type MemberIdentity, type MemberEvidenceRow,
+  deriveIdentity, runGates, writingStanding, recencyWeight,
+  type CurrentIdentity, type LadderRow, type MemberIdentity, type MemberEvidenceRow,
 } from "../_shared/oeScreen.ts";
 import {
   loadLocationSensitivity, sensitivityOf, loadLevelGateApplies, levelGateApplies,
 } from "../_shared/oeKinds.ts";
 import { modelFor } from "../_shared/models.ts";
+
+const normRole = (s: string) => String(s ?? "").toLowerCase().replace(/[^a-z0-9\u0600-\u06ff ]+/g, " ").replace(/\s+/g, " ").trim();
 
 const FN = "oe-screen-member";
 
