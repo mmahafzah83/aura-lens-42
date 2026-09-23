@@ -719,10 +719,13 @@ Deno.serve(withRun("screen_member", async (req) => {
             : !tests.subject_fits_audience.passed || !tests.fits_your_positioning.passed
             ? "writing: outside what you are known for"
             : "writing: nothing useful to add";
+          /* THE GATE THAT ACTUALLY REFUSED IT KEEPS ITS NAME. This sweep stamps
+             no screen_gate: profession, level, place or rubric stands as written. */
           await admin.from("oe_matches").update({
             write_tests: tests, standing_overlap: tests.overlap,
             presentation_line: null, presentation_evidence_ids: [],
-            screen_gate: "presentation", screen_outcome: "rejected", gate_passed: false,
+            screen_outcome: "rejected", gate_passed: false,
+            gate_note: "write_tests_failed",
             lane_final: null, rejection_sentence: sentence,
           }).eq("user_id", userId).eq("opportunity_id", o.id).then(({ error }) => note(error, "write discard"));
           continue;
