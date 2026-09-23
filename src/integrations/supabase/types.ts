@@ -11331,6 +11331,7 @@ export type Database = {
         Returns: string
       }
       oe_classify_kind_probe: { Args: { p: Json }; Returns: string }
+      oe_country_of_place: { Args: { p: string }; Returns: string }
       oe_derive_access_state: { Args: never; Returns: number }
       oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {
