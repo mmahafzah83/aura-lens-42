@@ -195,7 +195,28 @@ function runsFor(actor: string, cfg: any, body: any): RunSpec[] {
   return [];
 }
 
+/**
+ * Some actors answer with one item per page and the jobs inside it. A page is
+ * not a job, so those wrappers are opened before anything is mapped.
+ */
+function flattenItems(items: any[]): any[] {
+  const out: any[] = [];
+  for (const item of items ?? []) {
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      const inner = Array.isArray(item.jobs) ? item.jobs
+        : Array.isArray(item.results) ? item.results : null;
+      if (inner) {
+        for (const row of inner) if (row && typeof row === "object") out.push(row);
+        continue;
+      }
+    }
+    out.push(item);
+  }
+  return out;
+}
+
 function mapRow(actor: string, raw: any): Row | null {
+
   const base = keepJobFieldsOnly(raw ?? {});
   if (actor === "blackfalcondata~bayt-scraper") {
     return {
