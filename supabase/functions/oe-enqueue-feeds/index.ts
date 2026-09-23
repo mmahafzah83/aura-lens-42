@@ -175,17 +175,36 @@ Deno.serve(async (req) => {
       if (da !== db) return db - da;
       return String(a.created_at).localeCompare(String(b.created_at));
     });
-    let readEnqueued = 0;
-    for (const row of ordered.slice(0, readCap)) {
+    // Rolling 24h budget shared with triage. Fresh (first seen < 24h) reads at
+    // priority 9 and goes first; backlog reads at priority 3, at most half.
+    const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+    const { count: readLast24 } = await admin.from("job_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("job_type", "oe_read_candidate").gte("created_at", since);
+    const { count: backlogLast24 } = await admin.from("job_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("job_type", "oe_read_candidate").eq("priority", 3).gte("created_at", since);
+    let room = Math.max(0, readCap - (readLast24 ?? 0));
+    let backlogRoom = Math.max(0, Math.floor(readCap * 0.5) - (backlogLast24 ?? 0));
+    const isFresh = (row: any) => String(row.created_at ?? "") >= since;
+    const laned = [...ordered.filter(isFresh), ...ordered.filter((r) => !isFresh(r))];
+    let readEnqueued = 0, readFresh = 0, readBacklog = 0;
+    for (const row of laned) {
+      if (room <= 0) break;
+      const fresh = isFresh(row);
+      if (!fresh && backlogRoom <= 0) break;
       const before = enqueued;
       await enqueue({
         job_type: "oe_read_candidate",
         user_id: null,
-        payload: { candidate_id: row.candidate_id, url: row.url, feed_id: row.feed_id },
-        priority: 2,
+        payload: { candidate_id: row.candidate_id, url: row.url, feed_id: row.feed_id, lane: fresh ? "fresh" : "backlog" },
+        priority: fresh ? 9 : 3,
         max_attempts: 3,
       });
-      if (enqueued > before) readEnqueued++;
+      if (enqueued > before) {
+        readEnqueued++; room--;
+        if (fresh) readFresh++; else { readBacklog++; backlogRoom--; }
+      }
     }
 
     const counts = {

@@ -50,6 +50,7 @@ Deno.serve(withRun("worker", async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
   const worker = "oe-worker-" + crypto.randomUUID();
+  const workerStartedAt = new Date().toISOString();
 
   // 0) Money first. A closed tap claims nothing.
   const { data: spend } = await admin.rpc("oe_spend_allowed", { p_stage: "worker", p_estimate: 0.01 });
@@ -150,7 +151,36 @@ Deno.serve(withRun("worker", async (req) => {
     }),
   )).flat();
 
+  // 3) New opportunities landed? Enqueue judging now (fresh lane), at most once
+  // per member per 30 minutes. The 2-hour cron stays as the safety net.
+  let judgingEnqueued = 0;
+  const readTypes = new Set(["oe_fetch_feed", "oe_read_candidate", "oe_harvest_ats"]);
+  if (results.some((r: any) => r.ok && readTypes.has(r.job_type))) {
+    try {
+      const { count: landed } = await admin.from("oe_opportunities")
+        .select("id", { count: "exact", head: true }).gte("first_seen_at", workerStartedAt);
+      if ((landed ?? 0) > 0) {
+        const { data: consents } = await admin.from("oe_consents")
+          .select("user_id").eq("kind", "matching").is("revoked_at", null);
+        const uids = [...new Set((consents ?? []).map((c: any) => String(c.user_id)))];
+        const since30 = new Date(Date.now() - 30 * 60_000).toISOString();
+        for (const uid of uids) {
+          const { count: recent } = await admin.from("job_queue")
+            .select("id", { count: "exact", head: true })
+            .eq("job_type", "oe_judge_member").eq("user_id", uid).gte("created_at", since30);
+          if ((recent ?? 0) > 0) continue;
+          const { error } = await admin.from("job_queue").insert({
+            job_type: "oe_judge_member", user_id: uid,
+            payload: { lane: "fresh", reason: "new_opportunities" }, priority: 9, max_attempts: 2,
+          });
+          if (!error) judgingEnqueued++;
+        }
+      }
+    } catch (_) { /* the 2-hour cron still enqueues */ }
+  }
+
   return json({
+    judging_enqueued: judgingEnqueued,
     claimed: jobs.length,
     concurrency,
     hosts: byHost.size,

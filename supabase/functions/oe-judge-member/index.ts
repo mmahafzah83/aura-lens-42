@@ -561,7 +561,7 @@ Deno.serve(async (req) => {
     // gate_passed and lane_final; this function reads those stored verdicts.
     const { data: opps, error: oppsError } = await admin
       .from("oe_opportunities")
-      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, updated_at, issuer:oe_issuers(domain)")
+      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, updated_at, first_seen_at, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
     const requestedSet = new Set(requestedOpportunityIds);
@@ -720,7 +720,18 @@ Deno.serve(async (req) => {
     const dayRoom = Math.max(0, judgeMaxPerDay - counts.judged_today_before);
     const modelCap = Math.min(shortlistK, judgeMax, dayRoom);
 
-    const shortlist = scored.slice(0, modelCap);
+    // FRESH FIRST. Items first seen in the last 24h are judged before older
+    // ones; the backlog may use at most half of the day's judging budget.
+    const freshCut = Date.now() - 24 * 3600_000;
+    const isFreshOpp = (o: any) => new Date(String(o.first_seen_at ?? 0)).getTime() >= freshCut;
+    const backlogCap = Math.max(0, Math.floor(judgeMaxPerDay * 0.5) - counts.judged_today_before);
+    const freshList = scored.filter((c) => isFreshOpp(c.o));
+    const backlogList = scored.filter((c) => !isFreshOpp(c.o));
+    const takeFresh = freshList.slice(0, modelCap);
+    const takeBacklog = backlogList.slice(0, Math.min(modelCap - takeFresh.length, backlogCap));
+    const shortlist = [...takeFresh, ...takeBacklog];
+    counts.shortlist_fresh = takeFresh.length;
+    counts.shortlist_backlog = takeBacklog.length;
     counts.eligible_pool = eligiblePool;
     counts.shortlisted = shortlist.length;
     counts.starved = Math.max(0, eligiblePool - shortlist.length);
