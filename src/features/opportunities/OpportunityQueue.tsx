@@ -411,6 +411,17 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   const sectorText = chosenSectors.length
     ? chosenSectors.map((code) => sectorLabel(sectorOptions.find((option) => option.code === code) ?? { code, label_en: code, label_ar: code })).join(" · ")
     : v("bar_sector_any");
+  // Saved preferences read back as words, never as a count or a share.
+  const savedKinds = data.filters.kind?.values ?? [];
+  const kindText = savedKinds.length ? savedKinds.map((code) => v(`kind_${code}`)).join(" · ") : v("bar_any");
+  const savedLevel = (data.filters.level?.values ?? [])[0] ?? null;
+  const levelText = savedLevel ? v(`level_${savedLevel}`) : v("bar_any");
+  const savedOrgs = data.filters.org_type?.values ?? [];
+  const orgText = savedOrgs.length ? savedOrgs.map((code) => v(`org_${code}`)).join(" · ") : v("bar_any");
+  const companyText = [
+    followPick.length ? `${v("companies_follow")}: ${followPick.map((row) => row.name).join(" · ")}` : null,
+    hidePick.length ? `${v("companies_hide")}: ${hidePick.map((row) => row.name).join(" · ")}` : null,
+  ].filter(Boolean).join(" — ") || v("bar_any");
   useEffect(() => {
     const node = dialogRef.current; if (!node) return;
     const old = document.body.style.overflow; document.body.style.overflow = "hidden";
