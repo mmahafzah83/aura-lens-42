@@ -516,6 +516,9 @@ Deno.serve(async (req) => {
     dedup_hits: 0, leadtime_pairs: 0, errors: 0, firecrawl_refused: 0,
   };
   let costUsd = 0;
+  /** A listing page's link set, stored only once the whole read has finished. */
+  let pendingFingerprint: string | null = null;
+
 
   // A refused ceiling is not a finished job. The run is recorded as deferred,
   // the feed clock is NOT stamped, and the caller is told to come back.
