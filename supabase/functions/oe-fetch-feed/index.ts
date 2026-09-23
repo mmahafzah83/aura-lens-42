@@ -9,6 +9,8 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { isAggregator, normaliseForQuote } from "../_shared/oeGuards.ts";
+import { kickVendorHealth } from "../_shared/vendors.ts";
+
 import { parseLevel, levelIndex, LEVELS } from "../_shared/oeEligibility.ts";
 import { SCOPE_EVIDENCE_INSTRUCTION, verifyScopeEvidence } from "../_shared/scopeEvidence.ts";
 
@@ -693,8 +695,11 @@ Deno.serve(async (req) => {
             function_name: FN, error: `firecrawl refused ${fc.status}`, severity: "low",
             context: { feed_id: feedId, url, status: fc.status },
           });
+          // A vendor that stopped paying out must not look like a quiet night.
+          if (fc.status === 402) await kickVendorHealth(admin, `firecrawl ${fc.status}`);
           return null;
         }
+
         return fc.ok ? fc : null;
       };
 

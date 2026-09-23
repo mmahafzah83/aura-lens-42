@@ -56,3 +56,19 @@ export function normaliseForQuote(s: string | null | undefined): string {
     .trim()
     .toLowerCase();
 }
+
+/**
+ * A job board is not a directory. A board record that carries a way in — an
+ * apply link, the employer's own site, a form or contact details — is one
+ * chair and must not be dropped as an index page. Every other record is
+ * judged exactly as before.
+ */
+export function isAggregatorFor(
+  discoveryKind: string | null | undefined,
+  hasRoute: boolean,
+  url: string | null | undefined,
+  ...text: Array<string | null | undefined>
+): boolean {
+  if (discoveryKind === "job_board" && hasRoute) return false;
+  return isAggregator(url, ...text);
+}
