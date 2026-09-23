@@ -124,7 +124,7 @@ async function checkFirecrawl(): Promise<Vendor> {
 
 const REFUSAL_RE = /402|insufficient credits|payment required|429/i;
 
-async function checkLovableAI(admin: ReturnType<typeof createClient>): Promise<Vendor> {
+async function checkLovableAI(admin: any): Promise<Vendor> {
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
   const detail: Record<string, unknown> = { topup: TOPUP.lovable_ai };
 

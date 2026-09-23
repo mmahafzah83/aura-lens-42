@@ -5,7 +5,6 @@
  * Every function that spends money reads its key from here, and any function
  * that meets a refusal can ask for a health check with kickVendorHealth().
  */
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 /** The Apify token, whatever name it was saved under. */
 export function apifyToken(): string | null {
@@ -35,7 +34,7 @@ export async function fetchWithTimeout(url: string, init: RequestInit = {}, ms =
  * Ask for a vendor health check after a refusal, at most once an hour. The
  * timestamp lives in admin_settings so two functions cannot both fire.
  */
-export async function kickVendorHealth(admin: SupabaseClient, reason: string): Promise<boolean> {
+export async function kickVendorHealth(admin: any, reason: string): Promise<boolean> {
   const KEY = "vendor_health_last_run";
   const { data } = await admin.from("admin_settings").select("value").eq("key", KEY).maybeSingle();
   const raw = (data as { value?: unknown } | null)?.value as any;
