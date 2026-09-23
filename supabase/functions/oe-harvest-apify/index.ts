@@ -99,13 +99,38 @@ const when = (v: unknown): string | null => {
 
 /* ── ACTOR INPUTS AND MAPPINGS ─────────────────────────────────────────────
    One entry per actor: the runs it should make today, and how its result rows
-   read as a job. Everything variable comes from the actor's policy row. */
+   read as a job. Everything variable comes from the actor's policy row.
+
+   The inputs are data, not code. When the actor's policy row carries a runs
+   array of {label, input}, those inputs are sent to the vendor exactly as
+   written — an actor that renames a field is fixed by editing the policy row,
+   not this file. The generated runs below are only the fallback for an actor
+   whose policy row says nothing. A request may also carry one input object to
+   try a single actor once, which is how a new input is checked before it is
+   written into policy. */
 
 type RunSpec = { label: string; input: Record<string, unknown> };
 
 function runsFor(actor: string, cfg: any, body: any): RunSpec[] {
+  // One input sent from the request: that run and nothing else.
+  const testInput = body?.input;
+  if (testInput && typeof testInput === "object" && !Array.isArray(testInput)) {
+    return [{ label: "request", input: testInput as Record<string, unknown> }];
+  }
+
+  // Inputs held as policy data: sent verbatim, in the order written.
+  if (Array.isArray(cfg?.runs) && cfg.runs.length) {
+    return (cfg.runs as any[])
+      .filter((run) => run && typeof run.input === "object" && run.input !== null && !Array.isArray(run.input))
+      .map((run, index) => ({
+        label: str(run.label) ?? `run-${index + 1}`,
+        input: run.input as Record<string, unknown>,
+      }));
+  }
+
   const pick = <T,>(fromBody: T[] | undefined, fromCfg: T[] | undefined, fallback: T[]): T[] =>
     (Array.isArray(fromBody) && fromBody.length ? fromBody : Array.isArray(fromCfg) && fromCfg.length ? fromCfg : fallback);
+
 
   if (actor === "blackfalcondata~bayt-scraper") {
     const countries = pick<string>(body?.countries, cfg?.countries, ["AE", "SA", "QA", "KW", "BH", "OM"]);
@@ -170,7 +195,28 @@ function runsFor(actor: string, cfg: any, body: any): RunSpec[] {
   return [];
 }
 
+/**
+ * Some actors answer with one item per page and the jobs inside it. A page is
+ * not a job, so those wrappers are opened before anything is mapped.
+ */
+function flattenItems(items: any[]): any[] {
+  const out: any[] = [];
+  for (const item of items ?? []) {
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      const inner = Array.isArray(item.jobs) ? item.jobs
+        : Array.isArray(item.results) ? item.results : null;
+      if (inner) {
+        for (const row of inner) if (row && typeof row === "object") out.push(row);
+        continue;
+      }
+    }
+    out.push(item);
+  }
+  return out;
+}
+
 function mapRow(actor: string, raw: any): Row | null {
+
   const base = keepJobFieldsOnly(raw ?? {});
   if (actor === "blackfalcondata~bayt-scraper") {
     return {
@@ -341,17 +387,20 @@ Deno.serve(async (req) => {
             break;
           }
           if (!res.ok) {
-            const text = (await res.text()).slice(0, 300);
+            // A refused input is only fixable if its whole complaint is kept.
+            const text = (await res.text()).slice(0, 1000);
             perActor.errors.push(`${spec.label}: ${res.status} ${text}`);
             counts.errors++;
             await admin.from("oe_runs").insert({
               run_kind: "harvest_apify", feed_id: feedId, started_at: startedAt,
               finished_at: new Date().toISOString(), outcome: "error", severity: "warn",
-              counts: { actor, run: spec.label, status: res.status }, error: text,
+              counts: { actor, run: spec.label, status: res.status, input: spec.input },
+              error: text.slice(0, 500),
             });
             continue; // one refused input never ends the lane
           }
-          items = await res.json().catch(() => []);
+          const payload = await res.json().catch(() => []);
+          items = flattenItems(Array.isArray(payload) ? payload : [payload]);
           const usd = header ? Number(header) : (items.length / 1000) * Number(cfg?.price_per_1k_usd ?? 1);
           spentToday += usd; counts.usd += usd; perActor.usd += usd;
         } catch (e) {
@@ -361,6 +410,15 @@ Deno.serve(async (req) => {
         }
 
         counts.results += items.length; perActor.results += items.length;
+
+        // A dry call reads the vendor and shows the first rows, storing nothing.
+        if (body?.dry === true) {
+          perActor.sample = items.slice(0, 3).map((item) => mapRow(actor, item));
+          perActor.raw_keys = items.length ? Object.keys(items[0] ?? {}).slice(0, 40) : [];
+          continue;
+        }
+
+
 
         for (const item of items) {
           const row = mapRow(actor, item);

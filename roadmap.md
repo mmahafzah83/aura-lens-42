@@ -138,3 +138,5 @@
 - [x] Bilingual vocabulary and database self-checks
 - [ ] Authenticated 375px visual verification — preview remains at password setup
 
+
+- [ ] oe-harvest-apify: actor inputs as data (cfg.runs), body input/only/dry, store 400 text, flatten jobs/results arrays, deploy
