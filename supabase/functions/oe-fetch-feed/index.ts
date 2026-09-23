@@ -716,9 +716,11 @@ Deno.serve(async (req) => {
           if (!page) page = { ok: false, markdown: "", links: [], title: "", sourceURL: url };
         }
       }
-      if (feedId && needsRender && plainLinkCount > 0) {
+      // A plain fetch that found links proves the renderer is not needed.
+      if (feedId && plainLinkCount > 0 && feed.needs_render === true) {
         await admin.from("oe_feeds").update({ needs_render: false }).eq("id", feedId);
       }
+
 
       // An unchanged listing page costs nothing: no detail page, no model call.
       // An EMPTY link set is never fingerprinted — that would freeze the feed.
