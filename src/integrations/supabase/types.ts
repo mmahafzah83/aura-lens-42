@@ -4283,6 +4283,8 @@ export type Database = {
       }
       oe_cards: {
         Row: {
+          alert_kind: string | null
+          alerted_at: string | null
           card_date: string
           channel: string
           cited_ids: Json
@@ -4308,6 +4310,8 @@ export type Database = {
           win_band: string | null
         }
         Insert: {
+          alert_kind?: string | null
+          alerted_at?: string | null
           card_date: string
           channel?: string
           cited_ids?: Json
@@ -4333,6 +4337,8 @@ export type Database = {
           win_band?: string | null
         }
         Update: {
+          alert_kind?: string | null
+          alerted_at?: string | null
           card_date?: string
           channel?: string
           cited_ids?: Json
@@ -4630,11 +4636,15 @@ export type Database = {
       }
       oe_eligibility: {
         Row: {
+          alert_instant: boolean
           blocked_reasons: Json
+          cards_at_a_time: number
           chair_types_blocked: string[] | null
           chair_types_never_held: string[] | null
           countries_allowed: string[] | null
           created_at: string
+          digest_hour: number
+          digest_on: boolean
           issuers_followed: string[]
           issuers_hidden: string[]
           kinds_preferred: string[]
@@ -4653,11 +4663,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alert_instant?: boolean
           blocked_reasons?: Json
+          cards_at_a_time?: number
           chair_types_blocked?: string[] | null
           chair_types_never_held?: string[] | null
           countries_allowed?: string[] | null
           created_at?: string
+          digest_hour?: number
+          digest_on?: boolean
           issuers_followed?: string[]
           issuers_hidden?: string[]
           kinds_preferred?: string[]
@@ -4676,11 +4690,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alert_instant?: boolean
           blocked_reasons?: Json
+          cards_at_a_time?: number
           chair_types_blocked?: string[] | null
           chair_types_never_held?: string[] | null
           countries_allowed?: string[] | null
           created_at?: string
+          digest_hour?: number
+          digest_on?: boolean
           issuers_followed?: string[]
           issuers_hidden?: string[]
           kinds_preferred?: string[]
@@ -11603,6 +11621,7 @@ export type Database = {
       oe_app_show_anyway: { Args: { p_suppressed: string }; Returns: undefined }
       oe_apply_shape_state: { Args: never; Returns: number }
       oe_assess_writing_value: { Args: { p_user: string }; Returns: number }
+      oe_auto_park: { Args: { p_user?: string }; Returns: number }
       oe_bar_save: {
         Args: { p_move?: string; p_places?: string[]; p_sectors?: string[] }
         Returns: Json
@@ -11625,6 +11644,10 @@ export type Database = {
           rrf_score: number
           vec_rank: number
         }[]
+      }
+      oe_card_is_repeat: {
+        Args: { p_opp: string; p_user: string }
+        Returns: boolean
       }
       oe_card_kinds: { Args: never; Returns: string[] }
       oe_card_public: {
@@ -11653,6 +11676,15 @@ export type Database = {
       oe_classify_kind_probe: { Args: { p: Json }; Returns: string }
       oe_country_of_place: { Args: { p: string }; Returns: string }
       oe_default_places: { Args: { p_residence: string }; Returns: string[] }
+      oe_delivery_save: {
+        Args: {
+          p_at_a_time: number
+          p_digest: boolean
+          p_digest_hour: number
+          p_instant: boolean
+        }
+        Returns: Json
+      }
       oe_derive_access_state: { Args: never; Returns: number }
       oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {
