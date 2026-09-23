@@ -156,6 +156,7 @@ export function OpportunityQueue() {
   }, []);
 
   useEffect(() => { void load(); void loadRefLabels(); }, [load]);
+  useEffect(() => { const reload = () => void load(); window.addEventListener("oe-delivery-saved", reload); return () => window.removeEventListener("oe-delivery-saved", reload); }, [load]);
   useEffect(() => { void (async () => {
     const { data: rows } = await supabase.rpc("oe_ref_sector_list" as never);
     const list = Array.isArray(rows) ? (rows as unknown as SectorOption[]) : [];
