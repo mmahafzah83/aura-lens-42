@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { Vocab } from "./useVocab";
 import OpportunityTimeline from "./OpportunityTimeline";
+import { supabase } from "@/integrations/supabase/client";
 
 export type FoundItem = {
   id: string; title: string | null; issuer: string | null; location: string | null;
