@@ -128,7 +128,8 @@ function Group({ group, v, language, checking, onCheck }: {
       {open && <>
         {group.key === "signals"
           ? employers.map((row, index) => <EmployerRow key={index} row={row} v={v} language={language} />)
-          : shown.map((item) => <Row key={item.id} item={item} v={v} language={language} />)}
+          : shown.map((item) => <Row key={item.id} item={item} v={v} language={language}
+              canCheck={CHECKABLE.has(group.key)} checking={checking.has(item.id)} onCheck={onCheck} />)}
         {group.key !== "signals" && !all && items.length > PAGE &&
           <button type="button" onClick={() => setAll(true)} style={{
             padding: "10px 14px", border: 0, background: "transparent", cursor: "pointer",
