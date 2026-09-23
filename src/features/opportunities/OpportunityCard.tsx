@@ -3,6 +3,7 @@ import { AuraCard } from "@/components/ui/AuraCard";
 import { supabase } from "@/integrations/supabase/client";
 import { chairKey, useVocab } from "./useVocab";
 import { TapRow } from "./TapRow";
+import { matchedAsLine, useMemberIdentity } from "./MemberIdentity";
 import type { OpportunityCardData } from "./types";
 
 /**
@@ -54,11 +55,15 @@ function GapQuestion({ q, language, rtl, onSaved }: {
   );
 }
 
+const writeLaneOf = (card: OpportunityCardData) => card.lane === "write";
+
 type Props = { card: OpportunityCardData; language: "en" | "ar"; readOnly?: boolean; onSaved?: () => void };
 
 export function OpportunityCard({ card, language, readOnly, onSaved }: Props) {
   const v = useVocab(language);
   const opp = card.oe_opportunities;
+  const member = useMemberIdentity();
+  const matchedAs = writeLaneOf(card) ? null : matchedAsLine(member.identity, v);
   const tap = card.oe_taps?.slice().sort((a, b) => String(b.tapped_at).localeCompare(String(a.tapped_at)))[0]?.tap ?? null;
   const rtl = language === "ar";
   const font = rtl ? "Cairo, sans-serif" : "Inter, sans-serif";
@@ -91,6 +96,7 @@ export function OpportunityCard({ card, language, readOnly, onSaved }: Props) {
           )}
           {card.clock_text && <p style={{ margin: 0, color: "#9A6F12", fontFamily: "IBM Plex Mono, monospace", fontSize: 13 }}>{card.clock_text}</p>}
           <div style={{ display: "grid", gap: 8 }}>
+            {matchedAs && <p style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#00CEC9" }} /><span>{matchedAs}</span></p>}
             {(card.why_lines ?? []).slice(0, writeLane ? 4 : 2).map((why, i) => <p key={i} style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#00CEC9" }} /><span>{(why as { label?: string }).label && <strong style={{ color: "#0F1519" }}>{(why as { label?: string }).label}: </strong>}{why.text}</span></p>)}
             {card.gap_line?.text && <p style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#E0A82E" }} /><span><strong style={{ color: "#0F1519" }}>{v("the_distance")}: </strong>{card.gap_line.text}</span></p>}
           </div>
