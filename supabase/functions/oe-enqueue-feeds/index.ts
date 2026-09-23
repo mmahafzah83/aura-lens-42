@@ -132,7 +132,9 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    const readCap = Number((policy?.params as any)?.read_cap_per_day ?? 200);
+    // Computed daily from members and spend, recorded in oe_runs.
+    const { data: capRow } = await admin.rpc("oe_read_cap_today");
+    const readCap = Number((capRow as any)?.read_cap ?? (policy?.params as any)?.read_cap_per_day ?? 200);
     const readMinLevel = String((policy?.params as any)?.read_min_level ?? "senior_manager");
     const feedCountry = new Map((feeds ?? []).map((f) => [f.id as string, String((f as any).country ?? "").toUpperCase()]));
 

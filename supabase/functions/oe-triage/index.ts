@@ -121,7 +121,9 @@ Deno.serve(async (req) => {
   const batchSize = Math.min(Number(body.batch ?? params.triage_batch ?? 200), 250);
   // ONE READING BUDGET FOR THE DAY. Both the feed step and this one spend from
   // the same number, so the day's reading is a figure we choose.
-  const readCap = Number(body.read_cap ?? params.read_cap_per_day ?? 200);
+  // Computed daily from members and spend, recorded in oe_runs.
+  const { data: capRow } = await admin.rpc("oe_read_cap_today");
+  const readCap = Number(body.read_cap ?? (capRow as any)?.read_cap ?? params.read_cap_per_day ?? 200);
   const readMinLevel = String(params.read_min_level ?? "senior_manager");
 
   const startedAt = new Date().toISOString();
