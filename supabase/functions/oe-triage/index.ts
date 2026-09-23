@@ -24,6 +24,13 @@ const corsHeaders = {
 const FN = "oe-triage";
 const EMBED_MODEL = "text-embedding-3-small";
 
+// How much a seat's height counts before anything is read. A title we cannot
+// read a level from sits in the middle rather than at the bottom.
+const LEVEL_PRIOR: Record<string, number> = {
+  board: 1.0, c_suite: 0.95, vp: 0.85, senior_director: 0.8,
+  director: 0.7, senior_manager: 0.6, manager: 0.5, ic: 0.4,
+};
+
 // Goods and works, not advice. A person does not sit in these.
 const GOODS_RE =
   /\b(supply of|purchase of|procurement of (goods|materials|equipment)|printing|vehicles?|furniture|catering|cleaning|maintenance of|construction of|building of|spare parts|stationery|uniforms)\b|توريد|شراء|طباعة|أثاث|مركبات|إعاشة|نظافة|صيانة|إنشاء مبنى/i;
@@ -142,7 +149,7 @@ Deno.serve(async (req) => {
 
     const { data: batch } = await admin
       .from("oe_candidates")
-      .select("id, url, title, snippet")
+      .select("id, url, title, snippet, feed_id, entity_id")
       .eq("triage_state", "new")
       .order("first_seen_at", { ascending: true })
       .limit(batchSize);
@@ -150,9 +157,14 @@ Deno.serve(async (req) => {
     if (!rows.length) return json({ ok: true, counts, note: "nothing new" });
 
     // 1. Deterministic rules first: no rejected line ever costs us a cent.
+    //    A seat below the ladder floor is read by nobody, so it is named and
+    //    dropped here. A title we cannot read a level from still passes.
     const kept: typeof rows = [];
     for (const c of rows) {
-      const reason = deterministicReject(c.title ?? "", c.snippet ?? "", c.url);
+      const lvl = parseLevel(c.title ?? "", null);
+      const reason = (lvl && levelIndex(lvl) < levelIndex(readMinLevel))
+        ? "junior_title"
+        : deterministicReject(c.title ?? "", c.snippet ?? "", c.url);
       if (reason) {
         counts.rejected++;
         counts.by_reason[reason] = (counts.by_reason[reason] ?? 0) + 1;
@@ -166,6 +178,53 @@ Deno.serve(async (req) => {
       kept.push(c);
     }
 
+    // The priors that turn one number into a ranking. All of them are data:
+    // demand measured from the members, watch tiers and follows from the
+    // members' own settings. Nothing about a country is written into this file.
+    const feedIds = [...new Set(kept.map((c: any) => c.feed_id).filter(Boolean))];
+    const entityIds = [...new Set(kept.map((c: any) => c.entity_id).filter(Boolean))];
+    const [{ data: feedRows }, { data: entRows }, { data: demandRows }, { data: eligRows }] = await Promise.all([
+      feedIds.length
+        ? admin.from("oe_feeds").select("id, country, entity_id").in("id", feedIds)
+        : Promise.resolve({ data: [] as any[] }),
+      entityIds.length
+        ? admin.from("oe_issuers").select("id, country, watch_tier").in("id", entityIds)
+        : Promise.resolve({ data: [] as any[] }),
+      admin.from("oe_demand_map").select("value, demand").eq("dimension", "country"),
+      admin.from("oe_eligibility").select("issuers_followed"),
+    ]);
+    const feedCountry = new Map((feedRows ?? []).map((f: any) => [f.id, String(f.country ?? "").toUpperCase()]));
+    const feedEntity = new Map((feedRows ?? []).map((f: any) => [f.id, f.entity_id]));
+    const entCountry = new Map((entRows ?? []).map((e: any) => [e.id, String(e.country ?? "").toUpperCase()]));
+    const coreEntities = new Set(
+      (entRows ?? []).filter((e: any) => String(e.watch_tier ?? "") === "core").map((e: any) => e.id),
+    );
+    const followed = new Set<string>();
+    for (const r of eligRows ?? []) for (const i of ((r as any).issuers_followed ?? [])) followed.add(String(i));
+
+    const demandRaw = new Map(
+      (demandRows ?? []).map((d: any) => [String(d.value).toUpperCase(), Number(d.demand) || 0]),
+    );
+    const demandMax = Math.max(0, ...demandRaw.values());
+    const regionPrior = (country: string): number => {
+      if (!country) return 0.5;
+      const d = demandRaw.get(country);
+      if (d === undefined || !demandMax) return 0.5;
+      return Math.max(0, Math.min(1, d / demandMax));
+    };
+
+    // The last seven days of scores are the yardstick: how close this line is
+    // compared with everything we have seen lately, not against a fixed number.
+    const { data: recentScores } = await admin
+      .from("oe_candidates")
+      .select("triage_score")
+      .gte("updated_at", new Date(Date.now() - 7 * 86_400_000).toISOString())
+      .not("triage_score", "is", null)
+      .limit(5000);
+    const history = (recentScores ?? [])
+      .map((r: any) => Number(r.triage_score)).filter((n) => Number.isFinite(n) && n > 0)
+      .sort((a, b) => a - b);
+
     // 2. One embedding call for everything that survived.
     if (kept.length) {
       if (!openaiKey) throw new Error("OPENAI_API_KEY not configured");
@@ -177,9 +236,29 @@ Deno.serve(async (req) => {
         input_tokens: tokens, metadata: { batch: kept.length },
       });
 
-      const passed: Array<{ id: string; score: number }> = [];
+      const passed: Array<{ id: string; title: string; priority: number }> = [];
+      const batchScores: number[] = [];
       for (let i = 0; i < kept.length; i++) {
-        const c = kept[i];
+        const v = vectors[i];
+        if (v) {
+          let best = 0;
+          for (const f of faceVectors) {
+            const s = cosine(v, f);
+            if (s > best) best = s;
+          }
+          batchScores.push(best);
+        }
+      }
+      const ladder = [...history, ...batchScores].sort((a, b) => a - b);
+      const percentile = (s: number): number => {
+        if (!ladder.length) return 0.5;
+        let lo = 0, hi = ladder.length;
+        while (lo < hi) { const m = (lo + hi) >> 1; if (ladder[m] < s) lo = m + 1; else hi = m; }
+        return lo / ladder.length;
+      };
+
+      for (let i = 0; i < kept.length; i++) {
+        const c: any = kept[i];
         const v = vectors[i];
         if (!v) {
           counts.errors++;
@@ -193,32 +272,43 @@ Deno.serve(async (req) => {
         }
         counts.scored++;
         scores.push(best);
+
+        const lvl = parseLevel(c.title ?? "", null);
+        const levelP = lvl ? (LEVEL_PRIOR[lvl] ?? 0.5) : 0.5;
+        const entityId = c.entity_id ?? feedEntity.get(c.feed_id) ?? null;
+        const country = (entityId && entCountry.get(entityId)) || feedCountry.get(c.feed_id) || "";
+        const regionP = regionPrior(country);
+        const issuerP = entityId && (followed.has(String(entityId)) || coreEntities.has(entityId)) ? 1 : 0.5;
+
         const text = `${c.title ?? ""} ${c.snippet ?? ""}`;
         const structural = STRUCTURAL_RE.test(text);
-        const pass = structural || best >= triageMin;
+        let priority = 0.5 * percentile(best) + 0.2 * levelP + 0.2 * regionP + 0.1 * issuerP;
+        if (structural) priority += 1;
+        priority = +priority.toFixed(4);
+
         if (!dryRun) {
           await admin.from("oe_candidates").update({
             embedding: `[${v.join(",")}]`,
             triage_score: +best.toFixed(4),
-            triage_state: pass ? "passed" : "rejected",
-            rejected_reason: pass ? null : "below_triage_min",
+            priority,
+            triage_state: "passed",
+            rejected_reason: null,
           }).eq("id", c.id);
         }
-        if (pass) { counts.passed++; passed.push({ id: c.id, score: structural ? 1 + best : best }); }
-        else {
-          counts.rejected++;
-          counts.by_reason.below_triage_min = (counts.by_reason.below_triage_min ?? 0) + 1;
-        }
+        counts.passed++;
+        passed.push({ id: c.id, title: String(c.title ?? ""), priority });
       }
 
-      // 3. Promote the best, up to tonight's budget.
+      // 3. Promote the highest priority, up to the one daily reading budget.
+      passed.sort((a, b) => b.priority - a.priority);
+      counts.top_promoted = passed.slice(0, 10).map((p) => ({ title: p.title.slice(0, 90), priority: p.priority }));
       if (!dryRun && passed.length) {
         const since = new Date(Date.now() - 24 * 3600_000).toISOString();
         const { count: promotedToday } = await admin.from("job_queue")
           .select("id", { count: "exact", head: true })
           .eq("job_type", "oe_read_candidate").gte("created_at", since);
-        const room = Math.max(0, readBudget - (promotedToday ?? 0));
-        passed.sort((a, b) => b.score - a.score);
+        counts.read_today_before = promotedToday ?? 0;
+        const room = Math.max(0, readCap - (promotedToday ?? 0));
         for (const p of passed.slice(0, room)) {
           const { error } = await admin.from("job_queue").insert({
             job_type: "oe_read_candidate",
@@ -227,6 +317,9 @@ Deno.serve(async (req) => {
           });
           if (!error) counts.promoted++;
         }
+        counts.top_promoted = passed.slice(0, Math.min(10, room)).map((p) => ({
+          title: p.title.slice(0, 90), priority: p.priority,
+        }));
       }
     }
 
@@ -238,11 +331,11 @@ Deno.serve(async (req) => {
 
     const { data: run } = await admin.from("oe_runs").insert({
       run_kind: "triage", started_at: startedAt, finished_at: new Date().toISOString(),
-      outcome: "ok", counts: { ...counts, distribution, triage_min: triageMin },
+      outcome: "ok", counts: { ...counts, distribution, read_cap: readCap },
       cost_usd: +costUsd.toFixed(6),
     }).select("id").maybeSingle();
 
-    return json({ ok: true, dry_run: dryRun, triage_min: triageMin, counts, distribution, cost_usd: +costUsd.toFixed(6), run_id: run?.id ?? null });
+    return json({ ok: true, dry_run: dryRun, read_cap: readCap, counts, distribution, cost_usd: +costUsd.toFixed(6), run_id: run?.id ?? null });
   } catch (e) {
     const msg = String((e as Error).message ?? e).slice(0, 500);
     await admin.from("oe_runs").insert({
