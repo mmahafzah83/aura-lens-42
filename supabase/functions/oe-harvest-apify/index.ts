@@ -387,17 +387,20 @@ Deno.serve(async (req) => {
             break;
           }
           if (!res.ok) {
-            const text = (await res.text()).slice(0, 300);
+            // A refused input is only fixable if its whole complaint is kept.
+            const text = (await res.text()).slice(0, 1000);
             perActor.errors.push(`${spec.label}: ${res.status} ${text}`);
             counts.errors++;
             await admin.from("oe_runs").insert({
               run_kind: "harvest_apify", feed_id: feedId, started_at: startedAt,
               finished_at: new Date().toISOString(), outcome: "error", severity: "warn",
-              counts: { actor, run: spec.label, status: res.status }, error: text,
+              counts: { actor, run: spec.label, status: res.status, input: spec.input },
+              error: text.slice(0, 500),
             });
             continue; // one refused input never ends the lane
           }
-          items = await res.json().catch(() => []);
+          const payload = await res.json().catch(() => []);
+          items = flattenItems(Array.isArray(payload) ? payload : [payload]);
           const usd = header ? Number(header) : (items.length / 1000) * Number(cfg?.price_per_1k_usd ?? 1);
           spentToday += usd; counts.usd += usd; perActor.usd += usd;
         } catch (e) {
@@ -407,6 +410,15 @@ Deno.serve(async (req) => {
         }
 
         counts.results += items.length; perActor.results += items.length;
+
+        // A dry call reads the vendor and shows the first rows, storing nothing.
+        if (body?.dry === true) {
+          perActor.sample = items.slice(0, 3).map((item) => mapRow(actor, item));
+          perActor.raw_keys = items.length ? Object.keys(items[0] ?? {}).slice(0, 40) : [];
+          continue;
+        }
+
+
 
         for (const item of items) {
           const row = mapRow(actor, item);
