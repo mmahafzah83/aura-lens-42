@@ -61,11 +61,35 @@ const PRESENTATION_SYSTEM =
   "Never pair on a shared word or a shared sector — the evidence must answer the requirement. " +
   "If nothing answers anything, return {matches: []}. Never invent evidence.";
 
+/**
+ * A call that did not come back with an answer. It is NOT a negative result:
+ * nothing may be concluded about the member's record from a gateway failure.
+ */
+export class GatewayFailure extends Error {
+  kind: "payment_required" | "rate_limited" | "timeout" | "transport";
+  constructor(kind: GatewayFailure["kind"], message: string) {
+    super(message);
+    this.kind = kind;
+  }
+}
+
+const failureKind = (e: unknown): GatewayFailure["kind"] => {
+  if (e instanceof GatewayFailure) return e.kind;
+  const m = String((e as Error)?.message ?? e);
+  if (/\b402\b|payment/i.test(m)) return "payment_required";
+  if (/\b429\b|rate.?limit/i.test(m)) return "rate_limited";
+  if (/timeout|timed out|aborted/i.test(m)) return "timeout";
+  return "transport";
+};
+
 /** One streamed call. Reasoning models run for minutes; never buffer, never time out on a timer. */
 async function askForLine(
   key: string,
   payload: string,
-): Promise<{ matches: Array<{ requirement: string; evidence_id: string }> }> {
+): Promise<{
+  matches: Array<{ requirement: string; evidence_id: string }>;
+  usage: { input_tokens: number; output_tokens: number };
+}> {
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },

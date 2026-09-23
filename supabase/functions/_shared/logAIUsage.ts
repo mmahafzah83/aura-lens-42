@@ -1,11 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
+/* USD per million tokens. A model with no row here logs $0.000000, which makes
+   cost per card unmeasurable — add the row when you add the model. */
 const RATES: Record<string, { in: number; out: number }> = {
   "claude-sonnet-4-5-20250929": { in: 3, out: 15 },
   "claude-sonnet-4-20250514":   { in: 3, out: 15 },
   "sonar":                      { in: 1, out: 1 },
   "sonar-pro":                  { in: 3, out: 15 },
   "sonar-reasoning":            { in: 1, out: 5 },
+  "google/gemini-3-flash-preview": { in: 0.3, out: 2.5 },
+  "openai/gpt-6-astra":            { in: 1.25, out: 10 },
 };
 function estimateCost(model: string, i: number, o: number) {
   const r = RATES[model] || { in: 0, out: 0 };
