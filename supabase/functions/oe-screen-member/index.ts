@@ -478,6 +478,19 @@ Deno.serve(withRun("screen_member", async (req) => {
         }
         continue;
       }
+      // A PROGRAMME IS NOT A SEAT. Degrees, courses, internships, cohorts and
+      // talent pools are kept in Found under their own heading, never carded.
+      if (String((o as any).kind ?? "") === "programme") {
+        funnel.other_eligibility++;
+        excludedIds.add(String(o.id));
+        await admin.from("oe_matches").update({
+          screen_gate: "kind", screen_outcome: "rejected", gate_note: "programme",
+          gate_passed: false, lane_final: null, presentation_line: null,
+          rejection_sentence: "This is a programme, not a seat.",
+          screened_at: new Date().toISOString(),
+        }).eq("user_id", userId).eq("opportunity_id", o.id);
+        continue;
+      }
       // KIND IS NOT A PASS. A kind may relax place or level only when the
       // record's access state was actually established. A record that claims a
       // relaxed kind while stating no access state is a mis-kinded listing: it
