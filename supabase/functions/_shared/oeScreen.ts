@@ -22,6 +22,7 @@
  */
 
 import { numberIn, scopeIn, standingProxy } from "./memberEvidence.ts";
+import { parseLevel } from "./oeEligibility.ts";
 
 // ── PROFESSIONS ────────────────────────────────────────────────────────────
 // The function that actually carries a role's accountability. Ordered: the
@@ -666,7 +667,7 @@ export function levelGate(
   // disagree, a mismatch is unknown — no verdict without his answer.
   if (current?.market_level && ladderIndex(current.market_level) >= 0) {
     const band = String(opportunity?.level_band ?? "").trim();
-    const roleLevel = ladderIndex(band) >= 0 ? band : null;
+    const roleLevel = ladderIndex(band) >= 0 ? band : parseLevel(opportunity?.title, opportunity?.scope);
     if (!roleLevel) {
       return { direction: "unknown" as const, gap: null, tier, placed, sentence: null, basis: "none" as const, reason: "role_grade_unreadable" };
     }

@@ -295,6 +295,42 @@ Deno.serve(withRun("screen_member", async (req) => {
     const identity: MemberIdentity = deriveIdentity(snap, ladder, memberEvidence);
     if (!identity.positions.length) throw new Error("profile snapshot holds no positions");
 
+    // ── WHO WE MATCH HIM AS: the current role, resolved in SQL ──────────
+    // The current role defines the search; every earlier role is evidence,
+    // weighted by how long ago it ended (half-life five years).
+    const { data: idRow } = await admin.from("oe_identity")
+      .select("current_title, current_employer, market_level, status, source_date")
+      .eq("user_id", userId).maybeSingle();
+    const { data: dirRow } = await admin.from("oe_direction")
+      .select("move_kind").eq("user_id", userId).maybeSingle();
+    const current: CurrentIdentity | null = idRow?.market_level ? {
+      market_level: idRow.market_level, title: idRow.current_title, employer: idRow.current_employer,
+      status: idRow.status, step_up: (dirRow as any)?.move_kind === "step_up",
+    } : null;
+    const weightOf = new Map<string, number>();
+    for (const p of identity.positions as any[]) {
+      p.weight = recencyWeight(p.ended);
+      weightOf.set(`${p.title} at ${p.company}`, p.weight);
+    }
+    const w = (ref: string) => {
+      for (const [k, v] of weightOf) if (ref.startsWith(k)) return v;
+      return 0.5;
+    };
+    for (const prof of identity.professions) prof.positions.sort((a, b) => w(b) - w(a));
+    identity.professions.sort((a, b) => w(b.positions[0] ?? "") - w(a.positions[0] ?? ""));
+    identity.sectors_delivered.sort((a, b) => w(b.position) - w(a.position));
+    identity.scope_evidence.sort((a, b) => w(b.position) - w(a.position));
+    const currentRef = current?.title ? `${current.title}${current.employer ? ` at ${current.employer}` : ""}` : null;
+    if (current?.title) {
+      const held = (identity.positions as any[]).find((p) => p.weight === 1
+        && String(p.title).toLowerCase() === String(current.title).toLowerCase()) ?? null;
+      identity.highest_standing = {
+        ...identity.highest_standing,
+        title: current.title, company: current.employer,
+        period: held?.started ? `${held.started} to now` : "now",
+      };
+    }
+
     await admin.from("oe_member_identity").upsert({
       user_id: userId, snapshot_id: snap.id,
       positions: identity.positions, professions: identity.professions,
@@ -457,7 +493,7 @@ Deno.serve(withRun("screen_member", async (req) => {
       const routeIsSpecific = hasRoute(o, (o as any).issuer?.domain ?? null)
         && String((o as any).access_state ?? "") === "identified_route";
 
-      const g = runGates(identity, withKind, licence, routeIsSpecific, { ladder, member: memberPlace });
+      const g = runGates(identity, withKind, licence, routeIsSpecific, { ladder, member: memberPlace, current });
 
       // The rubric's own refusal stands, and it is the rubric's own sentence
       // the member reads.
@@ -659,7 +695,10 @@ Deno.serve(withRun("screen_member", async (req) => {
         };
         const line = kept.length
           ? kept.map(({ m, row }) =>
-            `This asks for ${asked(m.requirement)}; ${youSay(row!.claim)}${row!.position_ref ? ` — ${row!.position_ref}` : ""}.`
+            `This asks for ${asked(m.requirement)}; ${youSay(row!.claim)}${row!.position_ref
+              ? (currentRef && normRole(row!.position_ref).startsWith(normRole(currentRef).split(" at ")[0]) && w(row!.position_ref) === 1
+                ? ` — ${row!.position_ref}` : ` — earlier, ${row!.position_ref}`)
+              : ""}.`
           ).join(" ")
           : null;
         const citedIds = kept.map(({ row }) => row!.id);
