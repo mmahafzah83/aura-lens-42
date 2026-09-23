@@ -238,16 +238,25 @@ export function OpportunityQueue() {
   };
   const saveBar = async () => {
     if (busy || !barDirty) return;
-    setBusy(true);
+    setBusy(true); setSaveError(null);
     const { error } = await supabase.rpc("oe_bar_save" as never, { p_move: movePick, p_places: placePick, p_sectors: sectorPick } as never);
     if (!error) {
       baseline.current = { move: movePick, places: placePick, sectors: sectorPick };
       setEditor(null); setSavedBar(true);
       await load();
       window.setTimeout(() => { setSavedBar(false); closeRules(); }, 900);
+    } else {
+      // A refused save is said out loud, and the dialog stays where it is.
+      setSaveError(fill(v("bar_save_failed"), { error: error.message }));
     }
     setBusy(false);
   };
+  const saveRemote = async (next: boolean) => {
+    setRemoteOk(next);
+    const { error } = await supabase.rpc("oe_remote_save" as never, { p_ok: next } as never);
+    if (error) { setRemoteOk(!next); setSaveError(fill(v("bar_save_failed"), { error: error.message })); }
+  };
+
 
   return <section className="oe-queue" dir={rtl ? "rtl" : "ltr"} lang={language} aria-busy={loading}>
     <header className="oe-queue-header">
