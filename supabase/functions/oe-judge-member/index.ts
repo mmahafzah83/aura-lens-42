@@ -950,11 +950,19 @@ Deno.serve(async (req) => {
         return (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0);
       });
     counts.lane_forming = judged.filter((j) => j.lane === "lane_forming").length;
+    // Exploration keeps the reading honest, but at most one card a week may be
+    // spent on it, so the week is not filled with guesses.
+    const { count: exploreThisWeek } = await admin.from("oe_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId).eq("explore_slot", true)
+      .gte("created_at", new Date(Date.now() - 7 * 86_400_000).toISOString());
+    counts.explore_this_week = exploreThisWeek ?? 0;
     let order = eligible.map((j) => ({ ...j, explore: false }));
-    if (order.length > 1 && Math.random() < exploreShare) {
+    if ((exploreThisWeek ?? 0) < 1 && order.length > 1 && Math.random() < exploreShare) {
       const idx = order.findIndex((j) => j.o.sector && memberSector && j.o.sector !== memberSector);
       if (idx > 0) order = [{ ...order[idx], explore: true }, ...order.filter((_, i) => i !== idx)];
     }
+
 
     const cardsWritten: string[] = [];
 
