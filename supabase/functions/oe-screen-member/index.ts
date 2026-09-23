@@ -398,6 +398,34 @@ Deno.serve(withRun("screen_member", async (req) => {
 
     for (const o of (opps ?? [])) {
       funnel.alive++;
+
+      /* WHERE HE ALREADY WORKS IS NOT AN OPPORTUNITY, AND AN AGENCY IS NOT A
+         DOOR. Both tests are deterministic and run before any model call. */
+      const agencyHit = enforceAgencyFilter ? matchedAgency((o as any).issuer_raw, agencyIssuers) : null;
+      const ownEmployerHit = excludeOwnEmployer && !agencyHit
+        && sameEmployer((o as any).issuer_raw, ownEmployer);
+      if (agencyHit || ownEmployerHit) {
+        if (ownEmployerHit) funnel.own_employer++; else funnel.agency++;
+        excludedIds.add(String(o.id));
+        const { error: exErr } = await admin.from("oe_matches").update({
+          screen_gate: ownEmployerHit ? "employer" : "issuer",
+          screen_outcome: "rejected",
+          gate_note: ownEmployerHit ? "own_employer" : "agency",
+          gate_passed: false, lane_final: null,
+          presentation_line: null,
+          rejection_sentence: ownEmployerHit
+            ? `You already work at ${String((o as any).issuer_raw ?? ownEmployer).trim()}.`
+            : "This is an agency listing, not a direct door to the organisation.",
+          screened_at: new Date().toISOString(),
+        }).eq("user_id", userId).eq("opportunity_id", o.id);
+        if (exErr) {
+          await logEfError(admin, {
+            function_name: FN, error: new Error(`exclusion write failed: ${exErr.message}`),
+            severity: "error", context: { opportunity_id: o.id, user_id: userId },
+          });
+        }
+        continue;
+      }
       // KIND IS NOT A PASS. A kind may relax place or level only when the
       // record's access state was actually established. A record that claims a
       // relaxed kind while stating no access state is a mis-kinded listing: it
