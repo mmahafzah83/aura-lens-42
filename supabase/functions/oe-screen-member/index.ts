@@ -27,9 +27,9 @@ import {
 import {
   loadLocationSensitivity, sensitivityOf, loadLevelGateApplies, levelGateApplies,
 } from "../_shared/oeKinds.ts";
+import { modelFor } from "../_shared/models.ts";
 
 const FN = "oe-screen-member";
-const MODEL = "openai/gpt-6-astra";
 
 /** Only so a rejection reads like a person wrote it: "you work from Saudi Arabia". */
 const COUNTRY_NAME: Record<string, string> = {
