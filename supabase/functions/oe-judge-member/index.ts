@@ -672,17 +672,28 @@ Deno.serve(async (req) => {
 
     // Both lanes are read. A writing-lane record still needs citations before
     // it can be shown with a grounded reason, and it only gets them here.
-    // A run that times out must resume, not restart: anything already judged
-    // with citations in the last day is left alone.
-    const { data: freshJudged } = await admin.from("oe_matches")
+    // Each record is judged once for this member. It is read again only when
+    // the record itself changed after that reading, so a run that times out
+    // resumes where it stopped instead of re-reading the same handful.
+    const { data: judgedRows } = await admin.from("oe_matches")
       .select("opportunity_id,scores,judged_at")
-      .eq("user_id", userId)
-      .gte("judged_at", new Date(Date.now() - 86_400_000).toISOString());
-    const alreadyJudged = new Set(
-      (freshJudged ?? [])
+      .eq("user_id", userId);
+    const judgedAt = new Map(
+      (judgedRows ?? [])
         .filter((m: any) => Array.isArray(m.scores?.cites) && m.scores.cites.length > 0)
-        .map((m: any) => String(m.opportunity_id)),
+        .map((m: any) => [String(m.opportunity_id), String(m.judged_at ?? "")]),
     );
+    const dayAgo = Date.now() - 86_400_000;
+    counts.judged_today_before = [...judgedAt.values()]
+      .filter((t) => new Date(t).getTime() >= dayAgo).length;
+    const needsJudging = (o: any) => {
+      const at = judgedAt.get(String(o.id));
+      if (!at) return true;
+      const changed = o.updated_at && new Date(o.updated_at).getTime() > new Date(at).getTime();
+      if (changed) counts.rejudged++;
+      return !!changed;
+    };
+
 
     // Retrieval orders review; it must never erase a live record from coverage.
     const scored = [...actPool, ...writePool]
