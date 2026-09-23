@@ -3,7 +3,7 @@
  * worth his morning. Hard filters first (no model sees a record it should never
  * have seen), then hybrid retrieval per face, then one model call per item,
  * twice, so an unstable judgement can be seen and withheld. What survives the
- * gate becomes at most params.cards_per_day cards. A quiet day is stated, not
+ * gate becomes a card, under a safety ceiling of new cards per rolling 24h. A quiet day is stated, not
  * filled: the gate is never lowered to produce a card.
  *
  * The job row itself is completed by oe-worker, which invoked this function.
@@ -374,10 +374,13 @@ async function writeCard(
   why: Record<string, unknown> = {},
 ): Promise<string | null> {
   let cardId: string | null = null;
-  const { data: existing } = await admin
-    .from("oe_cards").select("id")
-    .eq("user_id", userId).eq("card_date", cardDate).is("sent_at", null)
-    .maybeSingle();
+  // Role cards are each their own row; only the empty-day card is one per day.
+  const { data: existing } = fields.opportunity_id
+    ? { data: null as any }
+    : await admin
+      .from("oe_cards").select("id")
+      .eq("user_id", userId).eq("card_date", cardDate).is("sent_at", null).is("opportunity_id", null)
+      .maybeSingle();
   if (existing?.id) {
     const { data } = await admin.from("oe_cards")
       .update(fields).eq("id", existing.id).select("id").maybeSingle();
@@ -471,8 +474,9 @@ Deno.serve(async (req) => {
     const gateMin = Number(params.gate_min_avg ?? 3);
     const gateNoZero = params.gate_no_zero !== false;
     const bands = params.bands ?? { strong: 3.4, worth_a_look: 3 };
-    const cardsPerDay = Math.max(1, Number(params.cards_per_day ?? 1));
-    const cardsPerWeek = Math.max(1, Number(params.cards_per_week ?? 3));
+    // No fixed daily count: every role that clears the bar becomes a card,
+    // under one safety ceiling of new cards per member per rolling 24 hours.
+    const cardCeiling24h = Math.max(1, Number(params.card_ceiling_24h ?? 20));
 
     const exploreShare = Number(params.explore_share ?? 0);
     const fewShotK = Number(params.few_shot_k ?? 8);
@@ -979,18 +983,14 @@ Deno.serve(async (req) => {
 
     const cardsWritten: string[] = [];
 
-    /* DELIVERY. A card is shown as soon as it passes the gate, but never more
-       than cards_per_day in one day nor cards_per_week in any rolling seven
-       days. Cards already written outside this run count against both. */
-    const { count: cardsToday } = await admin.from("oe_cards")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId).eq("card_date", cardDate).not("opportunity_id", "is", null);
-    const { count: cardsWeek } = await admin.from("oe_cards")
+    /* DELIVERY. A card is written as soon as it passes the gate. The only
+       limit is the safety ceiling of new cards in any rolling 24 hours. */
+    const { count: cards24h } = await admin.from("oe_cards")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId).not("opportunity_id", "is", null)
-      .gte("created_at", new Date(Date.now() - 7 * 86_400_000).toISOString());
-    const daySlots = Math.max(0, cardsPerDay - (cardsToday ?? 0));
-    const weekSlots = Math.max(0, cardsPerWeek - (cardsWeek ?? 0));
+      .gte("created_at", new Date(Date.now() - 86_400_000).toISOString());
+    const ceilingSlots = Math.max(0, cardCeiling24h - (cards24h ?? 0));
+    counts.ceiling_slots = ceilingSlots;
 
     const vocab = await loadVocab(admin);
 
@@ -1004,8 +1004,16 @@ Deno.serve(async (req) => {
 
     // ── 5+6. HIS OWN EVIDENCE, the reasons, then the card ─────────────────
     for (const pick of order) {
-      if (cardsWritten.length >= Math.min(daySlots, weekSlots)) break;
+      if (cardsWritten.length >= ceilingSlots) break;
       const o = pick.o;
+      // Never a second card for the same role, or the same title at the same
+      // employer within 30 days.
+      {
+        const { count: sameOpp } = await admin.from("oe_cards").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).eq("opportunity_id", o.id);
+        const { data: isRepeat } = await admin.rpc("oe_card_is_repeat", { p_user: userId, p_opp: o.id });
+        if ((sameOpp ?? 0) > 0 || isRepeat === true) { counts.repeat_skipped = (counts.repeat_skipped ?? 0) + 1; continue; }
+      }
 
       // GATE 1 — no card without his own material.
       const oppVec = asVector(o.embedding);
@@ -1321,6 +1329,17 @@ Deno.serve(async (req) => {
       context: { user_id: userId, job_id: jobId, counts },
     });
 
+    // A strong new card is emailed straight away (the alerts function applies
+    // the member's switch and the two-a-day limit).
+    if (cardsWritten.length) {
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/oe-card-alerts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}`, apikey: SERVICE_ROLE },
+          body: JSON.stringify({ mode: "instant", user_id: userId }),
+        });
+      } catch { /* the hourly run still picks it up */ }
+    }
     return json({ ok: true, counts, cards: cardsWritten, run_id: run?.id ?? null });
   } catch (e) {
     const msg = String((e as Error).message ?? e).slice(0, 500);

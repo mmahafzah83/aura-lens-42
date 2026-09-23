@@ -2164,3 +2164,4 @@ button[aria-disabled="true"],
 .v23-row:hover .v23-read-affordance,
 .v23-row:focus-visible .v23-read-affordance { opacity: 1 !important; }
 .oe-identity-banner{display:grid;gap:10px;margin:10px 0;padding:12px 14px;border:1px solid var(--border-default);border-radius:12px;background:var(--surface-card)}.oe-identity-banner>p{display:flex;align-items:flex-start;gap:9px;margin:0;color:var(--deadline-text);font-size:13px;font-weight:500}.oe-identity-dot{flex:0 0 7px;width:7px;height:7px;margin-top:6px;border-radius:999px;background:var(--deadline)}.oe-identity-editor{grid-template-columns:1fr}.oe-identity-editor .oe-chip-row button{min-height:36px}
+.oe-more-cleared{margin-top:4px}.oe-more-cleared>summary{cursor:pointer;padding:10px 2px;color:var(--text-secondary);font-size:13px;font-weight:600}.oe-more-cleared>summary b{margin-inline-start:6px;color:var(--text-primary)}.oe-delivery{display:grid;gap:10px}
