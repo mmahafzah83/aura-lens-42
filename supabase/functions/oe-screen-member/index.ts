@@ -769,9 +769,11 @@ Deno.serve(withRun("screen_member", async (req) => {
     // through the four writing tests, and the standing sentence must be ABOUT
     // this record's subject. Anything else is discarded: no lane, no card.
     {
-      const { data: writeRows } = await admin.from("oe_matches")
-        .select("opportunity_id")
-        .eq("user_id", userId).is("lane_final", null);
+      const { data: writeRows } = ids.length
+        ? await admin.from("oe_matches")
+          .select("opportunity_id")
+          .eq("user_id", userId).is("lane_final", null).in("opportunity_id", ids)
+        : { data: [] as any[] };
       const { data: sectorRule } = await admin.from("oe_notebook")
         .select("values,value")
         .eq("user_id", userId).eq("field", "sector").eq("active", true)
