@@ -305,7 +305,7 @@ export function OpportunityQueue() {
     </header>
     <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
     <main>
-      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
+      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} sectorOptions={sectorOptions} countries={countries} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
       {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
       {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
     </main>
