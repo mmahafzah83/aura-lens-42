@@ -374,6 +374,10 @@ Deno.serve(withRun("screen_member", async (req) => {
     const { data: policyRow } = await admin.from("oe_policy_versions")
       .select("params").eq("active", true).maybeSingle();
     const gateMin = Number((policyRow?.params as any)?.gate_min_avg ?? 3.0);
+    const policyParams = (policyRow?.params ?? {}) as Record<string, any>;
+    const excludeOwnEmployer = policyParams.exclude_own_employer === true;
+    const enforceAgencyFilter = policyParams.enforce_agency_filter === true;
+    const agencyIssuers: string[] = Array.isArray(policyParams.agency_issuers) ? policyParams.agency_issuers : [];
     const { data: scoreRows } = await admin.from("oe_matches")
       .select("opportunity_id, scores").eq("user_id", userId);
     const scoresById = new Map<string, any>();
