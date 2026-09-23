@@ -644,36 +644,81 @@ Deno.serve(async (req) => {
         }
       }
     } else if (kind === "listing") {
-      const fc = await scrapePage(firecrawlKey, url!, true);
+      // A listing page is cheap to read plainly. Firecrawl is billed per page,
+      // so it is the fallback, not the first move.
+      const isCareers = String(feed.source_type ?? "") === "careers_page";
+      const feedHost = hostOf(url!);
+      const sift = (raw: string[]) => {
+        const base = raw
+          .map((l) => canonicalise(l))
+          .filter((l) => l.startsWith("http") && !blocked(l))
+          .filter((l) => canonicalise(url!) !== l)
+          .filter((l, i, arr) => arr.indexOf(l) === i);
+        if (isCareers) return base.filter((l) => looksLikeJobPosting(l, feedHost));
+        const chairWords = (feed.chair_types ?? []) as string[];
+        const wanted = /ترشح|nomination|board|مجلس إدارة|vacanc|شاغر|tender|منافسة|call for|دعوة/i;
+        return base.filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0);
+      };
+
+      let page = await plainFetchText(url!);
       counts.pages++;
-      if (!fc.ok) throw new Error(`read failed ${fc.status}: ${fc.error}`);
+      let links = page.ok ? sift(page.links ?? []) : [];
+      if (!page.ok || squash(stripTags(page.markdown ?? "")).length < MIN_CLEAN_TEXT_CHARS || !links.length) {
+        const fc = await firecrawlScrape(firecrawlKey, url!, true);
+        counts.pages++;
+        if (fc.ok) { page = fc as any; links = sift(fc.links ?? []); }
+        else if (!page.ok) throw new Error(`read failed ${fc.status}: ${fc.error}`);
+      }
 
-      const chairWords = (feed.chair_types ?? []) as string[];
-      const wanted = /ترشح|nomination|board|مجلس إدارة|vacanc|شاغر|tender|منافسة|call for|دعوة/i;
-      const links = (fc.links ?? [])
-        .map((l) => canonicalise(l))
-        .filter((l) => l.startsWith("http") && !blocked(l))
-        .filter((l) => canonicalise(url!) !== l)
-        .filter((l, i, arr) => arr.indexOf(l) === i)
-        .filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0)
-        .slice(0, MAX_DETAIL_PAGES * 2);
+      // An unchanged listing page costs nothing: no detail page, no model call.
+      const fingerprint = await sha256([...links].sort().join("\n"));
+      if (fingerprint && fingerprint === String(feed.links_fingerprint ?? "")) {
+        links = [];
+      } else if (feedId) {
+        await admin.from("oe_feeds").update({ links_fingerprint: fingerprint }).eq("id", feedId);
+      }
 
-      const { data: known } = await admin
-        .from("oe_opportunities").select("canonical_url").in("canonical_url", links.slice(0, 200));
-      const knownSet = new Set((known ?? []).map((k: any) => k.canonical_url));
-      const fresh = links.filter((l) => !knownSet.has(l)).slice(0, MAX_DETAIL_PAGES);
+      // Too junior to open, decided from the link's own words, for free.
+      let kept: string[] = [];
+      for (const l of links.slice(0, 400)) {
+        if (!isCareers) { kept.push(l); continue; }
+        const lvl = parseLevel(titleFromLink(l), null);
+        if (lvl && levelIndex(lvl) < levelIndex(readMinLevel)) {
+          recordSeen(l, "junior_title");
+          continue;
+        }
+        kept.push(l);
+      }
+
+      // Every link this engine has already judged is dropped before it is opened.
+      const weekAgo = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+      const seenSet = new Set<string>();
+      for (let i = 0; i < kept.length; i += 200) {
+        const { data: seen } = await admin
+          .from("oe_seen_links")
+          .select("canonical_url, verdict, last_seen_at")
+          .in("canonical_url", kept.slice(i, i + 200));
+        for (const s of seen ?? []) {
+          // One retry for a link that errored, and only after seven days.
+          if (s.verdict === "error" && String(s.last_seen_at) < weekAgo) continue;
+          seenSet.add(s.canonical_url as string);
+        }
+      }
+      const fresh = kept.filter((l) => !seenSet.has(l)).slice(0, MAX_DETAIL_PAGES);
+      await flushSeen();
 
       for (const link of fresh) {
         const d = await scrapePage(firecrawlKey, link);
         counts.pages++;
-        if (!d.ok) { counts.errors++; continue; }
+        if (!d.ok) { counts.errors++; recordSeen(link, "error"); continue; }
         const raw = d.markdown || "";
         const clean = squash(stripTags(raw));
-        if (clean.length < MIN_CLEAN_TEXT_CHARS) continue;
+        if (clean.length < MIN_CLEAN_TEXT_CHARS) { recordSeen(link, "too_short"); continue; }
         const noise = raw.length ? 1 - clean.length / raw.length : 1;
-        if (noise > MAX_NOISE_RATIO) continue;
+        if (noise > MAX_NOISE_RATIO) { recordSeen(link, "too_short"); continue; }
         candidates.push({ url: link, title: d.title, text: clean });
       }
+      await flushSeen();
       // A listing page is a page, not a chair. If no detail page was reachable,
       // this feed produces nothing today. We never turn the index into a record.
     } else if (kind === "api") {
