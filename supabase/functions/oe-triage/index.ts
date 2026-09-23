@@ -12,6 +12,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { isAggregator } from "../_shared/oeGuards.ts";
+import { parseLevel, levelIndex } from "../_shared/oeEligibility.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
