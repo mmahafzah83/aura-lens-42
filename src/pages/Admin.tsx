@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import AdminShell from "@/components/admin/AdminShell";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
 import SystemHealthPanel from "@/components/admin/SystemHealthPanel";
+import VendorHealthBanner from "@/components/admin/VendorHealthBanner";
+
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import PlatformRulesPanel from "@/components/admin/PlatformRulesPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
