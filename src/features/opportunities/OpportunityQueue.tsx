@@ -180,7 +180,7 @@ export function OpportunityQueue() {
     if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 4000);
   };
-  const openRules = (opener: HTMLElement | null, nextEditor: "move" | "place" | "sector" | null = null) => {
+  const openRules = (opener: HTMLElement | null, nextEditor: Editor | null = null) => {
     openerRef.current = opener;
     const seed: BarPick = {
       move: data.direction?.move_kind ?? null,
@@ -189,7 +189,24 @@ export function OpportunityQueue() {
     };
     baseline.current = seed;
     setMovePick(seed.move); setPlacePick(seed.places); setSectorPick(seed.sectors);
+    setKindPick(data.filters.kind?.values ?? []);
+    setLevelPick((data.filters.level?.values ?? [])[0] ?? null);
+    setOrgPick(data.filters.org_type?.values ?? []);
     setSavedBar(false); setSaveError(null); setEditor(nextEditor); setRulesOpen(true);
+  };
+  // Each of the four new questions stands on its own and saves on its own.
+  const saveFilter = async (field: string, op: string, values: string[]) => {
+    if (busy) return;
+    setBusy(true); setSaveError(null);
+    const { error } = await supabase.rpc("oe_filter_save" as never, { p_field: field, p_op: op, p_values: values } as never);
+    if (error) setSaveError(fill(v("bar_save_failed"), { error: error.message }));
+    else { setSavedBar(true); setEditor(null); await load(); await loadFound(); window.setTimeout(() => setSavedBar(false), 1500); }
+    setBusy(false);
+  };
+  const saveCompanies = async () => {
+    await saveFilter("issuer", "prefer", followPick.map((row) => row.id));
+    await supabase.rpc("oe_filter_save" as never, { p_field: "issuer", p_op: "exclude", p_values: hidePick.map((row) => row.id) } as never);
+    await load(); await loadFound();
   };
   // "Check this for me" — one opportunity judged now, then watched until the
   // verdict lands or three minutes pass.
