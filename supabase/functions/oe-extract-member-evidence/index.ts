@@ -37,20 +37,20 @@ const json = (b: unknown, status = 200) =>
 
 type Group = "profile" | "cv" | "assessment" | "writing";
 
-/** One streamed Responses call. Reasoning models run long; never buffer. */
-async function ask(key: string, instructions: string, input: string): Promise<{ raw: any; usage: any }> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+/** One chat/completions call on the standard model, same schema, not streamed. */
+async function ask(key: string, model: string, instructions: string, input: string): Promise<{ raw: any; usage: any }> {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
     body: JSON.stringify({
-      model: MODEL,
-      instructions,
-      input,
-      stream: true,
-      reasoning: { effort: "low", summary: "auto" },
-      text: {
-        format: {
-          type: "json_schema",
+      model,
+      messages: [
+        { role: "system", content: instructions },
+        { role: "user", content: input },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
           name: "member_claims",
           strict: true,
           schema: {
@@ -80,27 +80,16 @@ async function ask(key: string, instructions: string, input: string): Promise<{ 
   });
   if (!res.ok) throw new Error(`gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
 
-  const reader = res.body!.getReader();
-  const decoder = new TextDecoder();
-  let buf = "", text = "", usage: any = null;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const l of lines) {
-      if (!l.startsWith("data:")) continue;
-      const raw = l.slice(5).trim();
-      if (!raw || raw === "[DONE]") continue;
-      try {
-        const ev = JSON.parse(raw);
-        if (ev.type === "response.output_text.delta" && typeof ev.delta === "string") text += ev.delta;
-        if (ev.response?.usage) usage = ev.response.usage;
-      } catch { /* partial frame */ }
+  const data = await res.json().catch(() => null);
+  const u = data?.usage ?? null;
+  const usage = u
+    ? {
+      input_tokens: Number(u.prompt_tokens ?? u.input_tokens ?? 0),
+      output_tokens: Number(u.completion_tokens ?? u.output_tokens ?? 0),
     }
-  }
-  try { return { raw: JSON.parse(text.trim()), usage }; } catch { return { raw: { claims: [] }, usage }; }
+    : null;
+  const text = String(data?.choices?.[0]?.message?.content ?? "").trim();
+  try { return { raw: JSON.parse(text), usage }; } catch { return { raw: { claims: [] }, usage }; }
 }
 
 Deno.serve(async (req) => {
