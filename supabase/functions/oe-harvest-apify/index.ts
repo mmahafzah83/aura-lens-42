@@ -311,8 +311,8 @@ Deno.serve(async (req) => {
     const readMinLevel = String(params.read_min_level ?? "senior_manager");
     const only = str(body?.only);
 
-    // Today's Apify spend, read from the runs this lane has already recorded.
-    const dayStart = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString();
+    // Apify spend over the rolling last 24 hours, read from this lane's runs.
+    const dayStart = new Date(Date.now() - 24 * 3600_000).toISOString();
     const { data: todayRuns } = await admin.from("oe_runs")
       .select("counts").eq("run_kind", "harvest_apify").gte("started_at", dayStart);
     let spentToday = (todayRuns ?? []).reduce((sum: number, r: any) => sum + (Number(r?.counts?.usd) || 0), 0);
