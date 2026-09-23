@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RelocationRow } from "./RelocationRow";
+import { DeliveryRow } from "./DeliveryRow";
 import { createPortal } from "react-dom";
 import { Settings2, X } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -45,6 +46,7 @@ type QueueData = {
   cards: QueueCard[]; parked: Parked[];
   direction: Direction | null; window: Window | null; history: History[]; filters: FilterMap;
   reading: Reading | null; quiet_day: QuietDay | null;
+  delivery?: { at_a_time: number; instant: boolean; digest: boolean; digest_hour: number; ceiling: number } | null;
 };
 type Vocab = ReturnType<typeof useVocab>;
 
@@ -97,7 +99,7 @@ export function OpportunityQueue() {
   const [language, setLanguage] = useState<Lang>("en");
   const [data, setData] = useState<QueueData>(emptyData);
   const [loading, setLoading] = useState(true);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(() => params.get("card"));
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -183,9 +185,15 @@ export function OpportunityQueue() {
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
 
 
-  const cards = useMemo(() => data.cards.filter((card) => card.lane === "act" && hasWhy(card)).filter((_, index) => index < 3), [data.cards]);
-  const active = cards.find((card) => card.id === activeId) ?? cards[0] ?? null;
-  const compact = active ? cards.filter((card) => card.id !== active.id).slice(0, 2) : [];
+  // Every role that cleared the bar, ranked best-first. The member chooses how
+  // many sit in Today; the rest wait, collapsed, under "More that cleared your bar".
+  const cards = useMemo(() => data.cards.filter((card) => card.lane === "act" && hasWhy(card)), [data.cards]);
+  const atATime = Number(data.delivery?.at_a_time ?? 3);
+  const shown = atATime > 0 ? cards.slice(0, atATime) : cards;
+  const more = atATime > 0 ? cards.slice(atATime) : [];
+  const active = cards.find((card) => card.id === activeId || card.opportunity_id === activeId) ?? shown[0] ?? null;
+  const compact = active ? shown.filter((card) => card.id !== active.id) : [];
+  const moreRows = active ? more.filter((card) => card.id !== active.id) : more;
 
   const showNotice = (text: string, undo?: string) => {
     setNotice({ text, undo });
@@ -309,7 +317,7 @@ export function OpportunityQueue() {
     <IdentityBanner identity={member.identity} v={v} onSaved={() => void member.reload()} onOther={() => openRules(null)} />
     <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
     <main>
-      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} sectorOptions={sectorOptions} countries={countries} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
+      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} sectorOptions={sectorOptions} countries={countries} more={moreRows} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
       {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
       {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
     </main>
@@ -318,7 +326,7 @@ export function OpportunityQueue() {
   </section>;
 }
 
-function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, sectorOptions, countries, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; sectorOptions: SectorOption[]; countries: Country[]; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
+function TodayView({ active, compact, more, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, sectorOptions, countries, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; more: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; sectorOptions: SectorOption[]; countries: Country[]; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
   const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} checking={checking} onCheck={onCheck} sectors={sectorOptions} countries={countries} />;
   if (!active) {
     const total = Number(found?.total ?? 0);
@@ -338,6 +346,7 @@ function TodayView({ active, compact, decliningId, data, busy, v, language, foun
     <section className="oe-stack" aria-label={v("today_stack_aria")}>
       <article ref={(node) => onRender(active, node)} className="oe-full-card"><OpportunityDetail card={active} declining={decliningId === active.id} busy={busy} v={v} language={language} onDeclineStart={() => onDeclineStart(active.id)} onDeclineBack={() => onDeclineStart(null)} onDecide={(action) => onDecide(active, action)} onDecline={(scope, value, truth) => onDecline(active, scope, value, truth)} /></article>
       {compact.length > 0 && <div className="oe-next-list">{compact.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div>}
+      {more.length > 0 && <details className="oe-more-cleared"><summary>{v("more_cleared")} <b style={mono}>{more.length}</b></summary><div className="oe-next-list">{more.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div></details>}
     </section>
     {foundList}
   </>;
@@ -452,6 +461,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   return <div className="oe-dialog-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section ref={dialogRef} className="oe-rules-dialog" dir={language === "ar" ? "rtl" : "ltr"} lang={language} role="dialog" aria-modal="true" aria-labelledby="oe-rules-title">
     <header><h2 id="oe-rules-title">{v("rules_dialog_title")}</h2><Button variant="ghost" size="icon" aria-label={v("sheet_close")} onClick={onClose}><X aria-hidden="true" /></Button></header>
     <div className="oe-dialog-body">
+    <section className="oe-dialog-section"><h3>{v("delivery_title")}</h3><DeliveryRow v={v} /></section>
     <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><IdentityRow identity={identity.identity} v={v} language={language} onSaved={() => void identity.reload()} /><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span></div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
       {sectorOptions.length > 0 && <div className="oe-dialog-row"><div><strong>{v("settings_sectors")}</strong><span>{sectorText}</span></div><Button variant="link" onClick={() => onEditor("sector")}>{v("action_change")}</Button></div>}
       <div className="oe-dialog-row"><div><strong>{v("settings_kinds")}</strong><span>{kindText}</span></div><Button variant="link" onClick={() => onEditor("kind")}>{v("action_change")}</Button></div>
