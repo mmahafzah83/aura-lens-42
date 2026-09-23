@@ -8,8 +8,12 @@ const RATES: Record<string, { in: number; out: number }> = {
   "sonar":                      { in: 1, out: 1 },
   "sonar-pro":                  { in: 3, out: 15 },
   "sonar-reasoning":            { in: 1, out: 5 },
+  /* TODO: ESTIMATE. No published Lovable gateway price for this model exists in
+     the codebase; these are deliberately conservative per-million-token figures
+     so cost per card is measurable rather than 0.000000. Replace with the
+     published rate when it is available. */
   "google/gemini-3-flash-preview": { in: 0.3, out: 2.5 },
-  "openai/gpt-6-astra":            { in: 1.25, out: 10 },
+  "google/gemini-2.5-flash":       { in: 0.3, out: 2.5 }, // TODO: estimate, same basis
 };
 function estimateCost(model: string, i: number, o: number) {
   const r = RATES[model] || { in: 0, out: 0 };

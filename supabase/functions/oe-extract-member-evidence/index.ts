@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
       return false;
     }
     counts.calls++;
-    const { raw, usage } = await ask(key, instructions, input);
+    const { raw, usage } = await ask(key, MODEL, instructions, input);
     counts.input_tokens += Number(usage?.input_tokens ?? 0);
     counts.output_tokens += Number(usage?.output_tokens ?? 0);
     await logAIUsage({
