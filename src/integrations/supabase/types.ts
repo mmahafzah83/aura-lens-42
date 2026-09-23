@@ -4720,6 +4720,7 @@ export type Database = {
           size_hint: string | null
           sub_industry: string | null
           updated_at: string
+          watch_tier: string | null
         }
         Insert: {
           ats_endpoint?: string | null
@@ -4750,6 +4751,7 @@ export type Database = {
           size_hint?: string | null
           sub_industry?: string | null
           updated_at?: string
+          watch_tier?: string | null
         }
         Update: {
           ats_endpoint?: string | null
@@ -4780,6 +4782,7 @@ export type Database = {
           size_hint?: string | null
           sub_industry?: string | null
           updated_at?: string
+          watch_tier?: string | null
         }
         Relationships: []
       }
@@ -10345,6 +10348,16 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_cost_per_card: {
+        Row: {
+          calls: number | null
+          cards_served: number | null
+          cost_per_card_usd: number | null
+          day: string | null
+          spend_usd: number | null
+        }
+        Relationships: []
+      }
       oe_coverage_funnel: {
         Row: {
           count: number | null
@@ -11353,6 +11366,10 @@ export type Database = {
         Returns: Json
       }
       oe_scan_shared_facts_private: { Args: never; Returns: number }
+      oe_spend_allowed: {
+        Args: { p_estimate?: number; p_stage: string }
+        Returns: Json
+      }
       oe_truth_report_resolve: {
         Args: {
           p_cause: string
