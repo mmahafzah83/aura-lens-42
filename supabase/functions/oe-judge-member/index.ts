@@ -579,7 +579,7 @@ Deno.serve(async (req) => {
     // oeEligibility here created a second, contradictory verdict, so the judge
     // now consumes the match row exactly as written by oe-screen-member.
     const selectMatches = () => admin.from("oe_matches")
-      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, gate_note, presentation_line, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
+      .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, gate_note, presentation_line, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at, screened_at")
       .eq("user_id", userId);
     let { data: priorMatches } = await selectMatches();
 
@@ -595,7 +595,7 @@ Deno.serve(async (req) => {
         const { error } = await admin.from("oe_matches").insert(
           missing.slice(i, i + 200).map((o: any) => ({
             user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
-            scores: {}, judged_at: epoch,
+            scores: {}, judged_at: epoch, eligibility_outcome: "unknown",
           })),
         );
         if (error && (error as any).code !== "23505") throw new Error(`seed matches: ${error.message}`);
@@ -651,7 +651,7 @@ Deno.serve(async (req) => {
       // A record the screen step never reached has no eligibility verdict, and
       // a judged row without one is a verdict with no basis. It waits for the
       // next screening run rather than being judged on nothing.
-      if (!stored || stored.eligibility_outcome == null) {
+      if (!stored || stored.screened_at == null) {
         counts.unscreened = (counts.unscreened ?? 0) + 1;
         continue;
       }
