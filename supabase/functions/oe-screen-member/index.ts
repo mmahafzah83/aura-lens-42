@@ -603,12 +603,29 @@ Deno.serve(withRun("screen_member", async (req) => {
               })),
               relation: g.profession_relation, bridge: g.bridge,
             }));
-            matches = Array.isArray(out.matches) ? out.matches : [];
+            matches = out.matches;
+            await logAIUsage({
+              user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+              input_tokens: out.usage.input_tokens, output_tokens: out.usage.output_tokens,
+              success: true,
+              metadata: { stage: "screen_presentation", opportunity_id: o.id },
+            });
           } catch (e) {
+            /* A GATEWAY FAILURE IS NOT A VERDICT ON HIS RECORD. No rejection
+               sentence, no lane change, no gate rewritten — it is read again. */
+            const kind = failureKind(e);
+            await logAIFailure({
+              user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+              error_code: kind,
+              metadata: { stage: "screen_presentation", opportunity_id: o.id },
+            });
             await logEfError(admin, {
               function_name: FN, error: e as Error, severity: "warn",
-              context: { stage: "presentation_line", opportunity_id: o.id },
+              context: { stage: "presentation_line", opportunity_id: o.id, failure: kind },
             });
+            funnel.gateway_unknown++;
+            await markUnknown(String(o.id), kind);
+            continue;
           }
         }
 
