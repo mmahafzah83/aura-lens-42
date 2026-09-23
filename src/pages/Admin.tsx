@@ -1355,6 +1355,8 @@ export default function Admin() {
     <AdminShell bleed>
       <div style={{ background: C.paper, minHeight: "100vh", padding: "28px 14px 80px" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          <VendorHealthBanner />
+
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 22 }}>
             <div>
               <Label>Aura · founder cockpit</Label>
