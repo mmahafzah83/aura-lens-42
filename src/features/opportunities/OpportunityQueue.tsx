@@ -397,6 +397,10 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   }));
   const choices: Array<{ value: string; label: string }> = [homeChoice, ...regionChoices].filter((choice): choice is { value: string; label: string } => Boolean(choice));
   const quickValues = new Set(choices.map((choice) => choice.value));
+  // No place chosen: full-time seats default to home + home's first region (twin of SQL oe_default_places).
+  const defaultPlaces = [homeChoice, regionChoices[0]].filter((choice): choice is { value: string; label: string } => Boolean(choice));
+  const placeIsDefault = placePick.length === 0 && defaultPlaces.length > 0;
+  const defaultValues = new Set(placeIsDefault ? defaultPlaces.map((choice) => choice.value) : []);
   const countryName = (iso2: string) => {
     const row = countries.find((item) => item.iso2 === iso2);
     return row ? (language === "ar" ? (row.name_ar || row.name_en) : row.name_en) : refLabel("place", iso2, language);
@@ -474,9 +478,10 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
       {editor === "place" && <div className="oe-inline-editor oe-place-editor">
         <p>{v("move_place_question")}</p>
         <div className="oe-chip-row">
-          {choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}
-          <Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button>
+          {choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value) || defaultValues.has(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}
+          <Button variant="outline" aria-pressed={placePick.length === 0 && !placeIsDefault} onClick={onPlaceAny}>{v("move_place_any")}</Button>
         </div>
+        {placeIsDefault && <p className="oe-dialog-note">{v("place_default_note")}</p>}
         <label className="oe-field-label" htmlFor="oe-country-search">{v("place_add_country")}</label>
         <input id="oe-country-search" type="search" className="oe-search" value={countryQuery} placeholder={v("place_search")}
           onChange={(event) => setCountryQuery(event.target.value)} autoComplete="off" role="combobox" aria-expanded={countryMatches.length > 0} aria-controls="oe-country-list" />
