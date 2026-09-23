@@ -665,7 +665,25 @@ Deno.serve(async (req) => {
     if (!lovableKey && shortlist.length) throw new Error("LOVABLE_API_KEY not configured");
     const judged: Array<any> = [];
 
-    for (const cand of shortlist) {
+    /* CHECK BEFORE SPENDING. A stage that cannot be paid for makes no calls; the
+       records it would have read are left alone, never rejected. */
+    let judgeSpendAllowed = true;
+    if (shortlist.length) {
+      const { data: spend } = await admin.rpc("oe_spend_allowed", {
+        p_stage: "judge_rubric",
+        p_estimate: shortlist.length * judgePasses * 0.0006,
+      });
+      judgeSpendAllowed = (spend as any)?.allowed !== false;
+      if (!judgeSpendAllowed) {
+        await admin.from("ef_error_log").insert({
+          function_name: FN, user_id: userId, severity: "warn",
+          error_message: "Daily spend ceiling reached: no judging calls this run",
+          context: { stage: "judge_rubric", spend, shortlist: shortlist.length },
+        });
+      }
+    }
+
+    for (const cand of judgeSpendAllowed ? shortlist : []) {
       const o = cand.o;
       const reqs = Array.isArray(o.requirements) ? o.requirements : [];
       const requirementIds = reqs.map((_: any, i: number) => `req:${i}`);
