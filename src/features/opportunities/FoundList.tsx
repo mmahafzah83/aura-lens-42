@@ -140,8 +140,9 @@ function Group({ group, v, language, checking, onCheck }: {
   </section>;
 }
 
-export default function FoundList({ data, loading, error, v, language, onRetry }: {
+export default function FoundList({ data, loading, error, v, language, onRetry, checking, onCheck }: {
   data: FoundData | null; loading: boolean; error: boolean; v: Vocab; language: Lang; onRetry: () => void;
+  checking: Set<string>; onCheck: (id: string) => void;
 }) {
   if (loading) {
     return <div style={{ display: "grid", gap: 8 }} aria-busy="true">
@@ -158,6 +159,6 @@ export default function FoundList({ data, loading, error, v, language, onRetry }
   if (!groups.length) return null;
   return <section style={{ marginBlockStart: 22, display: "grid", gap: 10 }}>
     <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: INK }}>{v("found_title")}</h2>
-    {groups.map((group) => <Group key={group.key} group={group} v={v} language={language} />)}
+    {groups.map((group) => <Group key={group.key} group={group} v={v} language={language} checking={checking} onCheck={onCheck} />)}
   </section>;
 }
