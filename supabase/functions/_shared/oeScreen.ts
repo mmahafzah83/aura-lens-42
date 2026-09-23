@@ -784,7 +784,7 @@ export function runGates(
   opportunity: any,
   licence: { outcome: "excluded" | "unknown" | "eligible"; fails: string[]; unknowns: string[] },
   routeIsSpecific: boolean,
-  ctx: { ladder?: LadderRow[]; member?: MemberPlace } = {},
+  ctx: { ladder?: LadderRow[]; member?: MemberPlace; current?: CurrentIdentity | null } = {},
 ): GateResult {
   const ladder = ctx.ladder ?? [];
   const base: GateResult = {
@@ -836,7 +836,7 @@ export function runGates(
     };
   }
 
-  const lvl = levelGate(identity, opportunity, routeIsSpecific, ladder);
+  const lvl = levelGate(identity, opportunity, routeIsSpecific, ladder, ctx.current ?? null);
   const withLevel: GateResult = {
     ...withProf, employer_tier: lvl.tier, level_direction: lvl.direction, standing_gap: lvl.gap,
     grade_basis: lvl.basis,
@@ -845,6 +845,15 @@ export function runGates(
   // member's level and passes. Only below the member's standing is a refusal.
   if (lvl.direction === "below") {
     return { ...withLevel, gate: "level", outcome: "rejected", sentence: lvl.sentence };
+  }
+  // His roles disagree and the record sits below one reading of them: that is
+  // an open question, recorded as unknown, never a refusal.
+  if (lvl.direction === "unknown" && (lvl as any).reason === "identity_unconfirmed") {
+    return {
+      ...withLevel, gate: "level", outcome: "unknown", sentence: null,
+      gate_note: "identity_unconfirmed",
+      answer_for: "Your current role is not confirmed yet",
+    };
   }
   // Unknown is marked, carried and answered for — never silently dropped.
   if (lvl.direction === "unknown") {
