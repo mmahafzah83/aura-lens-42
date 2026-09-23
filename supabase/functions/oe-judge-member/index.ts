@@ -576,12 +576,58 @@ Deno.serve(async (req) => {
     // The three-gate screen owns eligibility and lane assignment. Re-running
     // oeEligibility here created a second, contradictory verdict, so the judge
     // now consumes the match row exactly as written by oe-screen-member.
-    const { data: priorMatches } = await admin.from("oe_matches")
+    const selectMatches = () => admin.from("oe_matches")
       .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, gate_note, presentation_line, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
       .eq("user_id", userId);
+    let { data: priorMatches } = await selectMatches();
+
+    // ── EVERY LIVE RECORD GETS A ROW, THEN A SCREEN ───────────────────────
+    // A record with no match row for this member was invisible to both the
+    // screen and the judge, so the same handful was read every night. Each one
+    // is given a row here, at the bottom of the ladder, and screened at once.
+    const haveRow = new Set((priorMatches ?? []).map((m: any) => String(m.opportunity_id)));
+    const missing = pool.filter((o: any) => !haveRow.has(String(o.id)));
+    if (missing.length) {
+      const epoch = "1970-01-01T00:00:00Z";
+      for (let i = 0; i < missing.length; i += 200) {
+        const { error } = await admin.from("oe_matches").insert(
+          missing.slice(i, i + 200).map((o: any) => ({
+            user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
+            scores: {}, judged_at: epoch,
+          })),
+        );
+        if (error && (error as any).code !== "23505") throw new Error(`seed matches: ${error.message}`);
+      }
+      counts.seeded = missing.length;
+
+      // Screening is cheap and deterministic, so it runs inline and the run
+      // continues with real verdicts rather than waiting a night for them.
+      let screened = false;
+      try {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/oe-screen-member`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${SERVICE_ROLE}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId }),
+          signal: AbortSignal.timeout(120_000),
+        });
+        screened = r.ok;
+      } catch { screened = false; }
+      if (screened) {
+        counts.screened_inline = missing.length;
+        ({ data: priorMatches } = await selectMatches());
+      } else {
+        const { error } = await admin.from("job_queue").insert({
+          job_type: "oe_screen_member", user_id: userId, payload: { user_id: userId },
+          priority: 4, max_attempts: 3,
+        });
+        if (!error) counts.screen_enqueued = 1;
+      }
+    }
+
     const matchByOpportunity = new Map(
       (priorMatches ?? []).map((m: any) => [String(m.opportunity_id), m]),
     );
+
 
     // ── ONE LIST, ONE TEST ────────────────────────────────────────────────
     // public.oe_app_queue() refuses a card whose record is incomplete for its
