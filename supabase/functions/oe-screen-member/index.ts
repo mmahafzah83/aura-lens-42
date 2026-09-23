@@ -324,7 +324,8 @@ Deno.serve(withRun("screen_member", async (req) => {
     const { data: eligRow } = await admin.from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
     const eligibility = (eligRow ?? null) as Eligibility | null;
     const { data: profile } = await admin.from("diagnostic_profiles")
-      .select("years_experience, core_practice").eq("user_id", userId).maybeSingle();
+      .select("years_experience, core_practice, firm").eq("user_id", userId).maybeSingle();
+    const ownEmployer = String((profile as any)?.firm ?? "").trim();
     const yearsMatch = /(\d{1,2})/.exec(String((profile as any)?.years_experience ?? ""));
     const evidence = {
       years_experience: yearsMatch ? Number(yearsMatch[1]) : null,
@@ -360,9 +361,11 @@ Deno.serve(withRun("screen_member", async (req) => {
     const funnel = {
       alive: 0, place: 0, nationality: 0, licence: 0, other_eligibility: 0,
       profession: 0, level: 0, unknown: 0, scored: 0, presented: 0, no_line: 0,
-      place_conditions: 0,
+      place_conditions: 0, own_employer: 0, agency: 0, gateway_unknown: 0, spend_capped: 0,
     };
     const survivors: any[] = [];
+    /* Excluded before any model saw them; they are not writing material either. */
+    const excludedIds = new Set<string>();
 
     // THE TWO JUDGES MUST AGREE. The rubric already written on the match is
     // read here, so the screen cannot promote to the act lane a record the
