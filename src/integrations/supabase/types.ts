@@ -4862,6 +4862,7 @@ export type Database = {
           links_fingerprint: string | null
           list_selector: string | null
           name: string
+          needs_render: boolean
           notes: string | null
           owner: string | null
           read_method: string | null
@@ -4899,6 +4900,7 @@ export type Database = {
           links_fingerprint?: string | null
           list_selector?: string | null
           name: string
+          needs_render?: boolean
           notes?: string | null
           owner?: string | null
           read_method?: string | null
@@ -4936,6 +4938,7 @@ export type Database = {
           links_fingerprint?: string | null
           list_selector?: string | null
           name?: string
+          needs_render?: boolean
           notes?: string | null
           owner?: string | null
           read_method?: string | null
