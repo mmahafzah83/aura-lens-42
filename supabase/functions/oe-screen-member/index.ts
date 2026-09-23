@@ -127,12 +127,23 @@ async function askForLine(
       },
     }),
   });
-  if (!res.ok) throw new Error(`gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) {
+    const body = (await res.text()).slice(0, 300);
+    const kind = res.status === 402
+      ? "payment_required"
+      : res.status === 429
+      ? "rate_limited"
+      : res.status === 408 || res.status === 504
+      ? "timeout"
+      : "transport";
+    throw new GatewayFailure(kind, `gateway ${res.status}: ${body}`);
+  }
 
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let buf = "";
   let text = "";
+  const usage = { input_tokens: 0, output_tokens: 0 };
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -146,15 +157,84 @@ async function askForLine(
       try {
         const ev = JSON.parse(raw);
         if (ev.type === "response.output_text.delta" && typeof ev.delta === "string") text += ev.delta;
+        const u = ev?.response?.usage;
+        if (u) {
+          usage.input_tokens = Number(u.input_tokens ?? u.prompt_tokens ?? usage.input_tokens) || usage.input_tokens;
+          usage.output_tokens = Number(u.output_tokens ?? u.completion_tokens ?? usage.output_tokens) || usage.output_tokens;
+        }
       } catch { /* partial frame */ }
     }
   }
+  /* AN EMPTY OR MALFORMED STREAM IS NOT AN EMPTY RESULT. Returning {matches: []}
+     here would let a broken call be read as "his record answers nothing". */
+  const trimmed = text.trim();
+  if (!trimmed) throw new GatewayFailure("transport", "empty stream: no output text");
+  let parsed: any;
   try {
-    const parsed = JSON.parse(text.trim());
-    return { matches: Array.isArray(parsed?.matches) ? parsed.matches : [] };
+    parsed = JSON.parse(trimmed);
   } catch {
-    return { matches: [] };
+    throw new GatewayFailure("transport", "malformed stream: output is not JSON");
   }
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.matches)) {
+    throw new GatewayFailure("transport", "malformed stream: no matches array");
+  }
+  return { matches: parsed.matches, usage };
+}
+
+/* ── THE MEMBER'S OWN EMPLOYER, AND AGENCY LISTINGS ──────────────────────────
+   Two cheap deterministic tests, run before any model call so no money is spent
+   judging a record that is going to be excluded anyway. Nothing here names a
+   firm: the member's employer is read from his profile, the agency list from
+   the active policy row. */
+
+const LEGAL_NOISE =
+  /\b(llp|llc|ltd|limited|inc|incorporated|plc|co|company|corp|corporation|group|holdings|holding|global|international|worldwide|gmbh|ag|sa|sarl|bv|nv|pjsc|jsc|psc|wll|fzco|fze|llc'?s)\b/g;
+const STOPWORD = new Set(["and", "the", "of", "for", "de", "du"]);
+
+function normFirm(s: unknown): string {
+  return String(s ?? "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(LEGAL_NOISE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Word-boundary containment, so "ey" never matches inside "money". */
+function containsPhrase(haystack: string, needle: string): boolean {
+  if (!haystack || !needle) return false;
+  const esc = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^| )${esc}( |$)`).test(haystack);
+}
+
+/** "ernst and young" → "ey", so an acronym employer still matches its long form. */
+function initialsOf(normalised: string): string {
+  const parts = normalised.split(" ").filter((t) => t && !STOPWORD.has(t));
+  return parts.length >= 2 ? parts.map((t) => t[0]).join("") : "";
+}
+
+export function sameEmployer(issuer: unknown, employer: unknown): boolean {
+  const a = normFirm(issuer);
+  const b = normFirm(employer);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (containsPhrase(a, b) || containsPhrase(b, a)) return true;
+  const ia = initialsOf(a);
+  const ib = initialsOf(b);
+  if (ia && ia === b) return true;
+  if (ib && ib === a) return true;
+  return false;
+}
+
+export function matchedAgency(issuer: unknown, agencies: unknown[]): string | null {
+  const a = normFirm(issuer);
+  if (!a) return null;
+  for (const raw of agencies ?? []) {
+    const n = normFirm(raw);
+    if (n && containsPhrase(a, n)) return String(raw);
+  }
+  return null;
 }
 
 /**
