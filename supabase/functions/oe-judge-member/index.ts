@@ -443,7 +443,7 @@ Deno.serve(async (req) => {
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
     no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
     skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0, rescreened: 0, unscreened: 0,
-    seeded: 0, screened_inline: 0, screen_enqueued: 0, rejudged: 0, judged_today_before: 0,
+    seeded: 0, screened_inline: 0, screen_enqueued: 0, rejudged: 0, judged_today_before: 0, shortlist_fresh: 0, shortlist_backlog: 0,
     explore_this_week: 0, eligible_pool: 0, starved: 0,
 
 
