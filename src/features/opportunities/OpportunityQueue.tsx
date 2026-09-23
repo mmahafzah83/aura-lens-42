@@ -381,9 +381,36 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
     <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span></div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
       {sectorOptions.length > 0 && <div className="oe-dialog-row"><div><strong>{v("settings_sectors")}</strong><span>{sectorText}</span></div><Button variant="link" onClick={() => onEditor("sector")}>{v("action_change")}</Button></div>}
       {editor === "move" && <div className="oe-inline-editor"><p>{v("move_question")}</p>{moves.map((move) => <Button key={move} variant="outline" aria-pressed={movePick === move} className={`${data.direction?.move_proposed === move ? "is-proposed" : ""}`} onClick={() => onMove(move)}>{v(moveKey(move))}</Button>)}</div>}
-      {editor === "place" && <div className="oe-inline-editor"><p>{v("move_place_question")}</p>{choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}<Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button></div>}
-      {editor === "sector" && sectorOptions.length > 0 && <div className="oe-inline-editor"><p>{v("bar_sector_question")}<b style={mono}>{sectorPick.length}</b></p><small>{v("bar_sector_sub")}</small><div className="oe-sector-grid">{sectorOptions.map((option) => <Button key={option.code} variant="outline" aria-pressed={sectorPick.includes(option.code)} onClick={() => onSector(option.code)}>{sectorLabel(option)}</Button>)}<Button variant="outline" aria-pressed={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_any")}</Button></div><Button variant="link" className="oe-sector-clear" disabled={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_clear")}</Button></div>}
-      {editor && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
+      {editor === "place" && <div className="oe-inline-editor oe-place-editor">
+        <p>{v("move_place_question")}</p>
+        <div className="oe-chip-row">
+          {choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}
+          <Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button>
+        </div>
+        <label className="oe-field-label" htmlFor="oe-country-search">{v("place_add_country")}</label>
+        <input id="oe-country-search" type="search" className="oe-search" value={countryQuery} placeholder={v("place_search")}
+          onChange={(event) => setCountryQuery(event.target.value)} autoComplete="off" role="combobox" aria-expanded={countryMatches.length > 0} aria-controls="oe-country-list" />
+        {countryMatches.length > 0 && <div id="oe-country-list" className="oe-option-list" role="listbox">
+          {countryMatches.map((row) => <button key={row.iso2} type="button" role="option" aria-selected="false" className="oe-option-row"
+            onClick={() => { onPlace(row.iso2); setCountryQuery(""); }}>{language === "ar" ? (row.name_ar || row.name_en) : row.name_en}</button>)}
+        </div>}
+        {pickedCountries.length > 0 && <div className="oe-chip-row">{pickedCountries.map((iso2) => <Button key={iso2} variant="outline" aria-label={fill(v("place_remove"), { name: countryName(iso2) })} onClick={() => onPlace(iso2)}>{countryName(iso2)} ×</Button>)}</div>}
+        <label className="oe-switch-row"><input type="checkbox" checked={remoteOk} onChange={(event) => onRemote(event.target.checked)} /><span>{v("place_remote")}</span></label>
+      </div>}
+      {editor === "sector" && sectorOptions.length > 0 && <div className="oe-inline-editor oe-sector-editor">
+        <p>{v("bar_sector_question")}<b style={mono}>{sectorPick.length}</b></p>
+        <input type="search" className="oe-search" value={sectorQuery} placeholder={v("bar_sector_search")} onChange={(event) => setSectorQuery(event.target.value)} autoComplete="off" />
+        {sectorPick.length > 0 && <div className="oe-chip-row">{sectorPick.map((code) => {
+          const option = sectorOptions.find((item) => item.code === code) ?? { code, label_en: code, label_ar: code };
+          return <Button key={code} variant="outline" onClick={() => onSector(code)}>{sectorLabel(option)} ×</Button>;
+        })}</div>}
+        <div className="oe-sector-list">{sectorMatches.map((option) => <label key={option.code} className="oe-sector-row">
+          <input type="checkbox" checked={sectorPick.includes(option.code)} onChange={() => onSector(option.code)} />
+          <span>{sectorLabel(option)}</span>
+        </label>)}</div>
+        <Button variant="link" className="oe-sector-clear" disabled={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_clear")}</Button>
+      </div>}
+      {editor && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
       {savedBar && <p role="status">{v("bar_saved")}</p>}
     </section>
     </div>
