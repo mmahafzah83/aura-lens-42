@@ -5024,6 +5024,99 @@ export type Database = {
           },
         ]
       }
+      oe_grade_map: {
+        Row: {
+          created_at: string
+          employer_type: string
+          id: string
+          market_level: string
+          note: string | null
+          priority: number
+          title_pattern: string
+        }
+        Insert: {
+          created_at?: string
+          employer_type: string
+          id?: string
+          market_level: string
+          note?: string | null
+          priority?: number
+          title_pattern: string
+        }
+        Update: {
+          created_at?: string
+          employer_type?: string
+          id?: string
+          market_level?: string
+          note?: string | null
+          priority?: number
+          title_pattern?: string
+        }
+        Relationships: []
+      }
+      oe_identity: {
+        Row: {
+          candidates: Json
+          confirmed_at: string | null
+          conflict: Json | null
+          current_employer: string | null
+          current_title: string | null
+          employer_type: string | null
+          market_level: string | null
+          member_confirmed_at: string | null
+          member_employer: string | null
+          member_level: string | null
+          member_title: string | null
+          reason: string | null
+          source: string | null
+          source_date: string | null
+          status: string
+          title_level: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          candidates?: Json
+          confirmed_at?: string | null
+          conflict?: Json | null
+          current_employer?: string | null
+          current_title?: string | null
+          employer_type?: string | null
+          market_level?: string | null
+          member_confirmed_at?: string | null
+          member_employer?: string | null
+          member_level?: string | null
+          member_title?: string | null
+          reason?: string | null
+          source?: string | null
+          source_date?: string | null
+          status?: string
+          title_level?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          candidates?: Json
+          confirmed_at?: string | null
+          conflict?: Json | null
+          current_employer?: string | null
+          current_title?: string | null
+          employer_type?: string | null
+          market_level?: string | null
+          member_confirmed_at?: string | null
+          member_employer?: string | null
+          member_level?: string | null
+          member_title?: string | null
+          reason?: string | null
+          source?: string | null
+          source_date?: string | null
+          status?: string
+          title_level?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oe_investigations: {
         Row: {
           answered_at: string | null
@@ -11583,6 +11676,10 @@ export type Database = {
       }
       oe_goal_window: { Args: { p_user: string }; Returns: Json }
       oe_host_is_skipped: { Args: { p_url: string }; Returns: boolean }
+      oe_identity_confirm: {
+        Args: { p_employer: string; p_level: string; p_title: string }
+        Returns: Json
+      }
       oe_investigate_unknowns: {
         Args: { p_user: string }
         Returns: {
@@ -11627,6 +11724,7 @@ export type Database = {
         Returns: Json
       }
       oe_my_home: { Args: never; Returns: Json }
+      oe_norm_employer: { Args: { p: string }; Returns: string }
       oe_norm_text: { Args: { p: string }; Returns: string }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
       oe_notebook_remove_rule: { Args: { p_id: string }; Returns: Json }
@@ -11702,6 +11800,7 @@ export type Database = {
         }[]
       }
       oe_remote_save: { Args: { p_ok: boolean }; Returns: Json }
+      oe_resolve_identity: { Args: { p_user: string }; Returns: Json }
       oe_route_is_specific: {
         Args: { p_kind: string; p_url: string }
         Returns: boolean
@@ -11716,6 +11815,7 @@ export type Database = {
         Args: { p_estimate?: number; p_stage: string }
         Returns: Json
       }
+      oe_title_level: { Args: { p: string }; Returns: string }
       oe_truth_report_resolve: {
         Args: {
           p_cause: string
