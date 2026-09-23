@@ -335,7 +335,7 @@ async function requirementCheck(
     await logAIUsage({
       user_id: userId, function_name: fnName, provider: "lovable", model: MODEL,
       input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
-      metadata: { prompt_version: P5_VERSION, opportunity_id: o.id },
+      success: true, metadata: { stage: "judge_requirements", prompt_version: P5_VERSION, opportunity_id: o.id },
     });
     parsed = normaliseJson(out.content);
   } catch (_e) {
@@ -711,7 +711,7 @@ Deno.serve(async (req) => {
         await logAIUsage({
           user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
           input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
-          metadata: { prompt_version: P3_VERSION, opportunity_id: o.id, pass: p + 1 },
+          success: true, metadata: { stage: "judge_rubric", prompt_version: P3_VERSION, opportunity_id: o.id, pass: p + 1 },
         });
         passes.push(normaliseJson(out.content));
       }
@@ -937,7 +937,7 @@ Deno.serve(async (req) => {
         await logAIUsage({
           user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
           input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
-          metadata: { prompt_version: P4_VERSION, opportunity_id: o.id },
+          success: true, metadata: { stage: "judge_reason", prompt_version: P4_VERSION, opportunity_id: o.id },
         });
         const rec = normaliseJson(out.content);
         why = (Array.isArray(rec.why) ? rec.why : [])
@@ -1082,7 +1082,7 @@ Deno.serve(async (req) => {
         await logAIUsage({
           user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
           input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
-          metadata: { prompt_version: P6_VERSION, opportunity_id: o.id, lane: "write" },
+          success: true, metadata: { stage: "judge_write", prompt_version: P6_VERSION, opportunity_id: o.id, lane: "write" },
         });
         const rec = normaliseJson(out.content);
 
