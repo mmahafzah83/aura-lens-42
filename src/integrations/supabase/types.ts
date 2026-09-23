@@ -11739,6 +11739,7 @@ export type Database = {
         }[]
       }
       oe_host_is_skipped: { Args: { p_url: string }; Returns: boolean }
+      oe_host_of: { Args: { p_url: string }; Returns: string }
       oe_identity_confirm: {
         Args: { p_employer: string; p_level: string; p_title: string }
         Returns: Json
@@ -11797,6 +11798,7 @@ export type Database = {
         Args: { p_location: string; p_sector: string; p_user: string }
         Returns: number
       }
+      oe_promote_issuer_routes: { Args: never; Returns: Json }
       oe_quarantine_junk: { Args: never; Returns: Json }
       oe_queue_kind_investigations: {
         Args: { p_user: string }
@@ -11865,6 +11867,7 @@ export type Database = {
           purpose: string
         }[]
       }
+      oe_reg_label: { Args: { p_host: string }; Returns: string }
       oe_relocation_save: {
         Args: { p_countries: string[]; p_ok: boolean }
         Returns: Json
@@ -11879,6 +11882,7 @@ export type Database = {
         Args: { p_kind: string; p_url: string }
         Returns: boolean
       }
+      oe_route_on_issuer_site: { Args: { p_opp: string }; Returns: boolean }
       oe_rule_decide: {
         Args: { p_apply: boolean; p_id: string }
         Returns: Json
