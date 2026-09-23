@@ -285,3 +285,6 @@ verify_jwt = false
 
 [functions.oe-screen-drain]
 verify_jwt = false
+
+[functions.oe-card-alerts]
+verify_jwt = false
