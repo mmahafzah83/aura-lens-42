@@ -201,6 +201,7 @@ function Row({ item, v, language, canCheck, checking, onCheck }: {
         <OpportunityTimeline facts={item} v={v} language={language} />
       </div>}
     </div>
+    {canCheck && <Answer id={item.id} v={v} />}
   </div>;
 }
 
