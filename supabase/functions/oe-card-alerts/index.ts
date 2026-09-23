@@ -97,6 +97,8 @@ Deno.serve(withRun("card_alerts", async (req) => {
   const mode = String(body.mode ?? "hourly");
   const dry = body.dry === true;
   const onlyUser = body.user_id ? String(body.user_id) : null;
+  // Look-back for waiting cards; a dry run may widen it to render real rows.
+  const days = Math.max(1, Math.min(Number(body.days ?? 7) || 7, dry ? 60 : 7));
   if (!["instant", "digest", "hourly"].includes(mode)) return json({ ok: false, error: "mode must be instant, digest or hourly" }, 400);
 
   const admin = createClient(URL_, SR, { auth: { persistSession: false } });
@@ -110,7 +112,7 @@ Deno.serve(withRun("card_alerts", async (req) => {
     let q = admin.from("oe_cards")
       .select("id,opportunity_id,fit_band,created_at,opp:oe_opportunities!inner(title,issuer_raw,location,deadline,alive)")
       .eq("user_id", uid).eq("lane", "act").not("opportunity_id", "is", null).is("alerted_at", null)
-      .gte("created_at", new Date(Date.now() - 7 * 86_400_000).toISOString())
+      .gte("created_at", new Date(Date.now() - days * 86_400_000).toISOString())
       .order("created_at", { ascending: true }).limit(40);
     if (strongOnly) q = q.eq("fit_band", "strong");
     const { data, error } = await q;
