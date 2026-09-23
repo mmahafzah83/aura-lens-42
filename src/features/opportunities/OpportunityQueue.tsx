@@ -274,8 +274,8 @@ export function OpportunityQueue() {
   </section>;
 }
 
-function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
-  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} />;
+function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
+  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} checking={checking} onCheck={onCheck} />;
   if (!active) {
     const total = Number(found?.total ?? 0);
     const atLevel = found?.groups?.find((group) => group.key === "at_level") ?? null;
