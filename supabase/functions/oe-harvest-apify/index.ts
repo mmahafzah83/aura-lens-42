@@ -99,13 +99,38 @@ const when = (v: unknown): string | null => {
 
 /* ── ACTOR INPUTS AND MAPPINGS ─────────────────────────────────────────────
    One entry per actor: the runs it should make today, and how its result rows
-   read as a job. Everything variable comes from the actor's policy row. */
+   read as a job. Everything variable comes from the actor's policy row.
+
+   The inputs are data, not code. When the actor's policy row carries a runs
+   array of {label, input}, those inputs are sent to the vendor exactly as
+   written — an actor that renames a field is fixed by editing the policy row,
+   not this file. The generated runs below are only the fallback for an actor
+   whose policy row says nothing. A request may also carry one input object to
+   try a single actor once, which is how a new input is checked before it is
+   written into policy. */
 
 type RunSpec = { label: string; input: Record<string, unknown> };
 
 function runsFor(actor: string, cfg: any, body: any): RunSpec[] {
+  // One input sent from the request: that run and nothing else.
+  const testInput = body?.input;
+  if (testInput && typeof testInput === "object" && !Array.isArray(testInput)) {
+    return [{ label: "request", input: testInput as Record<string, unknown> }];
+  }
+
+  // Inputs held as policy data: sent verbatim, in the order written.
+  if (Array.isArray(cfg?.runs) && cfg.runs.length) {
+    return (cfg.runs as any[])
+      .filter((run) => run && typeof run.input === "object" && run.input !== null && !Array.isArray(run.input))
+      .map((run, index) => ({
+        label: str(run.label) ?? `run-${index + 1}`,
+        input: run.input as Record<string, unknown>,
+      }));
+  }
+
   const pick = <T,>(fromBody: T[] | undefined, fromCfg: T[] | undefined, fallback: T[]): T[] =>
     (Array.isArray(fromBody) && fromBody.length ? fromBody : Array.isArray(fromCfg) && fromCfg.length ? fromCfg : fallback);
+
 
   if (actor === "blackfalcondata~bayt-scraper") {
     const countries = pick<string>(body?.countries, cfg?.countries, ["AE", "SA", "QA", "KW", "BH", "OM"]);
