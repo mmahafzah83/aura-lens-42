@@ -400,18 +400,19 @@ Deno.serve(async (req0) => {
         .eq("id", body.entity_id);
       ents = data ?? [];
     } else {
-      const { data: withAts } = await admin.from("oe_entities")
-        .select("id,name,ats_platform,ats_token,ats_endpoint,careers_url,harvest_cadence,last_harvested_at,harvest_runs,changed_runs,last_job_count")
-        .eq("resolve_status", "resolved").not("ats_platform", "is", null)
-        .order("last_harvested_at", { ascending: true, nullsFirst: true }).limit(batch);
-      ents = withAts ?? [];
-      if (includeJsonLd && ents.length < batch) {
-        const { data: noAts } = await admin.from("oe_entities")
+      // Order is member demand: due first, then entities in the countries and
+      // sectors members want, then core watch tier. Quarantined sources are out.
+      const { data: order, error: orderErr } = await admin.rpc("oe_harvest_order", {
+        p_limit: batch, p_json_ld: includeJsonLd,
+      });
+      if (orderErr) throw new Error(`harvest order: ${orderErr.message}`);
+      const orderIds = ((order ?? []) as any[]).map((r) => String(r.id));
+      if (orderIds.length) {
+        const { data } = await admin.from("oe_entities")
           .select("id,name,ats_platform,ats_token,ats_endpoint,careers_url,harvest_cadence,last_harvested_at,harvest_runs,changed_runs,last_job_count")
-          .eq("resolve_status", "no_ats").not("careers_url", "is", null)
-          .order("last_harvested_at", { ascending: true, nullsFirst: true })
-          .limit(batch - ents.length);
-        ents = ents.concat(noAts ?? []);
+          .in("id", orderIds);
+        const byId = new Map((data ?? []).map((e: any) => [String(e.id), e]));
+        ents = orderIds.map((id) => byId.get(id)).filter(Boolean);
       }
     }
 

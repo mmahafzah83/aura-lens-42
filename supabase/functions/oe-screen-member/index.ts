@@ -369,23 +369,23 @@ Deno.serve(withRun("screen_member", async (req) => {
       .select("title, summary, content, created_at")
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(400);
 
-    // ── every live record ────────────────────────────────────────────────
-    const { data: opps, error: oppsError } = await admin.from("oe_opportunities")
-      .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
-      .eq("alive", true);
-    if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
-
-    // One run screens a set number of records, the ones never screened first,
-    // so a night's backlog drains over runs instead of exhausting the worker.
-    const screenBatch = Math.max(1, Number(body.batch ?? 40));
-    if ((opps ?? []).length > screenBatch) {
-      const { data: screenedRows } = await admin.from("oe_matches")
-        .select("opportunity_id, screened_at").eq("user_id", userId).not("screened_at", "is", null);
-      const alreadyScreened = new Set((screenedRows ?? []).map((r: any) => String(r.opportunity_id)));
-      const fresh = (opps ?? []).filter((o: any) => !alreadyScreened.has(String(o.id)));
-      const rest = (opps ?? []).filter((o: any) => alreadyScreened.has(String(o.id)));
-      (opps as any[]).length = 0;
-      (opps as any[]).push(...[...fresh, ...rest].slice(0, screenBatch));
+    // ── one small batch of live records ──────────────────────────────────
+    // Never-screened first, executive roles first, newest first — picked in
+    // SQL so the worker never loads the whole table into memory.
+    const screenBatch = Math.max(1, Math.min(Number(body.batch ?? 20) || 20, 60));
+    const { data: batchIds, error: batchErr } = await admin.rpc("oe_screen_batch", {
+      p_user: userId, p_limit: screenBatch,
+    });
+    if (batchErr) throw new Error(`screen batch: ${batchErr.message}`);
+    const ids = ((batchIds ?? []) as any[]).map((r) => String(r.opportunity_id));
+    const opps: any[] = [];
+    if (ids.length) {
+      const { data: oppRows, error: oppsError } = await admin.from("oe_opportunities")
+        .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
+        .in("id", ids).eq("alive", true);
+      if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
+      const byId = new Map((oppRows ?? []).map((o: any) => [String(o.id), o]));
+      for (const id of ids) { const o = byId.get(id); if (o) opps.push(o); }
     }
 
     // Where he works, named as a person would name it, for the place sentence.
@@ -436,8 +436,9 @@ Deno.serve(withRun("screen_member", async (req) => {
     const enforceAgencyFilter = policyParams.enforce_agency_filter === true;
     const agencyIssuers: string[] = Array.isArray(policyParams.agency_issuers) ? policyParams.agency_issuers : [];
 
-    const { data: scoreRows } = await admin.from("oe_matches")
-      .select("opportunity_id, scores").eq("user_id", userId);
+    const { data: scoreRows } = ids.length
+      ? await admin.from("oe_matches").select("opportunity_id, scores").eq("user_id", userId).in("opportunity_id", ids)
+      : { data: [] as any[] };
     const scoresById = new Map<string, any>();
     for (const row of scoreRows ?? []) scoresById.set(String(row.opportunity_id), row.scores);
     const rubricVerdict = (oppId: string): { refuses: boolean; gap: string } => {
@@ -768,9 +769,11 @@ Deno.serve(withRun("screen_member", async (req) => {
     // through the four writing tests, and the standing sentence must be ABOUT
     // this record's subject. Anything else is discarded: no lane, no card.
     {
-      const { data: writeRows } = await admin.from("oe_matches")
-        .select("opportunity_id")
-        .eq("user_id", userId).is("lane_final", null);
+      const { data: writeRows } = ids.length
+        ? await admin.from("oe_matches")
+          .select("opportunity_id")
+          .eq("user_id", userId).is("lane_final", null).in("opportunity_id", ids)
+        : { data: [] as any[] };
       const { data: sectorRule } = await admin.from("oe_notebook")
         .select("values,value")
         .eq("user_id", userId).eq("field", "sector").eq("active", true)

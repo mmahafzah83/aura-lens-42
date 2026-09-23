@@ -4779,6 +4779,8 @@ export type Database = {
           name: string
           name_ar: string | null
           newsroom_url: string | null
+          quarantine_reason: string | null
+          quarantined_at: string | null
           resolve_detail: Json | null
           resolve_error: string | null
           resolve_status: string
@@ -4810,6 +4812,8 @@ export type Database = {
           name: string
           name_ar?: string | null
           newsroom_url?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           resolve_detail?: Json | null
           resolve_error?: string | null
           resolve_status?: string
@@ -4841,6 +4845,8 @@ export type Database = {
           name?: string
           name_ar?: string | null
           newsroom_url?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           resolve_detail?: Json | null
           resolve_error?: string | null
           resolve_status?: string
@@ -4925,6 +4931,8 @@ export type Database = {
           needs_render: boolean
           notes: string | null
           owner: string | null
+          quarantine_reason: string | null
+          quarantined_at: string | null
           read_method: string | null
           read_yield: number | null
           score_cost: number | null
@@ -4963,6 +4971,8 @@ export type Database = {
           needs_render?: boolean
           notes?: string | null
           owner?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           read_method?: string | null
           read_yield?: number | null
           score_cost?: number | null
@@ -5001,6 +5011,8 @@ export type Database = {
           needs_render?: boolean
           notes?: string | null
           owner?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           read_method?: string | null
           read_yield?: number | null
           score_cost?: number | null
@@ -11688,6 +11700,12 @@ export type Database = {
         Returns: number
       }
       oe_goal_window: { Args: { p_user: string }; Returns: Json }
+      oe_harvest_order: {
+        Args: { p_json_ld?: boolean; p_limit: number }
+        Returns: {
+          id: string
+        }[]
+      }
       oe_host_is_skipped: { Args: { p_url: string }; Returns: boolean }
       oe_identity_confirm: {
         Args: { p_employer: string; p_level: string; p_title: string }
@@ -11747,6 +11765,7 @@ export type Database = {
         Args: { p_location: string; p_sector: string; p_user: string }
         Returns: number
       }
+      oe_quarantine_junk: { Args: never; Returns: Json }
       oe_queue_kind_investigations: {
         Args: { p_user: string }
         Returns: number
@@ -11761,6 +11780,7 @@ export type Database = {
           source_url: string
         }[]
       }
+      oe_read_cap_today: { Args: never; Returns: Json }
       oe_rebuild_eligibility: { Args: { p_user: string }; Returns: undefined }
       oe_reconcile_judging: { Args: never; Returns: Json }
       oe_record_outcome: {
@@ -11819,6 +11839,10 @@ export type Database = {
       }
       oe_remote_save: { Args: { p_ok: boolean }; Returns: Json }
       oe_resolve_identity: { Args: { p_user: string }; Returns: Json }
+      oe_restore_source: {
+        Args: { p_id: string; p_kind: string }
+        Returns: undefined
+      }
       oe_route_is_specific: {
         Args: { p_kind: string; p_url: string }
         Returns: boolean
@@ -11829,6 +11853,12 @@ export type Database = {
       }
       oe_run_allowed: { Args: { p_job: string }; Returns: boolean }
       oe_scan_shared_facts_private: { Args: never; Returns: number }
+      oe_screen_batch: {
+        Args: { p_limit?: number; p_user: string }
+        Returns: {
+          opportunity_id: string
+        }[]
+      }
       oe_spend_allowed: {
         Args: { p_estimate?: number; p_stage: string }
         Returns: Json
@@ -11853,6 +11883,13 @@ export type Database = {
           opportunity_id: string
           route_url: string
           source_url: string
+          user_id: string
+        }[]
+      }
+      oe_unscreened_members: {
+        Args: never
+        Returns: {
+          unscreened: number
           user_id: string
         }[]
       }
