@@ -12,6 +12,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { isAggregator } from "../_shared/oeGuards.ts";
+import { parseLevel, levelIndex } from "../_shared/oeEligibility.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,9 +111,11 @@ Deno.serve(async (req) => {
   const { data: policy } = await admin
     .from("oe_policy_versions").select("params").eq("active", true).maybeSingle();
   const params = (policy?.params ?? {}) as Record<string, any>;
-  const triageMin = Number(body.triage_min ?? params.triage_min ?? 0.30);
-  const batchSize = Math.min(Number(body.batch ?? params.triage_batch ?? 200), 200);
-  const readBudget = Number(body.read_budget ?? params.read_budget_per_night ?? 120);
+  const batchSize = Math.min(Number(body.batch ?? params.triage_batch ?? 200), 250);
+  // ONE READING BUDGET FOR THE DAY. Both the feed step and this one spend from
+  // the same number, so the day's reading is a figure we choose.
+  const readCap = Number(body.read_cap ?? params.read_cap_per_day ?? 200);
+  const readMinLevel = String(params.read_min_level ?? "senior_manager");
 
   const startedAt = new Date().toISOString();
   const counts: Record<string, any> = {
@@ -119,6 +123,7 @@ Deno.serve(async (req) => {
   };
   const scores: number[] = [];
   let costUsd = 0;
+
 
   try {
     // The faces we compare against: what consented members have done, want and

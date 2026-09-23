@@ -4102,6 +4102,42 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_calibration: {
+        Row: {
+          computed_at: string
+          created_at: string
+          id: string
+          n_labels: number
+          precision_at_3: number | null
+          recall: number | null
+          threshold: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          id?: string
+          n_labels?: number
+          precision_at_3?: number | null
+          recall?: number | null
+          threshold: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          id?: string
+          n_labels?: number
+          precision_at_3?: number | null
+          recall?: number | null
+          threshold?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       oe_candidates: {
         Row: {
           canonical_url: string | null
@@ -4113,6 +4149,7 @@ export type Database = {
           first_seen_at: string
           id: string
           lang: string | null
+          priority: number | null
           published_at: string | null
           raw: Json
           rejected_reason: string | null
@@ -4133,6 +4170,7 @@ export type Database = {
           first_seen_at?: string
           id?: string
           lang?: string | null
+          priority?: number | null
           published_at?: string | null
           raw?: Json
           rejected_reason?: string | null
@@ -4153,6 +4191,7 @@ export type Database = {
           first_seen_at?: string
           id?: string
           lang?: string | null
+          priority?: number | null
           published_at?: string | null
           raw?: Json
           rejected_reason?: string | null
@@ -5289,6 +5328,7 @@ export type Database = {
           labelled_at: string
           note: string | null
           opportunity_id: string | null
+          reason: string | null
           source: string
           user_id: string
           why: string | null
@@ -5301,6 +5341,7 @@ export type Database = {
           labelled_at?: string
           note?: string | null
           opportunity_id?: string | null
+          reason?: string | null
           source?: string
           user_id: string
           why?: string | null
@@ -5313,6 +5354,7 @@ export type Database = {
           labelled_at?: string
           note?: string | null
           opportunity_id?: string | null
+          reason?: string | null
           source?: string
           user_id?: string
           why?: string | null
@@ -11447,6 +11489,16 @@ export type Database = {
       oe_bar_save: {
         Args: { p_move?: string; p_places?: string[]; p_sectors?: string[] }
         Returns: Json
+      }
+      oe_calibrate: { Args: { p_user?: string }; Returns: number }
+      oe_calibrate_scan: {
+        Args: { p_users: string[] }
+        Returns: {
+          n_labels: number
+          precision_at_3: number
+          recall: number
+          threshold: number
+        }[]
       }
       oe_candidates: {
         Args: { p_face: string; p_k: number; p_user_id: string }

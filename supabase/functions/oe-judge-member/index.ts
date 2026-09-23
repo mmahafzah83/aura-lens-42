@@ -443,6 +443,10 @@ Deno.serve(async (req) => {
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
     no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
     skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0, rescreened: 0, unscreened: 0,
+    seeded: 0, screened_inline: 0, screen_enqueued: 0, rejudged: 0, judged_today_before: 0,
+    explore_this_week: 0, eligible_pool: 0, starved: 0,
+
+
   };
 
   let costUsd = 0;
@@ -460,6 +464,10 @@ Deno.serve(async (req) => {
     const shortlistK = Number(params.shortlist_k ?? 50);
     const judgePasses = Math.max(1, Number(params.judge_passes ?? 2));
     const judgeMax = Number(params.judge_max ?? DEFAULT_JUDGE_MAX);
+    // A ceiling for the day as well as for the run, so a member's pool is
+    // worked through steadily instead of the same handful being re-read.
+    const judgeMaxPerDay = Math.max(judgeMax, Number(params.judge_max_per_day ?? 60));
+
     const gateMin = Number(params.gate_min_avg ?? 3);
     const gateNoZero = params.gate_no_zero !== false;
     const bands = params.bands ?? { strong: 3.4, worth_a_look: 3 };
@@ -553,7 +561,7 @@ Deno.serve(async (req) => {
     // gate_passed and lane_final; this function reads those stored verdicts.
     const { data: opps, error: oppsError } = await admin
       .from("oe_opportunities")
-      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
+      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, updated_at, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
     const requestedSet = new Set(requestedOpportunityIds);
@@ -570,12 +578,58 @@ Deno.serve(async (req) => {
     // The three-gate screen owns eligibility and lane assignment. Re-running
     // oeEligibility here created a second, contradictory verdict, so the judge
     // now consumes the match row exactly as written by oe-screen-member.
-    const { data: priorMatches } = await admin.from("oe_matches")
+    const selectMatches = () => admin.from("oe_matches")
       .select("id, opportunity_id, gate_passed, lane, lane_final, screen_outcome, gate_note, presentation_line, eligibility_outcome, eligibility_fail, eligibility_unknowns, eligibility_conditions, scores, score_avg, unstable, fit_band, win_band, requirement_check, met_count, total_count, retrieval, judged_at")
       .eq("user_id", userId);
+    let { data: priorMatches } = await selectMatches();
+
+    // ── EVERY LIVE RECORD GETS A ROW, THEN A SCREEN ───────────────────────
+    // A record with no match row for this member was invisible to both the
+    // screen and the judge, so the same handful was read every night. Each one
+    // is given a row here, at the bottom of the ladder, and screened at once.
+    const haveRow = new Set((priorMatches ?? []).map((m: any) => String(m.opportunity_id)));
+    const missing = pool.filter((o: any) => !haveRow.has(String(o.id)));
+    if (missing.length) {
+      const epoch = "1970-01-01T00:00:00Z";
+      for (let i = 0; i < missing.length; i += 200) {
+        const { error } = await admin.from("oe_matches").insert(
+          missing.slice(i, i + 200).map((o: any) => ({
+            user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
+            scores: {}, judged_at: epoch,
+          })),
+        );
+        if (error && (error as any).code !== "23505") throw new Error(`seed matches: ${error.message}`);
+      }
+      counts.seeded = missing.length;
+
+      // Screening is cheap and deterministic, so it runs inline and the run
+      // continues with real verdicts rather than waiting a night for them.
+      let screened = false;
+      try {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/oe-screen-member`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${SERVICE_ROLE}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId }),
+          signal: AbortSignal.timeout(120_000),
+        });
+        screened = r.ok;
+      } catch { screened = false; }
+      if (screened) {
+        counts.screened_inline = missing.length;
+        ({ data: priorMatches } = await selectMatches());
+      } else {
+        const { error } = await admin.from("job_queue").insert({
+          job_type: "oe_screen_member", user_id: userId, payload: { user_id: userId },
+          priority: 4, max_attempts: 3,
+        });
+        if (!error) counts.screen_enqueued = 1;
+      }
+    }
+
     const matchByOpportunity = new Map(
       (priorMatches ?? []).map((m: any) => [String(m.opportunity_id), m]),
     );
+
 
     // ── ONE LIST, ONE TEST ────────────────────────────────────────────────
     // public.oe_app_queue() refuses a card whose record is incomplete for its
@@ -620,21 +674,32 @@ Deno.serve(async (req) => {
 
     // Both lanes are read. A writing-lane record still needs citations before
     // it can be shown with a grounded reason, and it only gets them here.
-    // A run that times out must resume, not restart: anything already judged
-    // with citations in the last day is left alone.
-    const { data: freshJudged } = await admin.from("oe_matches")
+    // Each record is judged once for this member. It is read again only when
+    // the record itself changed after that reading, so a run that times out
+    // resumes where it stopped instead of re-reading the same handful.
+    const { data: judgedRows } = await admin.from("oe_matches")
       .select("opportunity_id,scores,judged_at")
-      .eq("user_id", userId)
-      .gte("judged_at", new Date(Date.now() - 86_400_000).toISOString());
-    const alreadyJudged = new Set(
-      (freshJudged ?? [])
+      .eq("user_id", userId);
+    const judgedAt = new Map(
+      (judgedRows ?? [])
         .filter((m: any) => Array.isArray(m.scores?.cites) && m.scores.cites.length > 0)
-        .map((m: any) => String(m.opportunity_id)),
+        .map((m: any) => [String(m.opportunity_id), String(m.judged_at ?? "")]),
     );
+    const dayAgo = Date.now() - 86_400_000;
+    counts.judged_today_before = [...judgedAt.values()]
+      .filter((t) => new Date(t).getTime() >= dayAgo).length;
+    const needsJudging = (o: any) => {
+      const at = judgedAt.get(String(o.id));
+      if (!at) return true;
+      const changed = o.updated_at && new Date(o.updated_at).getTime() > new Date(at).getTime();
+      if (changed) counts.rejudged++;
+      return !!changed;
+    };
+
 
     // Retrieval orders review; it must never erase a live record from coverage.
     const scored = [...actPool, ...writePool]
-      .filter((o) => requestedOpportunityIds.length > 0 || !alreadyJudged.has(String(o.id)))
+      .filter((o) => requestedOpportunityIds.length > 0 || needsJudging(o))
       .map((o) => {
         const m = merged.get(o.id) ?? { score: 0, retrieval: { coverage: "outside_retrieval_top_k" } };
         const vec = asVector(o.embedding);
@@ -651,7 +716,10 @@ Deno.serve(async (req) => {
     // to the shortlist from params. The cut is a cost control, never a silent
     // one — a shortlist smaller than the eligible pool is logged and counted.
     const eligiblePool = actPool.length + writePool.filter((o) => o._match?.gate_passed === true).length;
-    const modelCap = Math.min(shortlistK, judgeMax);
+    // Two ceilings: what one run may read, and what one day may read.
+    const dayRoom = Math.max(0, judgeMaxPerDay - counts.judged_today_before);
+    const modelCap = Math.min(shortlistK, judgeMax, dayRoom);
+
     const shortlist = scored.slice(0, modelCap);
     counts.eligible_pool = eligiblePool;
     counts.shortlisted = shortlist.length;
@@ -884,11 +952,19 @@ Deno.serve(async (req) => {
         return (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0);
       });
     counts.lane_forming = judged.filter((j) => j.lane === "lane_forming").length;
+    // Exploration keeps the reading honest, but at most one card a week may be
+    // spent on it, so the week is not filled with guesses.
+    const { count: exploreThisWeek } = await admin.from("oe_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId).eq("explore_slot", true)
+      .gte("created_at", new Date(Date.now() - 7 * 86_400_000).toISOString());
+    counts.explore_this_week = exploreThisWeek ?? 0;
     let order = eligible.map((j) => ({ ...j, explore: false }));
-    if (order.length > 1 && Math.random() < exploreShare) {
+    if ((exploreThisWeek ?? 0) < 1 && order.length > 1 && Math.random() < exploreShare) {
       const idx = order.findIndex((j) => j.o.sector && memberSector && j.o.sector !== memberSector);
       if (idx > 0) order = [{ ...order[idx], explore: true }, ...order.filter((_, i) => i !== idx)];
     }
+
 
     const cardsWritten: string[] = [];
 
