@@ -15,6 +15,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { withRun } from "../_shared/oeRun.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
+import { logAIFailure, logAIUsage } from "../_shared/logAIUsage.ts";
 import { secondPersonClause } from "../_shared/secondPerson.ts";
 import { bestStanding, writeTests } from "../_shared/writeValue.ts";
 import { interestOf } from "../_shared/interest.ts";
@@ -61,11 +62,35 @@ const PRESENTATION_SYSTEM =
   "Never pair on a shared word or a shared sector — the evidence must answer the requirement. " +
   "If nothing answers anything, return {matches: []}. Never invent evidence.";
 
+/**
+ * A call that did not come back with an answer. It is NOT a negative result:
+ * nothing may be concluded about the member's record from a gateway failure.
+ */
+export class GatewayFailure extends Error {
+  kind: "payment_required" | "rate_limited" | "timeout" | "transport";
+  constructor(kind: GatewayFailure["kind"], message: string) {
+    super(message);
+    this.kind = kind;
+  }
+}
+
+const failureKind = (e: unknown): GatewayFailure["kind"] => {
+  if (e instanceof GatewayFailure) return e.kind;
+  const m = String((e as Error)?.message ?? e);
+  if (/\b402\b|payment/i.test(m)) return "payment_required";
+  if (/\b429\b|rate.?limit/i.test(m)) return "rate_limited";
+  if (/timeout|timed out|aborted/i.test(m)) return "timeout";
+  return "transport";
+};
+
 /** One streamed call. Reasoning models run for minutes; never buffer, never time out on a timer. */
 async function askForLine(
   key: string,
   payload: string,
-): Promise<{ matches: Array<{ requirement: string; evidence_id: string }> }> {
+): Promise<{
+  matches: Array<{ requirement: string; evidence_id: string }>;
+  usage: { input_tokens: number; output_tokens: number };
+}> {
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
@@ -103,12 +128,23 @@ async function askForLine(
       },
     }),
   });
-  if (!res.ok) throw new Error(`gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) {
+    const body = (await res.text()).slice(0, 300);
+    const kind = res.status === 402
+      ? "payment_required"
+      : res.status === 429
+      ? "rate_limited"
+      : res.status === 408 || res.status === 504
+      ? "timeout"
+      : "transport";
+    throw new GatewayFailure(kind, `gateway ${res.status}: ${body}`);
+  }
 
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let buf = "";
   let text = "";
+  const usage = { input_tokens: 0, output_tokens: 0 };
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -122,15 +158,84 @@ async function askForLine(
       try {
         const ev = JSON.parse(raw);
         if (ev.type === "response.output_text.delta" && typeof ev.delta === "string") text += ev.delta;
+        const u = ev?.response?.usage;
+        if (u) {
+          usage.input_tokens = Number(u.input_tokens ?? u.prompt_tokens ?? usage.input_tokens) || usage.input_tokens;
+          usage.output_tokens = Number(u.output_tokens ?? u.completion_tokens ?? usage.output_tokens) || usage.output_tokens;
+        }
       } catch { /* partial frame */ }
     }
   }
+  /* AN EMPTY OR MALFORMED STREAM IS NOT AN EMPTY RESULT. Returning {matches: []}
+     here would let a broken call be read as "his record answers nothing". */
+  const trimmed = text.trim();
+  if (!trimmed) throw new GatewayFailure("transport", "empty stream: no output text");
+  let parsed: any;
   try {
-    const parsed = JSON.parse(text.trim());
-    return { matches: Array.isArray(parsed?.matches) ? parsed.matches : [] };
+    parsed = JSON.parse(trimmed);
   } catch {
-    return { matches: [] };
+    throw new GatewayFailure("transport", "malformed stream: output is not JSON");
   }
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.matches)) {
+    throw new GatewayFailure("transport", "malformed stream: no matches array");
+  }
+  return { matches: parsed.matches, usage };
+}
+
+/* ── THE MEMBER'S OWN EMPLOYER, AND AGENCY LISTINGS ──────────────────────────
+   Two cheap deterministic tests, run before any model call so no money is spent
+   judging a record that is going to be excluded anyway. Nothing here names a
+   firm: the member's employer is read from his profile, the agency list from
+   the active policy row. */
+
+const LEGAL_NOISE =
+  /\b(llp|llc|ltd|limited|inc|incorporated|plc|co|company|corp|corporation|group|holdings|holding|global|international|worldwide|gmbh|ag|sa|sarl|bv|nv|pjsc|jsc|psc|wll|fzco|fze|llc'?s)\b/g;
+const STOPWORD = new Set(["and", "the", "of", "for", "de", "du"]);
+
+function normFirm(s: unknown): string {
+  return String(s ?? "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(LEGAL_NOISE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Word-boundary containment, so "ey" never matches inside "money". */
+function containsPhrase(haystack: string, needle: string): boolean {
+  if (!haystack || !needle) return false;
+  const esc = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^| )${esc}( |$)`).test(haystack);
+}
+
+/** "ernst and young" → "ey", so an acronym employer still matches its long form. */
+function initialsOf(normalised: string): string {
+  const parts = normalised.split(" ").filter((t) => t && !STOPWORD.has(t));
+  return parts.length >= 2 ? parts.map((t) => t[0]).join("") : "";
+}
+
+export function sameEmployer(issuer: unknown, employer: unknown): boolean {
+  const a = normFirm(issuer);
+  const b = normFirm(employer);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (containsPhrase(a, b) || containsPhrase(b, a)) return true;
+  const ia = initialsOf(a);
+  const ib = initialsOf(b);
+  if (ia && ia === b) return true;
+  if (ib && ib === a) return true;
+  return false;
+}
+
+export function matchedAgency(issuer: unknown, agencies: unknown[]): string | null {
+  const a = normFirm(issuer);
+  if (!a) return null;
+  for (const raw of agencies ?? []) {
+    const n = normFirm(raw);
+    if (n && containsPhrase(a, n)) return String(raw);
+  }
+  return null;
 }
 
 /**
@@ -220,7 +325,8 @@ Deno.serve(withRun("screen_member", async (req) => {
     const { data: eligRow } = await admin.from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
     const eligibility = (eligRow ?? null) as Eligibility | null;
     const { data: profile } = await admin.from("diagnostic_profiles")
-      .select("years_experience, core_practice").eq("user_id", userId).maybeSingle();
+      .select("years_experience, core_practice, firm").eq("user_id", userId).maybeSingle();
+    const ownEmployer = String((profile as any)?.firm ?? "").trim();
     const yearsMatch = /(\d{1,2})/.exec(String((profile as any)?.years_experience ?? ""));
     const evidence = {
       years_experience: yearsMatch ? Number(yearsMatch[1]) : null,
@@ -256,9 +362,11 @@ Deno.serve(withRun("screen_member", async (req) => {
     const funnel = {
       alive: 0, place: 0, nationality: 0, licence: 0, other_eligibility: 0,
       profession: 0, level: 0, unknown: 0, scored: 0, presented: 0, no_line: 0,
-      place_conditions: 0,
+      place_conditions: 0, own_employer: 0, agency: 0, gateway_unknown: 0, spend_capped: 0,
     };
     const survivors: any[] = [];
+    /* Excluded before any model saw them; they are not writing material either. */
+    const excludedIds = new Set<string>();
 
     // THE TWO JUDGES MUST AGREE. The rubric already written on the match is
     // read here, so the screen cannot promote to the act lane a record the
@@ -267,6 +375,10 @@ Deno.serve(withRun("screen_member", async (req) => {
     const { data: policyRow } = await admin.from("oe_policy_versions")
       .select("params").eq("active", true).maybeSingle();
     const gateMin = Number((policyRow?.params as any)?.gate_min_avg ?? 3.0);
+    const policyParams = (policyRow?.params ?? {}) as Record<string, any>;
+    const excludeOwnEmployer = policyParams.exclude_own_employer === true;
+    const enforceAgencyFilter = policyParams.enforce_agency_filter === true;
+    const agencyIssuers: string[] = Array.isArray(policyParams.agency_issuers) ? policyParams.agency_issuers : [];
     const { data: scoreRows } = await admin.from("oe_matches")
       .select("opportunity_id, scores").eq("user_id", userId);
     const scoresById = new Map<string, any>();
@@ -287,6 +399,34 @@ Deno.serve(withRun("screen_member", async (req) => {
 
     for (const o of (opps ?? [])) {
       funnel.alive++;
+
+      /* WHERE HE ALREADY WORKS IS NOT AN OPPORTUNITY, AND AN AGENCY IS NOT A
+         DOOR. Both tests are deterministic and run before any model call. */
+      const agencyHit = enforceAgencyFilter ? matchedAgency((o as any).issuer_raw, agencyIssuers) : null;
+      const ownEmployerHit = excludeOwnEmployer && !agencyHit
+        && sameEmployer((o as any).issuer_raw, ownEmployer);
+      if (agencyHit || ownEmployerHit) {
+        if (ownEmployerHit) funnel.own_employer++; else funnel.agency++;
+        excludedIds.add(String(o.id));
+        const { error: exErr } = await admin.from("oe_matches").update({
+          screen_gate: ownEmployerHit ? "employer" : "issuer",
+          screen_outcome: "rejected",
+          gate_note: ownEmployerHit ? "own_employer" : "agency",
+          gate_passed: false, lane_final: null,
+          presentation_line: null,
+          rejection_sentence: ownEmployerHit
+            ? `You already work at ${String((o as any).issuer_raw ?? ownEmployer).trim()}.`
+            : "This is an agency listing, not a direct door to the organisation.",
+          screened_at: new Date().toISOString(),
+        }).eq("user_id", userId).eq("opportunity_id", o.id);
+        if (exErr) {
+          await logEfError(admin, {
+            function_name: FN, error: new Error(`exclusion write failed: ${exErr.message}`),
+            severity: "error", context: { opportunity_id: o.id, user_id: userId },
+          });
+        }
+        continue;
+      }
       // KIND IS NOT A PASS. A kind may relax place or level only when the
       // record's access state was actually established. A record that claims a
       // relaxed kind while stating no access state is a mis-kinded listing: it
@@ -404,7 +544,39 @@ Deno.serve(withRun("screen_member", async (req) => {
       .eq("user_id", userId).eq("asked_on", today);
     let mayAsk = (askedToday ?? 0) === 0;
 
+    /* SPEND IS CHECKED BEFORE THE BATCH, NOT AFTER IT. A stage that cannot be
+       paid for makes no calls, and the records it would have read stay unknown. */
+    let spendAllowed = true;
     if (withLines && lovableKey) {
+      const { data: spend } = await admin.rpc("oe_spend_allowed", {
+        p_stage: "screen_presentation",
+        p_estimate: Math.min(survivors.length, lineBudget) * 0.0015,
+      });
+      spendAllowed = (spend as any)?.allowed !== false;
+      if (!spendAllowed) {
+        await admin.from("ef_error_log").insert({
+          function_name: FN, user_id: userId, severity: "warn",
+          error_message: "Daily spend ceiling reached: no presentation calls this run",
+          context: { stage: "screen_presentation", spend },
+        });
+      }
+    }
+
+    /* An answer we never bought is not a negative answer. */
+    const markUnknown = async (oppId: string, note: string) => {
+      await admin.from("oe_matches").update({
+        screen_outcome: "unknown", gate_note: note, screened_at: new Date().toISOString(),
+      }).eq("user_id", userId).eq("opportunity_id", oppId);
+    };
+
+    if (withLines && lovableKey && !spendAllowed) {
+      for (const { o } of survivors.slice(0, lineBudget)) {
+        funnel.spend_capped++;
+        await markUnknown(String(o.id), "spend_cap");
+      }
+    }
+
+    if (withLines && lovableKey && spendAllowed) {
       for (const { o, g } of survivors.slice(0, lineBudget)) {
         const ev = (o as any).scope_evidence ?? null;
         const stated: string[] = Array.isArray(ev?.stated_requirements) ? ev.stated_requirements : [];
@@ -432,12 +604,29 @@ Deno.serve(withRun("screen_member", async (req) => {
               })),
               relation: g.profession_relation, bridge: g.bridge,
             }));
-            matches = Array.isArray(out.matches) ? out.matches : [];
+            matches = out.matches;
+            await logAIUsage({
+              user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+              input_tokens: out.usage.input_tokens, output_tokens: out.usage.output_tokens,
+              success: true,
+              metadata: { stage: "screen_presentation", opportunity_id: o.id },
+            });
           } catch (e) {
+            /* A GATEWAY FAILURE IS NOT A VERDICT ON HIS RECORD. No rejection
+               sentence, no lane change, no gate rewritten — it is read again. */
+            const kind = failureKind(e);
+            await logAIFailure({
+              user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+              error_code: kind,
+              metadata: { stage: "screen_presentation", opportunity_id: o.id },
+            });
             await logEfError(admin, {
               function_name: FN, error: e as Error, severity: "warn",
-              context: { stage: "presentation_line", opportunity_id: o.id },
+              context: { stage: "presentation_line", opportunity_id: o.id, failure: kind },
             });
+            funnel.gateway_unknown++;
+            await markUnknown(String(o.id), kind);
+            continue;
           }
         }
 
@@ -468,9 +657,10 @@ Deno.serve(withRun("screen_member", async (req) => {
         await admin.from("oe_matches").update({
           presentation_line: line,
           presentation_evidence_ids: citedIds,
+          // Only a call that came back and genuinely matched nothing rejects here.
           ...(grounded ? {} : {
             screen_gate: "presentation", screen_outcome: "rejected",
-            gate_passed: false, lane_final: null,
+            gate_passed: false, lane_final: null, gate_note: "no_line",
             rejection_sentence: "No line — nothing in your record answers anything this one asks for.",
           }),
         }).eq("user_id", userId).eq("opportunity_id", o.id);
@@ -514,6 +704,8 @@ Deno.serve(withRun("screen_member", async (req) => {
       for (const row of (writeRows ?? [])) {
         const o: any = oppById.get(String(row.opportunity_id));
         if (!o) continue;
+        // Excluded before any model saw it; it is not writing material either.
+        if (excludedIds.has(String(row.opportunity_id))) continue;
         const best = bestStanding(o, memberEvidence);
         const standing = writingStanding(identity, o, standsFace?.summary ?? null);
         const tests = writeTests({ identity, opportunity: o, standing, best, preferredSectors });
@@ -528,10 +720,13 @@ Deno.serve(withRun("screen_member", async (req) => {
             : !tests.subject_fits_audience.passed || !tests.fits_your_positioning.passed
             ? "writing: outside what you are known for"
             : "writing: nothing useful to add";
+          /* THE GATE THAT ACTUALLY REFUSED IT KEEPS ITS NAME. This sweep stamps
+             no screen_gate: profession, level, place or rubric stands as written. */
           await admin.from("oe_matches").update({
             write_tests: tests, standing_overlap: tests.overlap,
             presentation_line: null, presentation_evidence_ids: [],
-            screen_gate: "presentation", screen_outcome: "rejected", gate_passed: false,
+            screen_outcome: "rejected", gate_passed: false,
+            gate_note: "write_tests_failed",
             lane_final: null, rejection_sentence: sentence,
           }).eq("user_id", userId).eq("opportunity_id", o.id).then(({ error }) => note(error, "write discard"));
           continue;
