@@ -1110,7 +1110,7 @@ Deno.serve(async (req) => {
           // The code parse of the title wins whenever it returns a level; the
           // model's reading is used only when the code cannot tell.
           level_band: parseLevel(rec.title, rec.scope)
-            ?? (LEVELS.includes(String(rec.level_band)) ? String(rec.level_band) : null),
+            ?? ((LEVELS as readonly string[]).includes(String(rec.level_band)) ? String(rec.level_band) : null),
 
           location: rec.location ?? null,
           remote: typeof rec.remote === "boolean" ? rec.remote : null,

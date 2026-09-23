@@ -110,9 +110,16 @@ Deno.serve(withRun("worker", async (req) => {
         await admin.rpc("complete_job", { p_id: jobId, p_success: true, p_error: null });
         return { job_id: jobId, job_type: job.job_type, status: r.status, ok: true };
       }
+      // 429 means the work was refused, not attempted: the job is put back so
+      // it runs again once the ceiling lifts.
+      if (r.status === 429) {
+        await admin.rpc("complete_job", { p_id: jobId, p_success: false, p_error: "deferred_cap" });
+        return { job_id: jobId, job_type: job.job_type, ok: false, error: "deferred_cap" };
+      }
       const err = `http_${r.status}: ${snippet}`;
       await admin.rpc("complete_job", { p_id: jobId, p_success: false, p_error: err });
       return { job_id: jobId, job_type: job.job_type, ok: false, error: err };
+
     } catch (e: any) {
       clearTimeout(timer);
       const err = e?.name === "AbortError"
