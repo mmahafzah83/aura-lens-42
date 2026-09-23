@@ -124,17 +124,43 @@ async function checkFirecrawl(): Promise<Vendor> {
 
 const REFUSAL_RE = /402|insufficient credits|payment required|429/i;
 
-async function checkLovableAI(admin: any): Promise<Vendor> {
+/** Which vendor refused: the message says so, so it is not guessed. */
+function vendorOf(text: string): string {
+  if (/firecrawl/i.test(text)) return "firecrawl";
+  if (/apify/i.test(text)) return "apify";
+  return "lovable_ai";
+}
+
+type Scan = {
+  byVendor: Record<string, number>;
+  byJobType: Record<string, number>;
+  samples: Record<string, string[]>;
+  jobRefusals: number;
+};
+
+async function refusalScan(admin: any): Promise<Scan> {
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
-  const detail: Record<string, unknown> = { topup: TOPUP.lovable_ai };
+  const byVendor: Record<string, number> = { apify: 0, firecrawl: 0, lovable_ai: 0 };
+  const samples: Record<string, string[]> = { apify: [], firecrawl: [], lovable_ai: [] };
 
   const { data: errs } = await admin.from("ef_error_log")
     .select("error_message, function_name").gte("created_at", since).limit(2000);
-  const refusalsErrors = (errs ?? []).filter((r: any) => REFUSAL_RE.test(String(r.error_message ?? "")));
+  for (const r of (errs ?? []) as any[]) {
+    const text = String(r.error_message ?? "");
+    if (!REFUSAL_RE.test(text)) continue;
+    const v = vendorOf(text);
+    byVendor[v] = (byVendor[v] ?? 0) + 1;
+    if (samples[v].length < 3) samples[v].push(`${r.function_name}: ${text.slice(0, 90)}`);
+  }
 
   const { data: usage } = await admin.from("ai_usage_log")
     .select("function_name, success, metadata").gte("created_at", since).eq("success", false).limit(2000);
-  const refusalsUsage = (usage ?? []).filter((r: any) => REFUSAL_RE.test(JSON.stringify(r.metadata ?? {})));
+  for (const r of (usage ?? []) as any[]) {
+    const text = JSON.stringify(r.metadata ?? {});
+    if (!REFUSAL_RE.test(text)) continue;
+    const v = vendorOf(text);
+    byVendor[v] = (byVendor[v] ?? 0) + 1;
+  }
 
   const { data: jobs } = await admin.from("job_queue")
     .select("job_type, last_error").gte("updated_at", since).not("last_error", "is", null).limit(2000);
@@ -147,16 +173,33 @@ async function checkLovableAI(admin: any): Promise<Vendor> {
     byJobType[String(row.job_type)] = (byJobType[String(row.job_type)] ?? 0) + 1;
   }
 
-  const refused = refusalsErrors.length + refusalsUsage.length;
-  detail.error_log_hits = refusalsErrors.slice(0, 5).map((r: any) => r.function_name);
-  detail.job_queue_refusals = byJobType;
-  detail.job_queue_refused_24h = jobRefusals;
-  const level = levelFor({ refused, used: null, limit: null, remaining: null, daysLeft: null });
+  return { byVendor, byJobType, samples, jobRefusals };
+}
+
+function lovableVendor(scan: Scan): Vendor {
+  const refused = scan.byVendor.lovable_ai ?? 0;
   return {
-    vendor: "lovable_ai", ok: refused === 0, level, used: null, limit_value: null,
-    remaining: null, unit: "calls", refused_24h: refused, detail,
+    vendor: "lovable_ai", ok: refused === 0,
+    level: levelFor({ refused, used: null, limit: null, remaining: null, daysLeft: null }),
+    used: null, limit_value: null, remaining: null, unit: "calls", refused_24h: refused,
+    detail: {
+      topup: TOPUP.lovable_ai, samples: scan.samples.lovable_ai,
+      job_queue_refusals: scan.byJobType, job_queue_refused_24h: scan.jobRefusals,
+    },
   };
 }
+
+/** A vendor that answered happily but refused work in the last day has stopped. */
+function withRefusals(v: Vendor, scan: Scan): Vendor {
+  const refused = scan.byVendor[v.vendor] ?? 0;
+  if (!refused) return v;
+  return {
+    ...v, refused_24h: refused, ok: false,
+    level: levelFor({ refused, used: v.used, limit: v.limit_value, remaining: v.remaining, daysLeft: null }),
+    detail: { ...v.detail, refusal_samples: scan.samples[v.vendor] ?? [] },
+  };
+}
+
 
 function emailBody(v: Vendor): { subject: string; text: string } {
   const name = v.vendor === "lovable_ai" ? "Lovable AI" : v.vendor === "apify" ? "Apify" : "Firecrawl";
