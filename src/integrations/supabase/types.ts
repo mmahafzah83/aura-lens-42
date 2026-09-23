@@ -4593,10 +4593,14 @@ export type Database = {
           chair_types_never_held: string[] | null
           countries_allowed: string[] | null
           created_at: string
+          issuers_followed: string[]
+          issuers_hidden: string[]
+          kinds_preferred: string[]
           level_ceiling: string | null
           level_floor: string | null
           level_now: string | null
           nationality: string | null
+          org_types_preferred: string[]
           remote_ok: boolean
           residence_country: string | null
           sectors_core: string[] | null
@@ -4610,10 +4614,14 @@ export type Database = {
           chair_types_never_held?: string[] | null
           countries_allowed?: string[] | null
           created_at?: string
+          issuers_followed?: string[]
+          issuers_hidden?: string[]
+          kinds_preferred?: string[]
           level_ceiling?: string | null
           level_floor?: string | null
           level_now?: string | null
           nationality?: string | null
+          org_types_preferred?: string[]
           remote_ok?: boolean
           residence_country?: string | null
           sectors_core?: string[] | null
@@ -4627,10 +4635,14 @@ export type Database = {
           chair_types_never_held?: string[] | null
           countries_allowed?: string[] | null
           created_at?: string
+          issuers_followed?: string[]
+          issuers_hidden?: string[]
+          kinds_preferred?: string[]
           level_ceiling?: string | null
           level_floor?: string | null
           level_now?: string | null
           nationality?: string | null
+          org_types_preferred?: string[]
           remote_ok?: boolean
           residence_country?: string | null
           sectors_core?: string[] | null
@@ -11611,6 +11623,14 @@ export type Database = {
           iso2: string
           name_ar: string
           name_en: string
+        }[]
+      }
+      oe_ref_entity_search: {
+        Args: { p_q: string }
+        Returns: {
+          id: string
+          name: string
+          sector_code: string
         }[]
       }
       oe_ref_sector_list: { Args: never; Returns: Json }
