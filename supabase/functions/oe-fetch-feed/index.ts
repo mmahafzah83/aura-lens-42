@@ -963,7 +963,7 @@ Deno.serve(async (req) => {
         const quoteVerified = quote.length > 10 && pageNorm.includes(quote);
         let confidence = Number(rec.extraction_confidence ?? 0.5);
         if (!quoteVerified) {
-          if (rec.time_kind === "open_now") { counts.dropped_no_quote++; continue; }
+          if (rec.time_kind === "open_now") { counts.dropped_no_quote++; recordSeen(cand.url, "no_quote"); continue; }
           confidence = Math.min(confidence, 0.5);
         }
 
