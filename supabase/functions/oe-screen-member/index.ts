@@ -344,6 +344,12 @@ Deno.serve(withRun("screen_member", async (req) => {
     // ── what he is licensed to hold, and what he can show ────────────────
     const { data: eligRow } = await admin.from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
     const eligibility = (eligRow ?? null) as Eligibility | null;
+    // No place chosen is not "anywhere": full-time seats default to home and
+    // home's first region, read from the reference tables (oe_default_places).
+    if (eligibility && !(eligibility.countries_allowed ?? []).length && eligibility.residence_country) {
+      const { data: defaults } = await admin.rpc("oe_default_places", { p_residence: eligibility.residence_country });
+      if (Array.isArray(defaults) && defaults.length) eligibility.countries_allowed = defaults as string[];
+    }
     const { data: profile } = await admin.from("diagnostic_profiles")
       .select("years_experience, core_practice, firm").eq("user_id", userId).maybeSingle();
     const ownEmployer = String((profile as any)?.firm ?? "").trim();

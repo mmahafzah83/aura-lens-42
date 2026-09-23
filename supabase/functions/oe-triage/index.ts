@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
 
     const { data: batch } = await admin
       .from("oe_candidates")
-      .select("id, url, title, snippet, feed_id, entity_id, country")
+      .select("id, url, title, snippet, feed_id, entity_id, country, first_seen_at")
       .eq("triage_state", "new")
       .order("first_seen_at", { ascending: true })
       .limit(batchSize);
@@ -238,7 +238,8 @@ Deno.serve(async (req) => {
         input_tokens: tokens, metadata: { batch: kept.length },
       });
 
-      const passed: Array<{ id: string; title: string; priority: number }> = [];
+      const passed: Array<{ id: string; title: string; priority: number; fresh: boolean }> = [];
+      const freshSince = Date.now() - 24 * 3600_000;
       const batchScores: number[] = [];
       for (let i = 0; i < kept.length; i++) {
         const v = vectors[i];
@@ -300,29 +301,44 @@ Deno.serve(async (req) => {
           }).eq("id", c.id);
         }
         counts.passed++;
-        passed.push({ id: c.id, title: String(c.title ?? ""), priority });
+        passed.push({
+          id: c.id, title: String(c.title ?? ""), priority,
+          fresh: new Date(String((c as any).first_seen_at ?? 0)).getTime() >= freshSince,
+        });
       }
 
-      // 3. Promote the highest priority, up to the one daily reading budget.
-      passed.sort((a, b) => b.priority - a.priority);
-      counts.top_promoted = passed.slice(0, 10).map((p) => ({ title: p.title.slice(0, 90), priority: p.priority }));
+      // 3. Promote within the rolling-24h reading budget. Fresh (first seen in
+      // the last 24h) goes first at priority 9; backlog at priority 3 may use at
+      // most half of the budget.
+      passed.sort((a, b) => (Number(b.fresh) - Number(a.fresh)) || (b.priority - a.priority));
+      counts.top_promoted = passed.slice(0, 10).map((p) => ({ title: p.title.slice(0, 90), priority: p.priority, fresh: p.fresh }));
       if (!dryRun && passed.length) {
         const since = new Date(Date.now() - 24 * 3600_000).toISOString();
         const { count: promotedToday } = await admin.from("job_queue")
           .select("id", { count: "exact", head: true })
           .eq("job_type", "oe_read_candidate").gte("created_at", since);
+        const { count: backlogToday } = await admin.from("job_queue")
+          .select("id", { count: "exact", head: true })
+          .eq("job_type", "oe_read_candidate").eq("priority", 3).gte("created_at", since);
         counts.read_today_before = promotedToday ?? 0;
-        const room = Math.max(0, readCap - (promotedToday ?? 0));
-        for (const p of passed.slice(0, room)) {
+        let room = Math.max(0, readCap - (promotedToday ?? 0));
+        let backlogRoom = Math.max(0, Math.floor(readCap * 0.5) - (backlogToday ?? 0));
+        counts.promoted_fresh = 0; counts.promoted_backlog = 0;
+        const promoted: typeof passed = [];
+        for (const p of passed) {
+          if (room <= 0) break;
+          if (!p.fresh && backlogRoom <= 0) continue;
           const { error } = await admin.from("job_queue").insert({
             job_type: "oe_read_candidate",
-            payload: { candidate_id: p.id },
-            priority: 5,
+            payload: { candidate_id: p.id, lane: p.fresh ? "fresh" : "backlog" },
+            priority: p.fresh ? 9 : 3,
           });
-          if (!error) counts.promoted++;
+          if (error) continue;
+          counts.promoted++; room--; promoted.push(p);
+          if (p.fresh) counts.promoted_fresh++; else { counts.promoted_backlog++; backlogRoom--; }
         }
-        counts.top_promoted = passed.slice(0, Math.min(10, room)).map((p) => ({
-          title: p.title.slice(0, 90), priority: p.priority,
+        counts.top_promoted = promoted.slice(0, 10).map((p) => ({
+          title: p.title.slice(0, 90), priority: p.priority, fresh: p.fresh,
         }));
       }
     }
