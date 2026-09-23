@@ -296,14 +296,20 @@ async function plainFetchText(url: string) {
   }
 }
 
-/** Firecrawl first. If every engine fails, read the page plainly. */
+/**
+ * Plain read first. Firecrawl is billed per page, so it is the fallback: it is
+ * called only when the plain fetch failed or came back with almost no text.
+ */
 async function scrapePage(apiKey: string, url: string, withLinks = false) {
+  const plain = await plainFetchText(url);
+  if (plain.ok && squash(stripTags(plain.markdown || "")).length >= 200) return plain;
   if (apiKey) {
     const fc = await firecrawlScrape(apiKey, url, withLinks);
     if (fc.ok && squash(stripTags(fc.markdown || "")).length >= 200) return fc;
   }
-  return await plainFetchText(url);
+  return plain;
 }
+
 
 
 async function perplexity(apiKey: string, query: string) {
