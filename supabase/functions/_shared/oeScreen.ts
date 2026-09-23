@@ -623,16 +623,68 @@ export function professionGate(identity: MemberIdentity, opportunity: any) {
   };
 }
 
+/**
+ * WHO WE MATCH HIM AS — the CURRENT role, normalised to a market level
+ * (oe_identity, resolved in SQL). History is evidence; it never sets the bar.
+ */
+export type CurrentIdentity = {
+  market_level: string | null;
+  title: string | null;
+  employer: string | null;
+  status: "confirmed" | "inferred" | "needs_confirmation";
+  step_up: boolean;
+};
+
+const LADDER = ["ic", "manager", "senior_manager", "director", "senior_director", "vp", "c_suite", "board"];
+const ladderIndex = (level?: string | null) => LADDER.indexOf(String(level ?? "").trim());
+const ladderLabel = (level: string) => level === "c_suite" ? "C-suite" : level === "ic" ? "individual role" : level.replace(/_/g, " ");
+
+/** Weight of a position's evidence by how long ago it ended. Half-life five years; current = 1. */
+export function recencyWeight(ended?: string | null, now = new Date()): number {
+  const text = String(ended ?? "").trim();
+  if (!text || /present|current|now|حتى الآن|حاليا/i.test(text)) return 1;
+  const year = Number((/(19|20)\d{2}/.exec(text) ?? [])[0]);
+  if (!Number.isFinite(year) || !year) return 0.5;
+  const years = Math.max(0, now.getUTCFullYear() - year);
+  return +Math.pow(0.5, years / 5).toFixed(3);
+}
+
 /** GATE 3 — level direction, adjusted for where the employer sits on the ladder. */
 export function levelGate(
   identity: MemberIdentity,
   opportunity: any,
   routeIsSpecific: boolean,
   ladder: LadderRow[] = [],
+  current: CurrentIdentity | null = null,
 ) {
   const mine = identity.highest_standing;
   const placed = employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null);
   const tier = placed.tier;
+
+  // The member's current market level sets the band: market .. market+1
+  // (+2 on a step-up move); below market-1 is below. While his roles
+  // disagree, a mismatch is unknown — no verdict without his answer.
+  if (current?.market_level && ladderIndex(current.market_level) >= 0) {
+    const band = String(opportunity?.level_band ?? "").trim();
+    const roleLevel = ladderIndex(band) >= 0 ? band : null;
+    if (!roleLevel) {
+      return { direction: "unknown" as const, gap: null, tier, placed, sentence: null, basis: "none" as const, reason: "role_grade_unreadable" };
+    }
+    const gap = ladderIndex(roleLevel) - ladderIndex(current.market_level);
+    const top = current.step_up ? 2 : 1;
+    const as = `we match you as ${ladderLabel(current.market_level)} (${current.title ?? "your current role"}${current.employer ? ` at ${current.employer}` : ""})`;
+    const thisOne = `this is ${opportunity?.title} at ${opportunity?.issuer_raw ?? "an employer at the same tier"}, a ${ladderLabel(roleLevel)} seat`;
+    if (gap < -1) {
+      if (current.status === "needs_confirmation") {
+        return { direction: "unknown" as const, gap, tier, placed, sentence: null, basis: "title" as const, reason: "identity_unconfirmed" };
+      }
+      return { direction: "below" as const, gap, tier, placed, reason: null, basis: "title" as const, sentence: `Below your level — ${as}; ${thisOne}.` };
+    }
+    if (gap <= 0) return { direction: "lateral" as const, gap, tier, placed, sentence: null, reason: null, basis: "title" as const };
+    if (gap === 1) return { direction: "one_above" as const, gap, tier, placed, sentence: null, reason: null, basis: "title" as const };
+    return { direction: "two_plus" as const, gap, tier, placed, sentence: null, reason: gap > top ? "above_band" : null, basis: "title" as const };
+  }
+
   // The grade is read from what the posting states about scope, reports and
   // profit and loss where it states them, and from the title where it does not.
   const grade = gradeFrom(opportunity);
