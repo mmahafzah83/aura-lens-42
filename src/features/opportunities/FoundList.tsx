@@ -54,7 +54,10 @@ function Chip({ children }: { children: React.ReactNode }) {
   }}>{children}</span>;
 }
 
-function Row({ item, v, language }: { item: FoundItem; v: Vocab; language: Lang }) {
+function Row({ item, v, language, canCheck, checking, onCheck }: {
+  item: FoundItem; v: Vocab; language: Lang;
+  canCheck: boolean; checking: boolean; onCheck: (id: string) => void;
+}) {
   const href = item.route_url ?? item.source_url ?? undefined;
   const meta = [item.issuer, item.location].filter(Boolean).join(" · ");
   const levelLabel = item.level ? v(`foundlevel_${item.level}`) : "";
@@ -72,14 +75,21 @@ function Row({ item, v, language }: { item: FoundItem; v: Vocab; language: Lang 
       {href && <span style={{ fontSize: 12, fontWeight: 600, color: ACT }}>{`${v("found_open_posting")} ${arrow}`}</span>}
     </span>
   </>;
-  const style: React.CSSProperties = {
-    display: "block", padding: "12px 14px", borderBlockEnd: `1px solid ${LINE}`,
-    textDecoration: "none", color: INK,
-  };
-  return href
-    ? <a href={href} target="_blank" rel="noopener noreferrer" style={style}>{body}</a>
-    : <div style={style}>{body}</div>;
+  const inner: React.CSSProperties = { display: "block", textDecoration: "none", color: INK };
+  const showCheck = canCheck && item.judged !== true;
+  return <div style={{ padding: "12px 14px", borderBlockEnd: `1px solid ${LINE}` }}>
+    {href
+      ? <a href={href} target="_blank" rel="noopener noreferrer" style={inner}>{body}</a>
+      : <div style={inner}>{body}</div>}
+    {showCheck && (checking
+      ? <span style={{ display: "block", marginBlockStart: 8, fontSize: 12, color: MUTED }}>{v("found_checking")}</span>
+      : <button type="button" onClick={() => onCheck(item.id)} style={{
+          marginBlockStart: 8, minBlockSize: 32, padding: 0, border: 0, background: "transparent",
+          color: MUTED, font: "inherit", fontSize: 12, fontWeight: 600, textDecoration: "underline", cursor: "pointer",
+        }}>{v("found_check_now")}</button>)}
+  </div>;
 }
+
 
 function EmployerRow({ row, v, language }: { row: FoundEmployer; v: Vocab; language: Lang }) {
   return <div style={{ padding: "12px 14px", borderBlockEnd: `1px solid ${LINE}` }}>
