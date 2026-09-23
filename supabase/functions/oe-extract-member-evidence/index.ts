@@ -20,9 +20,9 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import {
   MEMBER_EVIDENCE_INSTRUCTION, verifyMemberClaims, type MemberClaim,
 } from "../_shared/memberEvidence.ts";
+import { modelFor } from "../_shared/models.ts";
 
 const FN = "oe-extract-member-evidence";
-const MODEL = "openai/gpt-6-astra";
 
 /** The member's own record: what he wrote, uploaded or answered himself.
  *  Anything else is a page he read, and it never grounds a card. */
@@ -37,20 +37,20 @@ const json = (b: unknown, status = 200) =>
 
 type Group = "profile" | "cv" | "assessment" | "writing";
 
-/** One streamed Responses call. Reasoning models run long; never buffer. */
-async function ask(key: string, instructions: string, input: string): Promise<{ raw: any; usage: any }> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+/** One chat/completions call on the standard model, same schema, not streamed. */
+async function ask(key: string, model: string, instructions: string, input: string): Promise<{ raw: any; usage: any }> {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
     body: JSON.stringify({
-      model: MODEL,
-      instructions,
-      input,
-      stream: true,
-      reasoning: { effort: "low", summary: "auto" },
-      text: {
-        format: {
-          type: "json_schema",
+      model,
+      messages: [
+        { role: "system", content: instructions },
+        { role: "user", content: input },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
           name: "member_claims",
           strict: true,
           schema: {
@@ -80,27 +80,16 @@ async function ask(key: string, instructions: string, input: string): Promise<{ 
   });
   if (!res.ok) throw new Error(`gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
 
-  const reader = res.body!.getReader();
-  const decoder = new TextDecoder();
-  let buf = "", text = "", usage: any = null;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const l of lines) {
-      if (!l.startsWith("data:")) continue;
-      const raw = l.slice(5).trim();
-      if (!raw || raw === "[DONE]") continue;
-      try {
-        const ev = JSON.parse(raw);
-        if (ev.type === "response.output_text.delta" && typeof ev.delta === "string") text += ev.delta;
-        if (ev.response?.usage) usage = ev.response.usage;
-      } catch { /* partial frame */ }
+  const data = await res.json().catch(() => null);
+  const u = data?.usage ?? null;
+  const usage = u
+    ? {
+      input_tokens: Number(u.prompt_tokens ?? u.input_tokens ?? 0),
+      output_tokens: Number(u.completion_tokens ?? u.output_tokens ?? 0),
     }
-  }
-  try { return { raw: JSON.parse(text.trim()), usage }; } catch { return { raw: { claims: [] }, usage }; }
+    : null;
+  const text = String(data?.choices?.[0]?.message?.content ?? "").trim();
+  try { return { raw: JSON.parse(text), usage }; } catch { return { raw: { claims: [] }, usage }; }
 }
 
 Deno.serve(async (req) => {
@@ -126,6 +115,11 @@ Deno.serve(async (req) => {
     ? body.groups as Group[]
     : ["profile", "cv", "assessment", "writing"];
   if (!userId) return json({ error: "user_id required" }, 400);
+
+  // The model is a policy value, read from the active policy row.
+  const { data: policyRow } = await admin.from("oe_policy_versions")
+    .select("params").eq("active", true).maybeSingle();
+  const MODEL = modelFor("extract_member_evidence", (policyRow?.params ?? {}) as any);
 
   const counts = {
     groups_read: [] as string[], calls: 0, kept: 0, stored: 0, duplicates: 0,
@@ -163,7 +157,7 @@ Deno.serve(async (req) => {
       return false;
     }
     counts.calls++;
-    const { raw, usage } = await ask(key, instructions, input);
+    const { raw, usage } = await ask(key, MODEL, instructions, input);
     counts.input_tokens += Number(usage?.input_tokens ?? 0);
     counts.output_tokens += Number(usage?.output_tokens ?? 0);
     await logAIUsage({

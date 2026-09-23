@@ -27,9 +27,9 @@ import {
 import {
   loadLocationSensitivity, sensitivityOf, loadLevelGateApplies, levelGateApplies,
 } from "../_shared/oeKinds.ts";
+import { modelFor } from "../_shared/models.ts";
 
 const FN = "oe-screen-member";
-const MODEL = "openai/gpt-6-astra";
 
 /** Only so a rejection reads like a person wrote it: "you work from Saudi Arabia". */
 const COUNTRY_NAME: Record<string, string> = {
@@ -83,26 +83,27 @@ const failureKind = (e: unknown): GatewayFailure["kind"] => {
   return "transport";
 };
 
-/** One streamed call. Reasoning models run for minutes; never buffer, never time out on a timer. */
+/** One chat/completions call on the standard model. Same schema, not streamed. */
 async function askForLine(
   key: string,
+  model: string,
   payload: string,
 ): Promise<{
   matches: Array<{ requirement: string; evidence_id: string }>;
   usage: { input_tokens: number; output_tokens: number };
 }> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
     body: JSON.stringify({
-      model: MODEL,
-      instructions: PRESENTATION_SYSTEM,
-      input: payload,
-      stream: true,
-      reasoning: { effort: "low", summary: "auto" },
-      text: {
-        format: {
-          type: "json_schema",
+      model,
+      messages: [
+        { role: "system", content: PRESENTATION_SYSTEM },
+        { role: "user", content: payload },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
           name: "presentation_matches",
           strict: true,
           schema: {
@@ -140,44 +141,25 @@ async function askForLine(
     throw new GatewayFailure(kind, `gateway ${res.status}: ${body}`);
   }
 
-  const reader = res.body!.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  let text = "";
-  const usage = { input_tokens: 0, output_tokens: 0 };
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const l of lines) {
-      if (!l.startsWith("data:")) continue;
-      const raw = l.slice(5).trim();
-      if (!raw || raw === "[DONE]") continue;
-      try {
-        const ev = JSON.parse(raw);
-        if (ev.type === "response.output_text.delta" && typeof ev.delta === "string") text += ev.delta;
-        const u = ev?.response?.usage;
-        if (u) {
-          usage.input_tokens = Number(u.input_tokens ?? u.prompt_tokens ?? usage.input_tokens) || usage.input_tokens;
-          usage.output_tokens = Number(u.output_tokens ?? u.completion_tokens ?? usage.output_tokens) || usage.output_tokens;
-        }
-      } catch { /* partial frame */ }
-    }
-  }
-  /* AN EMPTY OR MALFORMED STREAM IS NOT AN EMPTY RESULT. Returning {matches: []}
+  const data = await res.json().catch(() => null);
+  const u = data?.usage ?? null;
+  const usage = {
+    input_tokens: Number(u?.prompt_tokens ?? u?.input_tokens ?? 0) || 0,
+    output_tokens: Number(u?.completion_tokens ?? u?.output_tokens ?? 0) || 0,
+  };
+
+  /* AN EMPTY OR UNPARSEABLE BODY IS NOT AN EMPTY RESULT. Returning {matches: []}
      here would let a broken call be read as "his record answers nothing". */
-  const trimmed = text.trim();
-  if (!trimmed) throw new GatewayFailure("transport", "empty stream: no output text");
+  const trimmed = String(data?.choices?.[0]?.message?.content ?? "").trim();
+  if (!trimmed) throw new GatewayFailure("transport", "empty response: no output text");
   let parsed: any;
   try {
     parsed = JSON.parse(trimmed);
   } catch {
-    throw new GatewayFailure("transport", "malformed stream: output is not JSON");
+    throw new GatewayFailure("transport", "malformed response: output is not JSON");
   }
   if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.matches)) {
-    throw new GatewayFailure("transport", "malformed stream: no matches array");
+    throw new GatewayFailure("transport", "malformed response: no matches array");
   }
   return { matches: parsed.matches, usage };
 }
@@ -376,6 +358,8 @@ Deno.serve(withRun("screen_member", async (req) => {
       .select("params").eq("active", true).maybeSingle();
     const gateMin = Number((policyRow?.params as any)?.gate_min_avg ?? 3.0);
     const policyParams = (policyRow?.params ?? {}) as Record<string, any>;
+    // The model is a policy value, refused if it is not on the allow-list.
+    const MODEL = modelFor("screen_presentation", policyParams);
     const excludeOwnEmployer = policyParams.exclude_own_employer === true;
     const enforceAgencyFilter = policyParams.enforce_agency_filter === true;
     const agencyIssuers: string[] = Array.isArray(policyParams.agency_issuers) ? policyParams.agency_issuers : [];
@@ -592,7 +576,7 @@ Deno.serve(withRun("screen_member", async (req) => {
         let matches: Array<{ requirement: string; evidence_id: string }> = [];
         if (requirements.length && memberEvidence.length) {
           try {
-            const out = await askForLine(lovableKey, JSON.stringify({
+            const out = await askForLine(lovableKey, MODEL, JSON.stringify({
               opportunity: {
                 title: o.title, scope: o.scope, sector: o.sector, issuer: o.issuer_raw,
                 stated_requirements: requirements,
