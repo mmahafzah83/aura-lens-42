@@ -6474,6 +6474,102 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_registry_merge: {
+        Row: {
+          action: string | null
+          ats_endpoint: string | null
+          ats_platform: string | null
+          ats_token: string | null
+          careers_url: string | null
+          country: string | null
+          dkey: string | null
+          domain: string | null
+          endpoint: string | null
+          entity_id: string | null
+          js: boolean | null
+          kind: string | null
+          name: string | null
+          sector: string | null
+        }
+        Insert: {
+          action?: string | null
+          ats_endpoint?: string | null
+          ats_platform?: string | null
+          ats_token?: string | null
+          careers_url?: string | null
+          country?: string | null
+          dkey?: string | null
+          domain?: string | null
+          endpoint?: string | null
+          entity_id?: string | null
+          js?: boolean | null
+          kind?: string | null
+          name?: string | null
+          sector?: string | null
+        }
+        Update: {
+          action?: string | null
+          ats_endpoint?: string | null
+          ats_platform?: string | null
+          ats_token?: string | null
+          careers_url?: string | null
+          country?: string | null
+          dkey?: string | null
+          domain?: string | null
+          endpoint?: string | null
+          entity_id?: string | null
+          js?: boolean | null
+          kind?: string | null
+          name?: string | null
+          sector?: string | null
+        }
+        Relationships: []
+      }
+      oe_registry_stage: {
+        Row: {
+          ats_endpoint: string | null
+          ats_platform: string | null
+          ats_token: string | null
+          careers_url: string | null
+          country: string | null
+          dkey: string | null
+          domain: string | null
+          endpoint: string | null
+          js: boolean | null
+          kind: string | null
+          name: string | null
+          sector: string | null
+        }
+        Insert: {
+          ats_endpoint?: string | null
+          ats_platform?: string | null
+          ats_token?: string | null
+          careers_url?: string | null
+          country?: string | null
+          dkey?: string | null
+          domain?: string | null
+          endpoint?: string | null
+          js?: boolean | null
+          kind?: string | null
+          name?: string | null
+          sector?: string | null
+        }
+        Update: {
+          ats_endpoint?: string | null
+          ats_platform?: string | null
+          ats_token?: string | null
+          careers_url?: string | null
+          country?: string | null
+          dkey?: string | null
+          domain?: string | null
+          endpoint?: string | null
+          js?: boolean | null
+          kind?: string | null
+          name?: string | null
+          sector?: string | null
+        }
+        Relationships: []
+      }
       oe_run_schedule: {
         Row: {
           created_at: string
