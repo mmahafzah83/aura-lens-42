@@ -164,8 +164,17 @@ export function OpportunityQueue() {
   useEffect(() => { void (async () => {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user?.id) return;
-    const { data: row } = await supabase.from("oe_eligibility" as never).select("remote_ok").eq("user_id", auth.user.id).maybeSingle();
-    setRemoteOk(Boolean((row as { remote_ok?: boolean } | null)?.remote_ok));
+    const { data: row } = await supabase.from("oe_eligibility" as never)
+      .select("remote_ok, issuers_followed, issuers_hidden").eq("user_id", auth.user.id).maybeSingle();
+    const record = (row ?? null) as { remote_ok?: boolean; issuers_followed?: string[]; issuers_hidden?: string[] } | null;
+    setRemoteOk(Boolean(record?.remote_ok));
+    const follow = record?.issuers_followed ?? [];
+    const hide = record?.issuers_hidden ?? [];
+    if (!follow.length && !hide.length) return;
+    const { data: named } = await supabase.rpc("oe_ref_entity_names" as never, { p_ids: [...follow, ...hide] } as never);
+    const rows = Array.isArray(named) ? (named as unknown as Company[]) : [];
+    const pick = (ids: string[]) => ids.map((id) => rows.find((entry) => entry.id === id) ?? { id, name: id, sector_code: null });
+    setFollowPick(pick(follow)); setHidePick(pick(hide));
   })(); }, []);
   useEffect(() => { void loadFound(); }, [loadFound]);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
