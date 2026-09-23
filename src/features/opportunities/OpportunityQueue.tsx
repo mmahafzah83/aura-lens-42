@@ -369,6 +369,18 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   const dialogRef = useRef<HTMLElement | null>(null);
   const [countryQuery, setCountryQuery] = useState("");
   const [sectorQuery, setSectorQuery] = useState("");
+  const [companyQuery, setCompanyQuery] = useState("");
+  const [companyMatches, setCompanyMatches] = useState<Company[]>([]);
+  useEffect(() => {
+    const needle = companyQuery.trim();
+    if (needle.length < 2) { setCompanyMatches([]); return; }
+    let live = true;
+    const timer = window.setTimeout(() => { void (async () => {
+      const { data: rows } = await supabase.rpc("oe_ref_entity_search" as never, { p_query: needle } as never);
+      if (live) setCompanyMatches(Array.isArray(rows) ? (rows as unknown as Company[]) : []);
+    })(); }, 250);
+    return () => { live = false; window.clearTimeout(timer); };
+  }, [companyQuery]);
   const places = data.filters.place?.values ?? [];
   const placeText = places.length ? places.map((value) => value.startsWith("region:") ? refLabel("region", value.slice(7), language) : refLabel("place", value, language)).join(" · ") : v("move_place_any");
   const homeChoice = home?.city && home.country ? { value: home.country, label: fill(v("move_place_home"), { city: home.city }) } : null;
