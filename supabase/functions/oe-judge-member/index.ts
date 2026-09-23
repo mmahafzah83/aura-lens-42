@@ -714,7 +714,10 @@ Deno.serve(async (req) => {
     // to the shortlist from params. The cut is a cost control, never a silent
     // one — a shortlist smaller than the eligible pool is logged and counted.
     const eligiblePool = actPool.length + writePool.filter((o) => o._match?.gate_passed === true).length;
-    const modelCap = Math.min(shortlistK, judgeMax);
+    // Two ceilings: what one run may read, and what one day may read.
+    const dayRoom = Math.max(0, judgeMaxPerDay - counts.judged_today_before);
+    const modelCap = Math.min(shortlistK, judgeMax, dayRoom);
+
     const shortlist = scored.slice(0, modelCap);
     counts.eligible_pool = eligiblePool;
     counts.shortlisted = shortlist.length;
