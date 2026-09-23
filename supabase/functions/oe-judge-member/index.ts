@@ -563,9 +563,23 @@ Deno.serve(async (req) => {
     // Coverage and ranking are separate. Retrieval decides review order; it
     // never decides the gate. oe-screen-member is the one source of truth for
     // gate_passed and lane_final; this function reads those stored verdicts.
+    // An application on the employer's own site (its domain, its careers host,
+    // or a host carrying its registrable name) is an identified route; a screen
+    // survivor with one belongs in the act lane. Without this, a fresh posting
+    // with no access_state had its 'act' cleared by the route trigger and fell
+    // into writing, where roles are never carded.
+    {
+      const { data: promoted, error: pErr } = await admin.rpc("oe_promote_issuer_routes");
+      if (pErr) throw new Error(`promote issuer routes: ${pErr.message}`);
+      counts.routes_promoted = promoted;
+      if ((promoted as any)?.opportunities > 0) {
+        const { error: sErr } = await admin.rpc("oe_apply_shape_state");
+        if (sErr) throw new Error(`shape state: ${sErr.message}`);
+      }
+    }
     const { data: opps, error: oppsError } = await admin
       .from("oe_opportunities")
-      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, updated_at, first_seen_at, issuer:oe_issuers(domain)")
+      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, access_state, issuer_id, issuer_raw, language, embedding, updated_at, first_seen_at, source_url, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
     const requestedSet = new Set(requestedOpportunityIds);
@@ -729,10 +743,39 @@ Deno.serve(async (req) => {
     const freshCut = Date.now() - 24 * 3600_000;
     const isFreshOpp = (o: any) => new Date(String(o.first_seen_at ?? 0)).getTime() >= freshCut;
     const backlogCap = Math.max(0, Math.floor(judgeMaxPerDay * 0.5) - counts.judged_today_before);
-    const freshList = scored.filter((c) => isFreshOpp(c.o));
-    const backlogList = scored.filter((c) => !isFreshOpp(c.o));
-    const takeFresh = freshList.slice(0, modelCap);
-    const takeBacklog = backlogList.slice(0, Math.min(modelCap - takeFresh.length, backlogCap));
+        // EVERY SCREEN SURVIVOR IS JUDGED. Retrieval may add candidates; it may
+    // never exclude a survivor. Survivors go first, fresh before backlog, then
+    // by triage priority, and are not bound by the retrieval cut.
+    const isSurvivor = (c: any) => c.o._match?.screen_outcome === "survivor" && c.o._match?.gate_passed === true;
+    const survivorSrc = scored.filter(isSurvivor);
+    const triagePriority = new Map<string, number>();
+    {
+      const urls = [...new Set(survivorSrc.map((c) => String(c.o.source_url ?? "")).filter(Boolean))];
+      for (let i = 0; i < urls.length; i += 100) {
+        const { data: cands } = await admin.from("oe_candidates").select("url, canonical_url, priority")
+          .or(`url.in.(${urls.slice(i, i + 100).map((u) => JSON.stringify(u)).join(",")}),canonical_url.in.(${urls.slice(i, i + 100).map((u) => JSON.stringify(u)).join(",")})`);
+        for (const c of cands ?? []) {
+          const pr = Number((c as any).priority ?? 0);
+          for (const u of [(c as any).url, (c as any).canonical_url]) {
+            if (u && pr > (triagePriority.get(u) ?? -Infinity)) triagePriority.set(u, pr);
+          }
+        }
+      }
+    }
+    const survivors = survivorSrc.sort((a, b) =>
+      (Number(isFreshOpp(b.o)) - Number(isFreshOpp(a.o)))
+      || ((triagePriority.get(String(b.o.source_url)) ?? 0) - (triagePriority.get(String(a.o.source_url)) ?? 0))
+      || (b.score - a.score));
+    const rest = scored.filter((c) => !isSurvivor(c));
+    const freshRest = rest.filter((c) => isFreshOpp(c.o));
+    const backlogRest = rest.filter((c) => !isFreshOpp(c.o));
+    const room = Math.max(0, modelCap - survivors.length);
+    const takeFresh = [...survivors.filter((c) => isFreshOpp(c.o)), ...freshRest.slice(0, room)];
+    const takeBacklog = [
+      ...survivors.filter((c) => !isFreshOpp(c.o)),
+      ...backlogRest.slice(0, Math.min(Math.max(0, room - freshRest.slice(0, room).length), backlogCap)),
+    ];
+    counts.shortlist_survivors = survivors.length;
     const shortlist = [...takeFresh, ...takeBacklog];
     counts.shortlist_fresh = takeFresh.length;
     counts.shortlist_backlog = takeBacklog.length;
