@@ -697,7 +697,7 @@ Deno.serve(async (req) => {
 
     // Retrieval orders review; it must never erase a live record from coverage.
     const scored = [...actPool, ...writePool]
-      .filter((o) => requestedOpportunityIds.length > 0 || !alreadyJudged.has(String(o.id)))
+      .filter((o) => requestedOpportunityIds.length > 0 || needsJudging(o))
       .map((o) => {
         const m = merged.get(o.id) ?? { score: 0, retrieval: { coverage: "outside_retrieval_top_k" } };
         const vec = asVector(o.embedding);
