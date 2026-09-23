@@ -703,6 +703,8 @@ Deno.serve(withRun("screen_member", async (req) => {
       for (const row of (writeRows ?? [])) {
         const o: any = oppById.get(String(row.opportunity_id));
         if (!o) continue;
+        // Excluded before any model saw it; it is not writing material either.
+        if (excludedIds.has(String(row.opportunity_id))) continue;
         const best = bestStanding(o, memberEvidence);
         const standing = writingStanding(identity, o, standsFace?.summary ?? null);
         const tests = writeTests({ identity, opportunity: o, standing, best, preferredSectors });
