@@ -101,6 +101,10 @@ export function OpportunityQueue() {
   const [notice, setNotice] = useState<{ text: string; undo?: string } | null>(null);
   const [savedBar, setSavedBar] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [found, setFound] = useState<FoundData | null>(null);
+  const [foundLoading, setFoundLoading] = useState(true);
+  const [foundError, setFoundError] = useState(false);
+
   const openerRef = useRef<HTMLElement | null>(null);
   const renderedRef = useRef<Set<string>>(new Set());
   const noticeTimer = useRef<number | null>(null);
