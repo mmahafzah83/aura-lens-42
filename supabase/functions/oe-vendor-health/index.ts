@@ -240,10 +240,15 @@ Deno.serve(async (req) => {
   const startedAt = new Date().toISOString();
 
   try {
-    const [apify, firecrawl, lovable] = await Promise.all([
-      checkApify(), checkFirecrawl(), checkLovableAI(admin),
+    const [apifyRaw, firecrawlRaw, scan] = await Promise.all([
+      checkApify(), checkFirecrawl(), refusalScan(admin),
     ]);
-    const vendors = [apify, firecrawl, lovable];
+    const vendors = [
+      withRefusals(apifyRaw, scan),
+      withRefusals(firecrawlRaw, scan),
+      lovableVendor(scan),
+    ];
+
 
     for (const v of vendors) {
       await admin.from("oe_vendor_health").insert({
