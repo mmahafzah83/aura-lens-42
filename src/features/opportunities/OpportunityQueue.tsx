@@ -48,6 +48,13 @@ type Vocab = ReturnType<typeof useVocab>;
 
 const emptyData: QueueData = { cards: [], parked: [], direction: null, window: null, history: [], filters: {}, reading: null, quiet_day: null };
 const moves: MoveKind[] = ["bigger_same", "step_up", "client_side", "exceptional_only"];
+// The taxonomies the product itself is built on. Their words live in the
+// vocabulary table; only the codes appear here.
+const KINDS = ["executive_role", "board_seat", "advisory_role", "speaking_platform", "mandate_tender"];
+const FLOORS = ["senior_manager", "director", "senior_director", "vp", "c_suite"];
+const ORGS = ["government", "giga_project", "consultancy", "private", "multinational", "ngo"];
+type Editor = "move" | "place" | "sector" | "kind" | "level" | "org" | "companies";
+type Company = { id: string; name: string; sector_code: string | null };
 const moveKey = (move: MoveKind) => move === "exceptional_only" ? "move_exceptional" : `move_${move}`;
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const validViews = new Set<View>(["today", "parked", "history"]);
