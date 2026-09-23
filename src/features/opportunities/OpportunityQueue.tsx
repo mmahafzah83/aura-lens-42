@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { doorClass, loadRefLabels, refLabel } from "./refLabels";
 import { useVocab } from "./useVocab";
+import FoundList, { type FoundData } from "./FoundList";
 import type { FilterMap } from "./FiltersSection";
+
 
 type Lang = "en" | "ar";
 type View = "today" | "parked" | "history";
@@ -99,6 +101,10 @@ export function OpportunityQueue() {
   const [notice, setNotice] = useState<{ text: string; undo?: string } | null>(null);
   const [savedBar, setSavedBar] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [found, setFound] = useState<FoundData | null>(null);
+  const [foundLoading, setFoundLoading] = useState(true);
+  const [foundError, setFoundError] = useState(false);
+
   const openerRef = useRef<HTMLElement | null>(null);
   const renderedRef = useRef<Set<string>>(new Set());
   const noticeTimer = useRef<number | null>(null);
@@ -117,6 +123,14 @@ export function OpportunityQueue() {
     if (!error && payload) setData(next);
     setLoading(false);
   }, []);
+  // What the week's reading actually turned up, card or no card.
+  const loadFound = useCallback(async () => {
+    setFoundLoading(true); setFoundError(false);
+    const { data: payload, error } = await supabase.rpc("oe_app_found" as never, { p_days: 7 } as never);
+    if (error || !payload) { setFoundError(true); setFound(null); } else setFound(payload as unknown as FoundData);
+    setFoundLoading(false);
+  }, []);
+
   useEffect(() => { void load(); void loadRefLabels(); }, [load]);
   useEffect(() => { void (async () => {
     const { data: rows } = await supabase.rpc("oe_ref_sector_list" as never);
@@ -124,7 +138,9 @@ export function OpportunityQueue() {
     setSectorOptions(list.filter((row) => row && row.code));
   })(); }, []);
   useEffect(() => { void (async () => { const { data: payload } = await supabase.rpc("oe_my_home" as never); if (payload) setHome(payload as unknown as Home); })(); }, []);
+  useEffect(() => { void loadFound(); }, [loadFound]);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
+
 
   const cards = useMemo(() => data.cards.filter((card) => card.lane === "act" && hasWhy(card)).filter((_, index) => index < 3), [data.cards]);
   const active = cards.find((card) => card.id === activeId) ?? cards[0] ?? null;
@@ -202,7 +218,7 @@ export function OpportunityQueue() {
     </header>
     <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
     <main>
-      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
+      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
       {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
       {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
     </main>
@@ -211,13 +227,31 @@ export function OpportunityQueue() {
   </section>;
 }
 
-function TodayView({ active, compact, decliningId, data, busy, v, language, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
-  if (!active) return <QuietDay data={data} v={v} language={language} />;
-  return <section className="oe-stack" aria-label={v("today_stack_aria")}>
-    <article ref={(node) => onRender(active, node)} className="oe-full-card"><OpportunityDetail card={active} declining={decliningId === active.id} busy={busy} v={v} language={language} onDeclineStart={() => onDeclineStart(active.id)} onDeclineBack={() => onDeclineStart(null)} onDecide={(action) => onDecide(active, action)} onDecline={(scope, value, truth) => onDecline(active, scope, value, truth)} /></article>
-    {compact.length > 0 && <div className="oe-next-list">{compact.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div>}
-  </section>;
+function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
+  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} />;
+  if (!active) {
+    const total = Number(found?.total ?? 0);
+    const atLevel = found?.groups?.find((group) => group.key === "at_level") ?? null;
+    const atLevelCount = Number(atLevel?.count ?? 0);
+    // A quiet day is only quiet when nothing at all was found. Anything found
+    // and not yet carded is said plainly instead.
+    const allJudged = (atLevel?.items ?? []).length > 0 && (atLevel?.items ?? []).every((item) => item.judged === true);
+    return <>
+      {total > 0
+        ? <AuraCard hover="none" className="oe-empty"><h2>{v("found_none_carded")}</h2><p>{fill(v(allJudged ? "found_counted_line" : "found_pending_line"), { total, at_level: atLevelCount })}</p></AuraCard>
+        : !foundLoading && !foundError && <QuietDay data={data} v={v} language={language} />}
+      {foundList}
+    </>;
+  }
+  return <>
+    <section className="oe-stack" aria-label={v("today_stack_aria")}>
+      <article ref={(node) => onRender(active, node)} className="oe-full-card"><OpportunityDetail card={active} declining={decliningId === active.id} busy={busy} v={v} language={language} onDeclineStart={() => onDeclineStart(active.id)} onDeclineBack={() => onDeclineStart(null)} onDecide={(action) => onDecide(active, action)} onDecline={(scope, value, truth) => onDecline(active, scope, value, truth)} /></article>
+      {compact.length > 0 && <div className="oe-next-list">{compact.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div>}
+    </section>
+    {foundList}
+  </>;
 }
+
 function QuietDay({ data, v, language }: { data: QueueData; v: Vocab; language: Lang }) {
   const quiet = data.quiet_day;
   return <AuraCard hover="none" className="oe-empty"><h2>{v("quiet_title")}</h2><p>{fill(v("quiet_body"), { sources: quiet?.surfaces_read ?? 0, findings: quiet?.findings ?? 0 })}</p><p>{v("quiet_none_cleared")}</p>{quiet?.from_date && quiet.to_date && <p className="oe-window-line" style={mono}>{fill(v("quiet_window"), { from: dateText(quiet.from_date, language), to: dateText(quiet.to_date, language) })}</p>}{data.window?.expected_by && <p className="oe-window-line" style={mono}>{fill(v(data.window.missed ? "window_missed" : "window_expected"), { date: dateText(data.window.expected_by, language) })}</p>}</AuraCard>;

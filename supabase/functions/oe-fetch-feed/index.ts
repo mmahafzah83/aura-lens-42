@@ -9,7 +9,7 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { isAggregator, normaliseForQuote } from "../_shared/oeGuards.ts";
-import { parseLevel, levelIndex } from "../_shared/oeEligibility.ts";
+import { parseLevel, levelIndex, LEVELS } from "../_shared/oeEligibility.ts";
 import { SCOPE_EVIDENCE_INSTRUCTION, verifyScopeEvidence } from "../_shared/scopeEvidence.ts";
 
 const corsHeaders = {
@@ -296,14 +296,20 @@ async function plainFetchText(url: string) {
   }
 }
 
-/** Firecrawl first. If every engine fails, read the page plainly. */
+/**
+ * Plain read first. Firecrawl is billed per page, so it is the fallback: it is
+ * called only when the plain fetch failed or came back with almost no text.
+ */
 async function scrapePage(apiKey: string, url: string, withLinks = false) {
+  const plain = await plainFetchText(url);
+  if (plain.ok && squash(stripTags(plain.markdown || "")).length >= 200) return plain;
   if (apiKey) {
     const fc = await firecrawlScrape(apiKey, url, withLinks);
     if (fc.ok && squash(stripTags(fc.markdown || "")).length >= 200) return fc;
   }
-  return await plainFetchText(url);
+  return plain;
 }
+
 
 
 async function perplexity(apiKey: string, query: string) {
@@ -482,12 +488,6 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const cap = await checkSpendCap(admin, "oe-fetch-feed");
-  if (!cap.allowed) {
-    return new Response(JSON.stringify({ ok: false, reason: "daily_call_cap", used: cap.used, cap: cap.cap }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
   const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
   const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY") || "";
@@ -513,9 +513,27 @@ Deno.serve(async (req) => {
   const counts = {
     pages: 0, candidates: 0, inserted: 0, updated: 0,
     dropped_no_quote: 0, dropped_not_opportunity: 0, dropped_aggregator: 0, dropped_past: 0,
-    dedup_hits: 0, leadtime_pairs: 0, errors: 0,
+    dedup_hits: 0, leadtime_pairs: 0, errors: 0, firecrawl_refused: 0,
   };
   let costUsd = 0;
+  /** A listing page's link set, stored only once the whole read has finished. */
+  let pendingFingerprint: string | null = null;
+
+
+  // A refused ceiling is not a finished job. The run is recorded as deferred,
+  // the feed clock is NOT stamped, and the caller is told to come back.
+  const cap = await checkSpendCap(admin, "oe-fetch-feed");
+  if (!cap.allowed) {
+    await admin.from("oe_runs").insert({
+      run_kind: "fetch_feed", feed_id: feedId, user_id: memberId,
+      started_at: startedAt, finished_at: new Date().toISOString(),
+      outcome: "deferred", severity: "warn",
+      counts: { reason: "daily_call_cap", feed_id: feedId },
+    });
+    return json({ ok: false, deferred: true, reason: "daily_call_cap", used: cap.used, cap: cap.cap }, 429);
+  }
+
+
 
   let feed: Record<string, any> | null = null;
   if (feedId) {
@@ -660,23 +678,61 @@ Deno.serve(async (req) => {
         return base.filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0);
       };
 
-      let page = await plainFetchText(url!);
-      counts.pages++;
-      let links = page.ok ? sift(page.links ?? []) : [];
-      if (!page.ok || squash(stripTags(page.markdown ?? "")).length < MIN_CLEAN_TEXT_CHARS || !links.length) {
+      // Some listing pages are drawn by the browser and have no links in their
+      // HTML. Once we have seen that, we go straight to the renderer for them.
+      const needsRender = feed.needs_render === true;
+      let page: any = null;
+      let links: string[] = [];
+      let plainLinkCount = 0;
+      const callFirecrawl = async () => {
         const fc = await firecrawlScrape(firecrawlKey, url!, true);
         counts.pages++;
-        if (fc.ok) { page = fc as any; links = sift(fc.links ?? []); }
-        else if (!page.ok) throw new Error(`read failed ${fc.status}: ${fc.error}`);
+        if (!fc.ok && (fc.status === 402 || fc.status === 429)) {
+          counts.firecrawl_refused++;
+          await logEfError(admin, {
+            function_name: FN, error: `firecrawl refused ${fc.status}`, severity: "low",
+            context: { feed_id: feedId, url, status: fc.status },
+          });
+          return null;
+        }
+        return fc.ok ? fc : null;
+      };
+
+      if (!needsRender) {
+        page = await plainFetchText(url!);
+        counts.pages++;
+        links = page.ok ? sift(page.links ?? []) : [];
+        plainLinkCount = links.length;
+      }
+      if (needsRender || !page?.ok || squash(stripTags(page?.markdown ?? "")).length < MIN_CLEAN_TEXT_CHARS || !links.length) {
+        const fc = await callFirecrawl();
+        if (fc) {
+          const rendered = sift(fc.links ?? []);
+          // A page the plain fetch cannot see is a page that needs rendering.
+          if (feedId && plainLinkCount === 0 && rendered.length > 0 && !needsRender) {
+            await admin.from("oe_feeds").update({ needs_render: true }).eq("id", feedId);
+          }
+          page = fc; links = rendered;
+        } else if (!page?.ok) {
+          // A refused or failed renderer never throws the run away: whatever
+          // the plain fetch returned is what we work with.
+          if (!page) page = { ok: false, markdown: "", links: [], title: "", sourceURL: url };
+        }
+      }
+      // A plain fetch that found links proves the renderer is not needed.
+      if (feedId && plainLinkCount > 0 && feed.needs_render === true) {
+        await admin.from("oe_feeds").update({ needs_render: false }).eq("id", feedId);
       }
 
+
       // An unchanged listing page costs nothing: no detail page, no model call.
-      const fingerprint = await sha256([...links].sort().join("\n"));
-      if (fingerprint && fingerprint === String(feed.links_fingerprint ?? "")) {
-        links = [];
-      } else if (feedId) {
-        await admin.from("oe_feeds").update({ links_fingerprint: fingerprint }).eq("id", feedId);
+      // An EMPTY link set is never fingerprinted — that would freeze the feed.
+      if (links.length) {
+        const fingerprint = await sha256([...links].sort().join("\n"));
+        if (fingerprint === String(feed.links_fingerprint ?? "")) links = [];
+        else pendingFingerprint = fingerprint;
       }
+
 
       // Too junior to open, decided from the link's own words, for free.
       let kept: string[] = [];
@@ -1051,7 +1107,11 @@ Deno.serve(async (req) => {
           seniority_band: rec.seniority_band ?? null,
           // The ladder level, read in code from the record's own words. Never
           // from seniority_band, which is a different (work/table/room) vocabulary.
-          level_band: parseLevel(rec.title, rec.scope),
+          // The code parse of the title wins whenever it returns a level; the
+          // model's reading is used only when the code cannot tell.
+          level_band: parseLevel(rec.title, rec.scope)
+            ?? ((LEVELS as readonly string[]).includes(String(rec.level_band)) ? String(rec.level_band) : null),
+
           location: rec.location ?? null,
           remote: typeof rec.remote === "boolean" ? rec.remote : null,
           requirements: Array.isArray(rec.requirements) ? rec.requirements : [],
@@ -1149,10 +1209,15 @@ Deno.serve(async (req) => {
     if (feedId && !candidateRow) {
       await admin.from("oe_feeds").update({
         last_fetched_at: new Date().toISOString(),
+        // The link set is remembered only now, when every detail page and every
+        // candidate write has finished without throwing. A fingerprint stored
+        // before the work would skip a page whose records were never written.
+        ...(pendingFingerprint ? { links_fingerprint: pendingFingerprint } : {}),
         ...(insertedAnything ? { last_changed_at: new Date().toISOString() } : {}),
         last_error: null,
       }).eq("id", feedId);
     }
+
 
     if (candidateRow) {
       await admin.from("oe_candidates").update({ triage_state: "read" }).eq("id", candidateRow.id);

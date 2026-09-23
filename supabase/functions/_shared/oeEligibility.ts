@@ -117,22 +117,49 @@ export function countryOfPlace(location?: string | null): string | null {
  */
 const LEVEL_PATTERNS: Array<[RegExp, Level]> = [
   [/board (nomination|member|seat|directorship)|nomination (for|of) (the )?board|non-?executive director|عضوية مجلس|الترشح لعضوية مجلس|عضو مجلس إدارة/i, "board"],
-  [/\bchief\s|^ceo\b|\bceo\b|^cfo\b|\bcfo\b|^coo\b|\bcoo\b|\bcto\b|group c[fe]o|president\b|رئيس تنفيذي|الرئيس التنفيذي|المدير العام التنفيذي/i, "c_suite"],
+  // A chief title counts only when the head STARTS with it. "CFO-Agenda"
+  // inside a consultant's title is a subject, not a seat.
+  [/^\s*(chief\b|(group\s+)?(ceo|cfo|coo|cto|cio|cdo)\b|president\b|رئيس تنفيذي|الرئيس التنفيذي|المدير العام التنفيذي)/i, "c_suite"],
   [/managing director|general manager|\bvp\b|vice president|نائب رئيس|المدير العام/i, "vp"],
   [/senior director|head of|رئيس قطاع|رئيس قسم|مدير تنفيذي أول/i, "senior_director"],
+  // "Associate Director" and "Executive Director" are directors: director is
+  // tested before the individual-role words, so it wins over "associate".
   [/\bdirector\b|مدير تنفيذي/i, "director"],
   [/senior manager|مدير أول/i, "senior_manager"],
-  [/\bmanager\b|\blead\b|مدير/i, "manager"],
-  [/consultant|analyst|associate|specialist|engineer|استشاري|محلل|أخصائي|مهندس/i, "ic"],
+  [/\bmanager\b|\blead\b|\bsupervisor\b|team\s+lead(er)?\b|مدير/i, "manager"],
+  [/consultant|consultor|analyst|analista|\bassociate\b|specialist|especialista|engineer|assistant|assistente|accountant|developer|desenvolvedor|assessor|berater(in)?\b|sachbearbeiter|stagiaire|officer|coordinator|administrator|technician|representative|clerk|intern\b|trainee|graduate|salesman|collector|data entry|استشاري|محلل|أخصائي|مهندس|محاسب|مندوب|مساعد|فني|متدرب/i, "ic"],
 ];
+
+/**
+ * The head of a title: everything before the first separator. A title states
+ * the seat first and the subject after the dash, so the head is where the
+ * level actually lives. "(Senior) " is folded into the head, not dropped.
+ */
+export function titleHead(title?: string | null): string {
+  const text = String(title ?? "").replace(/^\s*\(\s*(senior|sr\.?|jr\.?)\s*\)\s*/i, (_m, word) => `${word} `);
+  const cuts = [" - ", " – ", " — ", " | ", ",", "("]
+    .map((sep) => text.indexOf(sep))
+    .filter((index) => index >= 0);
+  return (cuts.length ? text.slice(0, Math.min(...cuts)) : text).trim();
+}
+
+const matchLevel = (text: string): Level | null => {
+  for (const [re, level] of LEVEL_PATTERNS) if (re.test(text)) return level;
+  return null;
+};
 
 /** Reads a level out of a title and scope. Code, never a model. */
 export function parseLevel(title?: string | null, scope?: string | null): Level | null {
-  const text = `${title ?? ""} ${scope ?? ""}`;
-  if (!text.trim()) return null;
-  for (const [re, level] of LEVEL_PATTERNS) if (re.test(text)) return level;
-  return null;
+  const head = titleHead(title);
+  if (head) {
+    const fromHead = matchLevel(head);
+    if (fromHead) return fromHead;
+  }
+  const text = `${title ?? ""} ${scope ?? ""}`.trim();
+  if (!text) return null;
+  return matchLevel(text);
 }
+
 
 /**
  * NATIONALITY — any stated citizenship requirement, in either language, not
