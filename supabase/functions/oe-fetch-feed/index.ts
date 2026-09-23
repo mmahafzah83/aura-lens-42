@@ -675,23 +675,59 @@ Deno.serve(async (req) => {
         return base.filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0);
       };
 
-      let page = await plainFetchText(url!);
-      counts.pages++;
-      let links = page.ok ? sift(page.links ?? []) : [];
-      if (!page.ok || squash(stripTags(page.markdown ?? "")).length < MIN_CLEAN_TEXT_CHARS || !links.length) {
+      // Some listing pages are drawn by the browser and have no links in their
+      // HTML. Once we have seen that, we go straight to the renderer for them.
+      const needsRender = feed.needs_render === true;
+      let page: any = null;
+      let links: string[] = [];
+      let plainLinkCount = 0;
+      const callFirecrawl = async () => {
         const fc = await firecrawlScrape(firecrawlKey, url!, true);
         counts.pages++;
-        if (fc.ok) { page = fc as any; links = sift(fc.links ?? []); }
-        else if (!page.ok) throw new Error(`read failed ${fc.status}: ${fc.error}`);
+        if (!fc.ok && (fc.status === 402 || fc.status === 429)) {
+          counts.firecrawl_refused++;
+          await logEfError(admin, {
+            function_name: FN, error: `firecrawl refused ${fc.status}`, severity: "low",
+            context: { feed_id: feedId, url, status: fc.status },
+          });
+          return null;
+        }
+        return fc.ok ? fc : null;
+      };
+
+      if (!needsRender) {
+        page = await plainFetchText(url!);
+        counts.pages++;
+        links = page.ok ? sift(page.links ?? []) : [];
+        plainLinkCount = links.length;
+      }
+      if (needsRender || !page?.ok || squash(stripTags(page?.markdown ?? "")).length < MIN_CLEAN_TEXT_CHARS || !links.length) {
+        const fc = await callFirecrawl();
+        if (fc) {
+          const rendered = sift(fc.links ?? []);
+          // A page the plain fetch cannot see is a page that needs rendering.
+          if (feedId && plainLinkCount === 0 && rendered.length > 0 && !needsRender) {
+            await admin.from("oe_feeds").update({ needs_render: true }).eq("id", feedId);
+          }
+          page = fc; links = rendered;
+        } else if (!page?.ok) {
+          // A refused or failed renderer never throws the run away: whatever
+          // the plain fetch returned is what we work with.
+          if (!page) page = { ok: false, markdown: "", links: [], title: "", sourceURL: url };
+        }
+      }
+      if (feedId && needsRender && plainLinkCount > 0) {
+        await admin.from("oe_feeds").update({ needs_render: false }).eq("id", feedId);
       }
 
       // An unchanged listing page costs nothing: no detail page, no model call.
-      const fingerprint = await sha256([...links].sort().join("\n"));
-      if (fingerprint && fingerprint === String(feed.links_fingerprint ?? "")) {
-        links = [];
-      } else if (feedId) {
-        await admin.from("oe_feeds").update({ links_fingerprint: fingerprint }).eq("id", feedId);
+      // An EMPTY link set is never fingerprinted — that would freeze the feed.
+      if (links.length) {
+        const fingerprint = await sha256([...links].sort().join("\n"));
+        if (fingerprint === String(feed.links_fingerprint ?? "")) links = [];
+        else pendingFingerprint = fingerprint;
       }
+
 
       // Too junior to open, decided from the link's own words, for free.
       let kept: string[] = [];
