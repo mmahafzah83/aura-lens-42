@@ -464,6 +464,8 @@ Deno.serve(async (req) => {
     const gateNoZero = params.gate_no_zero !== false;
     const bands = params.bands ?? { strong: 3.4, worth_a_look: 3 };
     const cardsPerDay = Math.max(1, Number(params.cards_per_day ?? 1));
+    const cardsPerWeek = Math.max(1, Number(params.cards_per_week ?? 3));
+
     const exploreShare = Number(params.explore_share ?? 0);
     const fewShotK = Number(params.few_shot_k ?? 8);
     const alarmRun = Number(params.empty_day_alarm_run ?? 3);
@@ -522,7 +524,8 @@ Deno.serve(async (req) => {
 
     // ── 1+2. SHORTLIST, then the hard filters, before any model ───────────
     const merged = new Map<string, { score: number; retrieval: Record<string, any> }>();
-    for (const faceName of RETRIEVAL_FACES) {
+    // An ask names its own items: retrieval and the shortlist are skipped.
+    for (const faceName of requestedOpportunityIds.length ? [] : RETRIEVAL_FACES) {
       const face = faceByName.get(faceName);
       if (!face) continue;
       if (!asVector(face.embedding) && openaiKey && face.summary) {
