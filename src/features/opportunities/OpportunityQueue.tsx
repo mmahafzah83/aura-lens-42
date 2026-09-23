@@ -48,6 +48,13 @@ type Vocab = ReturnType<typeof useVocab>;
 
 const emptyData: QueueData = { cards: [], parked: [], direction: null, window: null, history: [], filters: {}, reading: null, quiet_day: null };
 const moves: MoveKind[] = ["bigger_same", "step_up", "client_side", "exceptional_only"];
+// The taxonomies the product itself is built on. Their words live in the
+// vocabulary table; only the codes appear here.
+const KINDS = ["executive_role", "board_seat", "advisory_role", "speaking_platform", "mandate_tender"];
+const FLOORS = ["senior_manager", "director", "senior_director", "vp", "c_suite"];
+const ORGS = ["government", "giga_project", "consultancy", "private", "multinational", "ngo"];
+type Editor = "move" | "place" | "sector" | "kind" | "level" | "org" | "companies";
+type Company = { id: string; name: string; sector_code: string | null };
 const moveKey = (move: MoveKind) => move === "exceptional_only" ? "move_exceptional" : `move_${move}`;
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const validViews = new Set<View>(["today", "parked", "history"]);
@@ -92,7 +99,7 @@ export function OpportunityQueue() {
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
-  const [editor, setEditor] = useState<"move" | "place" | "sector" | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(null);
   const [movePick, setMovePick] = useState<MoveKind | null>(null);
   const [placePick, setPlacePick] = useState<string[]>([]);
   const [sectorPick, setSectorPick] = useState<string[]>([]);
@@ -109,6 +116,13 @@ export function OpportunityQueue() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
   const [remoteOk, setRemoteOk] = useState(false);
+  // The four ranking questions. None of them hides anything except the list of
+  // companies he says he never wants to see, which he states himself.
+  const [kindPick, setKindPick] = useState<string[]>([]);
+  const [levelPick, setLevelPick] = useState<string | null>(null);
+  const [orgPick, setOrgPick] = useState<string[]>([]);
+  const [followPick, setFollowPick] = useState<Company[]>([]);
+  const [hidePick, setHidePick] = useState<Company[]>([]);
 
   const openerRef = useRef<HTMLElement | null>(null);
   const renderedRef = useRef<Set<string>>(new Set());
@@ -150,8 +164,17 @@ export function OpportunityQueue() {
   useEffect(() => { void (async () => {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user?.id) return;
-    const { data: row } = await supabase.from("oe_eligibility" as never).select("remote_ok").eq("user_id", auth.user.id).maybeSingle();
-    setRemoteOk(Boolean((row as { remote_ok?: boolean } | null)?.remote_ok));
+    const { data: row } = await supabase.from("oe_eligibility" as never)
+      .select("remote_ok, issuers_followed, issuers_hidden").eq("user_id", auth.user.id).maybeSingle();
+    const record = (row ?? null) as { remote_ok?: boolean; issuers_followed?: string[]; issuers_hidden?: string[] } | null;
+    setRemoteOk(Boolean(record?.remote_ok));
+    const follow = record?.issuers_followed ?? [];
+    const hide = record?.issuers_hidden ?? [];
+    if (!follow.length && !hide.length) return;
+    const { data: named } = await supabase.rpc("oe_ref_entity_names" as never, { p_ids: [...follow, ...hide] } as never);
+    const rows = Array.isArray(named) ? (named as unknown as Company[]) : [];
+    const pick = (ids: string[]) => ids.map((id) => rows.find((entry) => entry.id === id) ?? { id, name: id, sector_code: null });
+    setFollowPick(pick(follow)); setHidePick(pick(hide));
   })(); }, []);
   useEffect(() => { void loadFound(); }, [loadFound]);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
@@ -166,7 +189,7 @@ export function OpportunityQueue() {
     if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
     noticeTimer.current = window.setTimeout(() => setNotice(null), 4000);
   };
-  const openRules = (opener: HTMLElement | null, nextEditor: "move" | "place" | "sector" | null = null) => {
+  const openRules = (opener: HTMLElement | null, nextEditor: Editor | null = null) => {
     openerRef.current = opener;
     const seed: BarPick = {
       move: data.direction?.move_kind ?? null,
@@ -175,7 +198,24 @@ export function OpportunityQueue() {
     };
     baseline.current = seed;
     setMovePick(seed.move); setPlacePick(seed.places); setSectorPick(seed.sectors);
+    setKindPick(data.filters.kind?.values ?? []);
+    setLevelPick((data.filters.level?.values ?? [])[0] ?? null);
+    setOrgPick(data.filters.org_type?.values ?? []);
     setSavedBar(false); setSaveError(null); setEditor(nextEditor); setRulesOpen(true);
+  };
+  // Each of the four new questions stands on its own and saves on its own.
+  const saveFilter = async (field: string, op: string, values: string[]) => {
+    if (busy) return;
+    setBusy(true); setSaveError(null);
+    const { error } = await supabase.rpc("oe_filter_save" as never, { p_field: field, p_op: op, p_values: values } as never);
+    if (error) setSaveError(fill(v("bar_save_failed"), { error: error.message }));
+    else { setSavedBar(true); setEditor(null); await load(); await loadFound(); window.setTimeout(() => setSavedBar(false), 1500); }
+    setBusy(false);
+  };
+  const saveCompanies = async () => {
+    await saveFilter("issuer", "prefer", followPick.map((row) => row.id));
+    await supabase.rpc("oe_filter_save" as never, { p_field: "issuer", p_op: "exclude", p_values: hidePick.map((row) => row.id) } as never);
+    await load(); await loadFound();
   };
   // "Check this for me" — one opportunity judged now, then watched until the
   // verdict lands or three minutes pass.
@@ -265,17 +305,17 @@ export function OpportunityQueue() {
     </header>
     <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
     <main>
-      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
+      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} sectorOptions={sectorOptions} countries={countries} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
       {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
       {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
     </main>
     <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span>{notice?.undo && <Button variant="link" onClick={() => void bringBack(notice.undo as string)}>{v("action_undo")}</Button>}</div>
-    {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} sectorPick={sectorPick} sectorOptions={sectorOptions} countries={countries} remoteOk={remoteOk} saveError={saveError} savedBar={savedBar} barDirty={barDirty} v={v} onEditor={(value) => { setSavedBar(false); setSaveError(null); setEditor(value); }} onMove={setMovePick} onPlace={togglePlace} onPlaceAny={() => setPlacePick([])} onSector={toggleSector} onSectorAny={() => setSectorPick([])} onRemote={(next) => void saveRemote(next)} onSaveBar={() => void saveBar()} onClose={closeRules} />, document.body)}
+    {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} sectorPick={sectorPick} sectorOptions={sectorOptions} countries={countries} remoteOk={remoteOk} saveError={saveError} savedBar={savedBar} barDirty={barDirty} kindPick={kindPick} levelPick={levelPick} orgPick={orgPick} followPick={followPick} hidePick={hidePick} v={v} onEditor={(value) => { setSavedBar(false); setSaveError(null); setEditor(value); }} onMove={setMovePick} onPlace={togglePlace} onPlaceAny={() => setPlacePick([])} onSector={toggleSector} onSectorAny={() => setSectorPick([])} onRemote={(next) => void saveRemote(next)} onSaveBar={() => void saveBar()} onKind={(value) => setKindPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])} onLevel={setLevelPick} onOrg={(value) => setOrgPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])} onFollow={setFollowPick} onHide={setHidePick} onSaveFilter={(field, op, values) => void saveFilter(field, op, values)} onSaveCompanies={() => void saveCompanies()} onClose={closeRules} />, document.body)}
   </section>;
 }
 
-function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
-  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} checking={checking} onCheck={onCheck} />;
+function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, sectorOptions, countries, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; sectorOptions: SectorOption[]; countries: Country[]; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
+  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} checking={checking} onCheck={onCheck} sectors={sectorOptions} countries={countries} />;
   if (!active) {
     const total = Number(found?.total ?? 0);
     const atLevel = found?.groups?.find((group) => group.key === "at_level") ?? null;
@@ -325,10 +365,22 @@ function HistoryView({ rows, filter, v, language, onFilter }: { rows: History[];
   return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <Button key={value} variant="outline" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</Button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{dateText(day, language)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
 }
 
-function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, countries, remoteOk, saveError, savedBar, barDirty, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onRemote, onSaveBar, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | "sector" | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; countries: Country[]; remoteOk: boolean; saveError: string | null; savedBar: boolean; barDirty: boolean; v: Vocab; onEditor: (value: "move" | "place" | "sector" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onRemote: (value: boolean) => void; onSaveBar: () => void; onClose: () => void }) {
+function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, countries, remoteOk, saveError, savedBar, barDirty, kindPick, levelPick, orgPick, followPick, hidePick, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onRemote, onSaveBar, onKind, onLevel, onOrg, onFollow, onHide, onSaveFilter, onSaveCompanies, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: Editor | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; countries: Country[]; remoteOk: boolean; saveError: string | null; savedBar: boolean; barDirty: boolean; kindPick: string[]; levelPick: string | null; orgPick: string[]; followPick: Company[]; hidePick: Company[]; v: Vocab; onEditor: (value: Editor | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onRemote: (value: boolean) => void; onSaveBar: () => void; onKind: (value: string) => void; onLevel: (value: string | null) => void; onOrg: (value: string) => void; onFollow: (rows: Company[]) => void; onHide: (rows: Company[]) => void; onSaveFilter: (field: string, op: string, values: string[]) => void; onSaveCompanies: () => void; onClose: () => void }) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const [countryQuery, setCountryQuery] = useState("");
   const [sectorQuery, setSectorQuery] = useState("");
+  const [companyQuery, setCompanyQuery] = useState("");
+  const [companyMatches, setCompanyMatches] = useState<Company[]>([]);
+  useEffect(() => {
+    const needle = companyQuery.trim();
+    if (needle.length < 2) { setCompanyMatches([]); return; }
+    let live = true;
+    const timer = window.setTimeout(() => { void (async () => {
+      const { data: rows } = await supabase.rpc("oe_ref_entity_search" as never, { p_q: needle } as never);
+      if (live) setCompanyMatches(Array.isArray(rows) ? (rows as unknown as Company[]) : []);
+    })(); }, 250);
+    return () => { live = false; window.clearTimeout(timer); };
+  }, [companyQuery]);
   const places = data.filters.place?.values ?? [];
   const placeText = places.length ? places.map((value) => value.startsWith("region:") ? refLabel("region", value.slice(7), language) : refLabel("place", value, language)).join(" · ") : v("move_place_any");
   const homeChoice = home?.city && home.country ? { value: home.country, label: fill(v("move_place_home"), { city: home.city }) } : null;
@@ -359,6 +411,17 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
   const sectorText = chosenSectors.length
     ? chosenSectors.map((code) => sectorLabel(sectorOptions.find((option) => option.code === code) ?? { code, label_en: code, label_ar: code })).join(" · ")
     : v("bar_sector_any");
+  // Saved preferences read back as words, never as a count or a share.
+  const savedKinds = data.filters.kind?.values ?? [];
+  const kindText = savedKinds.length ? savedKinds.map((code) => v(`kind_${code}`)).join(" · ") : v("bar_any");
+  const savedLevel = (data.filters.level?.values ?? [])[0] ?? null;
+  const levelText = savedLevel ? v(`level_${savedLevel}`) : v("bar_any");
+  const savedOrgs = data.filters.org_type?.values ?? [];
+  const orgText = savedOrgs.length ? savedOrgs.map((code) => v(`org_${code}`)).join(" · ") : v("bar_any");
+  const companyText = [
+    followPick.length ? `${v("companies_follow")}: ${followPick.map((row) => row.name).join(" · ")}` : null,
+    hidePick.length ? `${v("companies_hide")}: ${hidePick.map((row) => row.name).join(" · ")}` : null,
+  ].filter(Boolean).join(" — ") || v("bar_any");
   useEffect(() => {
     const node = dialogRef.current; if (!node) return;
     const old = document.body.style.overflow; document.body.style.overflow = "hidden";
@@ -380,6 +443,26 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
     <div className="oe-dialog-body">
     <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span></div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
       {sectorOptions.length > 0 && <div className="oe-dialog-row"><div><strong>{v("settings_sectors")}</strong><span>{sectorText}</span></div><Button variant="link" onClick={() => onEditor("sector")}>{v("action_change")}</Button></div>}
+      <div className="oe-dialog-row"><div><strong>{v("settings_kinds")}</strong><span>{kindText}</span></div><Button variant="link" onClick={() => onEditor("kind")}>{v("action_change")}</Button></div>
+      <div className="oe-dialog-row"><div><strong>{v("settings_level")}</strong><span>{levelText}</span></div><Button variant="link" onClick={() => onEditor("level")}>{v("action_change")}</Button></div>
+      <div className="oe-dialog-row"><div><strong>{v("settings_org_types")}</strong><span>{orgText}</span></div><Button variant="link" onClick={() => onEditor("org")}>{v("action_change")}</Button></div>
+      <div className="oe-dialog-row"><div><strong>{v("settings_companies")}</strong><span>{companyText}</span></div><Button variant="link" onClick={() => onEditor("companies")}>{v("action_change")}</Button></div>
+      {editor === "kind" && <div className="oe-inline-editor"><p>{v("bar_kind_question")}</p><div className="oe-chip-row">{KINDS.map((code) => <Button key={code} variant="outline" aria-pressed={kindPick.includes(code)} onClick={() => onKind(code)}>{v(`kind_${code}`)}</Button>)}<Button variant="outline" aria-pressed={kindPick.length === 0} onClick={() => onSaveFilter("kind", "prefer", [])}>{v("bar_any")}</Button></div><AuraButton loading={busy} onClick={() => onSaveFilter("kind", "prefer", kindPick)}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
+      {editor === "level" && <div className="oe-inline-editor"><p>{v("bar_level_question")}</p><div className="oe-chip-row">{FLOORS.map((code) => <Button key={code} variant="outline" aria-pressed={levelPick === code} onClick={() => onLevel(code)}>{v(`level_${code}`)}</Button>)}<Button variant="outline" aria-pressed={!levelPick} onClick={() => { onLevel(null); onSaveFilter("level", "at_or_above", []); }}>{v("bar_any")}</Button></div><AuraButton loading={busy} disabled={!levelPick} onClick={() => onSaveFilter("level", "at_or_above", levelPick ? [levelPick] : [])}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
+      {editor === "org" && <div className="oe-inline-editor"><p>{v("bar_org_question")}</p><div className="oe-chip-row">{ORGS.map((code) => <Button key={code} variant="outline" aria-pressed={orgPick.includes(code)} onClick={() => onOrg(code)}>{v(`org_${code}`)}</Button>)}<Button variant="outline" aria-pressed={orgPick.length === 0} onClick={() => onSaveFilter("org_type", "prefer", [])}>{v("bar_any")}</Button></div><AuraButton loading={busy} onClick={() => onSaveFilter("org_type", "prefer", orgPick)}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
+      {editor === "companies" && <div className="oe-inline-editor oe-sector-editor">
+        <p>{v("bar_companies_question")}</p>
+        <input type="search" className="oe-search" value={companyQuery} placeholder={v("companies_search")} onChange={(event) => setCompanyQuery(event.target.value)} autoComplete="off" />
+        {companyMatches.length > 0 && <div className="oe-option-list" role="listbox">{companyMatches.map((row) => <div key={row.id} className="oe-option-row">
+          <span>{row.name}</span>
+          <Button variant="link" onClick={() => { if (!followPick.some((item) => item.id === row.id)) onFollow([...followPick, row]); setCompanyQuery(""); }}>{v("companies_follow")}</Button>
+          <Button variant="link" onClick={() => { if (!hidePick.some((item) => item.id === row.id)) onHide([...hidePick, row]); setCompanyQuery(""); }}>{v("companies_hide")}</Button>
+        </div>)}</div>}
+        {followPick.length > 0 && <div className="oe-chip-row">{followPick.map((row) => <Button key={row.id} variant="outline" onClick={() => onFollow(followPick.filter((item) => item.id !== row.id))}>{v("companies_follow")}: {row.name} ×</Button>)}</div>}
+        {hidePick.length > 0 && <div className="oe-chip-row">{hidePick.map((row) => <Button key={row.id} variant="outline" onClick={() => onHide(hidePick.filter((item) => item.id !== row.id))}>{v("companies_hide")}: {row.name} ×</Button>)}</div>}
+        <p className="oe-dialog-note">{v("companies_hide_note")}</p>
+        <AuraButton loading={busy} onClick={onSaveCompanies}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}
+      </div>}
       {editor === "move" && <div className="oe-inline-editor"><p>{v("move_question")}</p>{moves.map((move) => <Button key={move} variant="outline" aria-pressed={movePick === move} className={`${data.direction?.move_proposed === move ? "is-proposed" : ""}`} onClick={() => onMove(move)}>{v(moveKey(move))}</Button>)}</div>}
       {editor === "place" && <div className="oe-inline-editor oe-place-editor">
         <p>{v("move_place_question")}</p>
@@ -410,7 +493,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
         </label>)}</div>
         <Button variant="link" className="oe-sector-clear" disabled={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_clear")}</Button>
       </div>}
-      {editor && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
+      {(editor === "move" || editor === "place" || editor === "sector") && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
       {savedBar && <p role="status">{v("bar_saved")}</p>}
     </section>
     </div>

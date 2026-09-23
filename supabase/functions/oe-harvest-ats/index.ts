@@ -234,7 +234,11 @@ const ADAPTERS: Record<
     const url = endpoint ||
       `https://${tenant}.${dc}.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions` +
       `?onlyData=true&expand=requisitionList&finder=findReqs;siteNumber=CX_1,limit=100`;
-    const r = await req(url, { headers: { "REST-Framework-Version": "4" } });
+    let r = await req(url, { headers: { "REST-Framework-Version": "4" } });
+    // Some Oracle tenants refuse the versioned header outright. Ask once more,
+    // plainly, in English, before calling it a locked door.
+    if (r.status === 403) r = await req(url, { headers: { "Accept-Language": "en" } });
+    if (r.status === 403) throw new Error("oracle_forbidden");
     if (!r.ok) throw new Error(`http_${r.status}`);
     const d = await r.json();
     const list = d?.items?.[0]?.requisitionList ?? d?.items ?? [];
@@ -356,6 +360,8 @@ Deno.serve(async (req0) => {
 
   const counts: Record<string, any> = {
     entities: 0, jobs: 0, new: 0, duplicate: 0, errors: 0,
+    platform_unsupported: 0, oracle_forbidden: 0,
+    unsupported_by_platform: {} as Record<string, number>,
     by_platform: {} as Record<string, number>,
     failures: {} as Record<string, string>,
   };
@@ -422,23 +428,44 @@ Deno.serve(async (req0) => {
       if (Date.now() > deadline) break;
       counts.entities++;
       const platform = (e.ats_platform as string | null) ?? "jsonld";
+      const adapter = ADAPTERS[platform];
+      // A system we have no adapter for is not a failure. It is simply read the
+      // plain way, through whatever the careers page itself publishes.
+      const unsupported = Boolean(e.ats_platform) && platform !== "jsonld" && !adapter;
+      if (unsupported) {
+        counts.platform_unsupported = (counts.platform_unsupported ?? 0) + 1;
+        counts.unsupported_by_platform[platform] = (counts.unsupported_by_platform[platform] ?? 0) + 1;
+      }
+      const readPlainly = platform === "jsonld" || !e.ats_platform || unsupported;
       let jobs: Job[] = [];
       try {
-        jobs = platform === "jsonld" || !e.ats_platform
-          ? await jsonLdJobs(e.careers_url)
-          : await ADAPTERS[platform](e.ats_token ?? "", e.ats_endpoint ?? "", e.name);
+        if (readPlainly) {
+          if (!e.careers_url) throw new Error("no_careers_url");
+          jobs = await jsonLdJobs(e.careers_url);
+        } else {
+          jobs = await adapter(e.ats_token ?? "", e.ats_endpoint ?? "", e.name);
+        }
       } catch (err) {
-        counts.errors++;
         const msg = String((err as Error).message ?? err).slice(0, 120);
-        counts.failures[platform] = counts.failures[platform]
-          ? `${counts.failures[platform]}; ${e.name}: ${msg}`.slice(0, 400)
-          : `${e.name}: ${msg}`;
-        await admin.from("oe_entities").update({
-          last_harvested_at: new Date().toISOString(),
-          harvest_runs: (e.harvest_runs ?? 0) + 1,
-          resolve_error: msg,
-        }).eq("id", e.id);
-        continue;
+        // A locked Oracle door still leaves the employer's own careers page open.
+        let recovered = false;
+        if (!readPlainly && msg === "oracle_forbidden" && e.careers_url) {
+          try { jobs = await jsonLdJobs(e.careers_url); recovered = true; } catch { /* stays a failure */ }
+          counts.oracle_forbidden = (counts.oracle_forbidden ?? 0) + 1;
+          await admin.from("oe_entities").update({ resolve_error: "oracle_forbidden" }).eq("id", e.id);
+        }
+        if (!recovered) {
+          counts.errors++;
+          counts.failures[platform] = counts.failures[platform]
+            ? `${counts.failures[platform]}; ${e.name}: ${msg}`.slice(0, 400)
+            : `${e.name}: ${msg}`;
+          await admin.from("oe_entities").update({
+            last_harvested_at: new Date().toISOString(),
+            harvest_runs: (e.harvest_runs ?? 0) + 1,
+            resolve_error: msg,
+          }).eq("id", e.id);
+          continue;
+        }
       }
 
       jobs = jobs.filter((j) => j?.url && /^https?:/i.test(j.url) && (j.title ?? "").length >= 4)

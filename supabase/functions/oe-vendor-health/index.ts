@@ -133,33 +133,75 @@ function vendorOf(text: string): string {
 
 type Scan = {
   byVendor: Record<string, number>;
+  lastRefusalAt: Record<string, string | null>;
+  lastSuccessAt: Record<string, string | null>;
   byJobType: Record<string, number>;
   samples: Record<string, string[]>;
   jobRefusals: number;
 };
 
+/**
+ * The most recent moment each vendor actually did work for us. A refusal that
+ * happened before this is history — a top-up already answered it — and must
+ * never keep a vendor marked as stopped.
+ */
+async function successScan(admin: any): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = { apify: null, firecrawl: null, lovable_ai: null };
+
+  const { data: runs } = await admin.from("oe_runs")
+    .select("run_kind, finished_at, counts, outcome")
+    .in("run_kind", ["fetch_feed", "harvest_apify"])
+    .order("finished_at", { ascending: false }).limit(400);
+  for (const row of (runs ?? []) as any[]) {
+    const counts = (row.counts ?? {}) as Record<string, unknown>;
+    const at = row.finished_at ? String(row.finished_at) : null;
+    if (!at) continue;
+    if (row.run_kind === "fetch_feed" && !out.firecrawl) {
+      const pages = Number(counts.pages ?? 0);
+      const refused = Number(counts.firecrawl_refused ?? 0);
+      if (pages > 0 && refused === 0) out.firecrawl = at;
+    }
+    if (row.run_kind === "harvest_apify" && !out.apify) {
+      if (row.outcome === "ok" && Number(counts.results ?? 0) > 0) out.apify = at;
+    }
+  }
+
+  const { data: calls } = await admin.from("ai_usage_log")
+    .select("created_at").eq("success", true).order("created_at", { ascending: false }).limit(1);
+  out.lovable_ai = (calls ?? [])[0]?.created_at ? String((calls as any[])[0].created_at) : null;
+
+  return out;
+}
+
 async function refusalScan(admin: any): Promise<Scan> {
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
   const byVendor: Record<string, number> = { apify: 0, firecrawl: 0, lovable_ai: 0 };
+  const lastRefusalAt: Record<string, string | null> = { apify: null, firecrawl: null, lovable_ai: null };
   const samples: Record<string, string[]> = { apify: [], firecrawl: [], lovable_ai: [] };
+  const mark = (v: string, at: unknown) => {
+    const stamp = at ? String(at) : null;
+    if (stamp && (!lastRefusalAt[v] || stamp > (lastRefusalAt[v] as string))) lastRefusalAt[v] = stamp;
+  };
 
   const { data: errs } = await admin.from("ef_error_log")
-    .select("error_message, function_name").gte("created_at", since).limit(2000);
+    .select("error_message, function_name, created_at").gte("created_at", since).limit(2000);
   for (const r of (errs ?? []) as any[]) {
     const text = String(r.error_message ?? "");
     if (!REFUSAL_RE.test(text)) continue;
     const v = vendorOf(text);
     byVendor[v] = (byVendor[v] ?? 0) + 1;
+    mark(v, r.created_at);
     if (samples[v].length < 3) samples[v].push(`${r.function_name}: ${text.slice(0, 90)}`);
   }
 
   const { data: usage } = await admin.from("ai_usage_log")
-    .select("function_name, success, metadata").gte("created_at", since).eq("success", false).limit(2000);
+    .select("function_name, success, metadata, created_at").gte("created_at", since).eq("success", false).limit(2000);
   for (const r of (usage ?? []) as any[]) {
     const text = JSON.stringify(r.metadata ?? {});
     if (!REFUSAL_RE.test(text)) continue;
     const v = vendorOf(text);
     byVendor[v] = (byVendor[v] ?? 0) + 1;
+    mark(v, r.created_at);
   }
 
   const { data: jobs } = await admin.from("job_queue")
@@ -173,30 +215,49 @@ async function refusalScan(admin: any): Promise<Scan> {
     byJobType[String(row.job_type)] = (byJobType[String(row.job_type)] ?? 0) + 1;
   }
 
-  return { byVendor, byJobType, samples, jobRefusals };
+  const lastSuccessAt = await successScan(admin);
+  return { byVendor, lastRefusalAt, lastSuccessAt, byJobType, samples, jobRefusals };
+}
+
+/** A refusal only counts when nothing succeeded after it. */
+function liveRefusals(scan: Scan, vendor: string): number {
+  const refused = scan.byVendor[vendor] ?? 0;
+  if (!refused) return 0;
+  const last = scan.lastRefusalAt[vendor];
+  const ok = scan.lastSuccessAt[vendor];
+  if (last && ok && ok >= last) return 0;
+  return refused;
 }
 
 function lovableVendor(scan: Scan): Vendor {
-  const refused = scan.byVendor.lovable_ai ?? 0;
+  const refused = liveRefusals(scan, "lovable_ai");
   return {
     vendor: "lovable_ai", ok: refused === 0,
     level: levelFor({ refused, used: null, limit: null, remaining: null, daysLeft: null }),
     used: null, limit_value: null, remaining: null, unit: "calls", refused_24h: refused,
     detail: {
       topup: TOPUP.lovable_ai, samples: scan.samples.lovable_ai,
+      refusals_24h_raw: scan.byVendor.lovable_ai ?? 0,
+      last_refusal_at: scan.lastRefusalAt.lovable_ai, last_success_at: scan.lastSuccessAt.lovable_ai,
       job_queue_refusals: scan.byJobType, job_queue_refused_24h: scan.jobRefusals,
     },
   };
 }
 
-/** A vendor that answered happily but refused work in the last day has stopped. */
+/** A vendor that answered happily but refused work since its last success has stopped. */
 function withRefusals(v: Vendor, scan: Scan): Vendor {
-  const refused = scan.byVendor[v.vendor] ?? 0;
-  if (!refused) return v;
+  const refused = liveRefusals(scan, v.vendor);
+  const detail = {
+    ...v.detail,
+    refusals_24h_raw: scan.byVendor[v.vendor] ?? 0,
+    last_refusal_at: scan.lastRefusalAt[v.vendor] ?? null,
+    last_success_at: scan.lastSuccessAt[v.vendor] ?? null,
+  };
+  if (!refused) return { ...v, detail };
   return {
     ...v, refused_24h: refused, ok: false,
     level: levelFor({ refused, used: v.used, limit: v.limit_value, remaining: v.remaining, daysLeft: null }),
-    detail: { ...v.detail, refusal_samples: scan.samples[v.vendor] ?? [] },
+    detail: { ...detail, refusal_samples: scan.samples[v.vendor] ?? [] },
   };
 }
 
