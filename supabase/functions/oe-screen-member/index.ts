@@ -657,9 +657,10 @@ Deno.serve(withRun("screen_member", async (req) => {
         await admin.from("oe_matches").update({
           presentation_line: line,
           presentation_evidence_ids: citedIds,
+          // Only a call that came back and genuinely matched nothing rejects here.
           ...(grounded ? {} : {
             screen_gate: "presentation", screen_outcome: "rejected",
-            gate_passed: false, lane_final: null,
+            gate_passed: false, lane_final: null, gate_note: "no_line",
             rejection_sentence: "No line — nothing in your record answers anything this one asks for.",
           }),
         }).eq("user_id", userId).eq("opportunity_id", o.id);
