@@ -290,7 +290,14 @@ export function screen(
     if (!(explicitlyRemote && eligibility.remote_ok === true)) {
       const country = countryOfPlace(o.location);
       if (!country) {
-        if (sensitivity === "hard") unknowns.push("place_unknown");
+        // A full-time seat is allowed only inside his workable places. A
+        // stated location we cannot place in one of them is outside them; only
+        // a posting that states no location at all stays unknown.
+        const stated = String(o.location ?? "").trim();
+        if (sensitivity === "hard") {
+          if (stated) fails.push("place");
+          else unknowns.push("place_unknown");
+        } else if (stated) conditions.push(`place_distance: ${stated}`);
       } else if (!allowed.includes(country)) {
         if (sensitivity === "hard") fails.push("place");
         else conditions.push(`place_distance: ${String(o.location ?? country)}`);
