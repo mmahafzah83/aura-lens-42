@@ -541,6 +541,26 @@ Deno.serve(async (req) => {
     return [...neverRead, ...skipHosts].some((b) => h === b || h.endsWith(`.${b}`));
   };
 
+  // The lowest level worth opening. A product rule, identical for every member.
+  const readMinLevel: string = params.read_min_level ?? "senior_manager";
+
+  /** Every link this run judged, so the same link is never read twice. */
+  const judged = new Map<string, string>();
+  const recordSeen = (link: string | null, verdict: string) => {
+    if (link) judged.set(canonicalise(link), verdict);
+  };
+  async function flushSeen() {
+    if (!judged.size) return;
+    const now = new Date().toISOString();
+    await admin.from("oe_seen_links").upsert(
+      [...judged].map(([canonical_url, verdict]) => ({
+        canonical_url, feed_id: feedId, verdict, last_seen_at: now,
+      })),
+      { onConflict: "canonical_url" },
+    );
+    judged.clear();
+  }
+
   try {
     // ── 1. FETCH ───────────────────────────────────────────────────────────
     const kind = candidateRow ? "candidate" : ((body.kind ?? feed.kind) as string);
