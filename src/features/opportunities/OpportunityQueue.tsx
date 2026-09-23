@@ -143,6 +143,16 @@ export function OpportunityQueue() {
     setSectorOptions(list.filter((row) => row && row.code));
   })(); }, []);
   useEffect(() => { void (async () => { const { data: payload } = await supabase.rpc("oe_my_home" as never); if (payload) setHome(payload as unknown as Home); })(); }, []);
+  useEffect(() => { void (async () => {
+    const { data: rows } = await supabase.rpc("oe_ref_country_list" as never);
+    setCountries(Array.isArray(rows) ? (rows as unknown as Country[]).filter((row) => row && row.iso2) : []);
+  })(); }, []);
+  useEffect(() => { void (async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user?.id) return;
+    const { data: row } = await supabase.from("oe_eligibility" as never).select("remote_ok").eq("user_id", auth.user.id).maybeSingle();
+    setRemoteOk(Boolean((row as { remote_ok?: boolean } | null)?.remote_ok));
+  })(); }, []);
   useEffect(() => { void loadFound(); }, [loadFound]);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
 
