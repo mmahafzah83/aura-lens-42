@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
 
     const { data: batch } = await admin
       .from("oe_candidates")
-      .select("id, url, title, snippet, feed_id, entity_id")
+      .select("id, url, title, snippet, feed_id, entity_id, country")
       .eq("triage_state", "new")
       .order("first_seen_at", { ascending: true })
       .limit(batchSize);
@@ -209,7 +209,9 @@ Deno.serve(async (req) => {
     const regionPrior = (country: string): number => {
       if (!country) return 0.5;
       const d = demandRaw.get(country);
-      if (d === undefined || !demandMax) return 0.5;
+      // A known country no member asked for is read last, never dropped.
+      if (!demandMax) return 0.5;
+      if (d === undefined) return 0;
       return Math.max(0, Math.min(1, d / demandMax));
     };
 
@@ -276,7 +278,9 @@ Deno.serve(async (req) => {
         const lvl = parseLevel(c.title ?? "", null);
         const levelP = lvl ? (LEVEL_PRIOR[lvl] ?? 0.5) : 0.5;
         const entityId = c.entity_id ?? feedEntity.get(c.feed_id) ?? null;
-        const country = (entityId && entCountry.get(entityId)) || feedCountry.get(c.feed_id) || "";
+        // The posting's own country first; an employer's home country says nothing
+        // about where a worldwide tenant's job sits.
+        const country = String(c.country ?? "").toUpperCase() || (entityId && entCountry.get(entityId)) || feedCountry.get(c.feed_id) || "";
         const regionP = regionPrior(country);
         const issuerP = entityId && (followed.has(String(entityId)) || coreEntities.has(entityId)) ? 1 : 0.5;
 

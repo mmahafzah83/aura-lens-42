@@ -4142,6 +4142,7 @@ export type Database = {
         Row: {
           canonical_url: string | null
           content_hash: string | null
+          country: string | null
           created_at: string
           embedding: string | null
           entity_id: string | null
@@ -4163,6 +4164,7 @@ export type Database = {
         Insert: {
           canonical_url?: string | null
           content_hash?: string | null
+          country?: string | null
           created_at?: string
           embedding?: string | null
           entity_id?: string | null
@@ -4184,6 +4186,7 @@ export type Database = {
         Update: {
           canonical_url?: string | null
           content_hash?: string | null
+          country?: string | null
           created_at?: string
           embedding?: string | null
           entity_id?: string | null
@@ -4640,6 +4643,8 @@ export type Database = {
           level_now: string | null
           nationality: string | null
           org_types_preferred: string[]
+          relocation_countries: string[]
+          relocation_ok: boolean
           remote_ok: boolean
           residence_country: string | null
           sectors_core: string[] | null
@@ -4661,6 +4666,8 @@ export type Database = {
           level_now?: string | null
           nationality?: string | null
           org_types_preferred?: string[]
+          relocation_countries?: string[]
+          relocation_ok?: boolean
           remote_ok?: boolean
           residence_country?: string | null
           sectors_core?: string[] | null
@@ -4682,6 +4689,8 @@ export type Database = {
           level_now?: string | null
           nationality?: string | null
           org_types_preferred?: string[]
+          relocation_countries?: string[]
+          relocation_ok?: boolean
           remote_ok?: boolean
           residence_country?: string | null
           sectors_core?: string[] | null
@@ -6076,6 +6085,7 @@ export type Database = {
           language: string | null
           last_seen_at: string
           level_band: string | null
+          level_basis: string | null
           lineage_note: string | null
           location: string | null
           people_read_at: string | null
@@ -6135,6 +6145,7 @@ export type Database = {
           language?: string | null
           last_seen_at?: string
           level_band?: string | null
+          level_basis?: string | null
           lineage_note?: string | null
           location?: string | null
           people_read_at?: string | null
@@ -6194,6 +6205,7 @@ export type Database = {
           language?: string | null
           last_seen_at?: string
           level_band?: string | null
+          level_basis?: string | null
           lineage_note?: string | null
           location?: string | null
           people_read_at?: string | null
@@ -11703,6 +11715,7 @@ export type Database = {
         Returns: number
       }
       oe_learning_state: { Args: { p_user: string }; Returns: Json }
+      oe_level_from_text: { Args: { p: string }; Returns: string }
       oe_member_answer: {
         Args: { p_answer: string; p_investigation: string }
         Returns: Json
@@ -11799,6 +11812,10 @@ export type Database = {
           purpose: string
         }[]
       }
+      oe_relocation_save: {
+        Args: { p_countries: string[]; p_ok: boolean }
+        Returns: Json
+      }
       oe_remote_save: { Args: { p_ok: boolean }; Returns: Json }
       oe_resolve_identity: { Args: { p_user: string }; Returns: Json }
       oe_route_is_specific: {
@@ -11877,6 +11894,10 @@ export type Database = {
           similarity: number
           snippet: string
         }[]
+      }
+      oe_workable_places: {
+        Args: { e: Database["public"]["Tables"]["oe_eligibility"]["Row"] }
+        Returns: string[]
       }
       ops_cron_status: {
         Args: { p_hours?: number }

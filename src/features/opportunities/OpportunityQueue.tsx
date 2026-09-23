@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RelocationRow } from "./RelocationRow";
 import { createPortal } from "react-dom";
 import { Settings2, X } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -485,6 +486,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
         </div>}
         {pickedCountries.length > 0 && <div className="oe-chip-row">{pickedCountries.map((iso2) => <Button key={iso2} variant="outline" aria-label={fill(v("place_remove"), { name: countryName(iso2) })} onClick={() => onPlace(iso2)}>{countryName(iso2)} ×</Button>)}</div>}
         <label className="oe-switch-row"><input type="checkbox" checked={remoteOk} onChange={(event) => onRemote(event.target.checked)} /><span>{v("place_remote")}</span></label>
+        <RelocationRow countries={countries} language={language} v={v} />
       </div>}
       {editor === "sector" && sectorOptions.length > 0 && <div className="oe-inline-editor oe-sector-editor">
         <p>{v("bar_sector_question")}<b style={mono}>{sectorPick.length}</b></p>
