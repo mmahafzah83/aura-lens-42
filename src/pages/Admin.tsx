@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import AdminShell from "@/components/admin/AdminShell";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
 import SystemHealthPanel from "@/components/admin/SystemHealthPanel";
+import VendorHealthBanner from "@/components/admin/VendorHealthBanner";
+
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import PlatformRulesPanel from "@/components/admin/PlatformRulesPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
@@ -1355,6 +1357,8 @@ export default function Admin() {
     <AdminShell bleed>
       <div style={{ background: C.paper, minHeight: "100vh", padding: "28px 14px 80px" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          <VendorHealthBanner />
+
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 22 }}>
             <div>
               <Label>Aura · founder cockpit</Label>

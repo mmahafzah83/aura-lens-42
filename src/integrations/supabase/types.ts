@@ -7027,6 +7027,48 @@ export type Database = {
           },
         ]
       }
+      oe_vendor_health: {
+        Row: {
+          checked_at: string
+          detail: Json
+          id: string
+          level: string
+          limit_value: number | null
+          ok: boolean
+          refused_24h: number
+          remaining: number | null
+          unit: string | null
+          used: number | null
+          vendor: string
+        }
+        Insert: {
+          checked_at?: string
+          detail?: Json
+          id?: string
+          level: string
+          limit_value?: number | null
+          ok?: boolean
+          refused_24h?: number
+          remaining?: number | null
+          unit?: string | null
+          used?: number | null
+          vendor: string
+        }
+        Update: {
+          checked_at?: string
+          detail?: Json
+          id?: string
+          level?: string
+          limit_value?: number | null
+          ok?: boolean
+          refused_24h?: number
+          remaining?: number | null
+          unit?: string | null
+          used?: number | null
+          vendor?: string
+        }
+        Relationships: []
+      }
       oe_vocabulary: {
         Row: {
           ar: string
