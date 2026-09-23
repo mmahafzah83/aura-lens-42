@@ -1093,6 +1093,7 @@ Deno.serve(async (req) => {
         }
         counts.inserted++;
         insertedAnything = true;
+        recordSeen(cand.url, "opportunity");
 
         // 6. LEAD-TIME PAIRS
         if (rec.time_kind === "open_now" && ins?.issuer_id) {
