@@ -103,6 +103,55 @@ function Picker({ label, value, options, onChange, anyLabel }: {
   </label>;
 }
 
+// ───────────────── his own answer: would you go for this? ─────────────────
+//
+// One tap, with room for a line of reason. The answer is his alone: it teaches
+// the bar for his own reading and never appears on a card.
+
+const ANSWERS: Array<{ value: "yes" | "maybe" | "no"; key: string }> = [
+  { value: "yes", key: "found_answer_yes" },
+  { value: "maybe", key: "found_answer_maybe" },
+  { value: "no", key: "found_answer_no" },
+];
+
+function Answer({ id, v }: { id: string; v: Vocab }) {
+  const [picked, setPicked] = useState<string>("");
+  const [reason, setReason] = useState("");
+  const [state, setState] = useState<"" | "saving" | "saved" | "failed">("");
+
+  async function save(label: string, text: string) {
+    setState("saving");
+    const { data: session } = await supabase.auth.getSession();
+    const userId = session.session?.user?.id;
+    if (!userId) { setState("failed"); return; }
+    const { error } = await supabase.from("oe_labels").upsert(
+      { user_id: userId, opportunity_id: id, label, reason: text.trim() ? text.trim().slice(0, 200) : null },
+      { onConflict: "user_id,opportunity_id" });
+    setState(error ? "failed" : "saved");
+  }
+
+  return <div style={{ marginBlockStart: 10 }}>
+    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{v("found_would_you")}</span>
+    <span style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBlockStart: 6 }}>
+      {ANSWERS.map((answer) => <button key={answer.value} type="button"
+        aria-pressed={picked === answer.value}
+        onClick={() => { setPicked(answer.value); void save(answer.value, reason); }}
+        style={toggleStyle(picked === answer.value)}>{v(answer.key)}</button>)}
+      {state === "saved" && <span style={{ alignSelf: "center", fontSize: 12, color: MUTED }}>{v("found_answer_saved")}</span>}
+      {state === "failed" && <span style={{ alignSelf: "center", fontSize: 12, color: "#C0392B" }}>{v("found_answer_failed")}</span>}
+    </span>
+    {picked && <input type="text" value={reason} maxLength={200}
+      placeholder={v("found_answer_reason")}
+      onChange={(event) => setReason(event.target.value)}
+      onBlur={() => { if (picked) void save(picked, reason); }}
+      style={{
+        marginBlockStart: 8, inlineSize: "100%", minBlockSize: 36, padding: "6px 10px",
+        borderRadius: 8, border: `1px solid ${LINE}`, background: CARD, color: INK,
+        font: "inherit", fontSize: 12,
+      }} />}
+  </div>;
+}
+
 // ─────────────────────────────── one row ───────────────────────────────
 
 function Row({ item, v, language, canCheck, checking, onCheck }: {
