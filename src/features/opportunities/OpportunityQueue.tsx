@@ -116,6 +116,13 @@ export function OpportunityQueue() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
   const [remoteOk, setRemoteOk] = useState(false);
+  // The four ranking questions. None of them hides anything except the list of
+  // companies he says he never wants to see, which he states himself.
+  const [kindPick, setKindPick] = useState<string[]>([]);
+  const [levelPick, setLevelPick] = useState<string | null>(null);
+  const [orgPick, setOrgPick] = useState<string[]>([]);
+  const [followPick, setFollowPick] = useState<Company[]>([]);
+  const [hidePick, setHidePick] = useState<Company[]>([]);
 
   const openerRef = useRef<HTMLElement | null>(null);
   const renderedRef = useRef<Set<string>>(new Set());
