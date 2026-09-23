@@ -937,17 +937,20 @@ Deno.serve(async (req) => {
         const rec = normaliseJson(out.content);
         if (!rec?.is_opportunity || !rec.chair_type || !rec.time_kind) {
           counts.dropped_not_opportunity++;
+          recordSeen(cand.url, "not_opportunity");
           continue;
         }
 
         // A directory is not a chair, whatever the model said.
         if (isAggregator(cand.url, rec.title, rec.scope)) {
           counts.dropped_aggregator++;
+          recordSeen(cand.url, "aggregator");
           continue;
         }
 
         if (pastEvent(rec)) {
           counts.dropped_past++;
+          recordSeen(cand.url, "past");
           continue;
         }
 
