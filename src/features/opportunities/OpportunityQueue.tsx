@@ -227,13 +227,31 @@ export function OpportunityQueue() {
   </section>;
 }
 
-function TodayView({ active, compact, decliningId, data, busy, v, language, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
-  if (!active) return <QuietDay data={data} v={v} language={language} />;
-  return <section className="oe-stack" aria-label={v("today_stack_aria")}>
-    <article ref={(node) => onRender(active, node)} className="oe-full-card"><OpportunityDetail card={active} declining={decliningId === active.id} busy={busy} v={v} language={language} onDeclineStart={() => onDeclineStart(active.id)} onDeclineBack={() => onDeclineStart(null)} onDecide={(action) => onDecide(active, action)} onDecline={(scope, value, truth) => onDecline(active, scope, value, truth)} /></article>
-    {compact.length > 0 && <div className="oe-next-list">{compact.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div>}
-  </section>;
+function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
+  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} />;
+  if (!active) {
+    const total = Number(found?.total ?? 0);
+    const atLevel = found?.groups?.find((group) => group.key === "at_level") ?? null;
+    const atLevelCount = Number(atLevel?.count ?? 0);
+    // A quiet day is only quiet when nothing at all was found. Anything found
+    // and not yet carded is said plainly instead.
+    const allJudged = (atLevel?.items ?? []).length > 0 && (atLevel?.items ?? []).every((item) => item.judged === true);
+    return <>
+      {total > 0
+        ? <AuraCard hover="none" className="oe-empty"><h2>{v("found_none_carded")}</h2><p>{fill(v(allJudged ? "found_counted_line" : "found_pending_line"), { total, at_level: atLevelCount })}</p></AuraCard>
+        : !foundLoading && !foundError && <QuietDay data={data} v={v} language={language} />}
+      {foundList}
+    </>;
+  }
+  return <>
+    <section className="oe-stack" aria-label={v("today_stack_aria")}>
+      <article ref={(node) => onRender(active, node)} className="oe-full-card"><OpportunityDetail card={active} declining={decliningId === active.id} busy={busy} v={v} language={language} onDeclineStart={() => onDeclineStart(active.id)} onDeclineBack={() => onDeclineStart(null)} onDecide={(action) => onDecide(active, action)} onDecline={(scope, value, truth) => onDecline(active, scope, value, truth)} /></article>
+      {compact.length > 0 && <div className="oe-next-list">{compact.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div>}
+    </section>
+    {foundList}
+  </>;
 }
+
 function QuietDay({ data, v, language }: { data: QueueData; v: Vocab; language: Lang }) {
   const quiet = data.quiet_day;
   return <AuraCard hover="none" className="oe-empty"><h2>{v("quiet_title")}</h2><p>{fill(v("quiet_body"), { sources: quiet?.surfaces_read ?? 0, findings: quiet?.findings ?? 0 })}</p><p>{v("quiet_none_cleared")}</p>{quiet?.from_date && quiet.to_date && <p className="oe-window-line" style={mono}>{fill(v("quiet_window"), { from: dateText(quiet.from_date, language), to: dateText(quiet.to_date, language) })}</p>}{data.window?.expected_by && <p className="oe-window-line" style={mono}>{fill(v(data.window.missed ? "window_missed" : "window_expected"), { date: dateText(data.window.expected_by, language) })}</p>}</AuraCard>;
