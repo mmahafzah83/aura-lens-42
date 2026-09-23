@@ -15,6 +15,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { withRun } from "../_shared/oeRun.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
+import { logAIFailure, logAIUsage } from "../_shared/logAIUsage.ts";
 import { secondPersonClause } from "../_shared/secondPerson.ts";
 import { bestStanding, writeTests } from "../_shared/writeValue.ts";
 import { interestOf } from "../_shared/interest.ts";
