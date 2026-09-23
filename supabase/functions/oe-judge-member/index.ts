@@ -464,6 +464,8 @@ Deno.serve(async (req) => {
     const gateNoZero = params.gate_no_zero !== false;
     const bands = params.bands ?? { strong: 3.4, worth_a_look: 3 };
     const cardsPerDay = Math.max(1, Number(params.cards_per_day ?? 1));
+    const cardsPerWeek = Math.max(1, Number(params.cards_per_week ?? 3));
+
     const exploreShare = Number(params.explore_share ?? 0);
     const fewShotK = Number(params.few_shot_k ?? 8);
     const alarmRun = Number(params.empty_day_alarm_run ?? 3);
@@ -522,7 +524,8 @@ Deno.serve(async (req) => {
 
     // ── 1+2. SHORTLIST, then the hard filters, before any model ───────────
     const merged = new Map<string, { score: number; retrieval: Record<string, any> }>();
-    for (const faceName of RETRIEVAL_FACES) {
+    // An ask names its own items: retrieval and the shortlist are skipped.
+    for (const faceName of requestedOpportunityIds.length ? [] : RETRIEVAL_FACES) {
       const face = faceByName.get(faceName);
       if (!face) continue;
       if (!asVector(face.embedding) && openaiKey && face.summary) {
@@ -631,7 +634,7 @@ Deno.serve(async (req) => {
 
     // Retrieval orders review; it must never erase a live record from coverage.
     const scored = [...actPool, ...writePool]
-      .filter((o) => !alreadyJudged.has(String(o.id)))
+      .filter((o) => requestedOpportunityIds.length > 0 || !alreadyJudged.has(String(o.id)))
       .map((o) => {
         const m = merged.get(o.id) ?? { score: 0, retrieval: { coverage: "outside_retrieval_top_k" } };
         const vec = asVector(o.embedding);
@@ -888,6 +891,20 @@ Deno.serve(async (req) => {
     }
 
     const cardsWritten: string[] = [];
+
+    /* DELIVERY. A card is shown as soon as it passes the gate, but never more
+       than cards_per_day in one day nor cards_per_week in any rolling seven
+       days. Cards already written outside this run count against both. */
+    const { count: cardsToday } = await admin.from("oe_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId).eq("card_date", cardDate).not("opportunity_id", "is", null);
+    const { count: cardsWeek } = await admin.from("oe_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId).not("opportunity_id", "is", null)
+      .gte("created_at", new Date(Date.now() - 7 * 86_400_000).toISOString());
+    const daySlots = Math.max(0, cardsPerDay - (cardsToday ?? 0));
+    const weekSlots = Math.max(0, cardsPerWeek - (cardsWeek ?? 0));
+
     const vocab = await loadVocab(admin);
 
     // BOOK ONE ids, so every serve can name the rules that were in force.
@@ -900,7 +917,7 @@ Deno.serve(async (req) => {
 
     // ── 5+6. HIS OWN EVIDENCE, the reasons, then the card ─────────────────
     for (const pick of order) {
-      if (cardsWritten.length >= cardsPerDay) break;
+      if (cardsWritten.length >= Math.min(daySlots, weekSlots)) break;
       const o = pick.o;
 
       // GATE 1 — no card without his own material.

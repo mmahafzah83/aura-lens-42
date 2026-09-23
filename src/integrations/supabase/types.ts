@@ -11270,6 +11270,7 @@ export type Database = {
         }[]
       }
       normalise_linkedin_handle: { Args: { p_raw: string }; Returns: string }
+      oe_app_check_now: { Args: { p_opportunity: string }; Returns: Json }
       oe_app_decide: {
         Args: {
           p_action: string
@@ -11331,6 +11332,7 @@ export type Database = {
         Returns: string
       }
       oe_classify_kind_probe: { Args: { p: Json }; Returns: string }
+      oe_country_of_place: { Args: { p: string }; Returns: string }
       oe_derive_access_state: { Args: never; Returns: number }
       oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {
@@ -11465,6 +11467,14 @@ export type Database = {
         Args: { p_code: string; p_source?: string; p_token: string }
         Returns: Json
       }
+      oe_ref_country_list: {
+        Args: never
+        Returns: {
+          iso2: string
+          name_ar: string
+          name_en: string
+        }[]
+      }
       oe_ref_sector_list: { Args: never; Returns: Json }
       oe_refresh_purpose: {
         Args: { p_user: string }
@@ -11473,6 +11483,7 @@ export type Database = {
           purpose: string
         }[]
       }
+      oe_remote_save: { Args: { p_ok: boolean }; Returns: Json }
       oe_route_is_specific: {
         Args: { p_kind: string; p_url: string }
         Returns: boolean

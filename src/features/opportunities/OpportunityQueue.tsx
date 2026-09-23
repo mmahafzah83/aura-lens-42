@@ -31,6 +31,7 @@ type QueueCard = {
 type Parked = { opportunity_id: string; title: string; issuer_name: string | null; location: string | null; deadline: string | null; parked_at: string };
 type History = { shown_at: string; lane: string | null; tap: string | null; tap_scope: string | null; truth_code: string | null; outcome: string | null; title: string | null; issuer_name: string | null; location: string | null; presentation_line: string | null };
 type SectorOption = { code: string; label_en: string; label_ar: string };
+type Country = { iso2: string; name_en: string; name_ar: string | null };
 type BarPick = { move: MoveKind | null; places: string[]; sectors: string[] };
 const sameSet = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
 type Direction = { language: Lang | null; move_kind: MoveKind | null; move_confirmed_at: string | null; move_proposed: MoveKind | null };
@@ -104,6 +105,10 @@ export function OpportunityQueue() {
   const [found, setFound] = useState<FoundData | null>(null);
   const [foundLoading, setFoundLoading] = useState(true);
   const [foundError, setFoundError] = useState(false);
+  const [checking, setChecking] = useState<Set<string>>(new Set());
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [remoteOk, setRemoteOk] = useState(false);
 
   const openerRef = useRef<HTMLElement | null>(null);
   const renderedRef = useRef<Set<string>>(new Set());
@@ -138,6 +143,16 @@ export function OpportunityQueue() {
     setSectorOptions(list.filter((row) => row && row.code));
   })(); }, []);
   useEffect(() => { void (async () => { const { data: payload } = await supabase.rpc("oe_my_home" as never); if (payload) setHome(payload as unknown as Home); })(); }, []);
+  useEffect(() => { void (async () => {
+    const { data: rows } = await supabase.rpc("oe_ref_country_list" as never);
+    setCountries(Array.isArray(rows) ? (rows as unknown as Country[]).filter((row) => row && row.iso2) : []);
+  })(); }, []);
+  useEffect(() => { void (async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user?.id) return;
+    const { data: row } = await supabase.from("oe_eligibility" as never).select("remote_ok").eq("user_id", auth.user.id).maybeSingle();
+    setRemoteOk(Boolean((row as { remote_ok?: boolean } | null)?.remote_ok));
+  })(); }, []);
   useEffect(() => { void loadFound(); }, [loadFound]);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
 
@@ -160,8 +175,31 @@ export function OpportunityQueue() {
     };
     baseline.current = seed;
     setMovePick(seed.move); setPlacePick(seed.places); setSectorPick(seed.sectors);
-    setSavedBar(false); setEditor(nextEditor); setRulesOpen(true);
+    setSavedBar(false); setSaveError(null); setEditor(nextEditor); setRulesOpen(true);
   };
+  // "Check this for me" — one opportunity judged now, then watched until the
+  // verdict lands or three minutes pass.
+  const checkNow = useCallback(async (id: string) => {
+    if (checking.has(id)) return;
+    const { data: result, error } = await supabase.rpc("oe_app_check_now" as never, { p_opportunity: id } as never);
+    const payload = (result ?? null) as { ok?: boolean; already?: boolean } | null;
+    if (error || !payload?.ok) { showNotice(v("found_error")); return; }
+    setChecking((current) => new Set(current).add(id));
+    const stop = () => setChecking((current) => { const next = new Set(current); next.delete(id); return next; });
+    if (payload.already) { void loadFound(); stop(); return; }
+    const started = Date.now();
+    const tick = async () => {
+      const { data: fresh } = await supabase.rpc("oe_app_found" as never, { p_days: 7 } as never);
+      const next = (fresh ?? null) as FoundData | null;
+      if (next) setFound(next);
+      const done = (next?.groups ?? []).some((group) => (group.items ?? []).some((item) => item.id === id && item.judged === true));
+      if (done) { stop(); await load(); return; }
+      if (Date.now() - started < 180_000) window.setTimeout(() => void tick(), 20_000); else stop();
+    };
+    window.setTimeout(() => void tick(), 20_000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checking, load, loadFound, v]);
+
   const togglePlace = (value: string) => setPlacePick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
   const toggleSector = (value: string) => setSectorPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
   const barDirty = movePick !== baseline.current.move || !sameSet(placePick, baseline.current.places) || !sameSet(sectorPick, baseline.current.sectors);
@@ -200,16 +238,25 @@ export function OpportunityQueue() {
   };
   const saveBar = async () => {
     if (busy || !barDirty) return;
-    setBusy(true);
+    setBusy(true); setSaveError(null);
     const { error } = await supabase.rpc("oe_bar_save" as never, { p_move: movePick, p_places: placePick, p_sectors: sectorPick } as never);
     if (!error) {
       baseline.current = { move: movePick, places: placePick, sectors: sectorPick };
       setEditor(null); setSavedBar(true);
       await load();
       window.setTimeout(() => { setSavedBar(false); closeRules(); }, 900);
+    } else {
+      // A refused save is said out loud, and the dialog stays where it is.
+      setSaveError(fill(v("bar_save_failed"), { error: error.message }));
     }
     setBusy(false);
   };
+  const saveRemote = async (next: boolean) => {
+    setRemoteOk(next);
+    const { error } = await supabase.rpc("oe_remote_save" as never, { p_ok: next } as never);
+    if (error) { setRemoteOk(!next); setSaveError(fill(v("bar_save_failed"), { error: error.message })); }
+  };
+
 
   return <section className="oe-queue" dir={rtl ? "rtl" : "ltr"} lang={language} aria-busy={loading}>
     <header className="oe-queue-header">
@@ -218,17 +265,17 @@ export function OpportunityQueue() {
     </header>
     <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
     <main>
-      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
+      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
       {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
       {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
     </main>
     <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span>{notice?.undo && <Button variant="link" onClick={() => void bringBack(notice.undo as string)}>{v("action_undo")}</Button>}</div>
-    {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} sectorPick={sectorPick} sectorOptions={sectorOptions} savedBar={savedBar} barDirty={barDirty} v={v} onEditor={(value) => { setSavedBar(false); setEditor(value); }} onMove={setMovePick} onPlace={togglePlace} onPlaceAny={() => setPlacePick([])} onSector={toggleSector} onSectorAny={() => setSectorPick([])} onSaveBar={() => void saveBar()} onClose={closeRules} />, document.body)}
+    {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} sectorPick={sectorPick} sectorOptions={sectorOptions} countries={countries} remoteOk={remoteOk} saveError={saveError} savedBar={savedBar} barDirty={barDirty} v={v} onEditor={(value) => { setSavedBar(false); setSaveError(null); setEditor(value); }} onMove={setMovePick} onPlace={togglePlace} onPlaceAny={() => setPlacePick([])} onSector={toggleSector} onSectorAny={() => setSectorPick([])} onRemote={(next) => void saveRemote(next)} onSaveBar={() => void saveBar()} onClose={closeRules} />, document.body)}
   </section>;
 }
 
-function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
-  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} />;
+function TodayView({ active, compact, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
+  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} checking={checking} onCheck={onCheck} />;
   if (!active) {
     const total = Number(found?.total ?? 0);
     const atLevel = found?.groups?.find((group) => group.key === "at_level") ?? null;
@@ -278,15 +325,36 @@ function HistoryView({ rows, filter, v, language, onFilter }: { rows: History[];
   return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <Button key={value} variant="outline" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</Button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{dateText(day, language)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
 }
 
-function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, savedBar, barDirty, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onSaveBar, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | "sector" | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; savedBar: boolean; barDirty: boolean; v: Vocab; onEditor: (value: "move" | "place" | "sector" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onSaveBar: () => void; onClose: () => void }) {
+function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, countries, remoteOk, saveError, savedBar, barDirty, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onRemote, onSaveBar, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | "sector" | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; countries: Country[]; remoteOk: boolean; saveError: string | null; savedBar: boolean; barDirty: boolean; v: Vocab; onEditor: (value: "move" | "place" | "sector" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onRemote: (value: boolean) => void; onSaveBar: () => void; onClose: () => void }) {
   const dialogRef = useRef<HTMLElement | null>(null);
+  const [countryQuery, setCountryQuery] = useState("");
+  const [sectorQuery, setSectorQuery] = useState("");
   const places = data.filters.place?.values ?? [];
   const placeText = places.length ? places.map((value) => value.startsWith("region:") ? refLabel("region", value.slice(7), language) : refLabel("place", value, language)).join(" · ") : v("move_place_any");
   const homeChoice = home?.city && home.country ? { value: home.country, label: fill(v("move_place_home"), { city: home.city }) } : null;
-  const homeRegion = home?.regions?.[0];
-  const regionChoice = homeRegion ? { value: `region:${homeRegion.code}`, label: fill(v("move_place_region"), { region: language === "ar" ? (homeRegion.name_ar || homeRegion.name_en) : homeRegion.name_en }) } : null;
-  const choices: Array<{ value: string; label: string }> = [homeChoice, regionChoice].filter((choice): choice is { value: string; label: string } => Boolean(choice));
+  const regionChoices = (home?.regions ?? []).filter((region) => region.code !== "WORLD").map((region) => ({
+    value: `region:${region.code}`,
+    label: fill(v("move_place_region"), { region: language === "ar" ? (region.name_ar || region.name_en) : region.name_en }),
+  }));
+  const choices: Array<{ value: string; label: string }> = [homeChoice, ...regionChoices].filter((choice): choice is { value: string; label: string } => Boolean(choice));
+  const quickValues = new Set(choices.map((choice) => choice.value));
+  const countryName = (iso2: string) => {
+    const row = countries.find((item) => item.iso2 === iso2);
+    return row ? (language === "ar" ? (row.name_ar || row.name_en) : row.name_en) : refLabel("place", iso2, language);
+  };
+  const pickedCountries = placePick.filter((value) => !value.startsWith("region:") && !quickValues.has(value));
+  const countryMatches = countries
+    .filter((row) => !placePick.includes(row.iso2))
+    .filter((row) => {
+      const needle = countryQuery.trim().toLowerCase();
+      if (!needle) return false;
+      return row.name_en.toLowerCase().includes(needle) || String(row.name_ar ?? "").includes(countryQuery.trim()) || row.iso2.toLowerCase() === needle;
+    }).slice(0, 8);
   const sectorLabel = (option: SectorOption) => language === "ar" ? (option.label_ar || option.label_en) : option.label_en;
+  const sectorMatches = sectorOptions.filter((option) => {
+    const needle = sectorQuery.trim().toLowerCase();
+    return !needle || sectorLabel(option).toLowerCase().includes(needle) || option.code.toLowerCase().includes(needle);
+  });
   const chosenSectors = data.filters.sector?.values ?? [];
   const sectorText = chosenSectors.length
     ? chosenSectors.map((code) => sectorLabel(sectorOptions.find((option) => option.code === code) ?? { code, label_en: code, label_ar: code })).join(" · ")
@@ -313,9 +381,36 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
     <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span></div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
       {sectorOptions.length > 0 && <div className="oe-dialog-row"><div><strong>{v("settings_sectors")}</strong><span>{sectorText}</span></div><Button variant="link" onClick={() => onEditor("sector")}>{v("action_change")}</Button></div>}
       {editor === "move" && <div className="oe-inline-editor"><p>{v("move_question")}</p>{moves.map((move) => <Button key={move} variant="outline" aria-pressed={movePick === move} className={`${data.direction?.move_proposed === move ? "is-proposed" : ""}`} onClick={() => onMove(move)}>{v(moveKey(move))}</Button>)}</div>}
-      {editor === "place" && <div className="oe-inline-editor"><p>{v("move_place_question")}</p>{choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}<Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button></div>}
-      {editor === "sector" && sectorOptions.length > 0 && <div className="oe-inline-editor"><p>{v("bar_sector_question")}<b style={mono}>{sectorPick.length}</b></p><small>{v("bar_sector_sub")}</small><div className="oe-sector-grid">{sectorOptions.map((option) => <Button key={option.code} variant="outline" aria-pressed={sectorPick.includes(option.code)} onClick={() => onSector(option.code)}>{sectorLabel(option)}</Button>)}<Button variant="outline" aria-pressed={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_any")}</Button></div><Button variant="link" className="oe-sector-clear" disabled={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_clear")}</Button></div>}
-      {editor && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton></div>}
+      {editor === "place" && <div className="oe-inline-editor oe-place-editor">
+        <p>{v("move_place_question")}</p>
+        <div className="oe-chip-row">
+          {choices.map((place) => <Button key={place.value} variant="outline" aria-pressed={placePick.includes(place.value)} onClick={() => onPlace(place.value)}>{place.label}</Button>)}
+          <Button variant="outline" aria-pressed={placePick.length === 0} onClick={onPlaceAny}>{v("move_place_any")}</Button>
+        </div>
+        <label className="oe-field-label" htmlFor="oe-country-search">{v("place_add_country")}</label>
+        <input id="oe-country-search" type="search" className="oe-search" value={countryQuery} placeholder={v("place_search")}
+          onChange={(event) => setCountryQuery(event.target.value)} autoComplete="off" role="combobox" aria-expanded={countryMatches.length > 0} aria-controls="oe-country-list" />
+        {countryMatches.length > 0 && <div id="oe-country-list" className="oe-option-list" role="listbox">
+          {countryMatches.map((row) => <button key={row.iso2} type="button" role="option" aria-selected="false" className="oe-option-row"
+            onClick={() => { onPlace(row.iso2); setCountryQuery(""); }}>{language === "ar" ? (row.name_ar || row.name_en) : row.name_en}</button>)}
+        </div>}
+        {pickedCountries.length > 0 && <div className="oe-chip-row">{pickedCountries.map((iso2) => <Button key={iso2} variant="outline" aria-label={fill(v("place_remove"), { name: countryName(iso2) })} onClick={() => onPlace(iso2)}>{countryName(iso2)} ×</Button>)}</div>}
+        <label className="oe-switch-row"><input type="checkbox" checked={remoteOk} onChange={(event) => onRemote(event.target.checked)} /><span>{v("place_remote")}</span></label>
+      </div>}
+      {editor === "sector" && sectorOptions.length > 0 && <div className="oe-inline-editor oe-sector-editor">
+        <p>{v("bar_sector_question")}<b style={mono}>{sectorPick.length}</b></p>
+        <input type="search" className="oe-search" value={sectorQuery} placeholder={v("bar_sector_search")} onChange={(event) => setSectorQuery(event.target.value)} autoComplete="off" />
+        {sectorPick.length > 0 && <div className="oe-chip-row">{sectorPick.map((code) => {
+          const option = sectorOptions.find((item) => item.code === code) ?? { code, label_en: code, label_ar: code };
+          return <Button key={code} variant="outline" onClick={() => onSector(code)}>{sectorLabel(option)} ×</Button>;
+        })}</div>}
+        <div className="oe-sector-list">{sectorMatches.map((option) => <label key={option.code} className="oe-sector-row">
+          <input type="checkbox" checked={sectorPick.includes(option.code)} onChange={() => onSector(option.code)} />
+          <span>{sectorLabel(option)}</span>
+        </label>)}</div>
+        <Button variant="link" className="oe-sector-clear" disabled={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_clear")}</Button>
+      </div>}
+      {editor && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
       {savedBar && <p role="status">{v("bar_saved")}</p>}
     </section>
     </div>

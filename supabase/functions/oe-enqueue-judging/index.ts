@@ -1,8 +1,12 @@
 /**
- * oe-enqueue-judging — once a night, put every consenting member with a full
- * set of five faces into the judging queue. One row per member; the existing
- * job_queue_one_live index refuses a second live job for the same member.
+ * oe-enqueue-judging — every two hours, put a consenting member with a full set
+ * of five faces into the judging queue, but only when there is something new
+ * for him: an alive opportunity first seen since his last judged verdict that
+ * he has no match row for. Nothing new, no job. One row per member; the
+ * existing job_queue_one_live index refuses a second live job for the same
+ * member.
  */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logEfError } from "../_shared/observe.ts";
 
@@ -35,7 +39,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
   const startedAt = new Date().toISOString();
-  const counts = { consented: 0, faces_complete: 0, enqueued: 0, already_queued: 0 };
+  const counts = { consented: 0, faces_complete: 0, nothing_new: 0, enqueued: 0, already_queued: 0 };
 
   try {
     const { data: consents, error: cErr } = await admin
@@ -63,7 +67,33 @@ Deno.serve(async (req) => {
     }
     counts.faces_complete = complete.length;
 
+    // What is alive right now, and when each item was first seen. An item is
+    // judged once per member: a member with no unjudged item gets no job.
+    const alive: Array<{ id: string; first_seen_at: string | null }> = [];
+    if (complete.length) {
+      const page = 1000;
+      for (let from = 0; ; from += page) {
+        const { data, error } = await admin
+          .from("oe_opportunities").select("id, first_seen_at")
+          .eq("alive", true).order("id").range(from, from + page - 1);
+        if (error) throw new Error(`alive opportunities: ${error.message}`);
+        alive.push(...((data ?? []) as any[]).map((o) => ({ id: String(o.id), first_seen_at: o.first_seen_at })));
+        if ((data?.length ?? 0) < page) break;
+      }
+    }
+
     for (const uid of complete) {
+      const { data: rows, error: mErr } = await admin
+        .from("oe_matches").select("opportunity_id, judged_at").eq("user_id", uid);
+      if (mErr) throw new Error(`matches(${uid}): ${mErr.message}`);
+      const seen = new Set((rows ?? []).map((m: any) => String(m.opportunity_id)));
+      const lastJudged = (rows ?? [])
+        .map((m: any) => String(m.judged_at ?? ""))
+        .filter(Boolean).sort().slice(-1)[0] ?? null;
+      const hasNew = alive.some((o) =>
+        !seen.has(o.id) && (!lastJudged || (o.first_seen_at ?? "") > lastJudged));
+      if (!hasNew) { counts.nothing_new++; continue; }
+
       const { error } = await admin.from("job_queue").insert({
         job_type: "oe_judge_member",
         user_id: uid,
@@ -75,6 +105,7 @@ Deno.serve(async (req) => {
       else if ((error as any).code === "23505") counts.already_queued++;
       else throw new Error(error.message);
     }
+
 
     const { data: run } = await admin.from("oe_runs").insert({
       run_kind: "enqueue_judging",

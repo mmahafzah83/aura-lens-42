@@ -54,7 +54,10 @@ function Chip({ children }: { children: React.ReactNode }) {
   }}>{children}</span>;
 }
 
-function Row({ item, v, language }: { item: FoundItem; v: Vocab; language: Lang }) {
+function Row({ item, v, language, canCheck, checking, onCheck }: {
+  item: FoundItem; v: Vocab; language: Lang;
+  canCheck: boolean; checking: boolean; onCheck: (id: string) => void;
+}) {
   const href = item.route_url ?? item.source_url ?? undefined;
   const meta = [item.issuer, item.location].filter(Boolean).join(" · ");
   const levelLabel = item.level ? v(`foundlevel_${item.level}`) : "";
@@ -72,14 +75,21 @@ function Row({ item, v, language }: { item: FoundItem; v: Vocab; language: Lang 
       {href && <span style={{ fontSize: 12, fontWeight: 600, color: ACT }}>{`${v("found_open_posting")} ${arrow}`}</span>}
     </span>
   </>;
-  const style: React.CSSProperties = {
-    display: "block", padding: "12px 14px", borderBlockEnd: `1px solid ${LINE}`,
-    textDecoration: "none", color: INK,
-  };
-  return href
-    ? <a href={href} target="_blank" rel="noopener noreferrer" style={style}>{body}</a>
-    : <div style={style}>{body}</div>;
+  const inner: React.CSSProperties = { display: "block", textDecoration: "none", color: INK };
+  const showCheck = canCheck && item.judged !== true;
+  return <div style={{ padding: "12px 14px", borderBlockEnd: `1px solid ${LINE}` }}>
+    {href
+      ? <a href={href} target="_blank" rel="noopener noreferrer" style={inner}>{body}</a>
+      : <div style={inner}>{body}</div>}
+    {showCheck && (checking
+      ? <span style={{ display: "block", marginBlockStart: 8, fontSize: 12, color: MUTED }}>{v("found_checking")}</span>
+      : <button type="button" onClick={() => onCheck(item.id)} style={{
+          marginBlockStart: 8, minBlockSize: 32, padding: 0, border: 0, background: "transparent",
+          color: MUTED, font: "inherit", fontSize: 12, fontWeight: 600, textDecoration: "underline", cursor: "pointer",
+        }}>{v("found_check_now")}</button>)}
+  </div>;
 }
+
 
 function EmployerRow({ row, v, language }: { row: FoundEmployer; v: Vocab; language: Lang }) {
   return <div style={{ padding: "12px 14px", borderBlockEnd: `1px solid ${LINE}` }}>
@@ -91,7 +101,11 @@ function EmployerRow({ row, v, language }: { row: FoundEmployer; v: Vocab; langu
   </div>;
 }
 
-function Group({ group, v, language }: { group: FoundGroup; v: Vocab; language: Lang }) {
+const CHECKABLE = new Set(["at_level", "mandates", "level_unstated"]);
+
+function Group({ group, v, language, checking, onCheck }: {
+  group: FoundGroup; v: Vocab; language: Lang; checking: Set<string>; onCheck: (id: string) => void;
+}) {
   const [open, setOpen] = useState(OPEN_BY_DEFAULT.has(group.key));
   const [all, setAll] = useState(false);
   const label = language === "ar" ? (group.label_ar || group.label_en) : group.label_en;
@@ -114,7 +128,8 @@ function Group({ group, v, language }: { group: FoundGroup; v: Vocab; language: 
       {open && <>
         {group.key === "signals"
           ? employers.map((row, index) => <EmployerRow key={index} row={row} v={v} language={language} />)
-          : shown.map((item) => <Row key={item.id} item={item} v={v} language={language} />)}
+          : shown.map((item) => <Row key={item.id} item={item} v={v} language={language}
+              canCheck={CHECKABLE.has(group.key)} checking={checking.has(item.id)} onCheck={onCheck} />)}
         {group.key !== "signals" && !all && items.length > PAGE &&
           <button type="button" onClick={() => setAll(true)} style={{
             padding: "10px 14px", border: 0, background: "transparent", cursor: "pointer",
@@ -125,8 +140,9 @@ function Group({ group, v, language }: { group: FoundGroup; v: Vocab; language: 
   </section>;
 }
 
-export default function FoundList({ data, loading, error, v, language, onRetry }: {
+export default function FoundList({ data, loading, error, v, language, onRetry, checking, onCheck }: {
   data: FoundData | null; loading: boolean; error: boolean; v: Vocab; language: Lang; onRetry: () => void;
+  checking: Set<string>; onCheck: (id: string) => void;
 }) {
   if (loading) {
     return <div style={{ display: "grid", gap: 8 }} aria-busy="true">
@@ -143,6 +159,6 @@ export default function FoundList({ data, loading, error, v, language, onRetry }
   if (!groups.length) return null;
   return <section style={{ marginBlockStart: 22, display: "grid", gap: 10 }}>
     <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: INK }}>{v("found_title")}</h2>
-    {groups.map((group) => <Group key={group.key} group={group} v={v} language={language} />)}
+    {groups.map((group) => <Group key={group.key} group={group} v={v} language={language} checking={checking} onCheck={onCheck} />)}
   </section>;
 }
