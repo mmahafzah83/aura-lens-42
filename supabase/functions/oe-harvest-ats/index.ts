@@ -234,7 +234,11 @@ const ADAPTERS: Record<
     const url = endpoint ||
       `https://${tenant}.${dc}.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions` +
       `?onlyData=true&expand=requisitionList&finder=findReqs;siteNumber=CX_1,limit=100`;
-    const r = await req(url, { headers: { "REST-Framework-Version": "4" } });
+    let r = await req(url, { headers: { "REST-Framework-Version": "4" } });
+    // Some Oracle tenants refuse the versioned header outright. Ask once more,
+    // plainly, in English, before calling it a locked door.
+    if (r.status === 403) r = await req(url, { headers: { "Accept-Language": "en" } });
+    if (r.status === 403) throw new Error("oracle_forbidden");
     if (!r.ok) throw new Error(`http_${r.status}`);
     const d = await r.json();
     const list = d?.items?.[0]?.requisitionList ?? d?.items ?? [];
