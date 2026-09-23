@@ -634,7 +634,7 @@ Deno.serve(async (req) => {
 
     // Retrieval orders review; it must never erase a live record from coverage.
     const scored = [...actPool, ...writePool]
-      .filter((o) => !alreadyJudged.has(String(o.id)))
+      .filter((o) => requestedOpportunityIds.length > 0 || !alreadyJudged.has(String(o.id)))
       .map((o) => {
         const m = merged.get(o.id) ?? { score: 0, retrieval: { coverage: "outside_retrieval_top_k" } };
         const vec = asVector(o.embedding);
@@ -903,7 +903,7 @@ Deno.serve(async (req) => {
 
     // ── 5+6. HIS OWN EVIDENCE, the reasons, then the card ─────────────────
     for (const pick of order) {
-      if (cardsWritten.length >= cardsPerDay) break;
+      if (cardsWritten.length >= Math.min(daySlots, weekSlots)) break;
       const o = pick.o;
 
       // GATE 1 — no card without his own material.
