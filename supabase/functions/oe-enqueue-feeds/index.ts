@@ -194,6 +194,7 @@ Deno.serve(async (req) => {
       skipped_cadence: skippedCadence,
       read_enqueued: readEnqueued,
       read_cap_per_day: readCap,
+      skipped_junior_title: tooJunior.length,
     };
     await admin.from("oe_runs").insert({
       run_kind: "enqueue_feeds",
