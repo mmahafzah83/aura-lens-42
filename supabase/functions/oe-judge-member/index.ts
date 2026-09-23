@@ -443,6 +443,8 @@ Deno.serve(async (req) => {
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
     no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
     skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0, rescreened: 0, unscreened: 0,
+    seeded: 0, screened_inline: 0, screen_enqueued: 0, rejudged: 0, judged_today_before: 0,
+
   };
 
   let costUsd = 0;
@@ -460,6 +462,10 @@ Deno.serve(async (req) => {
     const shortlistK = Number(params.shortlist_k ?? 50);
     const judgePasses = Math.max(1, Number(params.judge_passes ?? 2));
     const judgeMax = Number(params.judge_max ?? DEFAULT_JUDGE_MAX);
+    // A ceiling for the day as well as for the run, so a member's pool is
+    // worked through steadily instead of the same handful being re-read.
+    const judgeMaxPerDay = Math.max(judgeMax, Number(params.judge_max_per_day ?? 60));
+
     const gateMin = Number(params.gate_min_avg ?? 3);
     const gateNoZero = params.gate_no_zero !== false;
     const bands = params.bands ?? { strong: 3.4, worth_a_look: 3 };
