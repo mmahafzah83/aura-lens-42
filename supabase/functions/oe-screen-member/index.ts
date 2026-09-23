@@ -141,44 +141,25 @@ async function askForLine(
     throw new GatewayFailure(kind, `gateway ${res.status}: ${body}`);
   }
 
-  const reader = res.body!.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  let text = "";
-  const usage = { input_tokens: 0, output_tokens: 0 };
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const l of lines) {
-      if (!l.startsWith("data:")) continue;
-      const raw = l.slice(5).trim();
-      if (!raw || raw === "[DONE]") continue;
-      try {
-        const ev = JSON.parse(raw);
-        if (ev.type === "response.output_text.delta" && typeof ev.delta === "string") text += ev.delta;
-        const u = ev?.response?.usage;
-        if (u) {
-          usage.input_tokens = Number(u.input_tokens ?? u.prompt_tokens ?? usage.input_tokens) || usage.input_tokens;
-          usage.output_tokens = Number(u.output_tokens ?? u.completion_tokens ?? usage.output_tokens) || usage.output_tokens;
-        }
-      } catch { /* partial frame */ }
-    }
-  }
-  /* AN EMPTY OR MALFORMED STREAM IS NOT AN EMPTY RESULT. Returning {matches: []}
+  const data = await res.json().catch(() => null);
+  const u = data?.usage ?? null;
+  const usage = {
+    input_tokens: Number(u?.prompt_tokens ?? u?.input_tokens ?? 0) || 0,
+    output_tokens: Number(u?.completion_tokens ?? u?.output_tokens ?? 0) || 0,
+  };
+
+  /* AN EMPTY OR UNPARSEABLE BODY IS NOT AN EMPTY RESULT. Returning {matches: []}
      here would let a broken call be read as "his record answers nothing". */
-  const trimmed = text.trim();
-  if (!trimmed) throw new GatewayFailure("transport", "empty stream: no output text");
+  const trimmed = String(data?.choices?.[0]?.message?.content ?? "").trim();
+  if (!trimmed) throw new GatewayFailure("transport", "empty response: no output text");
   let parsed: any;
   try {
     parsed = JSON.parse(trimmed);
   } catch {
-    throw new GatewayFailure("transport", "malformed stream: output is not JSON");
+    throw new GatewayFailure("transport", "malformed response: output is not JSON");
   }
   if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.matches)) {
-    throw new GatewayFailure("transport", "malformed stream: no matches array");
+    throw new GatewayFailure("transport", "malformed response: no matches array");
   }
   return { matches: parsed.matches, usage };
 }
