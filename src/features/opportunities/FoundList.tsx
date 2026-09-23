@@ -47,6 +47,8 @@ const ACT = "#0670C4";
 const mono = { fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontVariantNumeric: "tabular-nums" } as const;
 const OPEN_BY_DEFAULT = new Set(["at_level", "mandates"]);
 const PAGE = 10;
+// The one group that lists employers rather than postings.
+const EMPLOYER_KEY = "signals";
 
 const fill = (text: string, vars: Record<string, string | number>) =>
   Object.entries(vars).reduce((value, [key, item]) => value.split(`{${key}}`).join(String(item)), text);
@@ -171,7 +173,7 @@ function Group({ group, items, v, language, checking, onCheck }: {
   const [all, setAll] = useState(false);
   const label = language === "ar" ? (group.label_ar || group.label_en) : group.label_en;
   const employers = group.employers ?? [];
-  const count = group.key === "signals" ? Number(group.count ?? 0) : items.length;
+  const count = group.key === EMPLOYER_KEY ? Number(group.count ?? 0) : items.length;
   const shown = all ? items : items.slice(0, PAGE);
   const panelId = `found-${group.key}`;
   return <section style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, overflow: "hidden" }}>
@@ -187,11 +189,11 @@ function Group({ group, items, v, language, checking, onCheck }: {
     </button>
     <div id={panelId} hidden={!open}>
       {open && <>
-        {group.key === "signals"
+        {group.key === EMPLOYER_KEY
           ? employers.map((row, index) => <EmployerRow key={index} row={row} v={v} language={language} />)
           : shown.map((item) => <Row key={item.id} item={item} v={v} language={language}
               canCheck={CHECKABLE.has(group.key)} checking={checking.has(item.id)} onCheck={onCheck} />)}
-        {group.key !== "signals" && !all && items.length > PAGE &&
+        {group.key !== EMPLOYER_KEY && !all && items.length > PAGE &&
           <button type="button" onClick={() => setAll(true)} style={{
             padding: "10px 14px", border: 0, background: "transparent", cursor: "pointer",
             color: ACT, fontSize: 12, fontWeight: 600, font: "inherit",
@@ -276,7 +278,7 @@ export default function FoundList({ data, loading, error, v, language, onRetry, 
   }
   const visible = groups
     .map((group) => ({ group, items: (group.items ?? []).filter(keep) }))
-    .filter(({ group, items }) => group.key === "signals" ? Number(group.count ?? 0) > 0 && !anyFilter : items.length > 0);
+    .filter(({ group, items }) => group.key === EMPLOYER_KEY ? Number(group.count ?? 0) > 0 && !anyFilter : items.length > 0);
   if (!groups.some((group) => Number(group.count ?? 0) > 0)) return null;
 
   const anyLabel = v("filter_any");
