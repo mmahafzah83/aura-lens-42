@@ -371,7 +371,7 @@ Deno.serve(withRun("screen_member", async (req) => {
 
     // One run screens a set number of records, the ones never screened first,
     // so a night's backlog drains over runs instead of exhausting the worker.
-    const screenBatch = Math.max(1, Number(body.batch ?? 150));
+    const screenBatch = Math.max(1, Number(body.batch ?? 40));
     if ((opps ?? []).length > screenBatch) {
       const { data: screenedRows } = await admin.from("oe_matches")
         .select("opportunity_id, screened_at").eq("user_id", userId).not("screened_at", "is", null);
