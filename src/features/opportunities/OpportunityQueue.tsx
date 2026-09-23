@@ -119,6 +119,14 @@ export function OpportunityQueue() {
     if (!error && payload) setData(next);
     setLoading(false);
   }, []);
+  // What the week's reading actually turned up, card or no card.
+  const loadFound = useCallback(async () => {
+    setFoundLoading(true); setFoundError(false);
+    const { data: payload, error } = await supabase.rpc("oe_app_found" as never, { p_days: 7 } as never);
+    if (error || !payload) { setFoundError(true); setFound(null); } else setFound(payload as unknown as FoundData);
+    setFoundLoading(false);
+  }, []);
+
   useEffect(() => { void load(); void loadRefLabels(); }, [load]);
   useEffect(() => { void (async () => {
     const { data: rows } = await supabase.rpc("oe_ref_sector_list" as never);
