@@ -83,26 +83,27 @@ const failureKind = (e: unknown): GatewayFailure["kind"] => {
   return "transport";
 };
 
-/** One streamed call. Reasoning models run for minutes; never buffer, never time out on a timer. */
+/** One chat/completions call on the standard model. Same schema, not streamed. */
 async function askForLine(
   key: string,
+  model: string,
   payload: string,
 ): Promise<{
   matches: Array<{ requirement: string; evidence_id: string }>;
   usage: { input_tokens: number; output_tokens: number };
 }> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
     body: JSON.stringify({
-      model: MODEL,
-      instructions: PRESENTATION_SYSTEM,
-      input: payload,
-      stream: true,
-      reasoning: { effort: "low", summary: "auto" },
-      text: {
-        format: {
-          type: "json_schema",
+      model,
+      messages: [
+        { role: "system", content: PRESENTATION_SYSTEM },
+        { role: "user", content: payload },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
           name: "presentation_matches",
           strict: true,
           schema: {
