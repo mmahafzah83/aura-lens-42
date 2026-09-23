@@ -4859,6 +4859,7 @@ export type Database = {
           last_changed_at: string | null
           last_error: string | null
           last_fetched_at: string | null
+          links_fingerprint: string | null
           list_selector: string | null
           name: string
           notes: string | null
@@ -4895,6 +4896,7 @@ export type Database = {
           last_changed_at?: string | null
           last_error?: string | null
           last_fetched_at?: string | null
+          links_fingerprint?: string | null
           list_selector?: string | null
           name: string
           notes?: string | null
@@ -4931,6 +4933,7 @@ export type Database = {
           last_changed_at?: string | null
           last_error?: string | null
           last_fetched_at?: string | null
+          links_fingerprint?: string | null
           list_selector?: string | null
           name?: string
           notes?: string | null
@@ -6528,6 +6531,33 @@ export type Database = {
           severity?: string | null
           started_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      oe_seen_links: {
+        Row: {
+          canonical_url: string
+          feed_id: string | null
+          first_seen_at: string
+          last_seen_at: string
+          times_seen: number
+          verdict: string
+        }
+        Insert: {
+          canonical_url: string
+          feed_id?: string | null
+          first_seen_at?: string
+          last_seen_at?: string
+          times_seen?: number
+          verdict: string
+        }
+        Update: {
+          canonical_url?: string
+          feed_id?: string | null
+          first_seen_at?: string
+          last_seen_at?: string
+          times_seen?: number
+          verdict?: string
         }
         Relationships: []
       }
@@ -11032,6 +11062,31 @@ export type Database = {
       claim_assessment_session: { Args: { p_token: string }; Returns: string }
       claim_job: {
         Args: { p_job_type: string; p_worker: string }
+        Returns: {
+          attempts: number
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          id: string
+          job_type: string
+          last_error: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          scheduled_for: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "job_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_jobs: {
+        Args: { p_job_types: string[]; p_limit?: number; p_worker: string }
         Returns: {
           attempts: number
           claimed_at: string | null

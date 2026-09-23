@@ -6,6 +6,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logEfError } from "../_shared/observe.ts";
+import { parseLevel, levelIndex } from "../_shared/oeEligibility.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,17 +133,46 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
     const readCap = Number((policy?.params as any)?.read_cap_per_day ?? 200);
+    const readMinLevel = String((policy?.params as any)?.read_min_level ?? "senior_manager");
     const feedCountry = new Map((feeds ?? []).map((f) => [f.id as string, String((f as any).country ?? "").toUpperCase()]));
+
+    // Which country is read first is demand, measured from the members
+    // themselves, not a list of countries written into this file.
+    const { data: demandRows } = await admin
+      .from("oe_demand_map")
+      .select("value, demand")
+      .eq("dimension", "country");
+    const demandByCountry = new Map(
+      (demandRows ?? []).map((d: any) => [String(d.value).toUpperCase(), Number(d.demand) || 0]),
+    );
+
     const { data: backlogRows } = await admin
       .from("oe_read_backlog")
-      .select("candidate_id, feed_id, url, created_at")
+      .select("candidate_id, feed_id, url, title, created_at")
       .order("created_at", { ascending: true })
       .limit(Math.max(readCap * 4, 400));
-    const gulf = new Set(["SA", "AE", "QA", "KW", "BH", "OM"]);
-    const ordered = [...(backlogRows ?? [])].sort((a, b) => {
-      const ga = gulf.has(feedCountry.get(a.feed_id as string) ?? "") ? 0 : 1;
-      const gb = gulf.has(feedCountry.get(b.feed_id as string) ?? "") ? 0 : 1;
-      if (ga !== gb) return ga - gb;
+
+    // A seat below the ladder floor is not worth opening. Decided from the
+    // candidate's own title, in code, for nothing.
+    const tooJunior: string[] = [];
+    const worthReading = (backlogRows ?? []).filter((row: any) => {
+      const lvl = parseLevel(row.title, null);
+      if (lvl && levelIndex(lvl) < levelIndex(readMinLevel)) {
+        tooJunior.push(row.candidate_id as string);
+        return false;
+      }
+      return true;
+    });
+    for (let i = 0; i < tooJunior.length; i += 200) {
+      await admin.from("oe_candidates")
+        .update({ triage_state: "junior_title" })
+        .in("id", tooJunior.slice(i, i + 200));
+    }
+
+    const ordered = [...worthReading].sort((a: any, b: any) => {
+      const da = demandByCountry.get(feedCountry.get(a.feed_id as string) ?? "") ?? 0;
+      const db = demandByCountry.get(feedCountry.get(b.feed_id as string) ?? "") ?? 0;
+      if (da !== db) return db - da;
       return String(a.created_at).localeCompare(String(b.created_at));
     });
     let readEnqueued = 0;
@@ -164,6 +194,7 @@ Deno.serve(async (req) => {
       skipped_cadence: skippedCadence,
       read_enqueued: readEnqueued,
       read_cap_per_day: readCap,
+      skipped_junior_title: tooJunior.length,
     };
     await admin.from("oe_runs").insert({
       run_kind: "enqueue_feeds",

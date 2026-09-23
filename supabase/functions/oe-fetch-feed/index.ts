@@ -9,7 +9,7 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { isAggregator, normaliseForQuote } from "../_shared/oeGuards.ts";
-import { parseLevel } from "../_shared/oeEligibility.ts";
+import { parseLevel, levelIndex } from "../_shared/oeEligibility.ts";
 import { SCOPE_EVIDENCE_INSTRUCTION, verifyScopeEvidence } from "../_shared/scopeEvidence.ts";
 
 const corsHeaders = {
@@ -190,6 +190,57 @@ function cosine(a: number[], b: number[]): number {
   let dot = 0, na = 0, nb = 0;
   for (let i = 0; i < a.length && i < b.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
   return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
+}
+
+// ───────── a careers page's links, judged for free ─────────
+
+/** The registrable part of a host: "jobs.acme.co.uk" → "acme.co.uk". */
+function registrable(host: string): string {
+  const parts = host.replace(/^www\./, "").split(".");
+  if (parts.length <= 2) return parts.join(".");
+  const twoLevel = /^(co|com|org|net|gov|edu|ac|sch|mil)\.[a-z]{2}$/i;
+  const last3 = parts.slice(-3).join(".");
+  if (twoLevel.test(parts.slice(-2).join("."))) return last3;
+  return parts.slice(-2).join(".");
+}
+
+/** Hosts that carry a real posting for someone else's careers page. */
+const ATS_HOSTS = [
+  "myworkdayjobs.com", "workday.com", "greenhouse.io", "lever.co", "smartrecruiters.com",
+  "successfactors.com", "sap.com", "taleo.net", "oraclecloud.com", "icims.com", "jobvite.com",
+  "ashbyhq.com", "workable.com", "bamboohr.com", "recruitee.com", "teamtailor.com",
+  "personio.de", "avature.net", "eightfold.ai", "phenompeople.com", "brassring.com",
+];
+
+/** A path or query that reads like one posting. */
+const JOB_PATH_RE =
+  /(job|jobs|career|careers|vacanc|position|opening|requisition|\breq\b|jobid|posting|وظيف|شاغر)/i;
+
+/** Navigation, legal and social links, which are never a posting. */
+const NAV_RE =
+  /(about|contact|privacy|terms|cookie|login|sign-?in|register-account|faq|news|blog|linkedin\.com|twitter\.com|x\.com|facebook\.com|instagram\.com|youtube\.com)/i;
+
+/** A link on a careers page that looks like a single job posting. */
+function looksLikeJobPosting(link: string, feedHost: string): boolean {
+  let u: URL;
+  try { u = new URL(link); } catch { return false; }
+  const host = u.hostname.replace(/^www\./, "");
+  const onSite = registrable(host) === registrable(feedHost);
+  const onAts = ATS_HOSTS.some((a) => host === a || host.endsWith(`.${a}`));
+  if (!onSite && !onAts) return false;
+  const tail = decodeURIComponent(`${u.pathname}${u.search}`);
+  if (!JOB_PATH_RE.test(tail)) return false;
+  if (NAV_RE.test(decodeURIComponent(link))) return false;
+  return true;
+}
+
+/** The words in a link's last path segment, read as a title. */
+function titleFromLink(link: string): string {
+  try {
+    const u = new URL(link);
+    const seg = u.pathname.split("/").filter(Boolean).pop() ?? "";
+    return decodeURIComponent(seg).replace(/\.(html?|aspx|php)$/i, "").replace(/[-_+]+/g, " ").trim();
+  } catch { return ""; }
 }
 
 // ───────── outside calls ─────────
@@ -490,6 +541,26 @@ Deno.serve(async (req) => {
     return [...neverRead, ...skipHosts].some((b) => h === b || h.endsWith(`.${b}`));
   };
 
+  // The lowest level worth opening. A product rule, identical for every member.
+  const readMinLevel: string = params.read_min_level ?? "senior_manager";
+
+  /** Every link this run judged, so the same link is never read twice. */
+  const judged = new Map<string, string>();
+  const recordSeen = (link: string | null, verdict: string) => {
+    if (link) judged.set(canonicalise(link), verdict);
+  };
+  async function flushSeen() {
+    if (!judged.size) return;
+    const now = new Date().toISOString();
+    await admin.from("oe_seen_links").upsert(
+      [...judged].map(([canonical_url, verdict]) => ({
+        canonical_url, feed_id: feedId, verdict, last_seen_at: now,
+      })),
+      { onConflict: "canonical_url" },
+    );
+    judged.clear();
+  }
+
   try {
     // ── 1. FETCH ───────────────────────────────────────────────────────────
     const kind = candidateRow ? "candidate" : ((body.kind ?? feed.kind) as string);
@@ -573,36 +644,81 @@ Deno.serve(async (req) => {
         }
       }
     } else if (kind === "listing") {
-      const fc = await scrapePage(firecrawlKey, url!, true);
+      // A listing page is cheap to read plainly. Firecrawl is billed per page,
+      // so it is the fallback, not the first move.
+      const isCareers = String(feed.source_type ?? "") === "careers_page";
+      const feedHost = hostOf(url!);
+      const sift = (raw: string[]) => {
+        const base = raw
+          .map((l) => canonicalise(l))
+          .filter((l) => l.startsWith("http") && !blocked(l))
+          .filter((l) => canonicalise(url!) !== l)
+          .filter((l, i, arr) => arr.indexOf(l) === i);
+        if (isCareers) return base.filter((l) => looksLikeJobPosting(l, feedHost));
+        const chairWords = (feed.chair_types ?? []) as string[];
+        const wanted = /ترشح|nomination|board|مجلس إدارة|vacanc|شاغر|tender|منافسة|call for|دعوة/i;
+        return base.filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0);
+      };
+
+      let page = await plainFetchText(url!);
       counts.pages++;
-      if (!fc.ok) throw new Error(`read failed ${fc.status}: ${fc.error}`);
+      let links = page.ok ? sift(page.links ?? []) : [];
+      if (!page.ok || squash(stripTags(page.markdown ?? "")).length < MIN_CLEAN_TEXT_CHARS || !links.length) {
+        const fc = await firecrawlScrape(firecrawlKey, url!, true);
+        counts.pages++;
+        if (fc.ok) { page = fc as any; links = sift(fc.links ?? []); }
+        else if (!page.ok) throw new Error(`read failed ${fc.status}: ${fc.error}`);
+      }
 
-      const chairWords = (feed.chair_types ?? []) as string[];
-      const wanted = /ترشح|nomination|board|مجلس إدارة|vacanc|شاغر|tender|منافسة|call for|دعوة/i;
-      const links = (fc.links ?? [])
-        .map((l) => canonicalise(l))
-        .filter((l) => l.startsWith("http") && !blocked(l))
-        .filter((l) => canonicalise(url!) !== l)
-        .filter((l, i, arr) => arr.indexOf(l) === i)
-        .filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0)
-        .slice(0, MAX_DETAIL_PAGES * 2);
+      // An unchanged listing page costs nothing: no detail page, no model call.
+      const fingerprint = await sha256([...links].sort().join("\n"));
+      if (fingerprint && fingerprint === String(feed.links_fingerprint ?? "")) {
+        links = [];
+      } else if (feedId) {
+        await admin.from("oe_feeds").update({ links_fingerprint: fingerprint }).eq("id", feedId);
+      }
 
-      const { data: known } = await admin
-        .from("oe_opportunities").select("canonical_url").in("canonical_url", links.slice(0, 200));
-      const knownSet = new Set((known ?? []).map((k: any) => k.canonical_url));
-      const fresh = links.filter((l) => !knownSet.has(l)).slice(0, MAX_DETAIL_PAGES);
+      // Too junior to open, decided from the link's own words, for free.
+      let kept: string[] = [];
+      for (const l of links.slice(0, 400)) {
+        if (!isCareers) { kept.push(l); continue; }
+        const lvl = parseLevel(titleFromLink(l), null);
+        if (lvl && levelIndex(lvl) < levelIndex(readMinLevel)) {
+          recordSeen(l, "junior_title");
+          continue;
+        }
+        kept.push(l);
+      }
+
+      // Every link this engine has already judged is dropped before it is opened.
+      const weekAgo = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+      const seenSet = new Set<string>();
+      for (let i = 0; i < kept.length; i += 200) {
+        const { data: seen } = await admin
+          .from("oe_seen_links")
+          .select("canonical_url, verdict, last_seen_at")
+          .in("canonical_url", kept.slice(i, i + 200));
+        for (const s of seen ?? []) {
+          // One retry for a link that errored, and only after seven days.
+          if (s.verdict === "error" && String(s.last_seen_at) < weekAgo) continue;
+          seenSet.add(s.canonical_url as string);
+        }
+      }
+      const fresh = kept.filter((l) => !seenSet.has(l)).slice(0, MAX_DETAIL_PAGES);
+      await flushSeen();
 
       for (const link of fresh) {
         const d = await scrapePage(firecrawlKey, link);
         counts.pages++;
-        if (!d.ok) { counts.errors++; continue; }
+        if (!d.ok) { counts.errors++; recordSeen(link, "error"); continue; }
         const raw = d.markdown || "";
         const clean = squash(stripTags(raw));
-        if (clean.length < MIN_CLEAN_TEXT_CHARS) continue;
+        if (clean.length < MIN_CLEAN_TEXT_CHARS) { recordSeen(link, "too_short"); continue; }
         const noise = raw.length ? 1 - clean.length / raw.length : 1;
-        if (noise > MAX_NOISE_RATIO) continue;
+        if (noise > MAX_NOISE_RATIO) { recordSeen(link, "too_short"); continue; }
         candidates.push({ url: link, title: d.title, text: clean });
       }
+      await flushSeen();
       // A listing page is a page, not a chair. If no detail page was reachable,
       // this feed produces nothing today. We never turn the index into a record.
     } else if (kind === "api") {
@@ -821,17 +937,20 @@ Deno.serve(async (req) => {
         const rec = normaliseJson(out.content);
         if (!rec?.is_opportunity || !rec.chair_type || !rec.time_kind) {
           counts.dropped_not_opportunity++;
+          recordSeen(cand.url, "not_opportunity");
           continue;
         }
 
         // A directory is not a chair, whatever the model said.
         if (isAggregator(cand.url, rec.title, rec.scope)) {
           counts.dropped_aggregator++;
+          recordSeen(cand.url, "aggregator");
           continue;
         }
 
         if (pastEvent(rec)) {
           counts.dropped_past++;
+          recordSeen(cand.url, "past");
           continue;
         }
 
@@ -844,7 +963,7 @@ Deno.serve(async (req) => {
         const quoteVerified = quote.length > 10 && pageNorm.includes(quote);
         let confidence = Number(rec.extraction_confidence ?? 0.5);
         if (!quoteVerified) {
-          if (rec.time_kind === "open_now") { counts.dropped_no_quote++; continue; }
+          if (rec.time_kind === "open_now") { counts.dropped_no_quote++; recordSeen(cand.url, "no_quote"); continue; }
           confidence = Math.min(confidence, 0.5);
         }
 
@@ -974,6 +1093,7 @@ Deno.serve(async (req) => {
         }
         counts.inserted++;
         insertedAnything = true;
+        recordSeen(cand.url, "opportunity");
 
         // 6. LEAD-TIME PAIRS
         if (rec.time_kind === "open_now" && ins?.issuer_id) {
@@ -1001,12 +1121,15 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         counts.errors++;
+        recordSeen(cand.url, "error");
         await logEfError(admin, {
           function_name: FN, error: e, severity: "low",
           context: { feed_id: feedId, url: cand.url },
         });
       }
     }
+    await flushSeen();
+
 
     // ── 7. ALIVE sweep for listing feeds ───────────────────────────────────
     if (kind === "listing") {
