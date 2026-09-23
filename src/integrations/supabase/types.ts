@@ -4172,6 +4172,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "oe_candidates_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_harvest_priority"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "oe_candidates_feed_id_fkey"
             columns: ["feed_id"]
             isOneToOne: false
@@ -5131,6 +5138,7 @@ export type Database = {
           canonical_name: string
           created_at: string
           domain: string | null
+          entity_id: string | null
           history: Json
           id: string
           kind: string | null
@@ -5145,6 +5153,7 @@ export type Database = {
           canonical_name: string
           created_at?: string
           domain?: string | null
+          entity_id?: string | null
           history?: Json
           id?: string
           kind?: string | null
@@ -5159,6 +5168,7 @@ export type Database = {
           canonical_name?: string
           created_at?: string
           domain?: string | null
+          entity_id?: string | null
           history?: Json
           id?: string
           kind?: string | null
@@ -5168,7 +5178,22 @@ export type Database = {
           tadawul_code?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "oe_issuers_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_issuers_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_harvest_priority"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       oe_kits: {
         Row: {
@@ -6796,6 +6821,13 @@ export type Database = {
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "oe_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_surfaces_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_harvest_priority"
             referencedColumns: ["id"]
           },
           {
@@ -10368,6 +10400,15 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_demand_map: {
+        Row: {
+          demand: number | null
+          dimension: string | null
+          members_counted: number | null
+          value: string | null
+        }
+        Relationships: []
+      }
       oe_gate_contradiction: {
         Row: {
           contradiction: string | null
@@ -10379,6 +10420,22 @@ export type Database = {
           screen_outcome: string | null
           title: string | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      oe_harvest_priority: {
+        Row: {
+          ats_platform: string | null
+          country: string | null
+          demand: number | null
+          explore_slot: boolean | null
+          id: string | null
+          last_harvested_at: string | null
+          name: string | null
+          priority: number | null
+          readability: number | null
+          sector_code: string | null
+          watch_tier: string | null
         }
         Relationships: []
       }
@@ -11365,6 +11422,7 @@ export type Database = {
         Args: { p_apply: boolean; p_id: string }
         Returns: Json
       }
+      oe_run_allowed: { Args: { p_job: string }; Returns: boolean }
       oe_scan_shared_facts_private: { Args: never; Returns: number }
       oe_spend_allowed: {
         Args: { p_estimate?: number; p_stage: string }
