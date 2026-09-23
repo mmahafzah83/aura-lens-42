@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Vocab } from "./useVocab";
+import { Button } from "@/components/ui/button";
 
 type Country = { iso2: string; name_en: string; name_ar: string | null };
 
@@ -43,10 +44,10 @@ export function RelocationRow({ countries, language, v }: { countries: Country[]
   return <div className="oe-relocation">
     <label className="oe-switch-row"><input type="checkbox" checked={ok} onChange={(e) => void save(e.target.checked, picked)} /><span>{v("place_relocate")}</span></label>
     {ok && <div className="oe-chip-row">
-      {picked.map((iso2) => <button key={iso2} type="button" className="oe-chip is-on" onClick={() => void save(ok, picked.filter((x) => x !== iso2))}>{name(iso2)} ×</button>)}
-      <input className="oe-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={v("place_relocate_add")} aria-label={v("place_relocate_add")} />
-      {matches.map((c) => <button key={c.iso2} type="button" className="oe-chip" onClick={() => { setQuery(""); void save(ok, [...picked, c.iso2]); }}>{name(c.iso2)}</button>)}
+      {picked.map((iso2) => <Button key={iso2} variant="outline" aria-pressed onClick={() => void save(ok, picked.filter((x) => x !== iso2))}>{name(iso2)} ×</Button>)}
+      <input className="oe-search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={v("place_relocate_add")} aria-label={v("place_relocate_add")} />
+      {matches.map((c) => <Button key={c.iso2} variant="outline" onClick={() => { setQuery(""); void save(ok, [...picked, c.iso2]); }}>{name(c.iso2)}</Button>)}
     </div>}
-    {error && <p role="alert" className="oe-risk">{error}</p>}
+    {error && <p role="alert" className="oe-save-error">{error}</p>}
   </div>;
 }
