@@ -126,7 +126,9 @@ export function OpportunityQueue() {
     setSectorOptions(list.filter((row) => row && row.code));
   })(); }, []);
   useEffect(() => { void (async () => { const { data: payload } = await supabase.rpc("oe_my_home" as never); if (payload) setHome(payload as unknown as Home); })(); }, []);
+  useEffect(() => { void loadFound(); }, [loadFound]);
   useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current); }, []);
+
 
   const cards = useMemo(() => data.cards.filter((card) => card.lane === "act" && hasWhy(card)).filter((_, index) => index < 3), [data.cards]);
   const active = cards.find((card) => card.id === activeId) ?? cards[0] ?? null;
