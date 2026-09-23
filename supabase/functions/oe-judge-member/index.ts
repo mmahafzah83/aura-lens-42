@@ -1329,6 +1329,17 @@ Deno.serve(async (req) => {
       context: { user_id: userId, job_id: jobId, counts },
     });
 
+    // A strong new card is emailed straight away (the alerts function applies
+    // the member's switch and the two-a-day limit).
+    if (cardsWritten.length) {
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/oe-card-alerts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}`, apikey: SERVICE_ROLE },
+          body: JSON.stringify({ mode: "instant", user_id: userId }),
+        });
+      } catch { /* the hourly run still picks it up */ }
+    }
     return json({ ok: true, counts, cards: cardsWritten, run_id: run?.id ?? null });
   } catch (e) {
     const msg = String((e as Error).message ?? e).slice(0, 500);
