@@ -891,6 +891,20 @@ Deno.serve(async (req) => {
     }
 
     const cardsWritten: string[] = [];
+
+    /* DELIVERY. A card is shown as soon as it passes the gate, but never more
+       than cards_per_day in one day nor cards_per_week in any rolling seven
+       days. Cards already written outside this run count against both. */
+    const { count: cardsToday } = await admin.from("oe_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId).eq("card_date", cardDate).not("opportunity_id", "is", null);
+    const { count: cardsWeek } = await admin.from("oe_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId).not("opportunity_id", "is", null)
+      .gte("created_at", new Date(Date.now() - 7 * 86_400_000).toISOString());
+    const daySlots = Math.max(0, cardsPerDay - (cardsToday ?? 0));
+    const weekSlots = Math.max(0, cardsPerWeek - (cardsWeek ?? 0));
+
     const vocab = await loadVocab(admin);
 
     // BOOK ONE ids, so every serve can name the rules that were in force.
