@@ -20,9 +20,9 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import {
   MEMBER_EVIDENCE_INSTRUCTION, verifyMemberClaims, type MemberClaim,
 } from "../_shared/memberEvidence.ts";
+import { modelFor } from "../_shared/models.ts";
 
 const FN = "oe-extract-member-evidence";
-const MODEL = "openai/gpt-6-astra";
 
 /** The member's own record: what he wrote, uploaded or answered himself.
  *  Anything else is a page he read, and it never grounds a card. */
