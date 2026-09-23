@@ -99,7 +99,7 @@ export function OpportunityQueue() {
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
-  const [editor, setEditor] = useState<"move" | "place" | "sector" | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(null);
   const [movePick, setMovePick] = useState<MoveKind | null>(null);
   const [placePick, setPlacePick] = useState<string[]>([]);
   const [sectorPick, setSectorPick] = useState<string[]>([]);
