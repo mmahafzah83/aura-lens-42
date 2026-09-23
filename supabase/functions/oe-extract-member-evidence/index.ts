@@ -116,6 +116,11 @@ Deno.serve(async (req) => {
     : ["profile", "cv", "assessment", "writing"];
   if (!userId) return json({ error: "user_id required" }, 400);
 
+  // The model is a policy value, read from the active policy row.
+  const { data: policyRow } = await admin.from("oe_policy_versions")
+    .select("params").eq("active", true).maybeSingle();
+  const MODEL = modelFor("extract_member_evidence", (policyRow?.params ?? {}) as any);
+
   const counts = {
     groups_read: [] as string[], calls: 0, kept: 0, stored: 0, duplicates: 0,
     dropped: 0, dropped_reasons: {} as Record<string, number>,
