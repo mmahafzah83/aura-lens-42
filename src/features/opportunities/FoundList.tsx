@@ -101,7 +101,11 @@ function EmployerRow({ row, v, language }: { row: FoundEmployer; v: Vocab; langu
   </div>;
 }
 
-function Group({ group, v, language }: { group: FoundGroup; v: Vocab; language: Lang }) {
+const CHECKABLE = new Set(["at_level", "mandates", "level_unstated"]);
+
+function Group({ group, v, language, checking, onCheck }: {
+  group: FoundGroup; v: Vocab; language: Lang; checking: Set<string>; onCheck: (id: string) => void;
+}) {
   const [open, setOpen] = useState(OPEN_BY_DEFAULT.has(group.key));
   const [all, setAll] = useState(false);
   const label = language === "ar" ? (group.label_ar || group.label_en) : group.label_en;
