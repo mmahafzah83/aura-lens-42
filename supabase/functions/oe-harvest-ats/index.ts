@@ -360,6 +360,8 @@ Deno.serve(async (req0) => {
 
   const counts: Record<string, any> = {
     entities: 0, jobs: 0, new: 0, duplicate: 0, errors: 0,
+    platform_unsupported: 0, oracle_forbidden: 0,
+    unsupported_by_platform: {} as Record<string, number>,
     by_platform: {} as Record<string, number>,
     failures: {} as Record<string, string>,
   };
