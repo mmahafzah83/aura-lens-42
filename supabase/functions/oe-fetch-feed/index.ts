@@ -488,12 +488,6 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const cap = await checkSpendCap(admin, "oe-fetch-feed");
-  if (!cap.allowed) {
-    return new Response(JSON.stringify({ ok: false, reason: "daily_call_cap", used: cap.used, cap: cap.cap }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
   const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
   const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY") || "";
@@ -519,9 +513,24 @@ Deno.serve(async (req) => {
   const counts = {
     pages: 0, candidates: 0, inserted: 0, updated: 0,
     dropped_no_quote: 0, dropped_not_opportunity: 0, dropped_aggregator: 0, dropped_past: 0,
-    dedup_hits: 0, leadtime_pairs: 0, errors: 0,
+    dedup_hits: 0, leadtime_pairs: 0, errors: 0, firecrawl_refused: 0,
   };
   let costUsd = 0;
+
+  // A refused ceiling is not a finished job. The run is recorded as deferred,
+  // the feed clock is NOT stamped, and the caller is told to come back.
+  const cap = await checkSpendCap(admin, "oe-fetch-feed");
+  if (!cap.allowed) {
+    await admin.from("oe_runs").insert({
+      run_kind: "fetch_feed", feed_id: feedId, user_id: memberId,
+      started_at: startedAt, finished_at: new Date().toISOString(),
+      outcome: "deferred", severity: "warn",
+      counts: { reason: "daily_call_cap", feed_id: feedId },
+    });
+    return json({ ok: false, deferred: true, reason: "daily_call_cap", used: cap.used, cap: cap.cap }, 429);
+  }
+
+
 
   let feed: Record<string, any> | null = null;
   if (feedId) {
