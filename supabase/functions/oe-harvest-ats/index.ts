@@ -488,6 +488,9 @@ Deno.serve(async (req0) => {
           title: `${j.title} — ${e.name}`.slice(0, 300),
           snippet: (j.snippet ?? j.title ?? "").slice(0, 600),
           published_at: j.published_at ?? null,
+          // Global tenants return worldwide jobs: the posting's own location
+          // decides its country, read in code. Unknown stays null, never dropped.
+          country: countryOfPlace(j.snippet ?? null),
           lang: guessLang(`${j.title} ${j.snippet ?? ""}`),
           content_hash: await sha256(`${canonical}|${squash(j.title).toLowerCase()}`),
           raw: { source_kind: "ats", platform, entity: e.name },

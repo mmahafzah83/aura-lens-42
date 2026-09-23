@@ -1114,8 +1114,13 @@ Deno.serve(async (req) => {
           // from seniority_band, which is a different (work/table/room) vocabulary.
           // The code parse of the title wins whenever it returns a level; the
           // model's reading is used only when the code cannot tell.
+          // When neither reads a level, the insert trigger reads it off the
+          // description (reports-to, years, team size) and marks 'description'.
           level_band: parseLevel(rec.title, rec.scope)
             ?? ((LEVELS as readonly string[]).includes(String(rec.level_band)) ? String(rec.level_band) : null),
+          level_basis: parseLevel(rec.title, rec.scope)
+            ? "title"
+            : ((LEVELS as readonly string[]).includes(String(rec.level_band)) ? "model" : null),
 
           location: rec.location ?? null,
           remote: typeof rec.remote === "boolean" ? rec.remote : null,
