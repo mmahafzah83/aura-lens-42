@@ -23,7 +23,20 @@ export type Eligibility = {
   chair_types_blocked?: string[] | null;
   blocked_reasons?: Record<string, string> | null;
   sectors_core?: string[] | null;
+  relocation_ok?: boolean | null;
+  relocation_countries?: string[] | null;
 };
+
+/** countries_allowed ∪ residence ∪ (relocation_ok ? relocation_countries). Twin of SQL oe_workable_places. */
+export function workablePlaces(e: Eligibility | null | undefined): string[] {
+  if (!e) return [];
+  const all = [
+    ...(e.countries_allowed ?? []),
+    e.residence_country ?? "",
+    ...(e.relocation_ok ? (e.relocation_countries ?? []) : []),
+  ].map((c) => String(c ?? "").trim().toUpperCase()).filter(Boolean);
+  return [...new Set(all)];
+}
 
 /**
  * What the member can show, read off his own record. Used to test a stated
@@ -269,7 +282,9 @@ export function screen(
   // to hide the record from him. The sensitivity is read off the kind's own
   // catalogue row, never guessed here.
   const sensitivity = String(o.location_sensitivity ?? "hard").toLowerCase();
-  const allowed = (eligibility.countries_allowed ?? []).map((c) => String(c).toUpperCase());
+  // WORKABLE PLACES: where he said he works, where he lives, and — only when
+  // he said he would move — the countries he would move to.
+  const allowed = workablePlaces(eligibility);
   if (allowed.length && sensitivity !== "none") {
     const explicitlyRemote = o.remote === true || REMOTE_RE.test(String(o.location ?? o.title ?? ""));
     if (!(explicitlyRemote && eligibility.remote_ok === true)) {
