@@ -376,7 +376,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
     if (needle.length < 2) { setCompanyMatches([]); return; }
     let live = true;
     const timer = window.setTimeout(() => { void (async () => {
-      const { data: rows } = await supabase.rpc("oe_ref_entity_search" as never, { p_query: needle } as never);
+      const { data: rows } = await supabase.rpc("oe_ref_entity_search" as never, { p_q: needle } as never);
       if (live) setCompanyMatches(Array.isArray(rows) ? (rows as unknown as Company[]) : []);
     })(); }, 250);
     return () => { live = false; window.clearTimeout(timer); };
