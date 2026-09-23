@@ -325,15 +325,36 @@ function HistoryView({ rows, filter, v, language, onFilter }: { rows: History[];
   return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <Button key={value} variant="outline" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</Button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{dateText(day, language)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
 }
 
-function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, savedBar, barDirty, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onSaveBar, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | "sector" | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; savedBar: boolean; barDirty: boolean; v: Vocab; onEditor: (value: "move" | "place" | "sector" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onSaveBar: () => void; onClose: () => void }) {
+function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, countries, remoteOk, saveError, savedBar, barDirty, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onRemote, onSaveBar, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: "move" | "place" | "sector" | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; countries: Country[]; remoteOk: boolean; saveError: string | null; savedBar: boolean; barDirty: boolean; v: Vocab; onEditor: (value: "move" | "place" | "sector" | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onRemote: (value: boolean) => void; onSaveBar: () => void; onClose: () => void }) {
   const dialogRef = useRef<HTMLElement | null>(null);
+  const [countryQuery, setCountryQuery] = useState("");
+  const [sectorQuery, setSectorQuery] = useState("");
   const places = data.filters.place?.values ?? [];
   const placeText = places.length ? places.map((value) => value.startsWith("region:") ? refLabel("region", value.slice(7), language) : refLabel("place", value, language)).join(" · ") : v("move_place_any");
   const homeChoice = home?.city && home.country ? { value: home.country, label: fill(v("move_place_home"), { city: home.city }) } : null;
-  const homeRegion = home?.regions?.[0];
-  const regionChoice = homeRegion ? { value: `region:${homeRegion.code}`, label: fill(v("move_place_region"), { region: language === "ar" ? (homeRegion.name_ar || homeRegion.name_en) : homeRegion.name_en }) } : null;
-  const choices: Array<{ value: string; label: string }> = [homeChoice, regionChoice].filter((choice): choice is { value: string; label: string } => Boolean(choice));
+  const regionChoices = (home?.regions ?? []).filter((region) => region.code !== "WORLD").map((region) => ({
+    value: `region:${region.code}`,
+    label: fill(v("move_place_region"), { region: language === "ar" ? (region.name_ar || region.name_en) : region.name_en }),
+  }));
+  const choices: Array<{ value: string; label: string }> = [homeChoice, ...regionChoices].filter((choice): choice is { value: string; label: string } => Boolean(choice));
+  const quickValues = new Set(choices.map((choice) => choice.value));
+  const countryName = (iso2: string) => {
+    const row = countries.find((item) => item.iso2 === iso2);
+    return row ? (language === "ar" ? (row.name_ar || row.name_en) : row.name_en) : refLabel("place", iso2, language);
+  };
+  const pickedCountries = placePick.filter((value) => !value.startsWith("region:") && !quickValues.has(value));
+  const countryMatches = countries
+    .filter((row) => !placePick.includes(row.iso2))
+    .filter((row) => {
+      const needle = countryQuery.trim().toLowerCase();
+      if (!needle) return false;
+      return row.name_en.toLowerCase().includes(needle) || String(row.name_ar ?? "").includes(countryQuery.trim()) || row.iso2.toLowerCase() === needle;
+    }).slice(0, 8);
   const sectorLabel = (option: SectorOption) => language === "ar" ? (option.label_ar || option.label_en) : option.label_en;
+  const sectorMatches = sectorOptions.filter((option) => {
+    const needle = sectorQuery.trim().toLowerCase();
+    return !needle || sectorLabel(option).toLowerCase().includes(needle) || option.code.toLowerCase().includes(needle);
+  });
   const chosenSectors = data.filters.sector?.values ?? [];
   const sectorText = chosenSectors.length
     ? chosenSectors.map((code) => sectorLabel(sectorOptions.find((option) => option.code === code) ?? { code, label_en: code, label_ar: code })).join(" · ")
