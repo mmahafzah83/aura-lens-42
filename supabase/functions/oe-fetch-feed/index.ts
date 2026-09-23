@@ -9,7 +9,7 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { isAggregator, normaliseForQuote } from "../_shared/oeGuards.ts";
-import { parseLevel } from "../_shared/oeEligibility.ts";
+import { parseLevel, levelIndex } from "../_shared/oeEligibility.ts";
 import { SCOPE_EVIDENCE_INSTRUCTION, verifyScopeEvidence } from "../_shared/scopeEvidence.ts";
 
 const corsHeaders = {
