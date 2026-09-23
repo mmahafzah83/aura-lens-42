@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { doorClass, loadRefLabels, refLabel } from "./refLabels";
 import { useVocab } from "./useVocab";
+import FoundList, { type FoundData } from "./FoundList";
 import type { FilterMap } from "./FiltersSection";
+
 
 type Lang = "en" | "ar";
 type View = "today" | "parked" | "history";
