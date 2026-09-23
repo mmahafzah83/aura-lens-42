@@ -47,6 +47,8 @@ const ACT = "#0670C4";
 const mono = { fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontVariantNumeric: "tabular-nums" } as const;
 const OPEN_BY_DEFAULT = new Set(["at_level", "mandates"]);
 const PAGE = 10;
+// The one group that lists employers rather than postings.
+const EMPLOYER_KEY = "signals";
 
 const fill = (text: string, vars: Record<string, string | number>) =>
   Object.entries(vars).reduce((value, [key, item]) => value.split(`{${key}}`).join(String(item)), text);
