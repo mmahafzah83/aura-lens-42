@@ -493,7 +493,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
         </label>)}</div>
         <Button variant="link" className="oe-sector-clear" disabled={sectorPick.length === 0} onClick={onSectorAny}>{v("bar_sector_clear")}</Button>
       </div>}
-      {editor && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
+      {(editor === "move" || editor === "place" || editor === "sector") && <div className="oe-inline-editor"><AuraButton disabled={!barDirty} loading={busy} onClick={onSaveBar}>{v("save")}</AuraButton>{saveError && <p className="oe-save-error" role="alert">{saveError}</p>}</div>}
       {savedBar && <p role="status">{v("bar_saved")}</p>}
     </section>
     </div>
