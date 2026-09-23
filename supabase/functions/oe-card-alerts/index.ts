@@ -183,10 +183,20 @@ Deno.serve(withRun("card_alerts", async (req) => {
         .eq("user_id", uid).eq("alert_kind", "digest").gte("alerted_at", new Date(Date.now() - 20 * 3_600_000).toISOString());
       if ((recent ?? 0) > 0) return;
     }
-    const cards = await pending(uid, false);
+    let cards = await pending(uid, false);
+    let sample = false;
+    // A dry run with nothing waiting renders from the roles currently clearing
+    // screening, so the layout can be checked on real rows. Never sent.
+    if (!cards.length && dry) {
+      const { data: rows } = await admin.from("oe_matches")
+        .select("id,opportunity_id,fit_band,created_at,opp:oe_opportunities!inner(title,issuer_raw,location,deadline,alive,kind)")
+        .eq("user_id", uid).eq("screen_outcome", "survivor").eq("opp.alive", true).limit(5);
+      cards = ((rows ?? []) as any[]).map((r) => ({ ...r, id: r.id }));
+      sample = cards.length > 0;
+    }
     if (!cards.length) { counts.skipped++; return; }
     const mail = render("digest", cards, m.lang, v);
-    if (dry) { previews.push({ user_id: uid, kind: "digest", to: m.email ? "(member's address)" : null, local_hour: localHour(m.tz), chosen_hour: m.hour, timezone: m.tz, cards: cards.length, ...mail }); return; }
+    if (dry) { previews.push({ user_id: uid, kind: "digest", sample_from_survivors: sample, to: m.email ? "(member's address)" : null, local_hour: localHour(m.tz), chosen_hour: m.hour, timezone: m.tz, cards: cards.length, ...mail }); return; }
     try { await send(m.email, mail); await mark(cards.map((c) => c.id), "digest"); counts.digest_sent++; }
     catch (e) { counts.errors++; errors.push(String((e as Error).message)); }
   }
