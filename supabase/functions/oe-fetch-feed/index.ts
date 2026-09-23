@@ -1107,7 +1107,11 @@ Deno.serve(async (req) => {
           seniority_band: rec.seniority_band ?? null,
           // The ladder level, read in code from the record's own words. Never
           // from seniority_band, which is a different (work/table/room) vocabulary.
-          level_band: parseLevel(rec.title, rec.scope),
+          // The code parse of the title wins whenever it returns a level; the
+          // model's reading is used only when the code cannot tell.
+          level_band: parseLevel(rec.title, rec.scope)
+            ?? (LEVELS.includes(String(rec.level_band)) ? String(rec.level_band) : null),
+
           location: rec.location ?? null,
           remote: typeof rec.remote === "boolean" ? rec.remote : null,
           requirements: Array.isArray(rec.requirements) ? rec.requirements : [],
