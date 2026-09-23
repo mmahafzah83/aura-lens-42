@@ -192,6 +192,57 @@ function cosine(a: number[], b: number[]): number {
   return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
 }
 
+// ───────── a careers page's links, judged for free ─────────
+
+/** The registrable part of a host: "jobs.acme.co.uk" → "acme.co.uk". */
+function registrable(host: string): string {
+  const parts = host.replace(/^www\./, "").split(".");
+  if (parts.length <= 2) return parts.join(".");
+  const twoLevel = /^(co|com|org|net|gov|edu|ac|sch|mil)\.[a-z]{2}$/i;
+  const last3 = parts.slice(-3).join(".");
+  if (twoLevel.test(parts.slice(-2).join("."))) return last3;
+  return parts.slice(-2).join(".");
+}
+
+/** Hosts that carry a real posting for someone else's careers page. */
+const ATS_HOSTS = [
+  "myworkdayjobs.com", "workday.com", "greenhouse.io", "lever.co", "smartrecruiters.com",
+  "successfactors.com", "sap.com", "taleo.net", "oraclecloud.com", "icims.com", "jobvite.com",
+  "ashbyhq.com", "workable.com", "bamboohr.com", "recruitee.com", "teamtailor.com",
+  "personio.de", "avature.net", "eightfold.ai", "phenompeople.com", "brassring.com",
+];
+
+/** A path or query that reads like one posting. */
+const JOB_PATH_RE =
+  /(job|jobs|career|careers|vacanc|position|opening|requisition|\breq\b|jobid|posting|وظيف|شاغر)/i;
+
+/** Navigation, legal and social links, which are never a posting. */
+const NAV_RE =
+  /(about|contact|privacy|terms|cookie|login|sign-?in|register-account|faq|news|blog|linkedin\.com|twitter\.com|x\.com|facebook\.com|instagram\.com|youtube\.com)/i;
+
+/** A link on a careers page that looks like a single job posting. */
+function looksLikeJobPosting(link: string, feedHost: string): boolean {
+  let u: URL;
+  try { u = new URL(link); } catch { return false; }
+  const host = u.hostname.replace(/^www\./, "");
+  const onSite = registrable(host) === registrable(feedHost);
+  const onAts = ATS_HOSTS.some((a) => host === a || host.endsWith(`.${a}`));
+  if (!onSite && !onAts) return false;
+  const tail = decodeURIComponent(`${u.pathname}${u.search}`);
+  if (!JOB_PATH_RE.test(tail)) return false;
+  if (NAV_RE.test(decodeURIComponent(link))) return false;
+  return true;
+}
+
+/** The words in a link's last path segment, read as a title. */
+function titleFromLink(link: string): string {
+  try {
+    const u = new URL(link);
+    const seg = u.pathname.split("/").filter(Boolean).pop() ?? "";
+    return decodeURIComponent(seg).replace(/\.(html?|aspx|php)$/i, "").replace(/[-_+]+/g, " ").trim();
+  } catch { return ""; }
+}
+
 // ───────── outside calls ─────────
 
 async function firecrawlScrape(apiKey: string, url: string, withLinks = false) {
