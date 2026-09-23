@@ -358,6 +358,8 @@ Deno.serve(withRun("screen_member", async (req) => {
       .select("params").eq("active", true).maybeSingle();
     const gateMin = Number((policyRow?.params as any)?.gate_min_avg ?? 3.0);
     const policyParams = (policyRow?.params ?? {}) as Record<string, any>;
+    // The model is a policy value, refused if it is not on the allow-list.
+    const MODEL = modelFor("screen_presentation", policyParams);
     const excludeOwnEmployer = policyParams.exclude_own_employer === true;
     const enforceAgencyFilter = policyParams.enforce_agency_filter === true;
     const agencyIssuers: string[] = Array.isArray(policyParams.agency_issuers) ? policyParams.agency_issuers : [];
@@ -574,7 +576,7 @@ Deno.serve(withRun("screen_member", async (req) => {
         let matches: Array<{ requirement: string; evidence_id: string }> = [];
         if (requirements.length && memberEvidence.length) {
           try {
-            const out = await askForLine(lovableKey, JSON.stringify({
+            const out = await askForLine(lovableKey, MODEL, JSON.stringify({
               opportunity: {
                 title: o.title, scope: o.scope, sector: o.sector, issuer: o.issuer_raw,
                 stated_requirements: requirements,
