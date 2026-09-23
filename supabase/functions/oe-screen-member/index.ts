@@ -356,13 +356,29 @@ Deno.serve(withRun("screen_member", async (req) => {
     // a zero on a criterion that may not be zero.
     const { data: policyRow } = await admin.from("oe_policy_versions")
       .select("params").eq("active", true).maybeSingle();
-    const gateMin = Number((policyRow?.params as any)?.gate_min_avg ?? 3.0);
     const policyParams = (policyRow?.params ?? {}) as Record<string, any>;
+    // THE BAR IS MEASURED, NOT TASTED. It is the threshold that did best on
+    // this member's own answers; with too few answers, the shared one; with
+    // neither, the policy default.
+    const { data: calibration } = await admin.from("oe_calibration")
+      .select("user_id, threshold")
+      .or(`user_id.eq.${userId},user_id.is.null`);
+    const ownBar = (calibration ?? []).find((r: any) => r.user_id === userId)?.threshold;
+    const sharedBar = (calibration ?? []).find((r: any) => r.user_id === null)?.threshold;
+    const gateMin = Number(ownBar ?? sharedBar ?? policyParams.gate_min_avg ?? 3.0);
+    // Only these kinds are act-lane records. A role is judged on requirements,
+    // level, field and a real door — never on writing tests.
+    const actKinds = new Set<string>(
+      Array.isArray(policyParams.card_kinds) && policyParams.card_kinds.length
+        ? policyParams.card_kinds.map(String)
+        : ["executive_role"],
+    );
     // The model is a policy value, refused if it is not on the allow-list.
     const MODEL = modelFor("screen_presentation", policyParams);
     const excludeOwnEmployer = policyParams.exclude_own_employer === true;
     const enforceAgencyFilter = policyParams.enforce_agency_filter === true;
     const agencyIssuers: string[] = Array.isArray(policyParams.agency_issuers) ? policyParams.agency_issuers : [];
+
     const { data: scoreRows } = await admin.from("oe_matches")
       .select("opportunity_id, scores").eq("user_id", userId);
     const scoresById = new Map<string, any>();
