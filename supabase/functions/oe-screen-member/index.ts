@@ -331,6 +331,19 @@ Deno.serve(withRun("screen_member", async (req) => {
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
 
+    // One run screens a set number of records, the ones never screened first,
+    // so a night's backlog drains over runs instead of exhausting the worker.
+    const screenBatch = Math.max(1, Number(body.batch ?? 150));
+    if ((opps ?? []).length > screenBatch) {
+      const { data: screenedRows } = await admin.from("oe_matches")
+        .select("opportunity_id, screened_at").eq("user_id", userId).not("screened_at", "is", null);
+      const alreadyScreened = new Set((screenedRows ?? []).map((r: any) => String(r.opportunity_id)));
+      const fresh = (opps ?? []).filter((o: any) => !alreadyScreened.has(String(o.id)));
+      const rest = (opps ?? []).filter((o: any) => alreadyScreened.has(String(o.id)));
+      (opps as any[]).length = 0;
+      (opps as any[]).push(...[...fresh, ...rest].slice(0, screenBatch));
+    }
+
     // Where he works, named as a person would name it, for the place sentence.
     const memberPlace = {
       where: COUNTRY_NAME[String(eligibility?.residence_country ?? "").toUpperCase()]
