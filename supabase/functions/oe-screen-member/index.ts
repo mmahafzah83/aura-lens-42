@@ -543,7 +543,39 @@ Deno.serve(withRun("screen_member", async (req) => {
       .eq("user_id", userId).eq("asked_on", today);
     let mayAsk = (askedToday ?? 0) === 0;
 
+    /* SPEND IS CHECKED BEFORE THE BATCH, NOT AFTER IT. A stage that cannot be
+       paid for makes no calls, and the records it would have read stay unknown. */
+    let spendAllowed = true;
     if (withLines && lovableKey) {
+      const { data: spend } = await admin.rpc("oe_spend_allowed", {
+        p_stage: "screen_presentation",
+        p_estimate: Math.min(survivors.length, lineBudget) * 0.0015,
+      });
+      spendAllowed = (spend as any)?.allowed !== false;
+      if (!spendAllowed) {
+        await admin.from("ef_error_log").insert({
+          function_name: FN, user_id: userId, severity: "warn",
+          error_message: "Daily spend ceiling reached: no presentation calls this run",
+          context: { stage: "screen_presentation", spend },
+        });
+      }
+    }
+
+    /* An answer we never bought is not a negative answer. */
+    const markUnknown = async (oppId: string, note: string) => {
+      await admin.from("oe_matches").update({
+        screen_outcome: "unknown", gate_note: note, screened_at: new Date().toISOString(),
+      }).eq("user_id", userId).eq("opportunity_id", oppId);
+    };
+
+    if (withLines && lovableKey && !spendAllowed) {
+      for (const { o } of survivors.slice(0, lineBudget)) {
+        funnel.spend_capped++;
+        await markUnknown(String(o.id), "spend_cap");
+      }
+    }
+
+    if (withLines && lovableKey && spendAllowed) {
       for (const { o, g } of survivors.slice(0, lineBudget)) {
         const ev = (o as any).scope_evidence ?? null;
         const stated: string[] = Array.isArray(ev?.stated_requirements) ? ev.stated_requirements : [];
