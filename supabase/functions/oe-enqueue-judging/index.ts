@@ -1,8 +1,12 @@
 /**
- * oe-enqueue-judging — once a night, put every consenting member with a full
- * set of five faces into the judging queue. One row per member; the existing
- * job_queue_one_live index refuses a second live job for the same member.
+ * oe-enqueue-judging — every two hours, put a consenting member with a full set
+ * of five faces into the judging queue, but only when there is something new
+ * for him: an alive opportunity first seen since his last judged verdict that
+ * he has no match row for. Nothing new, no job. One row per member; the
+ * existing job_queue_one_live index refuses a second live job for the same
+ * member.
  */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logEfError } from "../_shared/observe.ts";
 
