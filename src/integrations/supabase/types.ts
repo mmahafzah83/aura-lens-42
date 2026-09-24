@@ -4308,6 +4308,8 @@ export type Database = {
           user_id: string
           why_lines: Json
           win_band: string | null
+          withdrawn_at: string | null
+          withdrawn_reason: string | null
         }
         Insert: {
           alert_kind?: string | null
@@ -4335,6 +4337,8 @@ export type Database = {
           user_id: string
           why_lines?: Json
           win_band?: string | null
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
         }
         Update: {
           alert_kind?: string | null
@@ -4362,6 +4366,8 @@ export type Database = {
           user_id?: string
           why_lines?: Json
           win_band?: string | null
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
         }
         Relationships: [
           {
@@ -4653,6 +4659,7 @@ export type Database = {
           level_now: string | null
           nationality: string | null
           org_types_preferred: string[]
+          places_source: string
           relocation_countries: string[]
           relocation_ok: boolean
           remote_ok: boolean
@@ -4680,6 +4687,7 @@ export type Database = {
           level_now?: string | null
           nationality?: string | null
           org_types_preferred?: string[]
+          places_source?: string
           relocation_countries?: string[]
           relocation_ok?: boolean
           remote_ok?: boolean
@@ -4707,6 +4715,7 @@ export type Database = {
           level_now?: string | null
           nationality?: string | null
           org_types_preferred?: string[]
+          places_source?: string
           relocation_countries?: string[]
           relocation_ok?: boolean
           remote_ok?: boolean
@@ -6092,6 +6101,7 @@ export type Database = {
           access_state_at: string | null
           access_state_reason: string | null
           alive: boolean
+          applicant_regions: string[]
           candidate_id: string | null
           canonical_url: string | null
           chair_type: string
@@ -6146,12 +6156,16 @@ export type Database = {
           tsv: unknown
           updated_at: string
           verify_reason: string | null
+          work_arrangement: string
+          work_arrangement_basis: string | null
+          work_arrangement_quote: string | null
         }
         Insert: {
           access_state?: string | null
           access_state_at?: string | null
           access_state_reason?: string | null
           alive?: boolean
+          applicant_regions?: string[]
           candidate_id?: string | null
           canonical_url?: string | null
           chair_type: string
@@ -6206,12 +6220,16 @@ export type Database = {
           tsv?: unknown
           updated_at?: string
           verify_reason?: string | null
+          work_arrangement?: string
+          work_arrangement_basis?: string | null
+          work_arrangement_quote?: string | null
         }
         Update: {
           access_state?: string | null
           access_state_at?: string | null
           access_state_reason?: string | null
           alive?: boolean
+          applicant_regions?: string[]
           candidate_id?: string | null
           canonical_url?: string | null
           chair_type?: string
@@ -6266,6 +6284,9 @@ export type Database = {
           tsv?: unknown
           updated_at?: string
           verify_reason?: string | null
+          work_arrangement?: string
+          work_arrangement_basis?: string | null
+          work_arrangement_quote?: string | null
         }
         Relationships: [
           {
@@ -11619,6 +11640,16 @@ export type Database = {
       oe_app_refresh: { Args: never; Returns: Json }
       oe_app_render: { Args: { p_card: string }; Returns: Json }
       oe_app_show_anyway: { Args: { p_suppressed: string }; Returns: undefined }
+      oe_app_work_arrangement: {
+        Args: { p_ids: string[] }
+        Returns: {
+          applicant_regions: string[]
+          id: string
+          work_arrangement: string
+          work_arrangement_basis: string
+          work_arrangement_quote: string
+        }[]
+      }
       oe_apply_shape_state: { Args: never; Returns: number }
       oe_assess_writing_value: { Args: { p_user: string }; Returns: number }
       oe_auto_park: { Args: { p_user?: string }; Returns: number }
@@ -11674,6 +11705,15 @@ export type Database = {
         Returns: string
       }
       oe_classify_kind_probe: { Args: { p: Json }; Returns: string }
+      oe_classify_work_arrangement: {
+        Args: {
+          p_location: string
+          p_page: string
+          p_structured: Json
+          p_title: string
+        }
+        Returns: Record<string, unknown>
+      }
       oe_country_of_place: { Args: { p: string }; Returns: string }
       oe_default_places: { Args: { p_residence: string }; Returns: string[] }
       oe_delivery_save: {
@@ -11868,9 +11908,14 @@ export type Database = {
         }[]
       }
       oe_reg_label: { Args: { p_host: string }; Returns: string }
+      oe_regions_in_text: { Args: { p_text: string }; Returns: string[] }
       oe_relocation_save: {
         Args: { p_countries: string[]; p_ok: boolean }
         Returns: Json
+      }
+      oe_remote_reaches: {
+        Args: { p_regions: string[]; p_residence: string }
+        Returns: boolean
       }
       oe_remote_save: { Args: { p_ok: boolean }; Returns: Json }
       oe_resolve_identity: { Args: { p_user: string }; Returns: Json }
