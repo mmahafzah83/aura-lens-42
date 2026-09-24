@@ -125,5 +125,5 @@ export default function OpportunityTimeline({ facts, v, language, askAfterDays =
     <Step state={carded ? "done" : "waiting"} title={v("tl_card")} lines={cardLines} />
     <Step state={carded ? "turn" : "waiting"} title={v("tl_move")} lines={[{ text: v("tl_move_line") }]} />
     <Step state={clockRunning ? "clock" : "waiting"} title={v("tl_followup")} lines={followLines} last />
-  </ol>;
+  </ol></>;
 }
