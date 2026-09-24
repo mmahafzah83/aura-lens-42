@@ -23,7 +23,10 @@ const UA =
 const TIMEOUT = 20_000;
 const MAX_PER_ENTITY = 200;
 
-type Job = { url: string; title: string; snippet?: string | null; published_at?: string | null };
+/** structured: the posting's own workplace fields (schema.org jobLocationType /
+ * applicantLocationRequirements, ATS workplaceType / isRemote). Read by the
+ * SQL work-arrangement classifier before any prose. */
+type Job = { url: string; title: string; snippet?: string | null; published_at?: string | null; structured?: Record<string, unknown> | null };
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -100,6 +103,7 @@ const ADAPTERS: Record<
       snippet: squash([j.categories?.location, j.categories?.team, j.categories?.commitment]
         .filter(Boolean).join(" — ")) || strip(j.descriptionPlain ?? "").slice(0, 400),
       published_at: iso(j.createdAt),
+      structured: j.workplaceType ? { workplaceType: j.workplaceType } : null,
     }));
   },
 
@@ -112,6 +116,7 @@ const ADAPTERS: Record<
       title: squash(j.title ?? ""),
       snippet: squash([j.location, j.department, j.employmentType].filter(Boolean).join(" — ")),
       published_at: iso(j.publishedAt),
+      structured: (j.workplaceType || typeof j.isRemote === "boolean") ? { workplaceType: j.workplaceType ?? null, isRemote: j.isRemote ?? null } : null,
     }));
   },
 
@@ -248,6 +253,7 @@ const ADAPTERS: Record<
       title: squash(j.Title ?? ""),
       snippet: squash([j.PrimaryLocation, j.JobFamily, j.WorkplaceTypeCode].filter(Boolean).join(" — ")),
       published_at: iso(j.PostedDate),
+      structured: j.WorkplaceTypeCode ? { workplaceType: j.WorkplaceTypeCode } : null,
     }));
   },
 
@@ -325,6 +331,9 @@ async function jsonLdJobs(careersUrl: string): Promise<Job[]> {
         snippet: squash([loc, node.employmentType, strip(String(node.description ?? "")).slice(0, 300)]
           .filter(Boolean).join(" — ")),
         published_at: iso(node.datePosted),
+        structured: (node.jobLocationType || node.applicantLocationRequirements)
+          ? { jobLocationType: node.jobLocationType ?? null, applicantLocationRequirements: node.applicantLocationRequirements ?? null }
+          : null,
       });
     }
     for (const v of Object.values(node)) walk(v);
@@ -495,7 +504,7 @@ Deno.serve(async (req0) => {
           country: countryOfPlace(j.snippet ?? null),
           lang: guessLang(`${j.title} ${j.snippet ?? ""}`),
           content_hash: await sha256(`${canonical}|${squash(j.title).toLowerCase()}`),
-          raw: { source_kind: "ats", platform, entity: e.name },
+          raw: { source_kind: "ats", platform, entity: e.name, ...(j.structured ? { structured: j.structured } : {}) },
         });
       }
 
