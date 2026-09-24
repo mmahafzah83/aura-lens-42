@@ -376,7 +376,7 @@ Deno.serve(withRun("screen_member", async (req) => {
     const opps: any[] = [];
     if (ids.length) {
       const { data: oppRows, error: oppsError } = await admin.from("oe_opportunities")
-        .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
+        .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, work_arrangement, applicant_regions, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
         .in("id", ids).eq("alive", true);
       if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
       const byId = new Map((oppRows ?? []).map((o: any) => [String(o.id), o]));

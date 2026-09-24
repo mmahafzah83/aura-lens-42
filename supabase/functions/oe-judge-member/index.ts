@@ -602,7 +602,7 @@ Deno.serve(async (req) => {
     }
     const { data: opps, error: oppsError } = await admin
       .from("oe_opportunities")
-      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, access_state, issuer_id, issuer_raw, language, embedding, updated_at, first_seen_at, source_url, issuer:oe_issuers(domain)")
+      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, work_arrangement, applicant_regions, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, access_state, issuer_id, issuer_raw, language, embedding, updated_at, first_seen_at, source_url, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
     const requestedSet = new Set(requestedOpportunityIds);
