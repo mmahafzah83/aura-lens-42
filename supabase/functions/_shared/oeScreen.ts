@@ -662,6 +662,20 @@ export function levelGate(
   const placed = employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null);
   const tier = placed.tier;
 
+  // Entry-level titles are below any director-level identity, whatever band
+  // the reader guessed. A head/director qualifier lifts supervisor/technician.
+  const memberIdx = ladderIndex(String(current?.market_level ?? ""));
+  const title = String(opportunity?.title ?? "");
+  const juniorTitle = /\b(teacher|apprentice(ship)?|trainee|intern(ship)?|graduate|tamheer|technician|supervisor|clerk|analyst\s+(i{1,2}|[12])\b)/i.test(title)
+    || /تمهير|متدرب|معلم/.test(title);
+  const lifted = /\b(head|director|chief|vp|vice president|general manager)\b/i.test(title);
+  if (juniorTitle && !lifted && memberIdx >= ladderIndex("director")) {
+    return {
+      direction: "below" as const, gap: -3, tier, placed, basis: "title" as const, reason: "junior_title",
+      sentence: `${title} is an entry-level seat, below the level we match you at.`,
+    };
+  }
+
   // The member's current market level sets the band: market .. market+1
   // (+2 on a step-up move); below market-1 is below. While his roles
   // disagree, a mismatch is unknown — no verdict without his answer.

@@ -107,7 +107,33 @@ const PLACES: Array<[RegExp, string]> = [
   [/turkey|türkiye|istanbul|تركيا|إسطنبول/i, "TR"],
 ];
 
-const REMOTE_RE = /\bremote\b|work from home|عن بعد|من المنزل/i;
+/** Remote only when the posting itself says fully remote — never hybrid. */
+const REMOTE_RE = /fully remote|100% remote|remote[- ]first|remote[- ]only|work from anywhere|عن بعد بالكامل/i;
+
+/**
+ * THE ONE PLACE RULE — used by the screen and the judge alike.
+ * Respects countries_allowed from Tune exactly (plus residence and, when he
+ * said he would move, relocation countries). Remote counts only when the
+ * posting states it (o.remote is guarded in SQL by oe_states_remote) AND
+ * the member said remote works for him.
+ */
+export function placeVerdict(o: any, eligibility: Eligibility | null | undefined):
+  { kind: "ok" } | { kind: "fail" } | { kind: "unknown" } | { kind: "condition"; note: string } {
+  if (!eligibility) return { kind: "ok" };
+  const sensitivity = String(o?.location_sensitivity ?? "hard").toLowerCase();
+  const allowed = workablePlaces(eligibility);
+  if (!allowed.length || sensitivity === "none") return { kind: "ok" };
+  const explicitlyRemote = o?.remote === true || REMOTE_RE.test(`${o?.location ?? ""} ${o?.title ?? ""}`);
+  if (explicitlyRemote && eligibility.remote_ok === true) return { kind: "ok" };
+  const stated = String(o?.location ?? "").trim();
+  const country = countryOfPlace(o?.location);
+  if (!country) {
+    if (!stated) return { kind: "unknown" };
+    return sensitivity === "hard" ? { kind: "fail" } : { kind: "condition", note: `place_distance: ${stated}` };
+  }
+  if (allowed.includes(country)) return { kind: "ok" };
+  return sensitivity === "hard" ? { kind: "fail" } : { kind: "condition", note: `place_distance: ${stated || country}` };
+}
 
 /** The country a place belongs to, or null when we cannot tell. */
 export function countryOfPlace(location?: string | null): string | null {
@@ -282,28 +308,10 @@ export function screen(
   // to hide the record from him. The sensitivity is read off the kind's own
   // catalogue row, never guessed here.
   const sensitivity = String(o.location_sensitivity ?? "hard").toLowerCase();
-  // WORKABLE PLACES: where he said he works, where he lives, and — only when
-  // he said he would move — the countries he would move to.
-  const allowed = workablePlaces(eligibility);
-  if (allowed.length && sensitivity !== "none") {
-    const explicitlyRemote = o.remote === true || REMOTE_RE.test(String(o.location ?? o.title ?? ""));
-    if (!(explicitlyRemote && eligibility.remote_ok === true)) {
-      const country = countryOfPlace(o.location);
-      if (!country) {
-        // A full-time seat is allowed only inside his workable places. A
-        // stated location we cannot place in one of them is outside them; only
-        // a posting that states no location at all stays unknown.
-        const stated = String(o.location ?? "").trim();
-        if (sensitivity === "hard") {
-          if (stated) fails.push("place");
-          else unknowns.push("place_unknown");
-        } else if (stated) conditions.push(`place_distance: ${stated}`);
-      } else if (!allowed.includes(country)) {
-        if (sensitivity === "hard") fails.push("place");
-        else conditions.push(`place_distance: ${String(o.location ?? country)}`);
-      }
-    }
-  }
+  const pv = placeVerdict(o, eligibility);
+  if (pv.kind === "fail") fails.push("place");
+  else if (pv.kind === "unknown") unknowns.push("place_unknown");
+  else if (pv.kind === "condition") conditions.push(pv.note);
 
   // 2. CHAIR — a kind of seat he has ruled out, ratified as a rule.
   const blocked = (eligibility.chair_types_blocked ?? []).map((c) => String(c).toLowerCase());
@@ -409,4 +417,14 @@ export function hasRoute(o: any, issuerDomain?: string | null): boolean {
 /** 'act' when he can both hold it and reach it; otherwise 'write'. */
 export function laneFor(o: any, screened: Screened, issuerDomain?: string | null): "act" | "write" {
   return screened.pass && hasRoute(o, issuerDomain) ? "act" : "write";
+}
+
+/** The member's eligibility with Tune's places, or the residence-region default when none set. Shared by screen and judge. */
+export async function loadEligibility(admin: any, userId: string): Promise<any | null> {
+  const { data: eligibility } = await admin.from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
+  if (eligibility && !(eligibility.countries_allowed ?? []).length && eligibility.residence_country) {
+    const { data: defaults } = await admin.rpc("oe_default_places", { p_residence: eligibility.residence_country });
+    if (Array.isArray(defaults) && defaults.length) eligibility.countries_allowed = defaults as string[];
+  }
+  return eligibility ?? null;
 }

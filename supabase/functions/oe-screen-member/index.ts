@@ -19,7 +19,9 @@ import { logAIFailure, logAIUsage } from "../_shared/logAIUsage.ts";
 import { secondPersonClause } from "../_shared/secondPerson.ts";
 import { bestStanding, writeTests } from "../_shared/writeValue.ts";
 import { interestOf } from "../_shared/interest.ts";
-import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
+/** Must equal P3_VERSION in oe-judge-member. */
+const CURRENT_RUBRIC_PROMPT = "p3-2.0";
+import { hasRoute, screen, type Eligibility, loadEligibility } from "../_shared/oeEligibility.ts";
 import {
   deriveIdentity, runGates, writingStanding, recencyWeight,
   type CurrentIdentity, type LadderRow, type MemberIdentity, type MemberEvidenceRow,
@@ -342,14 +344,7 @@ Deno.serve(withRun("screen_member", async (req) => {
     }, { onConflict: "user_id" });
 
     // ── what he is licensed to hold, and what he can show ────────────────
-    const { data: eligRow } = await admin.from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
-    const eligibility = (eligRow ?? null) as Eligibility | null;
-    // No place chosen is not "anywhere": full-time seats default to home and
-    // home's first region, read from the reference tables (oe_default_places).
-    if (eligibility && !(eligibility.countries_allowed ?? []).length && eligibility.residence_country) {
-      const { data: defaults } = await admin.rpc("oe_default_places", { p_residence: eligibility.residence_country });
-      if (Array.isArray(defaults) && defaults.length) eligibility.countries_allowed = defaults as string[];
-    }
+    const eligibility = (await loadEligibility(admin, userId)) as Eligibility | null;
     const { data: profile } = await admin.from("diagnostic_profiles")
       .select("years_experience, core_practice, firm").eq("user_id", userId).maybeSingle();
     const ownEmployer = String((profile as any)?.firm ?? "").trim();
@@ -444,7 +439,8 @@ Deno.serve(withRun("screen_member", async (req) => {
     const rubricVerdict = (oppId: string): { refuses: boolean; gap: string } => {
       const scores = scoresById.get(oppId);
       const passes = Array.isArray(scores?.passes) ? scores.passes : [];
-      if (!passes.length) return { refuses: false, gap: "" };
+      // A verdict from an older rubric prompt is stale: it is re-judged, never replayed.
+      if (!passes.length || String(scores?.prompt_version ?? "") !== CURRENT_RUBRIC_PROMPT) return { refuses: false, gap: "" };
       const notMet = passes.find((p: any) => p?.eligibility_met === false);
       const avg = Number(scores?.score_avg ?? NaN);
       const zero = passes.some((p: any) => Array.isArray(p?.gate_no_zero)
@@ -811,7 +807,7 @@ Deno.serve(withRun("screen_member", async (req) => {
           await admin.from("oe_matches").update({
             write_tests: tests, standing_overlap: tests.overlap,
             presentation_line: null, presentation_evidence_ids: [],
-            screen_outcome: "rejected", gate_passed: false,
+            screen_outcome: "rejected", gate_passed: false, screen_gate: "writing",
             gate_note: "write_tests_failed",
             lane_final: null, rejection_sentence: sentence,
           }).eq("user_id", userId).eq("opportunity_id", o.id).then(({ error }) => note(error, "write discard"));
