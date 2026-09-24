@@ -552,7 +552,7 @@ Deno.serve(withRun("screen_member", async (req) => {
         interest: interestOf(o as any, (interestFaces ?? []) as any, (captureRows ?? []) as any),
         rejection_sentence: g.outcome === "rejected" ? g.sentence : null,
 
-        role_profession: g.role_profession, profession_relation: g.profession_relation,
+        role_profession: g.role_profession ?? 'unknown', profession_relation: g.profession_relation,
         profession_source: g.profession_source, profession_source_quote: g.profession_source_quote,
         grade_basis: g.grade_basis,
         gate_note: kindUnverified ? "kind_unverified" : (g as any).gate_note ?? null,

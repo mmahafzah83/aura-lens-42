@@ -76,7 +76,9 @@ const PROFESSION_PATTERNS: Array<[Profession, RegExp]> = [
   ["operating_model", /operating model|process (design|management|improvement|control)|business process|organisation design|shared services|processes control/i],
   ["strategy_consulting", /strateg|management consult|advisory|consultant|consultancy|consulting|\bpartner\b/i],
   ["policy_research", /policy|research (associate|fellow|project)|think tank|task force|seminar|symposium|curator|biennale|training program|membership program|speaker|macroeconomic|poverty/i],
-  ["education", /education|academic|university|school|teaching|skills/i],
+  // Education only when the seat itself teaches or runs education — never
+  // because a posting mentions "skills", a degree, or a university.
+  ["education", /\b(teacher|teaching|lecturer|professor|faculty member|curriculum|dean\b|school principal|head of (school|education)|education (director|manager|specialist|programmes?|sector|policy)|academic (affairs|director|programmes?))|معلم|محاضر|عميد|مناهج/i],
   ["document_management", /document(ation)? (management|control)|records management|archiv/i],
   ["general_management", /general manager|managing director|\bceo\b|chief executive|country manager|site director/i],
 ];
@@ -114,28 +116,32 @@ export function professionOf(opportunity: any): ProfessionRead {
     ...String(opportunity?.scope ?? "").split(/(?<=[.!?])\s+/),
   ].map((s) => String(s ?? "").replace(/\s+/g, " ").trim()).filter((s) => s.length > 25);
 
-  if (body.length) {
-    for (const sentence of body) {
-      const p = classifyProfession(sentence);
-      if (p && p !== "general_management") {
-        return { profession: p, source: "accountability_sentence", quote: sentence.slice(0, 400), body_readable: true };
-      }
-    }
-    for (const sentence of body) {
-      const p = classifyProfession(sentence);
-      if (p) {
-        return { profession: p, source: "accountability_sentence", quote: sentence.slice(0, 400), body_readable: true };
-      }
-    }
-    // The body was read and it names no profession. That is an unstated
-    // profession, not a title to fall back on.
-    return { profession: null, source: "none", quote: null, body_readable: true };
+  // CONFIDENCE, NOT FIRST HIT. Every sentence votes; the title votes twice.
+  // A profession is established only when it has at least two votes and
+  // clearly leads the next one. Otherwise it is unknown — and unknown never
+  // rejects; the judge decides. No default label exists.
+  const votes = new Map<Profession, { n: number; quote: string | null }>();
+  const vote = (p: Profession | null, w: number, quote: string | null) => {
+    if (!p) return;
+    const v = votes.get(p) ?? { n: 0, quote: null };
+    v.n += w; if (!v.quote && quote) v.quote = quote.slice(0, 400);
+    votes.set(p, v);
+  };
+  for (const sentence of body) vote(classifyProfession(sentence), 1, sentence);
+  vote(classifyProfession(opportunity?.title), 2, null);
+  const ranked = [...votes.entries()].sort((a, b) => b[1].n - a[1].n);
+  const [top, next] = ranked;
+  const confident = !!top && top[1].n >= 2 && (!next || top[1].n >= next[1].n + 1);
+  if (!confident) {
+    return { profession: null, source: "none", quote: null, body_readable: body.length > 0 };
   }
-
-  const fromTitle = classifyProfession(opportunity?.title, opportunity?.scope);
-  return fromTitle
-    ? { profession: fromTitle, source: "title", quote: null, body_readable: false }
-    : { profession: null, source: "none", quote: null, body_readable: false };
+  const fromBody = !!top[1].quote;
+  return {
+    profession: top[0],
+    source: fromBody ? "accountability_sentence" : "title",
+    quote: top[1].quote,
+    body_readable: body.length > 0,
+  };
 }
 
 

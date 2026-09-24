@@ -77,7 +77,7 @@ async function req(url: string, init?: RequestInit): Promise<Response> {
 
 const ADAPTERS: Record<
   string,
-  (token: string, endpoint: string, entityName: string) => Promise<Job[]>
+  (token: string, endpoint: string, entityName: string, careersUrl?: string) => Promise<Job[]>
 > = {
   // Greenhouse publishes its job-board data without authentication.
   async greenhouse(token) {
@@ -240,14 +240,31 @@ const ADAPTERS: Record<
     const url = endpoint ||
       `https://${tenant}.${dc}.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions` +
       `?onlyData=true&expand=requisitionList&finder=findReqs;siteNumber=CX_1,limit=100`;
-    let r = await req(url, { headers: { "REST-Framework-Version": "4" } });
+    let r = await req(url, { headers: { "REST-Framework-Version": "4", Accept: "application/json" } });
     // Some Oracle tenants refuse the versioned header outright. Ask once more,
     // plainly, in English, before calling it a locked door.
     if (r.status === 403) r = await req(url, { headers: { "Accept-Language": "en" } });
-    if (r.status === 403) throw new Error("oracle_forbidden");
+    if (r.status === 403) {
+      const t = await r.text().catch(() => "");
+      throw new Error(/WAF/i.test(t) ? "oracle_forbidden: blocked by the tenant's bot defence (not worked around)" : "oracle_forbidden");
+    }
     if (!r.ok) throw new Error(`http_${r.status}`);
-    const d = await r.json();
-    const list = d?.items?.[0]?.requisitionList ?? d?.items ?? [];
+    let d = await r.json();
+    if (!Array.isArray(d?.items?.[0]?.requisitionList)) {
+      // The candidate site's own request shape, asked once as the site asks it.
+      const alt = `https://${tenant}.${dc}.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions` +
+        `?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations` +
+        `&finder=findReqs;siteNumber=${site || "CX_1"},facetsList=LOCATIONS%3BTITLES,limit=25,sortBy=POSTING_DATES_DESC`;
+      const r2 = await req(alt, { headers: { "REST-Framework-Version": "4", "Accept-Language": "en", "Content-Type": "application/vnd.oracle.adf.resourceitem+json;charset=utf-8" } });
+      if (r2.ok) d = await r2.json();
+    }
+    const list = d?.items?.[0]?.requisitionList ?? [];
+    if (!Array.isArray(d?.items?.[0]?.requisitionList)) {
+      throw new Error(`empty: oracle gave no requisition list (keys=${Object.keys(d?.items?.[0] ?? {}).slice(0, 6).join(",")}, fw=${r.headers.get("rest-framework-version") ?? "?"})`);
+    }
+    if (!list.length) {
+      throw new Error(`empty: oracle returned 0 requisitions (fw=${r.headers.get("rest-framework-version") ?? "?"}, total=${d?.items?.[0]?.TotalJobsCount ?? "?"})`);
+    }
     return (Array.isArray(list) ? list : []).map((j: any) => ({
       url: `https://${tenant}.${dc}.oraclecloud.com/hcmUI/CandidateExperience/en/sites/${site || "CX_1"}/job/${j.Id ?? j.RequisitionId}`,
       title: squash(j.Title ?? ""),
@@ -289,21 +306,152 @@ const ADAPTERS: Record<
     return out;
   },
 
-  async taleo(token, endpoint) {
-    const r = await req(endpoint, { headers: { Accept: "text/html,application/json" } });
+  // Taleo: the job board's own REST search, with the portal id its page states.
+  // When the page states none, the board is script-rendered: say so.
+  async taleo(token, endpoint, _name, careersUrl) {
+    const page = endpoint?.includes(".ftl") ? endpoint
+      : (careersUrl?.includes("taleo.net") ? careersUrl : `https://${token}.taleo.net/careersection/ex/jobsearch.ftl`);
+    const r = await req(page, { headers: { Accept: "text/html" } });
     if (!r.ok) throw new Error(`http_${r.status}`);
-    const text = await r.text();
+    const html = await r.text();
     const out: Job[] = [];
-    for (const m of text.matchAll(/<a\b[^>]*href=["']([^"']*jobdetail[^"']*)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) {
+    for (const m of html.matchAll(/<a\b[^>]*href=["']([^"']*jobdetail[^"']*)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) {
       const title = strip(m[2]);
       if (title.length < 6) continue;
-      try { out.push({ url: new URL(m[1], endpoint).toString(), title, snippet: title, published_at: null }); }
-      catch { /* skip */ }
+      try { out.push({ url: new URL(m[1], page).toString(), title, snippet: title, published_at: null }); } catch { /* skip */ }
     }
-    if (!out.length) throw new Error("no_listings_in_html");
+    if (out.length) return out;
+    const portal = html.match(/portal=(\d{6,})/)?.[1] ?? html.match(/["']portal["']\s*[:,]\s*["']?(\d{6,})/)?.[1];
+    if (!portal) throw new Error("needs_render: taleo board states no portal id in its page");
+    const origin = new URL(page).origin;
+    const sr = await req(`${origin}/careersection/rest/jobboard/searchjobs?lang=en&portal=${portal}`, {
+      method: "POST", headers: { "Content-Type": "application/json", tz: "GMT+03:00" },
+      body: JSON.stringify({ multilineEnabled: false, sortingSelection: { sortBySelectionParam: "3", ascendingSortingOrder: "false" },
+        fieldData: { fields: { KEYWORD: "", LOCATION: "" }, valid: true }, filterSelectionParam: { searchFilterSelections: [] },
+        advancedSearchFiltersSelectionParam: { searchFilterSelections: [] }, pageNo: 1 }),
+    });
+    if (!sr.ok) throw new Error(`http_${sr.status}`);
+    const d = await sr.json();
+    if (d?.careerSectionUnAvailable) throw new Error("taleo_career_section_unavailable");
+    for (const j of d?.requisitionList ?? []) {
+      const cols = j.column ?? [];
+      out.push({ url: `${origin}/careersection/ex/jobdetail.ftl?job=${j.jobId ?? j.contestNo}`, title: squash(String(cols[0] ?? "")),
+        snippet: squash(cols.slice(1).join(" — ")), published_at: null });
+    }
     return out;
   },
+
+  // Elevatus: the careers site asks its own public API by domain. The branding
+  // call names the account and company; all-jobs lists the external roles.
+  async elevatus(_token, _endpoint, _name, careersUrl) {
+    if (!careersUrl) throw new Error("no_careers_url");
+    const host = new URL(careersUrl).host;
+    const api = "https://dammam-api.elevatus.ai";
+    const b = await req(`${api}/setup/branding/domain/?domain_url=${encodeURIComponent(host)}`);
+    if (!b.ok) throw new Error(`branding_http_${b.status}`);
+    const bd = (await b.json())?.data;
+    const account = bd?.account?.uuid, company = bd?.company?.uuid;
+    if (!account || !company) throw new Error("token_wrong: domain not registered with elevatus");
+    const out: Job[] = [];
+    for (let page = 1; page <= 10; page++) {
+      const r = await req(`${api}/setup/candidate-side/all-jobs`, {
+        method: "POST", headers: { "Content-Type": "application/json", "Accept-Account": account },
+        body: JSON.stringify({ limit: 30, currentPage: page, hiring_type: "external", company_uuid: company }),
+      });
+      if (!r.ok) throw new Error(`http_${r.status}`);
+      const d = await r.json();
+      for (const j of d?.results ?? []) {
+        const t = j.job_post_title ?? {};
+        out.push({
+          url: `https://${host}/jobs?company_uuid=${company}&job_uri=${encodeURIComponent(j.job_uri ?? j.uuid)}`,
+          title: squash(t.en ?? t.ar ?? ""),
+          snippet: squash([j.location?.en ?? j.location?.ar, j.job_types?.en].filter(Boolean).join(" — ")),
+          published_at: iso(j.created_at),
+        });
+      }
+      if (page >= Number(d?.meta?.total_pages ?? 0)) break;
+    }
+    return out;
+  },
+
+  // Teamtailor publishes every board as RSS at /jobs.rss.
+  async teamtailor(token, _endpoint, _name, careersUrl) {
+    const origin = careersUrl ? new URL(careersUrl).origin : `https://${token}.teamtailor.com`;
+    const r = await req(`${origin}/jobs.rss`, { headers: { Accept: "application/rss+xml, text/xml" } });
+    if (!r.ok) throw new Error(`http_${r.status}`);
+    return rssItems(await r.text());
+  },
+
+  // Avature portals publish their search as RSS at /<portal>/SearchJobs/feed/.
+  async avature(token, _endpoint, _name, careersUrl) {
+    const u = new URL(careersUrl || `https://${token}.avature.net/careers`);
+    const seg = u.pathname.split("/").filter(Boolean)[0] ?? "careers";
+    const r = await req(`${u.origin}/${seg}/SearchJobs/feed/`, { headers: { Accept: "application/rss+xml, text/xml" } });
+    if (!r.ok) throw new Error(`http_${r.status}`);
+    return rssItems(await r.text());
+  },
+
+  // Phenom: its public sitemap lists every /job/<id>/<slug> page.
+  async phenom(token, _endpoint, _name, careersUrl) {
+    const u = new URL(careersUrl || `https://${token}`);
+    const segs = u.pathname.split("/").filter(Boolean);
+    const prefix = segs.length >= 2 && /^[a-z]{2}(-[a-z]{2})?$/i.test(segs[1]) ? `/${segs[0]}/${segs[1]}` : "";
+    const idx = await req(`${u.origin}${prefix}/sitemap_index.xml`, { headers: { Accept: "application/xml" } });
+    if (!idx.ok) throw new Error(`sitemap_http_${idx.status}: not a phenom board`);
+    const maps = [...(await idx.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]).slice(0, 5);
+    const out: Job[] = [];
+    for (const sm of maps) {
+      const r = await req(sm, { headers: { Accept: "application/xml" } });
+      if (!r.ok) continue;
+      for (const m of (await r.text()).matchAll(/<loc>([^<]*\/job\/[^<]+)<\/loc>/g)) {
+        const slug = decodeURIComponent(m[1].split("/job/")[1]?.split("/").slice(1).join(" ") ?? "");
+        const title = squash(slug.replace(/-/g, " "));
+        if (title.length >= 4) out.push({ url: m[1], title, snippet: title, published_at: null });
+        if (out.length >= MAX_PER_ENTITY) return out;
+      }
+    }
+    return out;
+  },
+
+  // ZenHR boards render in the browser; read any role links the page states.
+  async zenhr(_token, _endpoint, _name, careersUrl) {
+    if (!careersUrl) throw new Error("no_careers_url");
+    const r = await req(careersUrl, { headers: { Accept: "text/html" } });
+    if (!r.ok) throw new Error(`http_${r.status}`);
+    const html = await r.text();
+    const out: Job[] = [];
+    for (const m of html.matchAll(/<a\b[^>]*href=["']([^"']*\/jobs?\/[^"']+)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) {
+      const title = strip(m[2]);
+      if (title.length < 6) continue;
+      try { out.push({ url: new URL(m[1], careersUrl).toString(), title, snippet: title, published_at: null }); } catch { /* skip */ }
+    }
+    if (!out.length && /JOB_BOARD_ID|<script/i.test(html)) throw new Error("needs_render: zenhr board is script-rendered");
+    return out;
+  },
+
+  // Jadarat listing pages are on the never-read list. Refused, with the reason.
+  async jadarat_portal() {
+    throw new Error("terms_refused: jadarat listing pages are never read (source access law)");
+  },
 };
+
+/** RSS <item>s as jobs. */
+function rssItems(xml: string): Job[] {
+  const out: Job[] = [];
+  for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)) {
+    const b = m[1];
+    const pick = (t: string) => {
+      const v = b.match(new RegExp(`<${t}[^>]*>([\\s\\S]*?)</${t}>`, "i"))?.[1] ?? "";
+      return v.replace(/^<!\[CDATA\[|\]\]>$/g, "");
+    };
+    const url = strip(pick("link")) || strip(pick("guid"));
+    const title = strip(pick("title"));
+    if (!url || title.length < 4) continue;
+    const loc = strip(pick("tt:city") || pick("tt:location") || pick("location"));
+    out.push({ url, title, snippet: squash([loc, strip(pick("description")).slice(0, 300)].filter(Boolean).join(" — ")), published_at: iso(strip(pick("pubDate"))) });
+  }
+  return out;
+}
 
 /**
  * For a careers page with no applicant-tracking system behind it: many still
@@ -454,19 +602,21 @@ Deno.serve(async (req0) => {
           if (!e.careers_url) throw new Error("no_careers_url");
           jobs = await jsonLdJobs(e.careers_url);
         } else {
-          jobs = await adapter(e.ats_token ?? "", e.ats_endpoint ?? "", e.name);
+          jobs = await adapter(e.ats_token ?? "", e.ats_endpoint ?? "", e.name, e.careers_url ?? undefined);
         }
       } catch (err) {
         const msg = String((err as Error).message ?? err).slice(0, 120);
         // A locked Oracle door still leaves the employer's own careers page open.
         let recovered = false;
-        if (!readPlainly && msg === "oracle_forbidden" && e.careers_url) {
+        if (!readPlainly && msg.startsWith("oracle_forbidden") && e.careers_url) {
           try { jobs = await jsonLdJobs(e.careers_url); recovered = true; } catch { /* stays a failure */ }
           counts.oracle_forbidden = (counts.oracle_forbidden ?? 0) + 1;
           await admin.from("oe_entities").update({ resolve_error: "oracle_forbidden" }).eq("id", e.id);
         }
         if (!recovered) {
           counts.errors++;
+          counts.error_by_platform = counts.error_by_platform ?? {};
+          counts.error_by_platform[platform] = (counts.error_by_platform[platform] ?? 0) + 1;
           counts.failures[platform] = counts.failures[platform]
             ? `${counts.failures[platform]}; ${e.name}: ${msg}`.slice(0, 400)
             : `${e.name}: ${msg}`;
@@ -541,7 +691,8 @@ Deno.serve(async (req0) => {
         harvest_runs: runsNow,
         changed_runs: changedNow,
         harvest_cadence: cadence,
-        resolve_error: null,
+        // An empty read is recorded as such, never as a silent success.
+        resolve_error: jobs.length ? null : "empty: the board lists no roles today",
       }).eq("id", e.id);
     }
 

@@ -757,8 +757,15 @@ Deno.serve(async (req) => {
     // wait for the search budget to come round.
     let q = admin.from("oe_entities")
       .select("id, name, domain, careers_url")
-      .in("resolve_status", Array.isArray(body.recheck) ? body.recheck : ["new"])
-      .order("last_resolved_at", { ascending: true, nullsFirst: true })
+      .in("resolve_status", Array.isArray(body.recheck) ? body.recheck : ["new"]);
+    // Retry order: one country first when asked, then the most-watched and
+    // largest organisations, then whoever was tried longest ago.
+    if (typeof body.country === "string") q = q.eq("country", body.country);
+    // watch_tier is text (core, reachable, known, off): the caller walks the
+    // tiers in that order, one call per tier; size_hint breaks ties.
+    if (typeof body.watch_tier === "string") q = q.eq("watch_tier", body.watch_tier);
+    if (body.retry_order === true) q = q.order("size_hint", { ascending: false, nullsFirst: false });
+    q = q.order("last_resolved_at", { ascending: true, nullsFirst: true })
       .order("domain", { ascending: true, nullsFirst: false })
       .limit(batch);
     // Re-run one named failure only — the way a finding is tested rather than
@@ -1051,8 +1058,38 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Subdomain doors: careers. / jobs. / talent. on the registrable root.
+        if (!careers && Date.now() < deadline) {
+          const root = domain.replace(/^www\./, "");
+          const subs = ["careers", "jobs", "talent", "career"].map((s) => `https://${s}.${root}/`);
+          const results = await Promise.all(subs.map((d) => get(d)));
+          for (let i = 0; i < subs.length; i++) {
+            note(subs[i], results[i], true, "subdomain");
+            if (!careers && results[i].ok && results[i].bytes > 500) {
+              careers = results[i]; foundBy = "subdomain"; robotsBlockedAll = false;
+            }
+          }
+        }
+
+        // The homepage itself publishing schema.org JobPosting is a careers page.
+        if (!careers && home.ok && /"@type"\s*:\s*"JobPosting"/.test(home.body)) {
+          careers = home; foundBy = "jsonld_jobposting";
+        }
+
         // 3. the fingerprint — read off the final URL and the page source.
-        const print = careers ? fingerprint(careers.finalUrl, careers.body) : null;
+        let print = careers ? fingerprint(careers.finalUrl, careers.body) : null;
+        // A thin single-page app may be an Elevatus portal: its public API
+        // answers by domain. Recorded only when that API names a company.
+        if (careers && !print?.platform && careers.bytes < 5000) {
+          try {
+            const host = new URL(careers.finalUrl).host;
+            const b = await get(`https://dammam-api.elevatus.ai/setup/branding/domain/?domain_url=${host}`);
+            if (b.ok && /"company"\s*:\s*\{[^}]*"uuid"/.test(b.body)) {
+              print = { platform: "elevatus", token: host, candidates: [], pageUrl: careers.finalUrl } as any;
+              foundBy = foundBy ? `${foundBy}+elevatus_domain` : "elevatus_domain";
+            }
+          } catch { /* not elevatus */ }
+        }
 
         // 4. the probe. An endpoint is written only where a shape answered.
         let verifiedEndpoint: string | null = null;
