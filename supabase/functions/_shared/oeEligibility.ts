@@ -24,6 +24,10 @@ export type Eligibility = {
   blocked_reasons?: Record<string, string> | null;
   sectors_core?: string[] | null;
   relocation_ok?: boolean | null;
+  /** 'member' when he saved places in Tune, 'default' when they come from his residence region. */
+  places_source?: "member" | "default" | null;
+  /** Region codes his residence belongs to (oe_ref_countries.region_codes), for remote applicant regions. */
+  residence_regions?: string[] | null;
   relocation_countries?: string[] | null;
 };
 
@@ -107,15 +111,26 @@ const PLACES: Array<[RegExp, string]> = [
   [/turkey|türkiye|istanbul|تركيا|إسطنبول/i, "TR"],
 ];
 
-/** Remote only when the posting itself says fully remote — never hybrid. */
-const REMOTE_RE = /fully remote|100% remote|remote[- ]first|remote[- ]only|work from anywhere|عن بعد بالكامل/i;
+/**
+ * A remote role reaches him only when his residence sits inside the regions
+ * the posting accepts applicants from (none stated = no limit).
+ */
+export function remoteReaches(o: any, e: Eligibility): boolean {
+  const regions: string[] = (Array.isArray(o?.applicant_regions) ? o.applicant_regions : []).map((r: string) => String(r).toUpperCase());
+  if (!regions.length || regions.includes("WORLD")) return true;
+  const home = String(e.residence_country ?? "").toUpperCase();
+  if (home && regions.includes(home)) return true;
+  return (e.residence_regions ?? []).some((r) => regions.includes(String(r).toUpperCase()));
+}
 
 /**
  * THE ONE PLACE RULE — used by the screen and the judge alike.
- * Respects countries_allowed from Tune exactly (plus residence and, when he
- * said he would move, relocation countries). Remote counts only when the
- * posting states it (o.remote is guarded in SQL by oe_states_remote) AND
- * the member said remote works for him.
+ * Workable = place in his places (Tune, or his residence region by default)
+ *   OR (work_arrangement = remote AND remote works for him AND his residence
+ *       is inside the posting's applicant regions)
+ *   OR (open to relocation AND place in his relocation list).
+ * Hybrid and on-site roles need the place. work_arrangement is classified in
+ * SQL (oe_classify_work_arrangement) and never read from perks or benefits.
  */
 export function placeVerdict(o: any, eligibility: Eligibility | null | undefined):
   { kind: "ok" } | { kind: "fail" } | { kind: "unknown" } | { kind: "condition"; note: string } {
@@ -123,8 +138,8 @@ export function placeVerdict(o: any, eligibility: Eligibility | null | undefined
   const sensitivity = String(o?.location_sensitivity ?? "hard").toLowerCase();
   const allowed = workablePlaces(eligibility);
   if (!allowed.length || sensitivity === "none") return { kind: "ok" };
-  const explicitlyRemote = o?.remote === true || REMOTE_RE.test(`${o?.location ?? ""} ${o?.title ?? ""}`);
-  if (explicitlyRemote && eligibility.remote_ok === true) return { kind: "ok" };
+  const arrangement = String(o?.work_arrangement ?? (o?.remote === true ? "remote" : "unknown"));
+  if (arrangement === "remote" && eligibility.remote_ok === true && remoteReaches(o, eligibility)) return { kind: "ok" };
   const stated = String(o?.location ?? "").trim();
   const country = countryOfPlace(o?.location);
   if (!country) {
@@ -422,7 +437,11 @@ export function laneFor(o: any, screened: Screened, issuerDomain?: string | null
 /** The member's eligibility with Tune's places, or the residence-region default when none set. Shared by screen and judge. */
 export async function loadEligibility(admin: any, userId: string): Promise<any | null> {
   const { data: eligibility } = await admin.from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
-  if (eligibility && !(eligibility.countries_allowed ?? []).length && eligibility.residence_country) {
+  if (eligibility?.residence_country) {
+    const { data: home } = await admin.from("oe_ref_countries").select("region_codes").eq("iso2", String(eligibility.residence_country).toUpperCase()).maybeSingle();
+    eligibility.residence_regions = (home?.region_codes ?? []).filter((r: string) => r !== "WORLD");
+  }
+  if (eligibility && eligibility.places_source !== "member" && eligibility.residence_country) {
     const { data: defaults } = await admin.rpc("oe_default_places", { p_residence: eligibility.residence_country });
     if (Array.isArray(defaults) && defaults.length) eligibility.countries_allowed = defaults as string[];
   }
