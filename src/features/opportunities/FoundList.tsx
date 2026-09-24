@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { Vocab } from "./useVocab";
 import OpportunityTimeline from "./OpportunityTimeline";
+import { Tip, WorkChip, useWorkArrangements, type WorkArrangement } from "./Tip";
 import { supabase } from "@/integrations/supabase/client";
 
 export type FoundItem = {
@@ -155,8 +156,8 @@ function Answer({ id, v }: { id: string; v: Vocab }) {
 
 // ─────────────────────────────── one row ───────────────────────────────
 
-function Row({ item, v, language, canCheck, checking, onCheck }: {
-  item: FoundItem; v: Vocab; language: Lang;
+function Row({ item, v, language, canCheck, checking, onCheck, wa }: {
+  item: FoundItem; v: Vocab; language: Lang; wa?: WorkArrangement | null;
   canCheck: boolean; checking: boolean; onCheck: (id: string) => void;
 }) {
   const [openTimeline, setOpenTimeline] = useState(false);
@@ -186,6 +187,8 @@ function Row({ item, v, language, canCheck, checking, onCheck }: {
       ? <a href={href} target="_blank" rel="noopener noreferrer" style={inner}>{body}</a>
       : <div style={inner}>{body}</div>}
     <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
+      {item.set_aside && <span style={{ marginBlockStart: 8, display: "inline-flex", alignItems: "center", fontSize: 12, color: MUTED }}>{v("setaside_prefix")}<Tip v={v} k="tip_setaside" /></span>}
+      {wa && <span style={{ marginBlockStart: 8 }}><WorkChip wa={wa} v={v} /></span>}
       {showCheck && (checking
         ? <span style={{ display: "inline-block", marginBlockStart: 8, fontSize: 12, color: MUTED }}>{v("found_checking")}</span>
         : <button type="button" onClick={() => onCheck(item.id)} style={{
@@ -229,6 +232,7 @@ function Group({ group, items, v, language, checking, onCheck }: {
   const count = group.key === EMPLOYER_KEY ? Number(group.count ?? 0) : items.length;
   const shown = all ? items : items.slice(0, PAGE);
   const panelId = `found-${group.key}`;
+  const workOf = useWorkArrangements(open ? shown.map((item) => item.id) : []);
   return <section style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, overflow: "hidden" }}>
     <button type="button" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}
       style={{
@@ -244,7 +248,7 @@ function Group({ group, items, v, language, checking, onCheck }: {
       {open && <>
         {group.key === EMPLOYER_KEY
           ? employers.map((row, index) => <EmployerRow key={index} row={row} v={v} language={language} />)
-          : shown.map((item) => <Row key={item.id} item={item} v={v} language={language}
+          : shown.map((item) => <Row key={item.id} item={item} v={v} language={language} wa={workOf(item.id)}
               canCheck={CHECKABLE.has(group.key)} checking={checking.has(item.id)} onCheck={onCheck} />)}
         {group.key !== EMPLOYER_KEY && !all && items.length > PAGE &&
           <button type="button" onClick={() => setAll(true)} style={{
@@ -365,12 +369,12 @@ export default function FoundList({ data, loading, error, v, language, onRetry, 
       <button type="button" aria-pressed={filters.deadline} style={toggleStyle(filters.deadline)} onClick={() => setFilter("deadline", !filters.deadline)}>{v("filter_deadline")}</button>
       <button type="button" aria-pressed={filters.followed} style={toggleStyle(filters.followed)} onClick={() => setFilter("followed", !filters.followed)}>{v("filter_followed")}</button>
     </div>
-    <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, color: INK }}>
-      <span><strong style={{ display: "block", fontWeight: 600 }}>{v("setaside_switch")}</strong><span style={{ fontSize: 12, color: MUTED }}>{v("setaside_switch_note")}</span></span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, color: INK }}>
+      <span><strong style={{ display: "block", fontWeight: 600 }}>{v("setaside_switch")}<Tip v={v} k="tip_setaside_switch" /></strong><span style={{ fontSize: 12, color: MUTED }}>{v("setaside_switch_note")}</span></span>
       <button type="button" role="switch" aria-checked={aside} onClick={() => setAside(!aside)} style={{ inlineSize: 44, blockSize: 24, flex: "0 0 44px", border: 0, borderRadius: 999, background: aside ? ACT : LINE, padding: 2, cursor: "pointer" }}>
         <span style={{ display: "block", inlineSize: 20, blockSize: 20, borderRadius: 999, background: CARD, transform: aside ? (language === "ar" ? "translateX(-20px)" : "translateX(20px)") : "none", transition: "transform 160ms" }} />
       </button>
-    </label>
+    </div>
     {anyFilter && <p style={{ margin: 0, fontSize: 12, color: MUTED }}>{v("filter_session_note")}</p>}
     {onSaveSetting && savable.length > 0 && <button type="button" onClick={() => void saveAll()} disabled={saved === "saving"} style={{
       justifySelf: "start", border: 0, background: "transparent", padding: 0,
