@@ -72,6 +72,7 @@ export function OpportunityCard({ card, language, readOnly, onSaved }: Props) {
   const lane = writeLane ? "lane_write" : card.lane === "lane_forming" ? "lane_forming" : "lane_open";
 
   const routeUrl = opp?.route_url ?? null;
+  const workOf = useWorkArrangements([card.opportunity_id ?? ""]);
   return (
     <AuraCard hover="none" style={{ background: "#FFFFFF", border: "1px solid #E2E7EE", borderRadius: 20, padding: 20, boxShadow: "0 1px 2px rgba(15,21,25,.04)", fontFamily: font }}>
       <div dir={rtl ? "rtl" : "ltr"} style={{ display: "grid", gap: 14, color: "#0F1519", lineHeight: rtl ? 1.9 : 1.55 }}>
@@ -79,6 +80,8 @@ export function OpportunityCard({ card, language, readOnly, onSaved }: Props) {
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 12, fontWeight: 700 }}>
             <span>{v(chairKey(opp?.chair_type)) || opp?.chair_type}</span>
             <span style={{ border: "1px solid #E2E7EE", borderRadius: 4, padding: "2px 7px", color: lane === "lane_open" ? "#0670C4" : "#9A6F12", background: "#FFFFFF" }}>{v(lane)}</span>
+            {!writeLane && <Tip v={v} k="tip_band" />}
+            <WorkChip wa={workOf(card.opportunity_id)} v={v} />
             {/* Everything except an ordinary published call is a find only we made. */}
             {opp?.discovery_kind && opp.discovery_kind !== "posted_opening" && (
               <span style={{ border: "1px solid #E0A82E", borderRadius: 4, padding: "2px 7px", color: "#9A6F12", background: "#FFFFFF" }}>{v("hidden_find")}</span>
@@ -98,7 +101,7 @@ export function OpportunityCard({ card, language, readOnly, onSaved }: Props) {
           <div style={{ display: "grid", gap: 8 }}>
             {matchedAs && <p style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#00CEC9" }} /><span>{matchedAs}</span></p>}
             {(card.why_lines ?? []).slice(0, writeLane ? 4 : 2).map((why, i) => <p key={i} style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#00CEC9" }} /><span>{(why as { label?: string }).label && <strong style={{ color: "#0F1519" }}>{(why as { label?: string }).label}: </strong>}{why.text}</span></p>)}
-            {card.gap_line?.text && <p style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#E0A82E" }} /><span><strong style={{ color: "#0F1519" }}>{v("the_distance")}: </strong>{card.gap_line.text}</span></p>}
+            {card.gap_line?.text && <p style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#E0A82E" }} /><span><strong style={{ color: "#0F1519" }}>{v("the_distance")}: </strong>{card.gap_line.text}<Tip v={v} k="tip_gap" /></span></p>}
           </div>
           {(() => {
             const check = card.oe_matches;
