@@ -17,7 +17,7 @@ import type { FilterMap } from "./FiltersSection";
 
 
 type Lang = "en" | "ar";
-type View = "today" | "parked" | "history";
+type View = "today" | "found" | "parked" | "history";
 type HistoryFilter = "all" | "right" | "declined" | "flagged";
 type MoveKind = "bigger_same" | "step_up" | "client_side" | "exceptional_only";
 type WhyLine = { text?: string };
@@ -61,7 +61,7 @@ type Editor = "move" | "place" | "sector" | "kind" | "level" | "org" | "companie
 type Company = { id: string; name: string; sector_code: string | null };
 const moveKey = (move: MoveKind) => move === "exceptional_only" ? "move_exceptional" : `move_${move}`;
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
-const validViews = new Set<View>(["today", "parked", "history"]);
+const validViews = new Set<View>(["today", "found", "parked", "history"]);
 const dayKey = (value: string) => String(value).slice(0, 10);
 const fill = (text: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((value, [key, item]) => value.split(`{${key}}`).join(String(item)), text);
 const hasWhy = (card: QueueCard) => (card.why_lines ?? []).some((line) => String(line.text ?? "").trim());
@@ -303,6 +303,16 @@ export function OpportunityQueue() {
     }
     setBusy(false);
   };
+  // "Save as my setting" from the Found list — the only way a Found filter
+  // reaches Tune. Places add to his saved places; the rest set that one answer.
+  const saveSetting = async (field: "country" | "level" | "kind" | "org", value: string): Promise<boolean> => {
+    const call = field === "country"
+      ? supabase.rpc("oe_bar_save" as never, { p_move: movePick, p_places: [...new Set([...placePick, value])], p_sectors: sectorPick } as never)
+      : supabase.rpc("oe_filter_save" as never, { p_field: field === "org" ? "org_type" : field, p_op: field === "level" ? "at_or_above" : "prefer", p_values: [value] } as never);
+    const { error } = await call;
+    if (!error) { if (field === "country") setPlacePick((p) => [...new Set([...p, value])]); await load(); await loadFound(); }
+    return !error;
+  };
   const saveRemote = async (next: boolean) => {
     setRemoteOk(next);
     const { error } = await supabase.rpc("oe_remote_save" as never, { p_ok: next } as never);
@@ -316,9 +326,10 @@ export function OpportunityQueue() {
       <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing || data.reading?.running ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? v("machine_looking_again") : data.reading?.running ? v("machine_reading_now") : data.reading?.last_read_at ? fill(v("machine_last_read"), { time: readTime(data.reading.last_read_at, language) }) : v("machine_still_reading")}</span><Button variant="link" size="sm" onClick={() => void refresh()} disabled={refreshing || loading}>{v(refreshing ? "action_refreshing" : "action_refresh")}</Button></div>
     </header>
     <IdentityBanner identity={member.identity} v={v} onSaved={() => void member.reload()} onOther={() => openRules(null)} />
-    <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
+    <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "found", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
     <main>
       {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} sectorOptions={sectorOptions} countries={countries} more={moreRows} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
+      {view === "found" && <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={() => void loadFound()} checking={checking} onCheck={(id) => void checkNow(id)} sectors={sectorOptions} countries={countries} onSaveSetting={saveSetting} />}
       {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
       {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
     </main>
@@ -328,7 +339,9 @@ export function OpportunityQueue() {
 }
 
 function TodayView({ active, compact, more, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, sectorOptions, countries, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; more: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; sectorOptions: SectorOption[]; countries: Country[]; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
-  const foundList = <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={onRetryFound} checking={checking} onCheck={onCheck} sectors={sectorOptions} countries={countries} />;
+  // Today is our judgment and his Tune, nothing else: no filter row here.
+  // "Everything we found" lives in its own tab.
+  const foundList = null;
   if (!active) {
     const total = Number(found?.total ?? 0);
     const atLevel = found?.groups?.find((group) => group.key === "at_level") ?? null;

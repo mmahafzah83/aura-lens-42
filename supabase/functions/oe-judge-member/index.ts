@@ -1,3 +1,4 @@
+import { loadEligibility, placeVerdict } from "../_shared/oeEligibility.ts";
 /**
  * oe-judge-member — decides, for one member, whether any live opportunity is
  * worth his morning. Hard filters first (no model sees a record it should never
@@ -26,7 +27,10 @@ const corsHeaders = {
 const FN = "oe-judge-member";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
-const P3_VERSION = "p3-1.0";
+const P3_VERSION = "p3-2.0";
+/** Market ladder shared with the screen (_shared/oeScreen.ts LADDER). */
+const LADDER = ["ic", "manager", "senior_manager", "director", "senior_director", "vp", "c_suite", "board"];
+const OBJECTIVE_GAPS = new Set(["licence", "nationality", "clearance", "language"]);
 const P4_VERSION = "p4-2.1";
 const P5_VERSION = "p5-1.0";
 const QUESTIONS = ["role_fit", "sector_fit", "seniority_fit", "timing", "strategic_value"] as const;
@@ -40,15 +44,22 @@ const BANDS = { work: 0, table: 1, room: 2 } as const;
 const DEFAULT_JUDGE_MAX = 12;
 
 const P3_SYSTEM =
-  `You judge whether one opportunity fits one senior professional. You receive the five faces (pseudonymised), ` +
-  `up to 8 of his past judgements (title → that's right / not quite / not my area), and one opportunity record. ` +
+  `You judge whether one opportunity fits one senior professional AS HE IS TODAY. You receive his CURRENT IDENTITY ` +
+  `(current title and market level, resolved from his records), five faces (pseudonymised), up to 8 past judgements, and one opportunity. ` +
   `Return strict JSON {role_fit:0-4, sector_fit:0-4, seniority_fit:0-4, timing:0-4, strategic_value:0-4, ` +
   `justification:{role_fit,sector_fit,seniority_fit,timing,strategic_value} (each <= 20 words), ` +
-  `eligibility_met:true|false|null, gap:'one sentence naming the single most important thing he lacks for this, or empty', ` +
+  `eligibility_met:true|false|null, objective_gap:{kind:'licence'|'nationality'|'clearance'|'language'|'none', mandatory:true|false}, ` +
+  `gap:'one sentence naming the most important requirement he may lack, with the number asked and what he has, or empty', ` +
   `cites:[{kind:'face'|'requirement', id}]}. ` +
-  `Anchors: 0 = not at all; 2 = half; 4 = fully. Timing: 0 if deadline under 3 days or signal vague; ` +
-  `2 if under two weeks or signal within two quarters; 4 if workable window or signal within one quarter. ` +
-  `Strategic value is measured against the wants face.`;
+  `Anchors: 0 = not at all; 2 = half; 4 = fully. ` +
+  `Role fit: the functional work (e.g. digital transformation, AI and data governance, operating model, programme leadership) — transferable across sectors. ` +
+  `Sector fit is a bonus only: another sector with transferable functional work scores at least 2; never treat an old self-described sector as the definition of him. ` +
+  `Seniority fit compares the role's level to his CURRENT market level only: same level = 4, one above = 3. His aspirations (wants face, goals) may never lower any score. ` +
+  `Timing: 0 if deadline under 3 days or signal vague; 2 if under two weeks or signal within two quarters; 4 if workable window or signal within one quarter. ` +
+  `Strategic value: what holding this role does for his standing at his current level — never require any personal interest, topic, country programme or passion. ` +
+  `A missing requirement (years in a sector, a tool, a domain) is a gap sentence, not a refusal. ` +
+  `Set eligibility_met=false ONLY when the posting states a requirement as mandatory (must / required / only) AND it is objective ` +
+  `(a licence, a nationality, a security clearance, a language) AND his record shows he does not have it; otherwise true or null.`;
 
 /**
  * The checklist, with a denominator. A requirement is met only when one of his
@@ -466,7 +477,8 @@ Deno.serve(async (req) => {
     };
     const shortlistK = Number(params.shortlist_k ?? 50);
     const judgePasses = Math.max(1, Number(params.judge_passes ?? 2));
-    const judgeMax = Number(params.judge_max ?? DEFAULT_JUDGE_MAX);
+    // A caller may ask for a smaller run (never larger than policy).
+    const judgeMax = Math.min(Number(params.judge_max ?? DEFAULT_JUDGE_MAX), Number(body.judge_max ?? Infinity) || Infinity);
     // A ceiling for the day as well as for the run, so a member's pool is
     // worked through steadily instead of the same handful being re-read.
     const judgeMaxPerDay = Math.max(judgeMax, Number(params.judge_max_per_day ?? 60));
@@ -521,6 +533,17 @@ Deno.serve(async (req) => {
     const fieldsLine = sectorsCore.length
       ? `FIELDS HE SAID HE WANTS TO BE FOUND IN (a preference for ordering and for a plain sentence; never a requirement, never a reason to exclude):\n${JSON.stringify(sectorsCore)}`
       : null;
+
+    // CURRENT IDENTITY — the same resolved level the screen uses.
+    const { data: identity } = await admin.from("oe_identity")
+      .select("current_title, current_employer, market_level, member_title, member_level, status")
+      .eq("user_id", userId).maybeSingle();
+    const identityLine = identity
+      ? `CURRENT IDENTITY (judge against this, not against past roles or aspirations):\n${JSON.stringify({
+        title: identity.member_title ?? identity.current_title, market_level: identity.member_level ?? identity.market_level,
+      })}`
+      : null;
+    if (identity && identity.member_level) (identity as any).market_level = identity.member_level;
 
     // Past judgements, in his words.
     const { data: labelled } = await admin
@@ -812,13 +835,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    const placeElig = await loadEligibility(admin, userId);
+    // TIME BUDGET: stop judging with room left to write cards; the rest are
+    // survivors still, and the next run takes them first.
+    const judgeT0 = Date.now();
+    const JUDGE_BUDGET_MS = Number(params.judge_budget_ms ?? 95_000);
     for (const cand of judgeSpendAllowed ? shortlist : []) {
+      if (Date.now() - judgeT0 > JUDGE_BUDGET_MS) { (counts as any).time_cut = shortlist.length - counts.judged; break; }
       const o = cand.o;
+      // THE SAME PLACE RULE AS THE SCREEN: outside his places is never judged.
+      if (o.kind === "executive_role" && placeVerdict(o, placeElig).kind === "fail") { (counts as any).place_refused = ((counts as any).place_refused ?? 0) + 1; continue; }
       const reqs = Array.isArray(o.requirements) ? o.requirements : [];
       const requirementIds = reqs.map((_: any, i: number) => `req:${i}`);
       const oppBlock = JSON.stringify({
         title: o.title, scope: o.scope, sector: o.sector, chair_type: o.chair_type,
-        time_kind: o.time_kind, seniority_band: o.seniority_band, location: o.location,
+        time_kind: o.time_kind, seniority_band: o.seniority_band, level: o.level_band ?? null, location: o.location,
         remote: o.remote, deadline: o.deadline, signal_date: o.signal_date,
         issuer: o.issuer_raw, evidence_quote: o.evidence_quote,
         requirements: reqs.map((r: any, i: number) => ({ id: `req:${i}`, text: r?.text ?? "" })),
@@ -832,6 +863,7 @@ Deno.serve(async (req) => {
         const user = [
           `FACES:\n${faceBlock}`,
           `PAST JUDGEMENTS:\n${JSON.stringify(fewShots)}`,
+          ...(identityLine ? [identityLine] : []),
           ...(fieldsLine ? [fieldsLine] : []),
           `OPPORTUNITY:\n${oppBlock}`,
         ].join("\n\n");
@@ -855,8 +887,25 @@ Deno.serve(async (req) => {
       }
       if (unstable) counts.unstable++;
 
+      // SENIORITY from the same source as the screen: current market level vs
+      // the role's level band. Aspiration can only add; it never lowers.
+      const meIdx = LADDER.indexOf(String(identity?.market_level ?? ""));
+      const roleIdx = LADDER.indexOf(String(o.level_band ?? ""));
+      if (meIdx >= 0 && roleIdx >= 0) {
+        const step = roleIdx - meIdx;
+        // Inside the screen band (at or one under the market level) is at level.
+        const base = step <= 0 ? 4 : step === 1 ? 3 : 2;
+        avg.seniority_fit = Math.max(base, step >= 1 ? Math.min(4, avg.seniority_fit) : base);
+      }
+      // SECTOR is a bonus, never a veto.
+      avg.sector_fit = Math.max(2, avg.sector_fit);
+
       const scoreAvg = QUESTIONS.reduce((sum, q) => sum + avg[q] * Number(weights[q] ?? 0), 0);
       const noZero = !gateNoZero || QUESTIONS.every((q) => avg[q] > 0);
+      // Only an objective, mandatory gap may say "not eligible".
+      const objectiveNo = (pp: any) => pp?.eligibility_met === false
+        && OBJECTIVE_GAPS.has(String(pp?.objective_gap?.kind ?? "")) && pp?.objective_gap?.mandatory === true;
+      for (const pp of passes) if (pp && pp.eligibility_met === false && !objectiveNo(pp)) pp.eligibility_met = null;
       // Scoring may add evidence and bands; it cannot reverse the stored gates.
       const gatePassed = o._match?.gate_passed === true;
 

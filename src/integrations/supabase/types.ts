@@ -11899,6 +11899,7 @@ export type Database = {
         Args: { p_estimate?: number; p_stage: string }
         Returns: Json
       }
+      oe_states_remote: { Args: { p_text: string }; Returns: boolean }
       oe_title_level: { Args: { p: string }; Returns: string }
       oe_truth_report_resolve: {
         Args: {

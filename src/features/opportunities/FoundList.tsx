@@ -28,6 +28,7 @@ export type FoundItem = {
   first_seen_at: string | null; judged: boolean | null;
   judged_at?: string | null; card_date?: string | null;
   sector?: string | null; country?: string | null; org_type?: string | null; followed?: boolean | null;
+  set_aside?: boolean | null; set_aside_key?: string | null; set_aside_reason?: string | null;
 };
 export type FoundEmployer = { issuer: string | null; openings: number | null; sample: string[] | null };
 export type FoundGroup = {
@@ -169,6 +170,7 @@ function Row({ item, v, language, canCheck, checking, onCheck }: {
       fontSize: 14, fontWeight: 600, color: INK, lineHeight: language === "ar" ? 1.9 : 1.4,
     }}>{item.title ?? ""}</strong>
     {meta && <span style={{ display: "block", marginBlockStart: 3, fontSize: 12, color: MUTED }}>{meta}</span>}
+    {item.set_aside && <span style={{ display: "block", marginBlockStart: 4, fontSize: 12, color: INK, lineHeight: language === "ar" ? 1.9 : 1.5 }}>{`${v("setaside_prefix")} ${item.set_aside_reason ?? v(item.set_aside_key ?? "setaside_bar")}`}</span>}
     <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBlockStart: 7 }}>
       {levelLabel && <Chip>{levelLabel}</Chip>}
       {item.judged === true && <Chip>{v("found_checked")}</Chip>}
@@ -177,7 +179,7 @@ function Row({ item, v, language, canCheck, checking, onCheck }: {
     </span>
   </>;
   const inner: React.CSSProperties = { display: "block", textDecoration: "none", color: INK };
-  const showCheck = canCheck && item.judged !== true;
+  const showCheck = (canCheck && item.judged !== true) || item.set_aside === true;
   const panelId = `tl-${item.id}`;
   return <div style={{ padding: "12px 14px", borderBlockEnd: `1px solid ${LINE}` }}>
     {href
@@ -189,7 +191,7 @@ function Row({ item, v, language, canCheck, checking, onCheck }: {
         : <button type="button" onClick={() => onCheck(item.id)} style={{
             marginBlockStart: 8, minBlockSize: 32, padding: 0, border: 0, background: "transparent",
             color: MUTED, font: "inherit", fontSize: 12, fontWeight: 600, textDecoration: "underline", cursor: "pointer",
-          }}>{v("found_check_now")}</button>)}
+          }}>{v(item.set_aside ? "setaside_check" : "found_check_now")}</button>)}
       <button type="button" aria-expanded={openTimeline} aria-controls={panelId} onClick={() => setOpenTimeline((value) => !value)}
         style={{
           marginBlockStart: 8, minBlockSize: 32, padding: 0, border: 0, background: "transparent",
@@ -254,12 +256,21 @@ function Group({ group, items, v, language, checking, onCheck }: {
   </section>;
 }
 
-export default function FoundList({ data, loading, error, v, language, onRetry, checking, onCheck, sectors = [], countries = [] }: {
+export type SaveSetting = (field: "country" | "level" | "kind" | "org", value: string) => Promise<boolean>;
+
+export default function FoundList({ data, loading, error, v, language, onRetry, checking, onCheck, sectors = [], countries = [], onSaveSetting }: {
   data: FoundData | null; loading: boolean; error: boolean; v: Vocab; language: Lang; onRetry: () => void;
-  checking: Set<string>; onCheck: (id: string) => void;
+  checking: Set<string>; onCheck: (id: string) => void; onSaveSetting?: SaveSetting;
   sectors?: SectorRef[]; countries?: CountryRef[];
 }) {
   const [params, setParams] = useSearchParams();
+  const [saved, setSaved] = useState<"" | "saving" | "saved" | "failed">("");
+  const aside = params.get("fa") === "1";
+  const setAside = (on: boolean) => {
+    const copy = new URLSearchParams(params);
+    if (on) copy.set("fa", "1"); else copy.delete("fa");
+    setParams(copy, { replace: true });
+  };
   const filters: Filters = {
     sector: params.get(PARAM.sector) ?? "",
     country: params.get(PARAM.country) ?? "",
@@ -308,6 +319,7 @@ export default function FoundList({ data, loading, error, v, language, onRetry, 
   const orgOptions = optionsFrom((item) => item.org_type, (value) => v(`org_${value}`) || value);
 
   const keep = (item: FoundItem) =>
+    (aside || item.set_aside !== true) &&
     (!filters.sector || item.sector === filters.sector) &&
     (!filters.country || item.country === filters.country) &&
     (!filters.level || item.level === filters.level) &&
@@ -330,6 +342,15 @@ export default function FoundList({ data, loading, error, v, language, onRetry, 
   const visible = groups
     .map((group) => ({ group, items: (group.items ?? []).filter(keep) }))
     .filter(({ group, items }) => group.key === EMPLOYER_KEY ? Number(group.count ?? 0) > 0 && !anyFilter : items.length > 0);
+  const savable = ([["country", filters.country], ["level", filters.level], ["kind", filters.kind], ["org", filters.org]] as const)
+    .filter(([, value]) => Boolean(value));
+  const saveAll = async () => {
+    if (!onSaveSetting) return;
+    setSaved("saving");
+    let ok = true;
+    for (const [field, value] of savable) ok = (await onSaveSetting(field, value)) && ok;
+    setSaved(ok ? "saved" : "failed");
+  };
   if (!groups.some((group) => Number(group.count ?? 0) > 0)) return null;
 
   const anyLabel = v("filter_any");
@@ -344,6 +365,17 @@ export default function FoundList({ data, loading, error, v, language, onRetry, 
       <button type="button" aria-pressed={filters.deadline} style={toggleStyle(filters.deadline)} onClick={() => setFilter("deadline", !filters.deadline)}>{v("filter_deadline")}</button>
       <button type="button" aria-pressed={filters.followed} style={toggleStyle(filters.followed)} onClick={() => setFilter("followed", !filters.followed)}>{v("filter_followed")}</button>
     </div>
+    <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, color: INK }}>
+      <span><strong style={{ display: "block", fontWeight: 600 }}>{v("setaside_switch")}</strong><span style={{ fontSize: 12, color: MUTED }}>{v("setaside_switch_note")}</span></span>
+      <button type="button" role="switch" aria-checked={aside} onClick={() => setAside(!aside)} style={{ inlineSize: 44, blockSize: 24, flex: "0 0 44px", border: 0, borderRadius: 999, background: aside ? ACT : LINE, padding: 2, cursor: "pointer" }}>
+        <span style={{ display: "block", inlineSize: 20, blockSize: 20, borderRadius: 999, background: CARD, transform: aside ? (language === "ar" ? "translateX(-20px)" : "translateX(20px)") : "none", transition: "transform 160ms" }} />
+      </button>
+    </label>
+    {anyFilter && <p style={{ margin: 0, fontSize: 12, color: MUTED }}>{v("filter_session_note")}</p>}
+    {onSaveSetting && savable.length > 0 && <button type="button" onClick={() => void saveAll()} disabled={saved === "saving"} style={{
+      justifySelf: "start", border: 0, background: "transparent", padding: 0,
+      color: ACT, font: "inherit", fontSize: 12, fontWeight: 600, cursor: "pointer",
+    }}>{v(saved === "saved" ? "filter_saved_setting" : saved === "failed" ? "found_answer_failed" : "filter_save_setting")}</button>}
     {anyFilter && <button type="button" onClick={clearFilters} style={{
       justifySelf: "start", border: 0, background: "transparent", padding: 0,
       color: ACT, font: "inherit", fontSize: 12, fontWeight: 600, cursor: "pointer",
