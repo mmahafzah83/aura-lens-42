@@ -260,10 +260,7 @@ export function OpportunityQueue() {
     if (busy) return; setBusy(true);
     const { data: result } = await supabase.rpc("oe_app_decide" as never, { p_card: card.opportunity_id, p_action: action } as never);
     if (!(result as { ok?: boolean } | null)?.ok) { setBusy(false); return; }
-    if (action === "later") {
-      const stored = data.moves.find((item) => item.opportunity_id === card.opportunity_id);
-      if (stored) await moveStage(stored.card_id, "saved");
-    }
+    await supabase.rpc("oe_card_stage_save" as never, { p_card: card.id, p_stage: action === "later" ? "saved" : "applied" } as never);
     setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id) }));
     setActiveId(null); setDecliningId(null); setBusy(false);
     showNotice(v(action === "later" ? "toast_later" : "toast_go"));
@@ -336,7 +333,7 @@ function Funnel({ data, v }: { data?: QueueData["funnel"]; v: Vocab }) {
 }
 function TodayView({ active, compact, more, decliningId, data, busy, v, language, found, onExplore, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; more: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; onExplore: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
   if (!active) {
-    const next = clockTime(nextJudgeRun(), language);
+    const next = new Intl.DateTimeFormat(language === "ar" ? "ar-u-ca-gregory" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(nextJudgeRun());
     return <AuraCard hover="none" className="oe-empty"><p>{fill(v("for_you_empty"), { n: Number(found?.total ?? data.funnel?.read ?? 0), time: next })}</p><Button variant="link" onClick={onExplore}>{v("for_you_empty_explore")}</Button></AuraCard>;
   }
   return <>
