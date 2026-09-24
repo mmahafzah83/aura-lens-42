@@ -371,7 +371,7 @@ export default function FoundList({ data, loading, error, v, language, onRetry, 
     </div>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, color: INK }}>
       <span><strong style={{ display: "block", fontWeight: 600 }}>{v("setaside_switch")}<Tip v={v} k="tip_setaside_switch" /></strong><span style={{ fontSize: 12, color: MUTED }}>{v("setaside_switch_note")}</span></span>
-      <button type="button" role="switch" aria-checked={aside} onClick={() => setAside(!aside)} style={{ inlineSize: 44, blockSize: 24, flex: "0 0 44px", border: 0, borderRadius: 999, background: aside ? ACT : LINE, padding: 2, cursor: "pointer" }}>
+      <button type="button" role="switch" aria-checked={aside} aria-label={v("setaside_switch")} onClick={() => setAside(!aside)} style={{ inlineSize: 44, blockSize: 24, flex: "0 0 44px", border: 0, borderRadius: 999, background: aside ? ACT : LINE, padding: 2, cursor: "pointer" }}>
         <span style={{ display: "block", inlineSize: 20, blockSize: 20, borderRadius: 999, background: CARD, transform: aside ? (language === "ar" ? "translateX(-20px)" : "translateX(20px)") : "none", transition: "transform 160ms" }} />
       </button>
     </div>

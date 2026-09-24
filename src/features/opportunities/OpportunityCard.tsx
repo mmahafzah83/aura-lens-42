@@ -5,6 +5,7 @@ import { chairKey, useVocab } from "./useVocab";
 import { TapRow } from "./TapRow";
 import { matchedAsLine, useMemberIdentity } from "./MemberIdentity";
 import type { OpportunityCardData } from "./types";
+import { Tip, WorkChip, useWorkArrangements } from "./Tip";
 
 /**
  * ONE QUESTION, ON THE CARD, ANSWERED IN A LINE.
