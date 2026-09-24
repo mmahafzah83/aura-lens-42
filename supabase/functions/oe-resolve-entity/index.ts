@@ -757,8 +757,15 @@ Deno.serve(async (req) => {
     // wait for the search budget to come round.
     let q = admin.from("oe_entities")
       .select("id, name, domain, careers_url")
-      .in("resolve_status", Array.isArray(body.recheck) ? body.recheck : ["new"])
-      .order("last_resolved_at", { ascending: true, nullsFirst: true })
+      .in("resolve_status", Array.isArray(body.recheck) ? body.recheck : ["new"]);
+    // Retry order: one country first when asked, then the most-watched and
+    // largest organisations, then whoever was tried longest ago.
+    if (typeof body.country === "string") q = q.eq("country", body.country);
+    if (body.retry_order === true) {
+      q = q.order("watch_tier", { ascending: true, nullsFirst: false })
+        .order("size_hint", { ascending: false, nullsFirst: false });
+    }
+    q = q.order("last_resolved_at", { ascending: true, nullsFirst: true })
       .order("domain", { ascending: true, nullsFirst: false })
       .limit(batch);
     // Re-run one named failure only — the way a finding is tested rather than
