@@ -761,10 +761,10 @@ Deno.serve(async (req) => {
     // Retry order: one country first when asked, then the most-watched and
     // largest organisations, then whoever was tried longest ago.
     if (typeof body.country === "string") q = q.eq("country", body.country);
-    if (body.retry_order === true) {
-      q = q.order("watch_tier", { ascending: true, nullsFirst: false })
-        .order("size_hint", { ascending: false, nullsFirst: false });
-    }
+    // watch_tier is text (core, reachable, known, off): the caller walks the
+    // tiers in that order, one call per tier; size_hint breaks ties.
+    if (typeof body.watch_tier === "string") q = q.eq("watch_tier", body.watch_tier);
+    if (body.retry_order === true) q = q.order("size_hint", { ascending: false, nullsFirst: false });
     q = q.order("last_resolved_at", { ascending: true, nullsFirst: true })
       .order("domain", { ascending: true, nullsFirst: false })
       .limit(batch);
