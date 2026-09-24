@@ -271,6 +271,7 @@ export function OpportunityQueue() {
     if (busy) return; setBusy(true);
     const { data: result } = await supabase.rpc("oe_app_decide" as never, { p_card: card.opportunity_id, p_action: "not_quite", p_scope: scope, p_scope_value: value, p_truth: truth } as never);
     if ((result as { ok?: boolean } | null)?.ok) {
+      await supabase.rpc("oe_card_stage_save" as never, { p_card: card.id, p_stage: "closed" } as never);
       setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id) }));
       setActiveId(null); setDecliningId(null); showNotice(v("toast_declined"));
     }
