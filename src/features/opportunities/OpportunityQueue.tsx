@@ -327,23 +327,17 @@ export function OpportunityQueue() {
   </section>;
 }
 
-function TodayView({ active, compact, more, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, sectorOptions, countries, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; more: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; sectorOptions: SectorOption[]; countries: Country[]; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
-  // Today is our judgment and his Tune, nothing else: no filter row here.
-  // "Everything we found" lives in its own tab.
-  const foundList = null;
+function ViewHeading({ title, subtitle, tip, v }: { title: string; subtitle: string; tip: string; v: Vocab }) {
+  return <header className="oe-view-heading"><div><h1>{title}</h1><p>{subtitle}</p></div><Tip v={v} k={tip} label={title} /></header>;
+}
+function Funnel({ data, v }: { data?: QueueData["funnel"]; v: Vocab }) {
+  const values = data ?? { read: 0, at_level_and_place: 0, fits: 0 };
+  return <p className="oe-funnel"><span>{fill(v("funnel_line"), values)}</span><Tip v={v} k="tip_funnel" /></p>;
+}
+function TodayView({ active, compact, more, decliningId, data, busy, v, language, found, onExplore, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; more: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; onExplore: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
   if (!active) {
-    const total = Number(found?.total ?? 0);
-    const atLevel = found?.groups?.find((group) => group.key === "at_level") ?? null;
-    const atLevelCount = Number(atLevel?.count ?? 0);
-    // A quiet day is only quiet when nothing at all was found. Anything found
-    // and not yet carded is said plainly instead.
-    const allJudged = (atLevel?.items ?? []).length > 0 && (atLevel?.items ?? []).every((item) => item.judged === true);
-    return <>
-      {total > 0
-        ? <AuraCard hover="none" className="oe-empty"><h2>{v("found_none_carded")}</h2><p>{fill(v(allJudged ? "found_counted_line" : "found_pending_line"), { total, at_level: atLevelCount })}</p></AuraCard>
-        : !foundLoading && !foundError && <QuietDay data={data} v={v} language={language} />}
-      {foundList}
-    </>;
+    const next = clockTime(nextJudgeRun(), language);
+    return <AuraCard hover="none" className="oe-empty"><p>{fill(v("for_you_empty"), { n: Number(found?.total ?? data.funnel?.read ?? 0), time: next })}</p><Button variant="link" onClick={onExplore}>{v("for_you_empty_explore")}</Button></AuraCard>;
   }
   return <>
     <section className="oe-stack" aria-label={v("today_stack_aria")}>
@@ -351,7 +345,6 @@ function TodayView({ active, compact, more, decliningId, data, busy, v, language
       {compact.length > 0 && <div className="oe-next-list">{compact.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div>}
       {more.length > 0 && <details className="oe-more-cleared"><summary>{v("more_cleared")} <b style={mono}>{more.length}</b></summary><div className="oe-next-list">{more.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div></details>}
     </section>
-    {foundList}
   </>;
 }
 
@@ -375,13 +368,19 @@ function OpportunityDetail({ card, declining, busy, v, language, onDeclineStart,
   const door = card.cost_of_door ? fill(v(language === "ar" ? "door_cost_ar" : "door_cost_en"), { cost: card.cost_of_door }) : v(`door_${doorClass(card.route_url ?? card.source_url)}`);
   return <div className="oe-card-detail"><div className="oe-detail-title"><CardSummary card={card} v={v} /></div><div className="oe-why-more">{matchedAs && <p><span className="oe-dot-rule" aria-hidden />{matchedAs}</p>}{(card.why_lines ?? []).map((line, index) => <p key={index}><span className="oe-dot-evidence" aria-hidden />{line.text}</p>)}{card.presentation_line && <p><span className="oe-dot-rule" aria-hidden />{card.presentation_line}</p>}{interestLine && <p><span className="oe-dot-evidence" aria-hidden />{interestLine}</p>}{standingLine && <p><span className="oe-dot-rule" aria-hidden />{standingLine}</p>}{card.gap_line?.text && <p className="oe-risk"><span className="oe-dot-risk" aria-hidden /><strong>{v("gap_prefix")}</strong> {card.gap_line.text}<Tip v={v} k="tip_gap" /></p>}{card.quote && <blockquote>“{card.quote}” {card.source_url && <a href={card.source_url} target="_blank" rel="noreferrer">{v("card_source")}</a>}</blockquote>}{checked && <p className="oe-checked" style={mono}>{fill(v("card_checked"), { date: dateText(checked, language) })}</p>}</div><p className="oe-door-cost"><span aria-hidden />{door}</p>{!declining ? <div className={`oe-actions${language === "ar" ? " is-rtl" : ""}`}><AuraButton onClick={() => void onDecide("right")} loading={busy}>{v("action_go")}</AuraButton><div><AuraButton variant="ghost" onClick={() => void onDecide("later")} disabled={busy}>{v("action_later")}</AuraButton><AuraButton variant="ghost" onClick={onDeclineStart} disabled={busy}>{v("action_not_for_me")}</AuraButton></div></div> : <div className="oe-decline"><div><h3>{v("decline_title")}</h3><div className="oe-chip-row">{taste.filter((entry) => Boolean(entry[2])).map(([key, scope, value]) => <Button key={key} variant="outline" disabled={busy} onClick={() => void onDecline(scope, value, null)}>{v(key)}</Button>)}</div></div><div><h3>{v("decline_truth_title")}</h3><div className="oe-chip-row">{truths.map((truth) => <Button key={truth} variant="outline" disabled={busy} onClick={() => void onDecline(null, null, truth)}>{v(`truth_${truth}`)}</Button>)}</div></div><Button variant="link" onClick={onDeclineBack}>{v("action_back")}</Button></div>}</div>;
 }
-function ParkedView({ rows, busy, v, language, onBringBack }: { rows: Parked[]; busy: boolean; v: Vocab; language: Lang; onBringBack: (id: string) => void }) {
-  return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_parked")} />{rows.length ? <div className="oe-parked-list">{rows.map((row) => <article key={row.opportunity_id} className="oe-parked-row"><div><h2>{row.title}</h2><p>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</p><small style={mono}>{fill(v("parked_on"), { date: dateText(row.parked_at, language) })}{row.deadline ? ` · ${fill(v("parked_closes"), { date: dateText(row.deadline, language) })}` : ""}</small></div><AuraButton variant="ghost" disabled={busy} onClick={() => onBringBack(row.opportunity_id)}>{v("action_bring_back")}</AuraButton></article>)}</div> : <p className="oe-empty-copy">{v("parked_empty")}</p>}</section>;
+function closedText(row: MoveCard, v: Vocab) {
+  if (!row.closed_reason) return "";
+  const lowered = row.closed_reason.toLowerCase();
+  const reason = lowered.includes("place") ? v("withdrawn_place") : lowered.includes("closed") || lowered.includes("dead") ? v("withdrawn_closed") : v("withdrawn_other");
+  return row.withdrawn_at ? `${v("withdrawn_prefix")} — ${reason}` : reason;
 }
-function HistoryView({ rows, filter, v, language, onFilter }: { rows: History[]; filter: HistoryFilter; v: Vocab; language: Lang; onFilter: (filter: HistoryFilter) => void }) {
-  const filtered = rows.filter((row) => filter === "all" || filter === "right" && row.tap === "right" || filter === "declined" && row.tap === "not_my_area" && !row.truth_code || filter === "flagged" && Boolean(row.truth_code));
-  const groups = new Map<string, History[]>(); filtered.forEach((row) => { const key = dayKey(row.shown_at); groups.set(key, [...(groups.get(key) ?? []), row]); });
-  return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <Button key={value} variant="outline" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</Button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{dateText(day, language)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
+function MovesView({ rows, busy, v, language, onMove }: { rows: MoveCard[]; busy: boolean; v: Vocab; language: Lang; onMove: (id: string, stage: CardStage) => void }) {
+  const stages: CardStage[] = ["saved", "applied", "interviewing", "closed"];
+  if (!rows.length) return <p className="oe-empty-copy">{v("moves_empty")}</p>;
+  return <section className="oe-moves">{stages.map((stage) => {
+    const items = rows.filter((row) => row.stage === stage);
+    return <section key={stage} className="oe-move-stage"><h2>{v(`stage_${stage}`)} <b style={mono}>{items.length}</b></h2>{items.length > 0 && <div className="oe-move-list">{items.map((row) => <article key={row.card_id} className="oe-move-row"><div><h3>{row.title}</h3><p>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</p>{row.stage_changed_at && <small style={mono}>{fill(v("stage_changed"), { date: dateText(row.stage_changed_at, language) })}</small>}{stage === "closed" && row.closed_reason && <strong>{closedText(row, v)}</strong>}</div><div className="oe-stage-actions">{stages.filter((next) => next !== stage && !(row.withdrawn_at && next !== "closed")).map((next) => <Button key={next} variant="outline" disabled={busy} onClick={() => onMove(row.card_id, next)}>{fill(v("stage_move_to"), { stage: v(`stage_${next}`) })}</Button>)}</div></article>)}</div>}</section>;
+  })}</section>;
 }
 
 function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, countries, remoteOk, saveError, savedBar, barDirty, kindPick, levelPick, orgPick, followPick, hidePick, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onRemote, onSaveBar, onKind, onLevel, onOrg, onFollow, onHide, onSaveFilter, onSaveCompanies, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: Editor | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; countries: Country[]; remoteOk: boolean; saveError: string | null; savedBar: boolean; barDirty: boolean; kindPick: string[]; levelPick: string | null; orgPick: string[]; followPick: Company[]; hidePick: Company[]; v: Vocab; onEditor: (value: Editor | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onRemote: (value: boolean) => void; onSaveBar: () => void; onKind: (value: string) => void; onLevel: (value: string | null) => void; onOrg: (value: string) => void; onFollow: (rows: Company[]) => void; onHide: (rows: Company[]) => void; onSaveFilter: (field: string, op: string, values: string[]) => void; onSaveCompanies: () => void; onClose: () => void }) {
@@ -463,7 +462,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
     return () => { document.body.style.overflow = old; node.removeEventListener("keydown", keys); };
   }, [onClose]);
   return <div className="oe-dialog-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section ref={dialogRef} className="oe-rules-dialog" dir={language === "ar" ? "rtl" : "ltr"} lang={language} role="dialog" aria-modal="true" aria-labelledby="oe-rules-title">
-    <header><h2 id="oe-rules-title">{v("rules_dialog_title")}</h2><Button variant="ghost" size="icon" aria-label={v("sheet_close")} onClick={onClose}><X aria-hidden="true" /></Button></header>
+    <header><div><h2 id="oe-rules-title">{v("rules_dialog_title")}</h2><p>{v("rules_dialog_subtitle")}</p></div><Button variant="ghost" size="icon" aria-label={v("sheet_close")} onClick={onClose}><X aria-hidden="true" /></Button></header>
     <div className="oe-dialog-body">
     <section className="oe-dialog-section"><h3>{v("delivery_title")}</h3><DeliveryRow v={v} /></section>
     <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><IdentityRow identity={identity.identity} v={v} language={language} onSaved={() => void identity.reload()} /><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span><small>{v(placeIsDefault ? "places_source_default" : "places_source_member")}<Tip v={v} k={placeIsDefault ? "tip_places_default" : "tip_places_member"} /></small></div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
