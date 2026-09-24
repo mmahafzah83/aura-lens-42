@@ -20,7 +20,7 @@ import { secondPersonClause } from "../_shared/secondPerson.ts";
 import { bestStanding, writeTests } from "../_shared/writeValue.ts";
 import { interestOf } from "../_shared/interest.ts";
 /** Must equal P3_VERSION in oe-judge-member. */
-const CURRENT_RUBRIC_PROMPT = "p3-2.0";
+const CURRENT_RUBRIC_PROMPT = "p3-2.1";
 import { hasRoute, screen, type Eligibility, loadEligibility } from "../_shared/oeEligibility.ts";
 import {
   deriveIdentity, runGates, writingStanding, recencyWeight,

@@ -27,7 +27,7 @@ const corsHeaders = {
 const FN = "oe-judge-member";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
-const P3_VERSION = "p3-2.0";
+const P3_VERSION = "p3-2.1";
 /** Market ladder shared with the screen (_shared/oeScreen.ts LADDER). */
 const LADDER = ["ic", "manager", "senior_manager", "director", "senior_director", "vp", "c_suite", "board"];
 const OBJECTIVE_GAPS = new Set(["licence", "nationality", "clearance", "language"]);
