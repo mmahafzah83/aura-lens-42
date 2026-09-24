@@ -197,13 +197,55 @@ export function titleHead(title?: string | null): string {
   return (cuts.length ? text.slice(0, Math.min(...cuts)) : text).trim();
 }
 
-const matchLevel = (text: string): Level | null => {
+const LEVEL_ORDER: Level[] = ["ic", "manager", "senior_manager", "director", "senior_director", "vp", "c_suite", "board"] as Level[];
+const ARABIC_RE = /[\u0600-\u06FF]/;
+
+/** Arabic letter forms unified so one pattern matches إدارة and ادارة alike. */
+export function normArabic(s: string): string {
+  return s.replace(/[\u064B-\u0652\u0670\u0640]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/[ىئ]/g, "ي").replace(/ؤ/g, "و");
+}
+
+/**
+ * Arabic titles, read in Arabic. JavaScript word boundaries do not see Arabic
+ * letters, so boundaries are spaces or the ends of the text.
+ */
+export function arabicLevel(text: string): Level | null {
+  const t = ` ${normArabic(text).replace(/[()\[\]\-–—|,،/]/g, " ").replace(/\s+/g, " ").trim()} `;
+  const any = (ps: string[]) => ps.some((p) => new RegExp(`(^|\\s)(ال)?${p}(\\s|$)`).test(t));
+  if (/عضو(يه)? مجلس (ال)?اداره/.test(t)) return "board" as Level;
+  if (any(["نايب (ال)?رييس"])) return "vp" as Level;
+  if (any(["رييس تنفيذي", "رييس (ال)?تنفيذي"])) return "c_suite" as Level;
+  if (any(["مدير (ال)?عام", "مدير (ال)?اداره", "رييس قطاع", "مدير تنفيذي", "(ال)?مدير (ال)?تنفيذي"])) return "director" as Level;
+  if (any(["مستشار اول", "(ال)?مستشار (ال)?اول"])) {
+    return /استشار|consult|advisory|وزار|هييه|حكوم|ministry|authority|government/i.test(t.replace(/مستشار/g, "")) ? "director" as Level : "ic" as Level;
+  }
+  if (any(["مدير اول"])) return "senior_manager" as Level;
+  if (any(["رييس قسم", "مدير مشروع", "مدير"])) return "manager" as Level;
+  if (any(["اخصايي", "محلل", "موظف", "مساعد", "منسق", "صراف", "فني", "مهندس", "محاسب", "مندوب", "متدرب", "استشاري"])) return "ic" as Level;
+  return null;
+}
+
+const matchLatin = (text: string): Level | null => {
   for (const [re, level] of LEVEL_PATTERNS) if (re.test(text)) return level;
   return null;
 };
 
+/** A bilingual title takes the stronger explicit band of its two languages. */
+const matchLevel = (text: string): Level | null => {
+  if (!ARABIC_RE.test(text)) return matchLatin(text);
+  const ar = arabicLevel(text);
+  const latinPart = text.replace(/[\u0600-\u06FF]+/g, " ").replace(/\s+/g, " ").trim();
+  const en = /[A-Za-z]{3,}/.test(latinPart) ? matchLatin(latinPart) : null;
+  if (ar && en) return LEVEL_ORDER.indexOf(ar) >= LEVEL_ORDER.indexOf(en) ? ar : en;
+  return ar ?? en;
+};
+
 /** Reads a level out of a title and scope. Code, never a model. */
 export function parseLevel(title?: string | null, scope?: string | null): Level | null {
+  if (title && ARABIC_RE.test(title)) {
+    const whole = matchLevel(title);
+    if (whole) return whole;
+  }
   const head = titleHead(title);
   if (head) {
     const fromHead = matchLevel(head);
