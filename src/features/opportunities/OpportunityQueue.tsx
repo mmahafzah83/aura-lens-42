@@ -18,8 +18,8 @@ import { Tip, WorkChip, useWorkArrangements } from "./Tip";
 
 
 type Lang = "en" | "ar";
-type View = "today" | "found" | "parked" | "history";
-type HistoryFilter = "all" | "right" | "declined" | "flagged";
+type View = "today" | "found" | "moves";
+type CardStage = "saved" | "applied" | "interviewing" | "closed";
 type MoveKind = "bigger_same" | "step_up" | "client_side" | "exceptional_only";
 type WhyLine = { text?: string };
 type QueueCard = {
@@ -32,8 +32,7 @@ type QueueCard = {
   interest?: { captures?: number; since?: string | null } | null;
   level_direction?: string | null; employer_tier?: string | null;
 };
-type Parked = { opportunity_id: string; title: string; issuer_name: string | null; location: string | null; deadline: string | null; parked_at: string };
-type History = { shown_at: string; lane: string | null; tap: string | null; tap_scope: string | null; truth_code: string | null; outcome: string | null; title: string | null; issuer_name: string | null; location: string | null; presentation_line: string | null };
+type MoveCard = { card_id: string; opportunity_id: string; stage: CardStage; stage_changed_at: string; closed_reason: string | null; withdrawn_at: string | null; title: string; issuer_name: string | null; location: string | null; deadline: string | null; source_url: string | null; route_url: string | null };
 type SectorOption = { code: string; label_en: string; label_ar: string };
 type Country = { iso2: string; name_en: string; name_ar: string | null };
 type BarPick = { move: MoveKind | null; places: string[]; sectors: string[] };
@@ -44,14 +43,15 @@ type Window = { expected_by: string; declared_on: string | null; missed: boolean
 type Reading = { running: boolean; last_read_at: string | null };
 type QuietDay = { surfaces_read: number; findings: number; from_date: string; to_date: string };
 type QueueData = {
-  cards: QueueCard[]; parked: Parked[];
-  direction: Direction | null; window: Window | null; history: History[]; filters: FilterMap;
+  cards: QueueCard[]; moves: MoveCard[];
+  direction: Direction | null; window: Window | null; filters: FilterMap;
   reading: Reading | null; quiet_day: QuietDay | null;
+  funnel?: { read: number; at_level_and_place: number; fits: number } | null;
   delivery?: { at_a_time: number; instant: boolean; digest: boolean; digest_hour: number; ceiling: number } | null;
 };
 type Vocab = ReturnType<typeof useVocab>;
 
-const emptyData: QueueData = { cards: [], parked: [], direction: null, window: null, history: [], filters: {}, reading: null, quiet_day: null };
+const emptyData: QueueData = { cards: [], moves: [], direction: null, window: null, filters: {}, reading: null, quiet_day: null };
 const moves: MoveKind[] = ["bigger_same", "step_up", "client_side", "exceptional_only"];
 // The taxonomies the product itself is built on. Their words live in the
 // vocabulary table; only the codes appear here.
@@ -62,8 +62,7 @@ type Editor = "move" | "place" | "sector" | "kind" | "level" | "org" | "companie
 type Company = { id: string; name: string; sector_code: string | null };
 const moveKey = (move: MoveKind) => move === "exceptional_only" ? "move_exceptional" : `move_${move}`;
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
-const validViews = new Set<View>(["today", "found", "parked", "history"]);
-const dayKey = (value: string) => String(value).slice(0, 10);
+const validViews = new Set<View>(["today", "found", "moves"]);
 const fill = (text: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((value, [key, item]) => value.split(`{${key}}`).join(String(item)), text);
 const hasWhy = (card: QueueCard) => (card.why_lines ?? []).some((line) => String(line.text ?? "").trim());
 const checkedAt = (card: QueueCard) => [card.quote_verified_at, card.route_checked_at, card.last_checked].filter(Boolean).map(String).sort().slice(-1)[0] ?? null;
@@ -79,24 +78,11 @@ function readTime(value: string, language: Lang) {
   const clock = new Intl.DateTimeFormat(language === "ar" ? "ar-u-ca-gregory" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
   return date.toDateString() === new Date().toDateString() ? clock : `${dateText(date.toISOString(), language)} ${clock}`;
 }
-function historyDecision(row: History, v: Vocab) {
-  if (!row.tap) return v("history_no_decision");
-  if (row.tap === "right") return v("history_went");
-  if (row.tap === "later") return v("history_later");
-  if (row.truth_code) return fill(v("history_flag_prefix"), { reason: v(`truth_reason_${row.truth_code}`) || v("history_flag_unknown") });
-  return fill(v("history_not_for_you"), { reason: row.tap_scope ? (v(`scope_${row.tap_scope}`) || v("history_not_a_fit")) : v("history_no_reason") });
-}
-function historyOutcome(row: History, v: Vocab) {
-  if (row.outcome) return v(`outcome_said_${row.outcome}`) || v("outcome_recorded");
-  return row.tap === "right" ? v("outcome_not_yet") : v("outcome_none_expected");
-}
-
 export function OpportunityQueue() {
   const [params, setParams] = useSearchParams();
-  const requested = params.get("view") as View | null;
+  const requestedRaw = params.get("view");
+  const requested = (requestedRaw === "parked" || requestedRaw === "history" ? "moves" : requestedRaw) as View | null;
   const view: View = requested && validViews.has(requested) ? requested : "today";
-  const rawFilter = params.get("f") as HistoryFilter | null;
-  const historyFilter: HistoryFilter = rawFilter && ["all", "right", "declined", "flagged"].includes(rawFilter) ? rawFilter : "all";
   const [language, setLanguage] = useState<Lang>("en");
   const [data, setData] = useState<QueueData>(emptyData);
   const [loading, setLoading] = useState(true);
@@ -136,8 +122,7 @@ export function OpportunityQueue() {
   const member = useMemberIdentity();
   const rtl = language === "ar";
 
-  const setView = (next: View) => { const copy = new URLSearchParams(params); next === "today" ? copy.delete("view") : copy.set("view", next); if (next !== "history") copy.delete("f"); setParams(copy); };
-  const setHistoryFilter = (next: HistoryFilter) => { const copy = new URLSearchParams(params); copy.set("view", "history"); next === "all" ? copy.delete("f") : copy.set("f", next); setParams(copy); };
+  const setView = (next: View) => { const copy = new URLSearchParams(params); next === "today" ? copy.delete("view") : copy.set("view", next); copy.delete("f"); setParams(copy); };
   const load = useCallback(async () => {
     setLoading(true);
     const { data: auth } = await supabase.auth.getUser();
@@ -266,18 +251,22 @@ export function OpportunityQueue() {
     }, { threshold: 0.35 });
     observer.observe(node);
   }, []);
-  const bringBack = async (id: string, returnToToday = false) => {
+  const moveStage = async (cardId: string, stage: CardStage) => {
     if (busy) return; setBusy(true);
-    const { data: result } = await supabase.rpc("oe_app_decide" as never, { p_card: id, p_action: "bring_back" } as never);
-    setBusy(false); if ((result as { ok?: boolean } | null)?.ok) { await load(); if (returnToToday) setView("today"); }
+    const { data: result } = await supabase.rpc("oe_card_stage_save" as never, { p_card: cardId, p_stage: stage } as never);
+    setBusy(false); if ((result as { ok?: boolean } | null)?.ok) await load();
   };
   const decide = async (card: QueueCard, action: "right" | "later") => {
     if (busy) return; setBusy(true);
     const { data: result } = await supabase.rpc("oe_app_decide" as never, { p_card: card.opportunity_id, p_action: action } as never);
     if (!(result as { ok?: boolean } | null)?.ok) { setBusy(false); return; }
-    setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id), parked: action === "later" ? [{ opportunity_id: card.opportunity_id, title: card.title, issuer_name: card.issuer_name, location: card.location, deadline: card.deadline, parked_at: new Date().toISOString() }, ...current.parked] : current.parked }));
+    if (action === "later") {
+      const stored = data.moves.find((item) => item.opportunity_id === card.opportunity_id);
+      if (stored) await moveStage(stored.card_id, "saved");
+    }
+    setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id) }));
     setActiveId(null); setDecliningId(null); setBusy(false);
-    showNotice(v(action === "later" ? "toast_later" : "toast_go"), action === "later" ? card.opportunity_id : undefined);
+    showNotice(v(action === "later" ? "toast_later" : "toast_go"));
     if (action === "right") { const destination = card.route_url ?? card.source_url; if (destination) window.open(destination, "_blank", "noopener,noreferrer"); }
   };
   const decline = async (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => {
@@ -323,18 +312,17 @@ export function OpportunityQueue() {
 
   return <section className="oe-queue" dir={rtl ? "rtl" : "ltr"} lang={language} aria-busy={loading}>
     <header className="oe-queue-header">
-      <div className="oe-header-top"><SectionHeader label={v("queue_eyebrow")} /><Button ref={(node) => { if (!rulesOpen && node && !openerRef.current) openerRef.current = node; }} variant="outline" size="icon" className="oe-gear" aria-label={v("rules_gear_aria")} onClick={(event) => openRules(event.currentTarget)}><Settings2 aria-hidden="true" /></Button></div>
+      <div className="oe-header-top"><SectionHeader label={v("queue_eyebrow")} />{view !== "moves" && <Button ref={(node) => { if (!rulesOpen && node && !openerRef.current) openerRef.current = node; }} variant="outline" size="icon" className="oe-gear" aria-label={v("view_your_settings")} onClick={(event) => openRules(event.currentTarget)}><Settings2 aria-hidden="true" /></Button>}</div>
       <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing || data.reading?.running ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? v("machine_looking_again") : data.reading?.running ? v("machine_reading_now") : data.reading?.last_read_at ? fill(v("machine_last_read"), { time: readTime(data.reading.last_read_at, language) }) : v("machine_still_reading")}</span><Button variant="link" size="sm" onClick={() => void refresh()} disabled={refreshing || loading}>{v(refreshing ? "action_refreshing" : "action_refresh")}</Button></div>
     </header>
     <IdentityBanner identity={member.identity} v={v} onSaved={() => void member.reload()} onOther={() => openRules(null)} />
-    <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "found", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
+    <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "found", "moves"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(item === "today" ? "view_for_you" : item === "found" ? "view_explore" : "view_your_moves")}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "moves" && data.moves.length > 0 && <b style={mono}>{data.moves.length}</b>}</Button>)}</nav>
     <main>
-      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} sectorOptions={sectorOptions} countries={countries} more={moreRows} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
-      {view === "found" && <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={() => void loadFound()} checking={checking} onCheck={(id) => void checkNow(id)} sectors={sectorOptions} countries={countries} onSaveSetting={saveSetting} />}
-      {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
-      {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
+      {view === "today" && <><ViewHeading title={v("view_for_you")} subtitle={v("subtitle_for_you")} tip="tip_for_you" v={v} /><Funnel data={data.funnel} v={v} /><TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} more={moreRows} onExplore={() => setView("found")} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} /></>}
+      {view === "found" && <><ViewHeading title={v("view_explore")} subtitle={v("subtitle_explore")} tip="tip_explore" v={v} /><Funnel data={data.funnel} v={v} /><FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={() => void loadFound()} checking={checking} onCheck={(id) => void checkNow(id)} sectors={sectorOptions} countries={countries} onSaveSetting={saveSetting} /></>}
+      {view === "moves" && <><ViewHeading title={v("view_your_moves")} subtitle={v("subtitle_your_moves")} tip="tip_your_moves" v={v} /><MovesView rows={data.moves} busy={busy} v={v} language={language} onMove={(id, stage) => void moveStage(id, stage)} /></>}
     </main>
-    <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span>{notice?.undo && <Button variant="link" onClick={() => void bringBack(notice.undo as string)}>{v("action_undo")}</Button>}</div>
+    <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span></div>
     {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} sectorPick={sectorPick} sectorOptions={sectorOptions} countries={countries} remoteOk={remoteOk} saveError={saveError} savedBar={savedBar} barDirty={barDirty} kindPick={kindPick} levelPick={levelPick} orgPick={orgPick} followPick={followPick} hidePick={hidePick} v={v} onEditor={(value) => { setSavedBar(false); setSaveError(null); setEditor(value); }} onMove={setMovePick} onPlace={togglePlace} onPlaceAny={() => setPlacePick([])} onSector={toggleSector} onSectorAny={() => setSectorPick([])} onRemote={(next) => void saveRemote(next)} onSaveBar={() => void saveBar()} onKind={(value) => setKindPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])} onLevel={setLevelPick} onOrg={(value) => setOrgPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])} onFollow={setFollowPick} onHide={setHidePick} onSaveFilter={(field, op, values) => void saveFilter(field, op, values)} onSaveCompanies={() => void saveCompanies()} onClose={closeRules} />, document.body)}
   </section>;
 }
