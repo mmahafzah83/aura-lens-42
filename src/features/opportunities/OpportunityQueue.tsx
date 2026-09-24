@@ -12,6 +12,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { doorClass, loadRefLabels, refLabel } from "./refLabels";
 import { useVocab } from "./useVocab";
 import FoundList, { type FoundData } from "./FoundList";
+import { nextJudgeRun } from "./OpportunityTimeline";
 import { IdentityBanner, IdentityRow, matchedAsLine, useMemberIdentity } from "./MemberIdentity";
 import type { FilterMap } from "./FiltersSection";
 import { Tip, WorkChip, useWorkArrangements } from "./Tip";
