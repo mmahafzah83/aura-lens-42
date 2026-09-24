@@ -4289,6 +4289,7 @@ export type Database = {
           channel: string
           cited_ids: Json
           clock_text: string | null
+          closed_reason: string | null
           created_at: string
           dismissed_unread: boolean
           explore_slot: boolean
@@ -4302,6 +4303,8 @@ export type Database = {
           opportunity_id: string | null
           quote: string | null
           sent_at: string | null
+          stage: string | null
+          stage_changed_at: string | null
           tap_token: string
           token_expires_at: string
           updated_at: string
@@ -4318,6 +4321,7 @@ export type Database = {
           channel?: string
           cited_ids?: Json
           clock_text?: string | null
+          closed_reason?: string | null
           created_at?: string
           dismissed_unread?: boolean
           explore_slot?: boolean
@@ -4331,6 +4335,8 @@ export type Database = {
           opportunity_id?: string | null
           quote?: string | null
           sent_at?: string | null
+          stage?: string | null
+          stage_changed_at?: string | null
           tap_token?: string
           token_expires_at?: string
           updated_at?: string
@@ -4347,6 +4353,7 @@ export type Database = {
           channel?: string
           cited_ids?: Json
           clock_text?: string | null
+          closed_reason?: string | null
           created_at?: string
           dismissed_unread?: boolean
           explore_slot?: boolean
@@ -4360,6 +4367,8 @@ export type Database = {
           opportunity_id?: string | null
           quote?: string | null
           sent_at?: string | null
+          stage?: string | null
+          stage_changed_at?: string | null
           tap_token?: string
           token_expires_at?: string
           updated_at?: string
@@ -11652,7 +11661,7 @@ export type Database = {
       }
       oe_apply_shape_state: { Args: never; Returns: number }
       oe_assess_writing_value: { Args: { p_user: string }; Returns: number }
-      oe_auto_park: { Args: { p_user?: string }; Returns: number }
+      oe_auto_save: { Args: { p_user?: string }; Returns: number }
       oe_bar_save: {
         Args: { p_move?: string; p_places?: string[]; p_sectors?: string[] }
         Returns: Json
@@ -11698,6 +11707,10 @@ export type Database = {
           time_kind: string
           title: string
         }[]
+      }
+      oe_card_stage_save: {
+        Args: { p_card: string; p_stage: string }
+        Returns: Json
       }
       oe_check_claims: { Args: { p_user: string }; Returns: number }
       oe_classify_kind: {

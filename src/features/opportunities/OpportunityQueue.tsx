@@ -12,14 +12,15 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { doorClass, loadRefLabels, refLabel } from "./refLabels";
 import { useVocab } from "./useVocab";
 import FoundList, { type FoundData } from "./FoundList";
+import { nextJudgeRun } from "./OpportunityTimeline";
 import { IdentityBanner, IdentityRow, matchedAsLine, useMemberIdentity } from "./MemberIdentity";
 import type { FilterMap } from "./FiltersSection";
 import { Tip, WorkChip, useWorkArrangements } from "./Tip";
 
 
 type Lang = "en" | "ar";
-type View = "today" | "found" | "parked" | "history";
-type HistoryFilter = "all" | "right" | "declined" | "flagged";
+type View = "today" | "found" | "moves";
+type CardStage = "saved" | "applied" | "interviewing" | "closed";
 type MoveKind = "bigger_same" | "step_up" | "client_side" | "exceptional_only";
 type WhyLine = { text?: string };
 type QueueCard = {
@@ -32,8 +33,7 @@ type QueueCard = {
   interest?: { captures?: number; since?: string | null } | null;
   level_direction?: string | null; employer_tier?: string | null;
 };
-type Parked = { opportunity_id: string; title: string; issuer_name: string | null; location: string | null; deadline: string | null; parked_at: string };
-type History = { shown_at: string; lane: string | null; tap: string | null; tap_scope: string | null; truth_code: string | null; outcome: string | null; title: string | null; issuer_name: string | null; location: string | null; presentation_line: string | null };
+type MoveCard = { card_id: string; opportunity_id: string; stage: CardStage; stage_changed_at: string; closed_reason: string | null; withdrawn_at: string | null; title: string; issuer_name: string | null; location: string | null; deadline: string | null; source_url: string | null; route_url: string | null };
 type SectorOption = { code: string; label_en: string; label_ar: string };
 type Country = { iso2: string; name_en: string; name_ar: string | null };
 type BarPick = { move: MoveKind | null; places: string[]; sectors: string[] };
@@ -44,14 +44,15 @@ type Window = { expected_by: string; declared_on: string | null; missed: boolean
 type Reading = { running: boolean; last_read_at: string | null };
 type QuietDay = { surfaces_read: number; findings: number; from_date: string; to_date: string };
 type QueueData = {
-  cards: QueueCard[]; parked: Parked[];
-  direction: Direction | null; window: Window | null; history: History[]; filters: FilterMap;
+  cards: QueueCard[]; moves: MoveCard[];
+  direction: Direction | null; window: Window | null; filters: FilterMap;
   reading: Reading | null; quiet_day: QuietDay | null;
+  funnel?: { read: number; at_level_and_place: number; fits: number } | null;
   delivery?: { at_a_time: number; instant: boolean; digest: boolean; digest_hour: number; ceiling: number } | null;
 };
 type Vocab = ReturnType<typeof useVocab>;
 
-const emptyData: QueueData = { cards: [], parked: [], direction: null, window: null, history: [], filters: {}, reading: null, quiet_day: null };
+const emptyData: QueueData = { cards: [], moves: [], direction: null, window: null, filters: {}, reading: null, quiet_day: null };
 const moves: MoveKind[] = ["bigger_same", "step_up", "client_side", "exceptional_only"];
 // The taxonomies the product itself is built on. Their words live in the
 // vocabulary table; only the codes appear here.
@@ -62,8 +63,7 @@ type Editor = "move" | "place" | "sector" | "kind" | "level" | "org" | "companie
 type Company = { id: string; name: string; sector_code: string | null };
 const moveKey = (move: MoveKind) => move === "exceptional_only" ? "move_exceptional" : `move_${move}`;
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
-const validViews = new Set<View>(["today", "found", "parked", "history"]);
-const dayKey = (value: string) => String(value).slice(0, 10);
+const validViews = new Set<View>(["today", "found", "moves"]);
 const fill = (text: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((value, [key, item]) => value.split(`{${key}}`).join(String(item)), text);
 const hasWhy = (card: QueueCard) => (card.why_lines ?? []).some((line) => String(line.text ?? "").trim());
 const checkedAt = (card: QueueCard) => [card.quote_verified_at, card.route_checked_at, card.last_checked].filter(Boolean).map(String).sort().slice(-1)[0] ?? null;
@@ -79,24 +79,11 @@ function readTime(value: string, language: Lang) {
   const clock = new Intl.DateTimeFormat(language === "ar" ? "ar-u-ca-gregory" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
   return date.toDateString() === new Date().toDateString() ? clock : `${dateText(date.toISOString(), language)} ${clock}`;
 }
-function historyDecision(row: History, v: Vocab) {
-  if (!row.tap) return v("history_no_decision");
-  if (row.tap === "right") return v("history_went");
-  if (row.tap === "later") return v("history_later");
-  if (row.truth_code) return fill(v("history_flag_prefix"), { reason: v(`truth_reason_${row.truth_code}`) || v("history_flag_unknown") });
-  return fill(v("history_not_for_you"), { reason: row.tap_scope ? (v(`scope_${row.tap_scope}`) || v("history_not_a_fit")) : v("history_no_reason") });
-}
-function historyOutcome(row: History, v: Vocab) {
-  if (row.outcome) return v(`outcome_said_${row.outcome}`) || v("outcome_recorded");
-  return row.tap === "right" ? v("outcome_not_yet") : v("outcome_none_expected");
-}
-
 export function OpportunityQueue() {
   const [params, setParams] = useSearchParams();
-  const requested = params.get("view") as View | null;
+  const requestedRaw = params.get("view");
+  const requested = (requestedRaw === "parked" || requestedRaw === "history" ? "moves" : requestedRaw) as View | null;
   const view: View = requested && validViews.has(requested) ? requested : "today";
-  const rawFilter = params.get("f") as HistoryFilter | null;
-  const historyFilter: HistoryFilter = rawFilter && ["all", "right", "declined", "flagged"].includes(rawFilter) ? rawFilter : "all";
   const [language, setLanguage] = useState<Lang>("en");
   const [data, setData] = useState<QueueData>(emptyData);
   const [loading, setLoading] = useState(true);
@@ -136,8 +123,7 @@ export function OpportunityQueue() {
   const member = useMemberIdentity();
   const rtl = language === "ar";
 
-  const setView = (next: View) => { const copy = new URLSearchParams(params); next === "today" ? copy.delete("view") : copy.set("view", next); if (next !== "history") copy.delete("f"); setParams(copy); };
-  const setHistoryFilter = (next: HistoryFilter) => { const copy = new URLSearchParams(params); copy.set("view", "history"); next === "all" ? copy.delete("f") : copy.set("f", next); setParams(copy); };
+  const setView = (next: View) => { const copy = new URLSearchParams(params); next === "today" ? copy.delete("view") : copy.set("view", next); copy.delete("f"); setParams(copy); };
   const load = useCallback(async () => {
     setLoading(true);
     const { data: auth } = await supabase.auth.getUser();
@@ -266,24 +252,26 @@ export function OpportunityQueue() {
     }, { threshold: 0.35 });
     observer.observe(node);
   }, []);
-  const bringBack = async (id: string, returnToToday = false) => {
+  const moveStage = async (cardId: string, stage: CardStage) => {
     if (busy) return; setBusy(true);
-    const { data: result } = await supabase.rpc("oe_app_decide" as never, { p_card: id, p_action: "bring_back" } as never);
-    setBusy(false); if ((result as { ok?: boolean } | null)?.ok) { await load(); if (returnToToday) setView("today"); }
+    const { data: result } = await supabase.rpc("oe_card_stage_save" as never, { p_card: cardId, p_stage: stage } as never);
+    setBusy(false); if ((result as { ok?: boolean } | null)?.ok) await load();
   };
   const decide = async (card: QueueCard, action: "right" | "later") => {
     if (busy) return; setBusy(true);
     const { data: result } = await supabase.rpc("oe_app_decide" as never, { p_card: card.opportunity_id, p_action: action } as never);
     if (!(result as { ok?: boolean } | null)?.ok) { setBusy(false); return; }
-    setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id), parked: action === "later" ? [{ opportunity_id: card.opportunity_id, title: card.title, issuer_name: card.issuer_name, location: card.location, deadline: card.deadline, parked_at: new Date().toISOString() }, ...current.parked] : current.parked }));
+    await supabase.rpc("oe_card_stage_save" as never, { p_card: card.id, p_stage: action === "later" ? "saved" : "applied" } as never);
+    setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id) }));
     setActiveId(null); setDecliningId(null); setBusy(false);
-    showNotice(v(action === "later" ? "toast_later" : "toast_go"), action === "later" ? card.opportunity_id : undefined);
+    showNotice(v(action === "later" ? "toast_later" : "toast_go"));
     if (action === "right") { const destination = card.route_url ?? card.source_url; if (destination) window.open(destination, "_blank", "noopener,noreferrer"); }
   };
   const decline = async (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => {
     if (busy) return; setBusy(true);
     const { data: result } = await supabase.rpc("oe_app_decide" as never, { p_card: card.opportunity_id, p_action: "not_quite", p_scope: scope, p_scope_value: value, p_truth: truth } as never);
     if ((result as { ok?: boolean } | null)?.ok) {
+      await supabase.rpc("oe_card_stage_save" as never, { p_card: card.id, p_stage: "closed" } as never);
       setData((current) => ({ ...current, cards: current.cards.filter((item) => item.id !== card.id) }));
       setActiveId(null); setDecliningId(null); showNotice(v("toast_declined"));
     }
@@ -323,39 +311,32 @@ export function OpportunityQueue() {
 
   return <section className="oe-queue" dir={rtl ? "rtl" : "ltr"} lang={language} aria-busy={loading}>
     <header className="oe-queue-header">
-      <div className="oe-header-top"><SectionHeader label={v("queue_eyebrow")} /><Button ref={(node) => { if (!rulesOpen && node && !openerRef.current) openerRef.current = node; }} variant="outline" size="icon" className="oe-gear" aria-label={v("rules_gear_aria")} onClick={(event) => openRules(event.currentTarget)}><Settings2 aria-hidden="true" /></Button></div>
+      <div className="oe-header-top"><SectionHeader label={v("queue_eyebrow")} />{view !== "moves" && <Button ref={(node) => { if (!rulesOpen && node && !openerRef.current) openerRef.current = node; }} variant="outline" size="icon" className="oe-gear" aria-label={v("view_your_settings")} onClick={(event) => openRules(event.currentTarget)}><Settings2 aria-hidden="true" /></Button>}</div>
       <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing || data.reading?.running ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? v("machine_looking_again") : data.reading?.running ? v("machine_reading_now") : data.reading?.last_read_at ? fill(v("machine_last_read"), { time: readTime(data.reading.last_read_at, language) }) : v("machine_still_reading")}</span><Button variant="link" size="sm" onClick={() => void refresh()} disabled={refreshing || loading}>{v(refreshing ? "action_refreshing" : "action_refresh")}</Button></div>
     </header>
     <IdentityBanner identity={member.identity} v={v} onSaved={() => void member.reload()} onOther={() => openRules(null)} />
-    <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "found", "parked", "history"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(`view_${item}`)}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b style={mono}>{data.parked.length}</b>}</Button>)}</nav>
+    <nav className="oe-segments" aria-label={v("nav_aria")}>{(["today", "found", "moves"] as View[]).map((item) => <Button key={item} variant="ghost" aria-current={view === item || undefined} onClick={() => setView(item)}><span>{v(item === "today" ? "view_for_you" : item === "found" ? "view_explore" : "view_your_moves")}</span>{item === "today" && cards.length > 0 && <b style={mono}>{cards.length}</b>}{item === "moves" && data.moves.length > 0 && <b style={mono}>{data.moves.length}</b>}</Button>)}</nav>
     <main>
-      {view === "today" && <TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} foundLoading={foundLoading} foundError={foundError} checking={checking} sectorOptions={sectorOptions} countries={countries} more={moreRows} onCheck={(id) => void checkNow(id)} onRetryFound={() => void loadFound()} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} />}
-      {view === "found" && <FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={() => void loadFound()} checking={checking} onCheck={(id) => void checkNow(id)} sectors={sectorOptions} countries={countries} onSaveSetting={saveSetting} />}
-      {view === "parked" && <ParkedView rows={data.parked} busy={busy} v={v} language={language} onBringBack={(id) => void bringBack(id, true)} />}
-      {view === "history" && <HistoryView rows={data.history} filter={historyFilter} v={v} language={language} onFilter={setHistoryFilter} />}
+      {view === "today" && <><ViewHeading title={v("view_for_you")} subtitle={v("subtitle_for_you")} tip="tip_for_you" v={v} /><Funnel data={data.funnel} v={v} /><TodayView active={active} compact={compact} decliningId={decliningId} data={data} busy={busy} v={v} language={language} found={found} more={moreRows} onExplore={() => setView("found")} onPromote={setActiveId} onDeclineStart={setDecliningId} onDecide={decide} onDecline={decline} onRender={markRendered} /></>}
+      {view === "found" && <><ViewHeading title={v("view_explore")} subtitle={v("subtitle_explore")} tip="tip_explore" v={v} /><Funnel data={data.funnel} v={v} /><FoundList data={found} loading={foundLoading} error={foundError} v={v} language={language} onRetry={() => void loadFound()} checking={checking} onCheck={(id) => void checkNow(id)} sectors={sectorOptions} countries={countries} onSaveSetting={saveSetting} /></>}
+      {view === "moves" && <><ViewHeading title={v("view_your_moves")} subtitle={v("subtitle_your_moves")} tip="tip_your_moves" v={v} /><MovesView rows={data.moves} busy={busy} v={v} language={language} onMove={(id, stage) => void moveStage(id, stage)} /></>}
     </main>
-    <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span>{notice?.undo && <Button variant="link" onClick={() => void bringBack(notice.undo as string)}>{v("action_undo")}</Button>}</div>
+    <div className={`oe-toast${notice ? " is-visible" : ""}`} role="status" aria-live="polite"><span>{notice?.text}</span></div>
     {rulesOpen && createPortal(<RulesDialog data={data} home={home} language={language} busy={busy} editor={editor} movePick={movePick} placePick={placePick} sectorPick={sectorPick} sectorOptions={sectorOptions} countries={countries} remoteOk={remoteOk} saveError={saveError} savedBar={savedBar} barDirty={barDirty} kindPick={kindPick} levelPick={levelPick} orgPick={orgPick} followPick={followPick} hidePick={hidePick} v={v} onEditor={(value) => { setSavedBar(false); setSaveError(null); setEditor(value); }} onMove={setMovePick} onPlace={togglePlace} onPlaceAny={() => setPlacePick([])} onSector={toggleSector} onSectorAny={() => setSectorPick([])} onRemote={(next) => void saveRemote(next)} onSaveBar={() => void saveBar()} onKind={(value) => setKindPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])} onLevel={setLevelPick} onOrg={(value) => setOrgPick((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])} onFollow={setFollowPick} onHide={setHidePick} onSaveFilter={(field, op, values) => void saveFilter(field, op, values)} onSaveCompanies={() => void saveCompanies()} onClose={closeRules} />, document.body)}
   </section>;
 }
 
-function TodayView({ active, compact, more, decliningId, data, busy, v, language, found, foundLoading, foundError, checking, sectorOptions, countries, onCheck, onRetryFound, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; more: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; foundLoading: boolean; foundError: boolean; checking: Set<string>; sectorOptions: SectorOption[]; countries: Country[]; onCheck: (id: string) => void; onRetryFound: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
-  // Today is our judgment and his Tune, nothing else: no filter row here.
-  // "Everything we found" lives in its own tab.
-  const foundList = null;
+function ViewHeading({ title, subtitle, tip, v }: { title: string; subtitle: string; tip: string; v: Vocab }) {
+  return <header className="oe-view-heading"><div><h1>{title}</h1><p>{subtitle}</p></div><Tip v={v} k={tip} label={title} /></header>;
+}
+function Funnel({ data, v }: { data?: QueueData["funnel"]; v: Vocab }) {
+  const values = data ?? { read: 0, at_level_and_place: 0, fits: 0 };
+  return <p className="oe-funnel"><span>{fill(v("funnel_line"), values)}</span><Tip v={v} k="tip_funnel" /></p>;
+}
+function TodayView({ active, compact, more, decliningId, data, busy, v, language, found, onExplore, onPromote, onDeclineStart, onDecide, onDecline, onRender }: { active: QueueCard | null; compact: QueueCard[]; more: QueueCard[]; decliningId: string | null; data: QueueData; busy: boolean; v: Vocab; language: Lang; found: FoundData | null; onExplore: () => void; onPromote: (id: string) => void; onDeclineStart: (id: string | null) => void; onDecide: (card: QueueCard, action: "right" | "later") => Promise<void>; onDecline: (card: QueueCard, scope: string | null, value: string | null, truth: string | null) => Promise<void>; onRender: (card: QueueCard, node: HTMLElement | null) => void }) {
   if (!active) {
-    const total = Number(found?.total ?? 0);
-    const atLevel = found?.groups?.find((group) => group.key === "at_level") ?? null;
-    const atLevelCount = Number(atLevel?.count ?? 0);
-    // A quiet day is only quiet when nothing at all was found. Anything found
-    // and not yet carded is said plainly instead.
-    const allJudged = (atLevel?.items ?? []).length > 0 && (atLevel?.items ?? []).every((item) => item.judged === true);
-    return <>
-      {total > 0
-        ? <AuraCard hover="none" className="oe-empty"><h2>{v("found_none_carded")}</h2><p>{fill(v(allJudged ? "found_counted_line" : "found_pending_line"), { total, at_level: atLevelCount })}</p></AuraCard>
-        : !foundLoading && !foundError && <QuietDay data={data} v={v} language={language} />}
-      {foundList}
-    </>;
+    const next = new Intl.DateTimeFormat(language === "ar" ? "ar-u-ca-gregory" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(nextJudgeRun());
+    return <AuraCard hover="none" className="oe-empty"><p>{fill(v("for_you_empty"), { n: Number(found?.total ?? data.funnel?.read ?? 0), time: next })}</p><Button variant="link" onClick={onExplore}>{v("for_you_empty_explore")}</Button></AuraCard>;
   }
   return <>
     <section className="oe-stack" aria-label={v("today_stack_aria")}>
@@ -363,7 +344,6 @@ function TodayView({ active, compact, more, decliningId, data, busy, v, language
       {compact.length > 0 && <div className="oe-next-list">{compact.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div>}
       {more.length > 0 && <details className="oe-more-cleared"><summary>{v("more_cleared")} <b style={mono}>{more.length}</b></summary><div className="oe-next-list">{more.map((card) => <Button key={card.id} variant="ghost" className="oe-next-row" onClick={() => onPromote(card.id)}><span><strong>{card.title}</strong><small>{[card.issuer_name, card.location, card.level_direction ? v(`leveldir_${card.level_direction}`) : null].filter(Boolean).join(" · ")}</small></span><time style={mono}>{card.deadline ? dateText(card.deadline, language) : v("stack_no_closing_date")}</time></Button>)}</div></details>}
     </section>
-    {foundList}
   </>;
 }
 
@@ -387,13 +367,19 @@ function OpportunityDetail({ card, declining, busy, v, language, onDeclineStart,
   const door = card.cost_of_door ? fill(v(language === "ar" ? "door_cost_ar" : "door_cost_en"), { cost: card.cost_of_door }) : v(`door_${doorClass(card.route_url ?? card.source_url)}`);
   return <div className="oe-card-detail"><div className="oe-detail-title"><CardSummary card={card} v={v} /></div><div className="oe-why-more">{matchedAs && <p><span className="oe-dot-rule" aria-hidden />{matchedAs}</p>}{(card.why_lines ?? []).map((line, index) => <p key={index}><span className="oe-dot-evidence" aria-hidden />{line.text}</p>)}{card.presentation_line && <p><span className="oe-dot-rule" aria-hidden />{card.presentation_line}</p>}{interestLine && <p><span className="oe-dot-evidence" aria-hidden />{interestLine}</p>}{standingLine && <p><span className="oe-dot-rule" aria-hidden />{standingLine}</p>}{card.gap_line?.text && <p className="oe-risk"><span className="oe-dot-risk" aria-hidden /><strong>{v("gap_prefix")}</strong> {card.gap_line.text}<Tip v={v} k="tip_gap" /></p>}{card.quote && <blockquote>“{card.quote}” {card.source_url && <a href={card.source_url} target="_blank" rel="noreferrer">{v("card_source")}</a>}</blockquote>}{checked && <p className="oe-checked" style={mono}>{fill(v("card_checked"), { date: dateText(checked, language) })}</p>}</div><p className="oe-door-cost"><span aria-hidden />{door}</p>{!declining ? <div className={`oe-actions${language === "ar" ? " is-rtl" : ""}`}><AuraButton onClick={() => void onDecide("right")} loading={busy}>{v("action_go")}</AuraButton><div><AuraButton variant="ghost" onClick={() => void onDecide("later")} disabled={busy}>{v("action_later")}</AuraButton><AuraButton variant="ghost" onClick={onDeclineStart} disabled={busy}>{v("action_not_for_me")}</AuraButton></div></div> : <div className="oe-decline"><div><h3>{v("decline_title")}</h3><div className="oe-chip-row">{taste.filter((entry) => Boolean(entry[2])).map(([key, scope, value]) => <Button key={key} variant="outline" disabled={busy} onClick={() => void onDecline(scope, value, null)}>{v(key)}</Button>)}</div></div><div><h3>{v("decline_truth_title")}</h3><div className="oe-chip-row">{truths.map((truth) => <Button key={truth} variant="outline" disabled={busy} onClick={() => void onDecline(null, null, truth)}>{v(`truth_${truth}`)}</Button>)}</div></div><Button variant="link" onClick={onDeclineBack}>{v("action_back")}</Button></div>}</div>;
 }
-function ParkedView({ rows, busy, v, language, onBringBack }: { rows: Parked[]; busy: boolean; v: Vocab; language: Lang; onBringBack: (id: string) => void }) {
-  return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_parked")} />{rows.length ? <div className="oe-parked-list">{rows.map((row) => <article key={row.opportunity_id} className="oe-parked-row"><div><h2>{row.title}</h2><p>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</p><small style={mono}>{fill(v("parked_on"), { date: dateText(row.parked_at, language) })}{row.deadline ? ` · ${fill(v("parked_closes"), { date: dateText(row.deadline, language) })}` : ""}</small></div><AuraButton variant="ghost" disabled={busy} onClick={() => onBringBack(row.opportunity_id)}>{v("action_bring_back")}</AuraButton></article>)}</div> : <p className="oe-empty-copy">{v("parked_empty")}</p>}</section>;
+function closedText(row: MoveCard, v: Vocab) {
+  if (!row.closed_reason) return "";
+  const lowered = row.closed_reason.toLowerCase();
+  const reason = lowered.includes("place") ? v("withdrawn_place") : lowered.includes("closed") || lowered.includes("dead") ? v("withdrawn_closed") : v("withdrawn_other");
+  return row.withdrawn_at ? `${v("withdrawn_prefix")} — ${reason}` : reason;
 }
-function HistoryView({ rows, filter, v, language, onFilter }: { rows: History[]; filter: HistoryFilter; v: Vocab; language: Lang; onFilter: (filter: HistoryFilter) => void }) {
-  const filtered = rows.filter((row) => filter === "all" || filter === "right" && row.tap === "right" || filter === "declined" && row.tap === "not_my_area" && !row.truth_code || filter === "flagged" && Boolean(row.truth_code));
-  const groups = new Map<string, History[]>(); filtered.forEach((row) => { const key = dayKey(row.shown_at); groups.set(key, [...(groups.get(key) ?? []), row]); });
-  return <section className="oe-view oe-view-narrow"><SectionHeader label={v("view_history")} /><div className="oe-filter-row">{(["all", "right", "declined", "flagged"] as HistoryFilter[]).map((value) => <Button key={value} variant="outline" aria-pressed={filter === value} onClick={() => onFilter(value)}>{v(`history_filter_${value}`)}</Button>)}</div>{groups.size ? Array.from(groups.entries()).map(([day, dayRows]) => <section key={day} className="oe-history-day"><h3 style={mono}>{dateText(day, language)}</h3>{dayRows.map((row, index) => <article key={`${day}-${index}`} className="oe-history-row"><p><span>{v("history_shown")}</span><strong>{row.title ?? v("history_untitled")}</strong><small>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</small>{row.presentation_line && <small className="oe-history-line">{row.presentation_line}</small>}</p><p><span>{v("history_decided")}</span>{historyDecision(row, v)}</p><p><span>{v("history_happened")}</span>{historyOutcome(row, v)}</p></article>)}</section>) : <p className="oe-empty-copy">{v("history_empty")}</p>}</section>;
+function MovesView({ rows, busy, v, language, onMove }: { rows: MoveCard[]; busy: boolean; v: Vocab; language: Lang; onMove: (id: string, stage: CardStage) => void }) {
+  const stages: CardStage[] = ["saved", "applied", "interviewing", "closed"];
+  if (!rows.length) return <p className="oe-empty-copy">{v("moves_empty")}</p>;
+  return <section className="oe-moves">{stages.map((stage) => {
+    const items = rows.filter((row) => row.stage === stage);
+    return <section key={stage} className="oe-move-stage"><h2>{v(`stage_${stage}`)} <b style={mono}>{items.length}</b></h2>{items.length > 0 && <div className="oe-move-list">{items.map((row) => <article key={row.card_id} className="oe-move-row"><div><h3>{row.title}</h3><p>{[row.issuer_name, row.location].filter(Boolean).join(" · ")}</p>{row.stage_changed_at && <small style={mono}>{fill(v("stage_changed"), { date: dateText(row.stage_changed_at, language) })}</small>}{stage === "closed" && row.closed_reason && <strong>{closedText(row, v)}</strong>}</div><div className="oe-stage-actions">{stages.filter((next) => next !== stage && !(row.withdrawn_at && next !== "closed")).map((next) => <Button key={next} variant="outline" disabled={busy} onClick={() => onMove(row.card_id, next)}>{fill(v("stage_move_to"), { stage: v(`stage_${next}`) })}</Button>)}</div></article>)}</div>}</section>;
+  })}</section>;
 }
 
 function RulesDialog({ data, home, language, busy, editor, movePick, placePick, sectorPick, sectorOptions, countries, remoteOk, saveError, savedBar, barDirty, kindPick, levelPick, orgPick, followPick, hidePick, v, onEditor, onMove, onPlace, onPlaceAny, onSector, onSectorAny, onRemote, onSaveBar, onKind, onLevel, onOrg, onFollow, onHide, onSaveFilter, onSaveCompanies, onClose }: { data: QueueData; home: Home | null; language: Lang; busy: boolean; editor: Editor | null; movePick: MoveKind | null; placePick: string[]; sectorPick: string[]; sectorOptions: SectorOption[]; countries: Country[]; remoteOk: boolean; saveError: string | null; savedBar: boolean; barDirty: boolean; kindPick: string[]; levelPick: string | null; orgPick: string[]; followPick: Company[]; hidePick: Company[]; v: Vocab; onEditor: (value: Editor | null) => void; onMove: (value: MoveKind) => void; onPlace: (value: string) => void; onPlaceAny: () => void; onSector: (value: string) => void; onSectorAny: () => void; onRemote: (value: boolean) => void; onSaveBar: () => void; onKind: (value: string) => void; onLevel: (value: string | null) => void; onOrg: (value: string) => void; onFollow: (rows: Company[]) => void; onHide: (rows: Company[]) => void; onSaveFilter: (field: string, op: string, values: string[]) => void; onSaveCompanies: () => void; onClose: () => void }) {
@@ -475,7 +461,7 @@ function RulesDialog({ data, home, language, busy, editor, movePick, placePick, 
     return () => { document.body.style.overflow = old; node.removeEventListener("keydown", keys); };
   }, [onClose]);
   return <div className="oe-dialog-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section ref={dialogRef} className="oe-rules-dialog" dir={language === "ar" ? "rtl" : "ltr"} lang={language} role="dialog" aria-modal="true" aria-labelledby="oe-rules-title">
-    <header><h2 id="oe-rules-title">{v("rules_dialog_title")}</h2><Button variant="ghost" size="icon" aria-label={v("sheet_close")} onClick={onClose}><X aria-hidden="true" /></Button></header>
+    <header><div><h2 id="oe-rules-title">{v("rules_dialog_title")}</h2><p>{v("rules_dialog_subtitle")}</p></div><Button variant="ghost" size="icon" aria-label={v("sheet_close")} onClick={onClose}><X aria-hidden="true" /></Button></header>
     <div className="oe-dialog-body">
     <section className="oe-dialog-section"><h3>{v("delivery_title")}</h3><DeliveryRow v={v} /></section>
     <section className="oe-dialog-section"><h3>{v("rules_bar_title")}</h3><IdentityRow identity={identity.identity} v={v} language={language} onSaved={() => void identity.reload()} /><div className="oe-dialog-row"><div><strong>{v("settings_move")}</strong><span>{data.direction?.move_kind ? v(moveKey(data.direction.move_kind)) : v("settings_not_set")}</span>{data.direction?.move_confirmed_at && <small style={mono}>{fill(v("rules_set_on"), { date: dateText(data.direction.move_confirmed_at, language) })} · {fill(v("rules_ask_again"), { date: dateText(new Date(new Date(data.direction.move_confirmed_at).getTime() + 90 * 86_400_000).toISOString(), language) })}</small>}</div><Button variant="link" onClick={() => onEditor("move")}>{v("action_change")}</Button></div><div className="oe-dialog-row"><div><strong>{v("settings_place")}</strong><span>{placeText}</span><small>{v(placeIsDefault ? "places_source_default" : "places_source_member")}<Tip v={v} k={placeIsDefault ? "tip_places_default" : "tip_places_member"} /></small></div><Button variant="link" onClick={() => onEditor("place")}>{v("action_change")}</Button></div>
