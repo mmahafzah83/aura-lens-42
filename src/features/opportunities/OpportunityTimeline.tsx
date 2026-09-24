@@ -9,6 +9,7 @@
  * means a clock is running (a closing date inside seven days).
  */
 import type { Vocab } from "./useVocab";
+import { Tip } from "./Tip";
 
 type Lang = "en" | "ar";
 type State = "done" | "turn" | "clock" | "waiting";
@@ -118,11 +119,11 @@ export default function OpportunityTimeline({ facts, v, language, askAfterDays =
     ...(carded ? [{ text: `${fill(v("tl_ask_on"), { date: tlDate(addDays(String(facts.card_date), askAfterDays), language) })} · ${expected}`, dated: true }] : []),
   ];
 
-  return <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid" }}>
+  return <><div style={{ display: "flex", justifyContent: "flex-end", marginBlockEnd: 4 }}><Tip v={v} k="tip_timeline" /></div><ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid" }}>
     <Step state="done" title={v("tl_found")} lines={[{ text: foundLine }]} />
     <Step state={judged ? "done" : "waiting"} title={v("tl_checked")} lines={checkLines} />
     <Step state={carded ? "done" : "waiting"} title={v("tl_card")} lines={cardLines} />
     <Step state={carded ? "turn" : "waiting"} title={v("tl_move")} lines={[{ text: v("tl_move_line") }]} />
     <Step state={clockRunning ? "clock" : "waiting"} title={v("tl_followup")} lines={followLines} last />
-  </ol>;
+  </ol></>;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Vocab } from "./useVocab";
 import { Button } from "@/components/ui/button";
+import { Tip } from "./Tip";
 
 const mono = { fontFamily: "var(--ff-mono)" } as const;
 type Prefs = { at: number; instant: boolean; digest: boolean; hour: number };
@@ -31,7 +32,7 @@ export function DeliveryRow({ v }: { v: Vocab }) {
   };
 
   return <div className="oe-delivery">
-    <div className="oe-dialog-row"><div><strong>{v("delivery_at_a_time")}</strong></div></div>
+    <div className="oe-dialog-row"><div><strong>{v("delivery_at_a_time")}<Tip v={v} k="tip_at_a_time" /></strong></div></div>
     <div className="oe-filter-row" role="group" aria-label={v("delivery_at_a_time")}>
       {[1, 3, 5, 0].map((n) => <Button key={n} variant="outline" aria-pressed={prefs.at === n} onClick={() => void save({ ...prefs, at: n })}>
         {n === 0 ? v("delivery_all") : <span style={mono}>{n}</span>}

@@ -27,7 +27,7 @@ const corsHeaders = {
 const FN = "oe-judge-member";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
-const P3_VERSION = "p3-2.0";
+const P3_VERSION = "p3-2.1";
 /** Market ladder shared with the screen (_shared/oeScreen.ts LADDER). */
 const LADDER = ["ic", "manager", "senior_manager", "director", "senior_director", "vp", "c_suite", "board"];
 const OBJECTIVE_GAPS = new Set(["licence", "nationality", "clearance", "language"]);
@@ -602,7 +602,7 @@ Deno.serve(async (req) => {
     }
     const { data: opps, error: oppsError } = await admin
       .from("oe_opportunities")
-      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, access_state, issuer_id, issuer_raw, language, embedding, updated_at, first_seen_at, source_url, issuer:oe_issuers(domain)")
+      .select("id, kind, kind_completeness, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, work_arrangement, applicant_regions, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, access_state, issuer_id, issuer_raw, language, embedding, updated_at, first_seen_at, source_url, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
     const requestedSet = new Set(requestedOpportunityIds);

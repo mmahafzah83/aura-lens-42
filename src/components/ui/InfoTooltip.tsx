@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState, ReactNode, CSSProperties } from "react";
+import React, { useEffect, useId, useLayoutEffect, useRef, useState, ReactNode, CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { recordGuideMiss } from "@/lib/recordGuideMiss";
@@ -58,6 +58,11 @@ export interface InfoTooltipProps {
   align?: "center" | "left" | "right";
   /** When set, body is loaded from guide_articles (answer_en + formula_note_en). */
   slug?: string;
+  /**
+   * Tap to open, tap again to close — never on hover. 44px target, keyboard
+   * reachable, Escape closes, panel linked by aria-describedby. System-B tokens.
+   */
+  tapOnly?: boolean;
 }
 
 export function InfoTooltip({
@@ -70,7 +75,9 @@ export function InfoTooltip({
   className,
   align = "center",
   slug,
+  tapOnly = false,
 }: InfoTooltipProps) {
+  const panelId = useId();
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState(false);
   const [triggerHover, setTriggerHover] = useState(false);
@@ -115,7 +122,7 @@ export function InfoTooltip({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  const visible = open || hover || triggerHover;
+  const visible = tapOnly ? open : (open || hover || triggerHover);
 
   // Close tooltip on scroll/resize so it never strands away from its trigger.
   useEffect(() => {
@@ -213,6 +220,12 @@ export function InfoTooltip({
     whiteSpace: "normal",
   };
 
+  if (tapOnly) {
+    Object.assign(basePanelStyle, {
+      background: "var(--surface-card)", border: "1px solid var(--border-default)", borderRadius: 12,
+      color: "var(--text-primary)", fontSize: 13, lineHeight: 1.6, textAlign: "start",
+    } as CSSProperties);
+  }
   let panelStyle: CSSProperties;
   let arrowStyle: CSSProperties | null = null;
 
@@ -287,8 +300,8 @@ export function InfoTooltip({
   }
 
   const panelNode = (
-    <div ref={panelRef} role="tooltip" style={panelStyle}>
-      {arrowStyle && <span aria-hidden style={arrowStyle} />}
+    <div ref={panelRef} id={panelId} role="tooltip" style={panelStyle}>
+      {arrowStyle && !tapOnly && <span aria-hidden style={arrowStyle} />}
       {body}
     </div>
   );
@@ -298,23 +311,29 @@ export function InfoTooltip({
       ref={wrapRef}
       className={className}
       style={{ position: "relative", display: "inline-block" }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onMouseEnter={() => { if (!tapOnly) setHover(true); }}
+      onMouseLeave={() => { if (!tapOnly) setHover(false); }}
     >
       <button
         type="button"
         ref={triggerRef}
-        aria-label={label ? `Info: ${label}` : "More info"}
-        className={triggerClass} style={triggerStyle}
-        onMouseEnter={() => setTriggerHover(true)}
-        onMouseLeave={() => setTriggerHover(false)}
+        aria-label={tapOnly ? (label || "More info") : (label ? `Info: ${label}` : "More info")}
+        aria-expanded={tapOnly ? open : undefined}
+        aria-describedby={visible ? panelId : undefined}
+        className={triggerClass}
+        style={tapOnly ? { width: 44, height: 44, margin: -13, display: "inline-flex", alignItems: "center", justifyContent: "center", background: "transparent", border: 0, padding: 0, cursor: "pointer", verticalAlign: "middle" } : triggerStyle}
+        onKeyDown={(e) => { if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); } }}
+        onMouseEnter={() => { if (!tapOnly) setTriggerHover(true); }}
+        onMouseLeave={() => { if (!tapOnly) setTriggerHover(false); }}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           setOpen((v) => !v);
         }}
       >
-        ?
+        {tapOnly
+          ? <span aria-hidden style={{ width: 18, height: 18, borderRadius: 999, border: `1px solid ${open ? "var(--act)" : "var(--border-strong)"}`, color: open ? "var(--act)" : "var(--text-secondary)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, fontFamily: "var(--ff-mono)", lineHeight: 1 }}>i</span>
+          : "?"}
       </button>
       {visible && typeof document !== "undefined" && createPortal(panelNode, document.body)}
     </span>

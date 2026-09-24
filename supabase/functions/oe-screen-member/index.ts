@@ -20,7 +20,7 @@ import { secondPersonClause } from "../_shared/secondPerson.ts";
 import { bestStanding, writeTests } from "../_shared/writeValue.ts";
 import { interestOf } from "../_shared/interest.ts";
 /** Must equal P3_VERSION in oe-judge-member. */
-const CURRENT_RUBRIC_PROMPT = "p3-2.0";
+const CURRENT_RUBRIC_PROMPT = "p3-2.1";
 import { hasRoute, screen, type Eligibility, loadEligibility } from "../_shared/oeEligibility.ts";
 import {
   deriveIdentity, runGates, writingStanding, recencyWeight,
@@ -376,7 +376,7 @@ Deno.serve(withRun("screen_member", async (req) => {
     const opps: any[] = [];
     if (ids.length) {
       const { data: oppRows, error: oppsError } = await admin.from("oe_opportunities")
-        .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
+        .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, work_arrangement, applicant_regions, requirements, scope_evidence, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
         .in("id", ids).eq("alive", true);
       if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
       const byId = new Map((oppRows ?? []).map((o: any) => [String(o.id), o]));
