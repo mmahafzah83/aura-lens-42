@@ -93,10 +93,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 - سطر فارغ بين كل فكرة رئيسية
 - كل جملة في سطر مستقل
 
-للقوائم والنقاط — استخدم:
-◆ للنقاط الرئيسية في القائمة
-- للنقاط الثانوية البسيطة
-ولا تستخدم ↳ في العربية إطلاقاً.
+إذا احتجت قائمة، استخدم علامات الأسطر بالنسبة التي يستخدمها الكاتب نفسه كما هو مذكور أعلاه، ولا تستخدم ↳ إطلاقاً.
 
 للأرقام المتسلسلة — استخدم:
 1. أو ١. للخطوات المرتبة
@@ -659,6 +656,11 @@ serve(withObserve("generate-authority-content", async (req) => {
     }
 
     if (action === "generate_content") {
+      // Time budget: the screen waits ~180s; the writer must answer within ~100s.
+      const t0 = Date.now();
+      const elapsed = () => Date.now() - t0;
+      let modelCalls = 0;
+      let hardenedRetryUsed = false;
       run = await startRun(undefined, { id: runIdFrom(params), operation: "studio_generate", user_id: effectiveUserId });
       run.mark(GATHER);
       const { content_type, topic, context, language, framework, extra_instruction, rewrite_instruction, current_draft, flash, stream, variation, lang, sector, post_type, theme, signal_id, post_id } = params;
@@ -1143,6 +1145,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         extraDirective = "",
         maxTokensOverride?: number,
       ): Promise<{ text: string; stop_reason: string | null } | null> => {
+        modelCalls++;
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
@@ -1249,8 +1252,11 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         const v1 = judge(first, extractor);
         if (v1.ok) return v1;
         console.warn("[generate-authority-content] output contract violation —", v1.reason);
+        // The hardened retry is spent at most once per request, across all stages.
+        if (hardenedRetryUsed) return { ok: false, reason: v1.reason, raw: first.text };
+        hardenedRetryUsed = true;
         const retryTokens = v1.reason === "max_tokens"
-          ? Math.min(8192, baseMaxTokens * 2)
+          ? Math.min(3000, baseMaxTokens * 2)
           : undefined;
         const second = await callModel(
           `${extraDirective ? `${extraDirective}\n\n` : ""}${HARDENED_REMINDER}`,
@@ -1336,126 +1342,16 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
           figures,
         };
       };
-      let preGate = selfCheck(content);
-      if (!preGate.one_number_max || !preGate.grounded_number || !preGate.ending_ok) {
-        const endingLine = isAr
-          ? `- الخاتمة: ${ENDING_DIRECTIVE_AR[chosenEnding]}`
-          : `- Ending: ${ENDING_DIRECTIVE_EN[chosenEnding]}`;
-        const directive = isAr
-          ? `\n\nتصحيح إلزامي — أعد كتابة البوست كاملاً مع الالتزام بما يلي:${preGate.one_number_max ? "" : "\n- رقم واحد فقط في البوست كله (أرقام ترقيم القوائم لا تُحتسب)."}${preGate.grounded_number ? "" : "\n- لا تذكر أي رقم غير وارد حرفياً في الأدلة المرفقة."}${preGate.ending_ok ? "" : `\n${endingLine}`}`
-          : `\n\nMANDATORY CORRECTION — rewrite the whole post obeying these:${preGate.one_number_max ? "" : "\n- Use AT MOST one figure in the entire post (ordered-list markers do not count)."}${preGate.grounded_number ? "" : "\n- State no figure that is not present verbatim in the supplied evidence."}${preGate.ending_ok ? "" : `\n${endingLine}`}`;
-        console.warn(
-          "[generate-authority-content] pre-gate self-check failed —",
-          `figures: ${preGate.figures};`,
-          `grounded: ${preGate.grounded_number};`,
-          `ending(${chosenEnding}): ${preGate.ending_ok}`,
-        );
-        const reaskRes = await callContract("reask", directive);
-        if (reaskRes && !reaskRes.ok) return await failContractViolation(reaskRes);
-        const reask = reaskRes && reaskRes.ok ? hygiene(stripLabels(reaskRes.text)) : "";
-
-        if (reask) {
-          const after = selfCheck(reask);
-          const scoreOf = (c: typeof after) =>
-            Number(c.one_number_max) + Number(c.grounded_number) + Number(c.ending_ok);
-          // Only keep the re-ask if it is genuinely better. One re-ask, no loop.
-          if (scoreOf(after) > scoreOf(preGate)) {
-            content = reask;
-            preGate = after;
-          }
-        }
-      }
-
       content = hygiene(content);
       let unsourcedRemoved = 0;
       let unsourcedEntitiesRemoved = 0;
       const warnings: string[] = [];
-      let unsourced = findUnsourcedNumbers(content, groundingString);
-      // A fabricated organisation, person or date costs a member exactly what a
-      // fabricated figure costs them. Same evidence set, same one-retry rule.
-      let unsourcedEntities = findUnsourcedEntities(content, groundingString);
-      let integrity = checkTextIntegrity(content, isAr);
-
-      // A number the evidence cannot account for is never cut out in place —
-      // the draft is rewritten without the claim. Same for broken text.
-      if (
-        unsourced.length > 0 || unsourcedEntities.length > 0 || !integrity.ok ||
-        (bansEmoji && containsEmoji(firstPass))
-      ) {
-        console.warn(
-          "[generate-authority-content] regenerating —",
-          `unsourced: ${unsourced.join(" | ") || "none"};`,
-          `entities: ${unsourcedEntities.join(" | ") || "none"};`,
-          `integrity: ${integrity.issues.join(" | ") || "ok"}`,
-        );
-        const corrective = isAr
-          ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- لا تذكر اسم أي شركة أو جهة أو شخص أو تاريخ محدد غير وارد حرفياً في الأدلة. إن لم يرد الاسم في الأدلة، اكتب الجملة بلا اسم.${unsourcedEntities.length ? `\n- احذف تحديداً: ${unsourcedEntities.join("، ")}` : ""}\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
-          : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Do not name any organisation, person or specific date that is not present verbatim in the supplied evidence. If the name is not in the evidence, write the sentence without it.${unsourcedEntities.length ? `\n- Specifically remove: ${unsourcedEntities.join(", ")}` : ""}\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
-
-        const retry = await callContract("corrective", corrective);
-        if (retry && !retry.ok) return await failContractViolation(retry);
-        const candidate = retry && retry.ok ? hygiene(stripLabels(retry.text)) : "";
-
-        const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, groundingString) : ["retry_failed"];
-        const candidateEntities = candidate ? findUnsourcedEntities(candidate, groundingString) : ["retry_failed"];
-        const candidateIntegrity = candidate ? checkTextIntegrity(candidate, isAr) : { ok: false, issues: ["retry_failed"] };
-
-        if (candidate && candidateUnsourced.length === 0 && candidateEntities.length === 0 && candidateIntegrity.ok) {
-          content = candidate;
-          unsourcedRemoved = unsourced.length;
-          unsourcedEntitiesRemoved = unsourcedEntities.length;
-        } else {
-          // Last resort: drop the whole sentence carrying each unsourced claim.
-          // A member is never blocked — the best available text is returned with
-          // a warning describing what could not be fixed.
-          const base = candidate || content;
-          const guarded = stripUnsourcedNumbers(base, groundingString);
-          const cleaned = hygiene(guarded.text);
-          // Provenance outranks style, but it downgrades the draft, never
-          // destroys it: if the guard emptied the text, keep the fuller draft.
-          content = cleaned.trim() ? cleaned : hygiene(base);
-          unsourcedRemoved = unsourced.length + guarded.removed;
-          /**
-           * Names are never cut in place: a sentence stripped of the thing it
-           * names becomes nonsense. The count records what the guard could not
-           * source, and the member is told rather than blocked.
-           */
-          unsourcedEntitiesRemoved = Math.max(
-            unsourcedEntities.length,
-            Array.isArray(candidateEntities) ? candidateEntities.filter((e) => e !== "retry_failed").length : 0,
-          );
-        }
-        unsourced = findUnsourcedNumbers(content, groundingString);
-        unsourcedEntities = findUnsourcedEntities(content, groundingString);
-        integrity = checkTextIntegrity(content, isAr);
-      }
-
-      if (unsourced.length > 0) warnings.push("unsourced_numbers");
-      if (unsourcedEntities.length > 0) warnings.push("unsourced_entities");
-      if (!integrity.ok) warnings.push("integrity_issues");
-      if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
-
-      // ── ROTATION ENFORCEMENT — ALL THREE LEVELS ──────────────────────────
-      // A prompt sentence is not enforcement; this check is. The produced draft
-      // is compared against the member's last five drafts (and this run's
-      // siblings) on the MOVE, on the beat order, on the OPEN type and on the
-      // literal opening words — plus the outright ban on opening with "Most" /
-      // "معظم". One regeneration naming exactly what was violated; if the retry
-      // repeats too, the draft still ships — a member is never blocked — but it
-      // ships FLAGGED (`shape_repeat`) and logged at `high`, never silently.
       let rotationRepeat: string | null = null;
       /** Why a shipped draft drifted from the member's own proportions. */
       let voiceFidelityFlags: string[] = [];
       /** 0–100. Null when the member has no distribution to be measured against. */
       let voiceMatch: number | null = null;
-      {
-        /**
-         * THE ONE WRITE-TIME SHAPE CHECK. Rotation repetition and distribution
-         * drift are the same question — "is this draft the shape it was
-         * supposed to be?" — so they are ONE function with ONE regeneration.
-         * A second, separate gate would be a second opinion, and two gates that
-         * disagree is how a member ends up with a draft neither of them wanted.
-         */
+
         const verdictOf = (text: string) => {
           const rotation = ((): string | null => {
             if (opensOnBannedWord(text)) {
@@ -1500,16 +1396,68 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
             reasons: [rotation, ...fidelity.violations, ...neverViolations.map((rule) => `never_rule:${rule.text}`)].filter(Boolean) as string[],
           };
         };
+      const scoreOf = (v: ReturnType<typeof verdictOf>) =>
+        v.fidelity.reason === "no_distribution"
+          ? null
+          : Math.max(0, 100 - 25 * v.fidelity.violations.length - (v.rotation ? 25 : 0));
 
-        const first = verdictOf(content);
-        // A draft that passes still carries the voice note, so the score below
-        // reflects the check that actually ran.
-        const scoreOf = (v: ReturnType<typeof verdictOf>) =>
-          v.fidelity.reason === "no_distribution"
-            ? null
-            : Math.max(0, 100 - 25 * v.fidelity.violations.length - (v.rotation ? 25 : 0));
-        voiceMatch = scoreOf(first);
+      // ── ONE CORRECTIVE PASS ──────────────────────────────────────────────
+      // Every check runs on the first draft; whatever failed becomes ONE
+      // combined directive and ONE regeneration. The draft passing more checks
+      // ships. Past the time budget, the first draft ships with its flags.
+      const assess = (text: string) => {
+        const pre = selfCheck(text);
+        const uns = findUnsourcedNumbers(text, groundingString);
+        const ents = findUnsourcedEntities(text, groundingString);
+        const integ = checkTextIntegrity(text, isAr);
+        const emojiBad = bansEmoji && containsEmoji(text);
+        const v = verdictOf(text);
+        const checks = [
+          pre.one_number_max, pre.grounded_number, pre.ending_ok,
+          uns.length === 0, ents.length === 0, integ.ok, !emojiBad,
+          !v.rotation, v.fidelity.ok, v.neverViolations.length === 0,
+        ];
+        const passes = checks.filter(Boolean).length;
+        return { pre, uns, ents, integ, emojiBad, v, passes, allOk: passes === checks.length };
+      };
 
+      const firstA = assess(content);
+      let a = firstA;
+      let secondA: ReturnType<typeof assess> | null = null;
+      let correctiveRan = false;
+      voiceMatch = scoreOf(firstA.v);
+
+      if (!firstA.allOk) {
+        const preGate = firstA.pre;
+        const unsourcedEntities = firstA.ents;
+        const first = firstA.v;
+        let directive = "";
+        if (!preGate.one_number_max || !preGate.grounded_number || !preGate.ending_ok) {
+        const endingLine = isAr
+          ? `- الخاتمة: ${ENDING_DIRECTIVE_AR[chosenEnding]}`
+          : `- Ending: ${ENDING_DIRECTIVE_EN[chosenEnding]}`;
+        directive += isAr
+          ? `\n\nتصحيح إلزامي — أعد كتابة البوست كاملاً مع الالتزام بما يلي:${preGate.one_number_max ? "" : "\n- رقم واحد فقط في البوست كله (أرقام ترقيم القوائم لا تُحتسب)."}${preGate.grounded_number ? "" : "\n- لا تذكر أي رقم غير وارد حرفياً في الأدلة المرفقة."}${preGate.ending_ok ? "" : `\n${endingLine}`}`
+          : `\n\nMANDATORY CORRECTION — rewrite the whole post obeying these:${preGate.one_number_max ? "" : "\n- Use AT MOST one figure in the entire post (ordered-list markers do not count)."}${preGate.grounded_number ? "" : "\n- State no figure that is not present verbatim in the supplied evidence."}${preGate.ending_ok ? "" : `\n${endingLine}`}`;
+          console.warn(
+            "[generate-authority-content] pre-gate self-check failed —",
+            `figures: ${preGate.figures};`,
+            `grounded: ${preGate.grounded_number};`,
+            `ending(${chosenEnding}): ${preGate.ending_ok}`,
+          );
+        }
+        if (firstA.uns.length > 0 || firstA.ents.length > 0 || !firstA.integ.ok || firstA.emojiBad) {
+          console.warn(
+            "[generate-authority-content] regenerating —",
+            `unsourced: ${firstA.uns.join(" | ") || "none"};`,
+            `entities: ${firstA.ents.join(" | ") || "none"};`,
+            `integrity: ${firstA.integ.issues.join(" | ") || "ok"}`,
+          );
+        const corrective = isAr
+          ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- لا تذكر اسم أي شركة أو جهة أو شخص أو تاريخ محدد غير وارد حرفياً في الأدلة. إن لم يرد الاسم في الأدلة، اكتب الجملة بلا اسم.${unsourcedEntities.length ? `\n- احذف تحديداً: ${unsourcedEntities.join("، ")}` : ""}\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
+          : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Do not name any organisation, person or specific date that is not present verbatim in the supplied evidence. If the name is not in the evidence, write the sentence without it.${unsourcedEntities.length ? `\n- Specifically remove: ${unsourcedEntities.join(", ")}` : ""}\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
+          directive += corrective;
+        }
         if (first.failed) {
           const avoidWords = [...new Set(avoidOpeningTexts.map(firstSixWords).filter(Boolean))].slice(0, 5);
           const moveLabel = isAr ? MOVES[moveId].label_ar : MOVES[moveId].label_en;
@@ -1530,31 +1478,70 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
               `running: ${JSON.stringify(first.fidelity.running)}`,
             );
           }
-          // ONE regeneration, carrying both corrections at once.
-          const rot = await callContract("rotation", rotBit + neverBit + first.fidelity.directive);
-          if (rot && !rot.ok) return await failContractViolation(rot);
-          const rotCand = rot && rot.ok ? hygiene(stripLabels(rot.text)) : "";
+          directive += rotBit + neverBit + first.fidelity.directive;
+        }
 
-          const second = rotCand ? verdictOf(rotCand) : null;
-          if (rotCand && second && !second.failed) {
-            content = rotCand;
-            voiceMatch = scoreOf(second);
-          } else {
-            // Never blocked, never silent: the better of the two ships FLAGGED.
-            if (rotCand) content = rotCand;
-            const final = second ?? first;
-            voiceMatch = rotCand ? scoreOf(final) : voiceMatch;
-            if (final.rotation) {
-              rotationRepeat = final.rotation;
-              warnings.push("rotation_repeat");
+        if (elapsed() > 60000) {
+          console.warn(`[generate-authority-content] corrective pass skipped — time budget (${elapsed()}ms)`);
+        } else {
+          correctiveRan = true;
+          const res = await callContract("corrective", directive);
+          if (res && !res.ok) return await failContractViolation(res);
+          const cand = res && res.ok ? hygiene(stripLabels(res.text)) : "";
+          if (cand) {
+            secondA = assess(cand);
+            if (secondA.passes > firstA.passes) {
+              content = cand;
+              a = secondA;
             }
-            if (final.fidelity.violations.length) {
-              voiceFidelityFlags = final.fidelity.violations;
-              warnings.push("voice_fidelity_drift");
-            }
-            if (final.neverViolations.length) {
-              warnings.push("member_never_rule_violation");
-            }
+          }
+        }
+      }
+
+      let unsourced = a.uns;
+      let unsourcedEntities = a.ents;
+      let integrity = a.integ;
+      if (a !== firstA) {
+        unsourcedRemoved = Math.max(0, firstA.uns.length - a.uns.length);
+        unsourcedEntitiesRemoved = Math.max(0, firstA.ents.length - a.ents.length);
+      }
+      if (unsourced.length > 0 || unsourcedEntities.length > 0 || !integrity.ok) {
+        // Last resort: drop the whole sentence carrying each unsourced claim.
+        // A member is never blocked — the best available text ships flagged.
+        const base = content;
+        const guarded = stripUnsourcedNumbers(base, groundingString);
+        const cleaned = hygiene(guarded.text);
+        content = cleaned.trim() ? cleaned : hygiene(base);
+        unsourcedRemoved += unsourced.length + guarded.removed;
+        unsourcedEntitiesRemoved = Math.max(unsourcedEntitiesRemoved, unsourcedEntities.length);
+        unsourced = findUnsourcedNumbers(content, groundingString);
+        unsourcedEntities = findUnsourcedEntities(content, groundingString);
+        integrity = checkTextIntegrity(content, isAr);
+      }
+
+      if (unsourced.length > 0) warnings.push("unsourced_numbers");
+      if (unsourcedEntities.length > 0) warnings.push("unsourced_entities");
+      if (!integrity.ok) warnings.push("integrity_issues");
+      if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
+
+      {
+        const first = firstA.v;
+        const second = secondA ? secondA.v : null;
+        const final = a.v;
+        voiceMatch = scoreOf(final);
+        if (final.failed) {
+          if (final.rotation) {
+            rotationRepeat = final.rotation;
+            warnings.push("rotation_repeat");
+          }
+          if (final.fidelity.violations.length) {
+            voiceFidelityFlags = final.fidelity.violations;
+            warnings.push("voice_fidelity_drift");
+          }
+          if (final.neverViolations.length) {
+            warnings.push("member_never_rule_violation");
+          }
+          if (first.failed) {
             try {
               const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
               await admin.from("ef_error_log").insert({
@@ -1570,7 +1557,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
                   land_type: landType,
                   basis: shape.basis,
                   first_reasons: first.reasons,
-                  after_retry: second ? second.reasons : ["regenerate_failed"],
+                  after_retry: second ? second.reasons : [correctiveRan ? "regenerate_failed" : "time_budget"],
                   running_shares: final.fidelity.running,
                   corpus_n: voiceDist?.corpus_n ?? null,
                   enforced: (voiceDist?.corpus_n ?? 0) >= MIN_DIST_CORPUS,
@@ -1615,7 +1602,10 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
       let gateResult: any = null;
       let gateSkipReason: string | null = null;
       let gateResultId: string | null = null;
-      try {
+      const gateBudgetMs = Math.min(20000, 100000 - elapsed());
+      if (gateBudgetMs < 5000) {
+        gateSkipReason = "gate_budget";
+      } else try {
         const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
           body: {
             post_text: content,
@@ -1635,9 +1625,9 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         });
         const timeout = new Promise((resolve) => {
           setTimeout(() => {
-            console.warn("[generate-authority-content] quality gate timed out after 45s — skipped");
+            console.warn(`[generate-authority-content] quality gate timed out after ${gateBudgetMs}ms — skipped`);
             resolve({ data: null, error: "timeout" });
-          }, 45000);
+          }, gateBudgetMs);
         });
         const gateRes: any = await Promise.race([gatePromise, timeout]);
         if (gateRes?.data && !gateRes?.error) {
@@ -1786,7 +1776,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         integrity_issues: integrity.ok ? [] : integrity.issues,
       };
 
-      await run?.finish({ outcome: "ok", meta: { result: resultPayload } });
+      await run?.finish({ outcome: "ok", meta: { result: resultPayload, model_calls: modelCalls, total_ms: elapsed() } });
       run = null;
       return new Response(JSON.stringify(resultPayload), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
