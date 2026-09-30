@@ -335,6 +335,7 @@ export default function StudioPanel({
    * draft row; nothing is written when the generator reported nothing.
    */
   const fingerprintRef = useRef<{ endingType?: string; hookStyle?: string }>({});
+  const shapeRef = useRef<{ move_id?: string; beats?: string[]; open_type?: string; land_type?: string }>({});
   /**
    * NOTHING IS CREATED WITHOUT ITS LINEAGE.
    *
@@ -1345,6 +1346,13 @@ export default function StudioPanel({
         endingType: typeof json?.ending_type === "string" ? json.ending_type : undefined,
         hookStyle: typeof json?.hook_style === "string" ? json.hook_style : undefined,
       };
+      // The shape the writer chose, so the saved row can feed later rotation.
+      shapeRef.current = {
+        move_id: typeof json?.move_id === "string" ? json.move_id : undefined,
+        beats: Array.isArray(json?.beats) ? json.beats.map(String) : undefined,
+        open_type: typeof json?.open_type === "string" ? json.open_type : undefined,
+        land_type: typeof json?.land_type === "string" ? json.land_type : undefined,
+      };
       // Does it sound like them — the generator's own reading, stored with the row.
       voiceMatchRef.current = typeof json?.voice_match === "number" ? json.voice_match : null;
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
@@ -1537,6 +1545,10 @@ export default function StudioPanel({
       _language: writeLang,
       signal_ids: choice?.id ? [choice.id] : [],
       ...(chosenDirectionRef.current ? { chosen_direction: chosenDirectionRef.current } : {}),
+      ...(shapeRef.current.move_id ? { move_id: shapeRef.current.move_id } : {}),
+      ...(shapeRef.current.beats ? { beats: shapeRef.current.beats } : {}),
+      ...(shapeRef.current.open_type ? { open_type: shapeRef.current.open_type } : {}),
+      ...(shapeRef.current.land_type ? { land_type: shapeRef.current.land_type } : {}),
     }),
     [choice, typedTopic, writeLang],
   );

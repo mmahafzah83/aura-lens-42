@@ -788,21 +788,65 @@ serve(withObserve("generate-authority-content", async (req) => {
        * is not a shape the member saw. Five most recent, no minimum count: one
        * prior draft is enough to avoid repeating it.
        */
-      let recentDrafts: Array<{ move_id: string | null; beats: string[] | null; hook_style: string | null; ending_type: string | null; body: string | null }> = [];
+      let recentDrafts: Array<{ move_id: string | null; beats: string[] | null; hook_style: string | null; ending_type: string | null; body: string | null; created_at?: string | null }> = [];
+      let fromItems: any[] = [];
+      let fromPosts: any[] = [];
       try {
         const { data: recentRows } = await supabase
           .from("content_items")
           .select("move_id, beats, hook_style, ending_type, body, created_at")
           .eq("user_id", effectiveUserId)
           .eq("made_by", "aura")
+          .eq("language", effectiveLanguage)
           .neq("status", "discarded")
           .order("created_at", { ascending: false })
           // Ten, because the distribution check measures a RUN of drafts, not
           // the last one. Rotation still reads only the five most recent.
           .limit(10);
-        recentDrafts = (recentRows || []) as any[];
+        fromItems = (recentRows || []) as any[];
       } catch (_e) {
         // A history read must never cost a member their draft.
+      }
+      // Studio saves its drafts to linkedin_posts; read those too.
+      try {
+        const { data: postRows } = await supabase
+          .from("linkedin_posts")
+          .select("id, post_text, hook_style, ending_type, source_metadata, created_at")
+          .eq("user_id", effectiveUserId)
+          .eq("source_type", "aura_generated")
+          .in("tracking_status", ["draft", "published"])
+          .order("created_at", { ascending: false })
+          .limit(10);
+        fromPosts = ((postRows || []) as any[])
+          .filter((r) => {
+            const l = r?.source_metadata?.language;
+            return l == null || l === effectiveLanguage;
+          })
+          .map((r) => {
+            const m = r?.source_metadata || {};
+            return {
+              move_id: m.move_id ?? null,
+              beats: Array.isArray(m.beats) ? m.beats : null,
+              hook_style: r.hook_style ?? null,
+              ending_type: r.ending_type ?? null,
+              body: r.post_text ?? null,
+              created_at: r.created_at ?? null,
+            };
+          });
+      } catch (_e) {
+        // A history read must never cost a member their draft.
+      }
+      {
+        const seen = new Set<string>();
+        recentDrafts = [...fromItems, ...fromPosts]
+          .sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))
+          .filter((r) => {
+            const k = String(r.body ?? "");
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          })
+          .slice(0, 10);
       }
       /** The last ten drafts as text — the window the fidelity ceilings run on. */
       const recentBodies: string[] = recentDrafts
