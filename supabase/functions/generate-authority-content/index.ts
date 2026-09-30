@@ -1183,7 +1183,9 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
       // exact same prompt with an added directive.
       const MODEL_USED = "claude-sonnet-4-5-20250929";
       const baseMaxTokens = memberPrefs.length_max
-        ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
+        ? Math.max(800, Math.min(3000, effectiveLanguage === "ar"
+            ? Math.ceil(memberPrefs.length_max * 1.0) + 300
+            : Math.ceil(memberPrefs.length_max / 3) + 256))
         : 4096;
       const callModel = async (
         extraDirective = "",
@@ -1300,7 +1302,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         if (hardenedRetryUsed) return { ok: false, reason: v1.reason, raw: first.text };
         hardenedRetryUsed = true;
         const retryTokens = v1.reason === "max_tokens"
-          ? Math.min(3000, baseMaxTokens * 2)
+          ? Math.min(4000, baseMaxTokens * 2)
           : undefined;
         const second = await callModel(
           `${extraDirective ? `${extraDirective}\n\n` : ""}${HARDENED_REMINDER}`,
