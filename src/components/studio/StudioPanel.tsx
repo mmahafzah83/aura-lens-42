@@ -1422,7 +1422,8 @@ export default function StudioPanel({
          wrong. */
       if (runId !== genRunId.current) return;
       let recovered = false;
-      for (let attempt = 0; attempt < 6 && !recovered; attempt++) {
+      /* Every 3s for up to 60s — covers the server's own time budget. */
+      for (let attempt = 0; attempt < 20 && !recovered; attempt++) {
         await new Promise((r) => window.setTimeout(r, 3000));
         if (runId !== genRunId.current) return;
         try {
