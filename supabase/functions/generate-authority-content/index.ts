@@ -93,10 +93,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 - سطر فارغ بين كل فكرة رئيسية
 - كل جملة في سطر مستقل
 
-للقوائم والنقاط — استخدم:
-◆ للنقاط الرئيسية في القائمة
-- للنقاط الثانوية البسيطة
-ولا تستخدم ↳ في العربية إطلاقاً.
+إذا احتجت قائمة، استخدم علامات الأسطر بالنسبة التي يستخدمها الكاتب نفسه كما هو مذكور أعلاه، ولا تستخدم ↳ إطلاقاً.
 
 للأرقام المتسلسلة — استخدم:
 1. أو ١. للخطوات المرتبة
@@ -1605,7 +1602,10 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
       let gateResult: any = null;
       let gateSkipReason: string | null = null;
       let gateResultId: string | null = null;
-      try {
+      const gateBudgetMs = Math.min(20000, 100000 - elapsed());
+      if (gateBudgetMs < 5000) {
+        gateSkipReason = "gate_budget";
+      } else try {
         const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
           body: {
             post_text: content,
@@ -1625,9 +1625,9 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         });
         const timeout = new Promise((resolve) => {
           setTimeout(() => {
-            console.warn("[generate-authority-content] quality gate timed out after 45s — skipped");
+            console.warn(`[generate-authority-content] quality gate timed out after ${gateBudgetMs}ms — skipped`);
             resolve({ data: null, error: "timeout" });
-          }, 45000);
+          }, gateBudgetMs);
         });
         const gateRes: any = await Promise.race([gatePromise, timeout]);
         if (gateRes?.data && !gateRes?.error) {
@@ -1776,7 +1776,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         integrity_issues: integrity.ok ? [] : integrity.issues,
       };
 
-      await run?.finish({ outcome: "ok", meta: { result: resultPayload } });
+      await run?.finish({ outcome: "ok", meta: { result: resultPayload, model_calls: modelCalls, total_ms: elapsed() } });
       run = null;
       return new Response(JSON.stringify(resultPayload), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
