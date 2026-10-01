@@ -33,9 +33,9 @@ export const BAND_THRESHOLDS = {
 
 export const BAND_LABEL: Record<CapabilityBand, string> = {
   not_assessed: "Not yet assessed",
-  developing: "Developing",
-  solid: "Solid",
-  strong: "Strong",
+  developing: "Formation",
+  solid: "Independence",
+  strong: "Reference",
 };
 
 /**
