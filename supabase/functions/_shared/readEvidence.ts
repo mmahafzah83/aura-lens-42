@@ -24,7 +24,7 @@ export async function buildReadEvidence(
       .order("confidence", { ascending: false })
       .limit(12),
     admin.from("diagnostic_profiles")
-      .select("seniority_band, sector_focus, cv_crosscheck")
+      .select("seniority_band, sector_focus, cv_crosscheck, level, years_experience, core_practice")
       .eq("user_id", uid)
       .maybeSingle(),
     admin.from("linkedin_posts")
@@ -358,7 +358,10 @@ This is documented evidence they have not made public. Treat it as fact. Where i
     }
   }
 
-  const userPrompt = `User's sector: ${resolvedSector || "Not stated — infer it from the headline and captured claims and name it explicitly."}
+  const whoField = [prof.sector_focus, prof.core_practice].filter((v: any) => String(v ?? "").trim()).join(", ") || "not given";
+  const userPrompt = `WHO THEY ARE: title ${prof.level || "not given"} · level ${resolvedBand || "not given"} · field ${whoField} · years ${prof.years_experience ?? "not given"}
+
+User's sector: ${resolvedSector || "Not stated — infer it from the headline and captured claims and name it explicitly."}
 Their seniority: ${resolvedBand || "Not stated"}. ${bandLine}
 
 ${profileBlock}
@@ -387,7 +390,7 @@ ${auditContext}
 Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
 
-Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the capability BANDS above as evidence of where they stand — never quote a capability as a number, and do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. THE HONEST TRUTH must also settle the claim-versus-evidence test set out above, with the number named, and it is allowed to be unwelcome — never trade accuracy for comfort. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
+Analyse this professional using only the evidence above. Use the capability BANDS above as evidence of where they stand — never quote a capability as a number, and do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. THE HONEST TRUTH must also settle the claim-versus-evidence test set out above, with the number named, and it is allowed to be unwelcome — never trade accuracy for comfort. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
 
   return { floorMet: true, userPrompt, counts };
 }
