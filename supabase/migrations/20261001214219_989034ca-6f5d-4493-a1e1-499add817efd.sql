@@ -1,0 +1,1 @@
+ALTER FUNCTION public.detect_seniority_band(text) SET search_path = public;
