@@ -28,6 +28,11 @@ import {
   type AssessmentState,
 } from "@/lib/assessmentSession";
 import { track } from "@/lib/track";
+import { BAND_COPY, BAND_THRESHOLDS } from "@/lib/capabilityBands";
+
+/* Slider band edges come from the one shared definition — never inline. */
+const SOLID_MIN = BAND_THRESHOLDS.slider.solid.min;
+const STRONG_MIN = BAND_THRESHOLDS.slider.strong.min;
 import { sweepIfServerReset } from "@/lib/resetSweep";
 import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@/lib/marketRead";
 import AuraFace from "@/components/onboarding/AuraFace";
@@ -3531,7 +3536,11 @@ const Onboarding = () => {
             type="range" min={0} max={100} step={1} value={value}
             className="ob-slider"
             aria-label={d.name}
-            aria-valuetext={value < 34 ? (d.anchor_low ?? "") : value < 67 ? (d.anchor_mid ?? "") : (d.anchor_high ?? "")}
+            aria-valuetext={value < SOLID_MIN
+              ? `${BAND_COPY.developing.label}: ${d.anchor_low ?? ""}`
+              : value < STRONG_MIN
+                ? `${BAND_COPY.solid.label}: ${d.anchor_mid ?? ""}`
+                : `${BAND_COPY.strong.label}: ${d.anchor_high ?? ""}`}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
             onPointerUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
             onKeyUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
@@ -3539,9 +3548,9 @@ const Onboarding = () => {
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
             {([
-              ["Low", d.anchor_low, value < 34],
-              ["Middle", d.anchor_mid, value >= 34 && value < 67],
-              ["High", d.anchor_high, value >= 67],
+              [BAND_COPY.developing.label, d.anchor_low, value < SOLID_MIN],
+              [BAND_COPY.solid.label, d.anchor_mid, value >= SOLID_MIN && value < STRONG_MIN],
+              [BAND_COPY.strong.label, d.anchor_high, value >= STRONG_MIN],
             ] as [string, string | null, boolean][])
               .filter(([, text]) => !!text)
               .map(([tag, text, live]) => (
