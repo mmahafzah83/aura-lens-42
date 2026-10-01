@@ -618,6 +618,10 @@ const Onboarding = () => {
   const [readCache, setReadCache] = useState<{ generated_at: string; notice: string | null } | null>(null);
   const [sectorKnown, setSectorKnown] = useState(false);
   const [bandPicker, setBandPicker] = useState(false);
+  const [otherPicker, setOtherPicker] = useState(false);
+  const [reviewMode] = useState(() => {
+    try { return localStorage.getItem("kb_review_mode") === "1"; } catch { return false; }
+  });
   const [cvUploads, setCvUploads] = useState(0);
   const [cvCrosscheck, setCvCrosscheck] = useState<unknown>(null);
 
@@ -1426,9 +1430,10 @@ const Onboarding = () => {
         const ld = Number(localStorage.getItem(`aura_ob_dim_${uid}`) ?? "0");
         setDimIdx(hasScores && Number.isFinite(ld) && ld > 0 ? ld : 0);
       } catch { /* ignore */ }
-      /* SEAT_SCREEN (14.5) is a real position — a member who finished and came
-         back must land on the seat beat, not be rejected into screen 0. */
-      if (resume > 0 && (resume <= SEAT_SCREEN || resume === MANUAL_SCREEN)) {
+      /* SEAT_SCREEN (14.5) is retired from the journey: a member resuming there goes Home. */
+      if (resume === SEAT_SCREEN) {
+        navigate("/home", { replace: true });
+      } else if (resume > 0 && (resume < SEAT_SCREEN || resume === MANUAL_SCREEN)) {
 
         setScreen(resume); screenRef.current = resume;
         if (stageOf(resume) > 1) {
@@ -2158,11 +2163,13 @@ const Onboarding = () => {
 
   /* The seat beat may only be seen by a finished member. Today the one route
      in awaits finish() first; this makes that a property of the screen rather
-     than of the caller, so a new route in can never skip the finish. */
+     than of the caller, so a new route in can never skip the finish.
+     The seat beat is retired from the journey: anyone landing on it goes Home. */
   useEffect(() => {
-    if (screen !== SEAT_SCREEN || finishedRef.current) return;
+    if (screen !== SEAT_SCREEN) return;
+    if (finishedRef.current) { navigate("/home", { replace: true }); return; }
     console.warn("[journey] reached the seat beat unfinished — finishing now");
-    void finish({ stay: true });
+    void finish({ stay: true }).then((ok) => { if (ok) navigate("/home", { replace: true }); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);
 
@@ -2445,21 +2452,46 @@ const Onboarding = () => {
     } catch (e) { console.error("[journey] level save threw", e); }
   };
 
+  const titleRowStyle = (on: boolean): React.CSSProperties => ({
+    display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10,
+    textAlign: "start", padding: "11px 13px", borderRadius: 12, cursor: "pointer",
+    border: `1px solid ${on ? OB.blue : OB.line}`,
+    background: on ? OB.blueTint : OB.white,
+    fontSize: 14, fontFamily: "inherit", color: OB.ink,
+  });
+
+  /* "Other" never silently means the junior level: the member chooses by what they do. */
+  const OTHER_WORK: Array<[Band, string]> = [
+    ["work", "I do the work, and people check with me before they commit"],
+    ["table", "I run programmes or teams, and defend their budgets"],
+    ["room", "I set direction, and my view is heard outside my organisation"],
+  ];
+
   const titleList = (onPick: (t: string, b: Band) => void) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 12 }}>
-      {titlesFailed ? (
+      {otherPicker ? (
+        <>
+          <p style={{ ...bodyLight, margin: 0, fontWeight: 600, color: OB.ink }}>Which sounds most like your work today?</p>
+          {OTHER_WORK.map(([b, label]) => (
+            <button key={b} type="button" onClick={() => { setOtherPicker(false); onPick("Other", b); }}
+              style={titleRowStyle(levelTitle === "Other" && band === b)}>
+              <span>{label}</span>
+            </button>
+          ))}
+          <button type="button" onClick={() => setOtherPicker(false)} style={{
+            background: "none", border: "none", padding: "4px 0", cursor: "pointer",
+            color: OB.blue, fontSize: 14, fontFamily: "inherit", textAlign: "start",
+          }}>Back</button>
+        </>
+      ) : titlesFailed ? (
         <>
           <p style={{ ...bodyLight, margin: 0 }}>Aura couldn't load the list of levels. Nothing is lost.</p>
           <OBButton variant="secondary" onClick={() => void reloadTitles()}>Try again</OBButton>
         </>
       ) : seniorityTitles.map((t) => (
-        <button key={t.title} type="button" onClick={() => onPick(t.title, t.band as Band)} style={{
-          display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10,
-          textAlign: "start", padding: "11px 13px", borderRadius: 12, cursor: "pointer",
-          border: `1px solid ${levelTitle === t.title ? OB.blue : OB.line}`,
-          background: levelTitle === t.title ? OB.blueTint : OB.white,
-          fontSize: 14, fontFamily: "inherit", color: OB.ink,
-        }}>
+        <button key={t.title} type="button"
+          onClick={() => (t.title === "Other" ? setOtherPicker(true) : onPick(t.title, t.band as Band))}
+          style={titleRowStyle(levelTitle === t.title)}>
           <span>{t.title}</span>
           <span style={{ fontSize: 11.5, color: OB.muted }}>{TITLE_BAND_LABEL[t.band as TitleBand]}</span>
         </button>
@@ -3211,7 +3243,7 @@ const Onboarding = () => {
           onAuraAction={(kind, ctx) => (kind === "capture_evidence" ? keepCvEvidence(ctx) : false)}
         />
         {/* The ask comes after the whole comparison, and it is loss-framed. */}
-        {!userId && cvCrosscheck ? (
+        {!userId && cvCrosscheck && !reviewMode ? (
           <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.line}`, paddingBlockStart: 20 }}>
             <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>Keep this.</h2>
             <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 8 }}>
@@ -4431,9 +4463,9 @@ const Onboarding = () => {
               } finally {
                 setFinishing(false);
               }
-              /* The seat beat belongs to a finished member. A write that failed
-                 keeps them here, where the button can be pressed again. */
-              if (ok) go(SEAT_SCREEN);
+              /* The journey ends on Home. A write that failed keeps them here,
+                 where the button can be pressed again. */
+              if (ok) navigate("/home", { replace: true });
             }}
           >
             Take me in
