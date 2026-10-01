@@ -53,6 +53,14 @@ const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
 const VoiceHarness = lazy(() => import("./pages/VoiceHarness"));
 
 const Studio = lazy(() => import("./pages/Studio"));
+/* Review mode: ?review=1 on /assessment, /read or /mirror marks this browser as an invited reviewer. */
+try {
+  if (
+    ["/assessment", "/read", "/mirror"].includes(window.location.pathname) &&
+    new URLSearchParams(window.location.search).get("review") === "1"
+  ) localStorage.setItem("kb_review_mode", "1");
+} catch { /* ignore */ }
+
 /** The second door, closed: /read and /mirror carry ?url= and ?ref= into /assessment. */
 const ReadAlias = () => {
   const params = new URLSearchParams(window.location.search);

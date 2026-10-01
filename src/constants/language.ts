@@ -291,7 +291,7 @@ export const ENDING = {
   rowCrosscheck: (n: number) => `${n} ${n === 1 ? "finding" : "findings"}, one to do first`,
   rowCrosscheckLabel: "Your CV against your profile",
   rowGapLabel: "The gap",
-  loss: "All of it lives in this browser. Clear your history, or open Aura on your phone, and it is gone — and the read costs real money to produce, so it is not automatic to run again.",
+  loss: "All of it lives in this browser. Clear your history, or open Aura on your phone, and it is gone.",
   tenthHead: "What this is about a tenth of",
   tenth: [
     "Your position rewritten every time your evidence changes",
