@@ -10,6 +10,7 @@
  * (band, sector IS NULL). If both come back empty the member sees a friendly
  * retry, never a blank screen.
  */
+import { readStoredLang } from "@/i18n";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
@@ -1909,6 +1910,7 @@ const Onboarding = () => {
       .invoke("onboarding-proposals", {
         body: {
           claims: claims.map((c) => c.title),
+          ui_lang: readStoredLang(),
           sector: sector || null,
           level: levelTitle || null,
           /* anonymous run: the read already on file stands in for the posts */

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { readStoredLang } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
 import { useRunStages, newRunId } from "@/lib/useRunStages";
@@ -125,7 +126,7 @@ export default function CvUploadControl({
     setComparing(true);
     try {
       const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
-        body: { purpose, run_id: id },
+        body: { purpose, run_id: id, ui_lang: readStoredLang() },
       });
       if (error) { setFailure({ kind: "server" }); return; }
       const res = data as { ok?: boolean; crosscheck?: unknown; reason?: string } | null;
@@ -189,6 +190,7 @@ export default function CvUploadControl({
         body: {
           anon_token: anonToken,
           run_id: id,
+          ui_lang: readStoredLang(),
           purpose,
           ...(cvText ? { cvText } : { cv_file: { mime: file.type, name: file.name, base64 } }),
         },

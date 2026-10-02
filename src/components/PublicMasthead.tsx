@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import LanguageToggle from "@/components/LanguageToggle";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { FREE_CTA_SHORT_LABEL } from "@/lib/brand";
 
@@ -32,6 +33,7 @@ const PublicMasthead = ({
         <span className="pm-bn">Aura</span>
       </Link>
       <nav className="pm-nav">
+        <LanguageToggle />
         {authed ? (
           <Link className="pm-cta" to="/dashboard">
             Back to your dashboard <span className="pm-a">↗</span>

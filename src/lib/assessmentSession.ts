@@ -9,6 +9,7 @@
  * This is a browser-held token, NOT an HttpOnly cookie — an HttpOnly cookie would
  * have to be set by an edge function, which is a later step.
  */
+import { readStoredLang } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 
 export const SESSION_KEY = "aura_session_token";
@@ -31,6 +32,8 @@ export type AssessmentState = {
   answers?: Record<string, string>;
   /** Answers by question id and option value — see assessmentAnswers.ts. */
   answers_coded?: Record<string, any>;
+  /** The visitor's chosen interface language, carried for the read writers. */
+  ui_lang?: "en" | "ar";
 };
 
 /* ── the token, held in the browser ─────────────────────────────── */
@@ -91,7 +94,7 @@ export async function loadSession(
 export async function saveSession(token: string, state: AssessmentState): Promise<boolean> {
   const { data, error } = await supabase.rpc("save_assessment_session", {
     p_token: token,
-    p_state: state as never,
+    p_state: { ...state, ui_lang: readStoredLang() } as never,
   });
   return !error && data === true;
 }

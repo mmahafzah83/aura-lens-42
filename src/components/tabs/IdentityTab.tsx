@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { readStoredLang } from "@/i18n";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Check, Eye, Map as MapIcon, Camera, Mic } from "lucide-react";
@@ -242,7 +243,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     (async () => {
       try {
         setAssessmentStep("Analyzing your professional identity…");
-        await supabase.functions.invoke("brand-assessment", { body: {} });
+        await supabase.functions.invoke("brand-assessment", { body: { ui_lang: readStoredLang() } });
         setAssessmentStep("Mapping your expertise territories…");
         await supabase.functions.invoke("generate-identity-intelligence", { body: {} });
         setAssessmentStep("Generating how the market sees you…");
@@ -678,7 +679,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     if (!authUser) return;
     try {
       await supabase.auth.getSession();
-      await supabase.functions.invoke("cv-crosscheck", { body: {} });
+      await supabase.functions.invoke("cv-crosscheck", { body: { ui_lang: readStoredLang() } });
       await loadAll(authUser.id);
     } catch (e) {
       console.warn("[IdentityTab] cv-crosscheck failed", e);

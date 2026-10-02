@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import LanguageToggle from "@/components/LanguageToggle";
 import { Link } from "react-router-dom";
 import { useTranslation, Trans } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -185,6 +186,7 @@ export default function RequestAccess() {
           <span className="ra-bn">{t("auth.request.wordmark")}</span>
         </Link>
         <div className="ra-mr">
+          <LanguageToggle />
           <Link className="ra-mlink" to="/">{t("auth.request.back")}</Link>
           <Link className="ra-mlink" to="/auth">{t("auth.request.signIn")}</Link>
         </div>

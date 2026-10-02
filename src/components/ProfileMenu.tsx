@@ -1,4 +1,5 @@
 import { UserCog, LogOut } from "lucide-react";
+import LanguageToggle from "@/components/LanguageToggle";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Avatar from "@/components/systemb/Avatar";
@@ -148,6 +149,8 @@ export default function ProfileMenu({
         </button>
 
         <div style={{ height: 0, borderTop: "0.5px solid var(--rule)", margin: "8px 4px" }} />
+
+        <LanguageToggle />
 
         {/* SIGN OUT */}
         <button

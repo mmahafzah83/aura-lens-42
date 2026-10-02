@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import LanguageToggle from "@/components/LanguageToggle";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -1347,6 +1348,8 @@ const LandingV2 = () => {
   return (
     <>
       <style>{LANDING_V2_CSS}</style>
+      {/* Renders nothing until "/" joins ARABIC_READY_ROUTES. */}
+      <div style={{ position: "fixed", top: 8, insetInlineEnd: 8, zIndex: 70 }}><LanguageToggle /></div>
       <div
         ref={rootRef}
         className="aura-v2"

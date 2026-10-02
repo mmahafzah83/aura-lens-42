@@ -385,7 +385,7 @@ export default function PreferencesPanel({
 
   if (!open) return null;
 
-  const uiSwitch = isAdmin === true ? (
+  const uiSwitch = (
     <div
       style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, padding: "14px 24px", borderTop: "0.5px solid var(--rule)", fontFamily: "var(--font-body)" }}
     >
@@ -404,7 +404,7 @@ export default function PreferencesPanel({
         ))}
       </div>
     </div>
-  ) : null;
+  );
 
   const sections = (
     <>

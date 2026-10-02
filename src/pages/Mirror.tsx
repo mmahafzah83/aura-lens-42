@@ -3,6 +3,7 @@
  * seconds later, reads how their field currently sees them. No account, no gate.
  * One page, four states: ask → reading → the read → the list.
  */
+import { readStoredLang } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 import ReadResult from "@/components/read/ReadResult";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
@@ -222,7 +223,7 @@ export default function Mirror() {
         method: "POST",
         signal: controller.signal,
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: target, ref: (refArg ?? ref) || undefined, run_id: runId }),
+        body: JSON.stringify({ profile_url: target, ref: (refArg ?? ref) || undefined, run_id: runId, ui_lang: readStoredLang() }),
       });
       const data: MirrorResponse = await res.json().catch(() => ({} as MirrorResponse));
       if (!res.ok || !data.ok || !data.read) {

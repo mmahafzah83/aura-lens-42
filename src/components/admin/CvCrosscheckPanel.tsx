@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { readStoredLang } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, RefreshCw, FileText } from "lucide-react";
 
@@ -88,7 +89,7 @@ export default function CvCrosscheckPanel() {
     setDocs(null);
     setDocsError(null);
     setResult(null);
-    const out = await invoke("admin-list-documents", { email: email.trim() });
+    const out = await invoke("admin-list-documents", { email: email.trim(), ui_lang: readStoredLang() });
     if (out?.ok) setDocs(out.documents as Doc[]);
     else setDocsError(out?.error || "Could not load documents.");
     setLoading(false);

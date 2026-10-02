@@ -1,0 +1,1 @@
+- Interface language: the stored choice is applied only on routes listed in `ARABIC_READY_ROUTES` (src/i18n/index.ts); every other route renders English LTR — why: half-translated pages must never flip right-to-left.
