@@ -82,6 +82,8 @@ import {
   SEAT_ONE_JOB, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_CTA_SECONDARY, SEAT_RESERVE_NOTE,
 } from "@/lib/seatCopy";
 import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { toCoded, toLegacyEnglish, legacyKey, NONE_CODE, type AnswerInput, type CodedAnswers } from "@/lib/assessmentAnswers";
 
 
 /**
@@ -281,6 +283,7 @@ interface Dimension {
   anchor_low: string | null; anchor_mid: string | null; anchor_high: string | null;
 }
 interface JourneyQuestion {
+  id: string; position: number; framework: string | null; band: string | null; instrument_version: number | null;
   prompt: string; helper: string | null; kind: string; max_choices: number | null;
   options: { label: string; value: string }[] | null;
   why_asked: string | null; allow_none: boolean | null; randomise: boolean | null;
@@ -676,6 +679,9 @@ const Onboarding = () => {
   const [questions, setQuestions] = useState<JourneyQuestion[] | null>(null);
   const [qIdx, setQIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  /* The same answers by question id and option value — never by display text. */
+  const [codedAnswers, setCodedAnswers] = useState<CodedAnswers>({});
+  const { lang: uiLang } = useLanguage();
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
   /* One rule for every question: select, see it selected, then Next. */
@@ -989,7 +995,7 @@ const Onboarding = () => {
       "journey anon handoff step",
     );
     try { localStorage.setItem(`aura_ob_screen_${uid}`, "12"); } catch { /* private mode */ }
-    if (st.answers && Object.keys(st.answers).length) await saveAnswers(uid, st.answers);
+    if (st.answers && Object.keys(st.answers).length) await saveAnswers(uid, st.answers, st.answers_coded ?? null);
     /* Replay any links captured while anonymous — never block the redirect. */
     try {
       const pending = ((st as any).pending_captures ?? []) as Array<{ url: string; title?: string | null; summary?: string | null }>;
@@ -1035,7 +1041,7 @@ const Onboarding = () => {
       console.error("[journey] kept evidence replay failed", e);
     }
     try {
-      await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
+      await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null), undefined, st.answers_coded ?? null);
     } catch (e) {
       console.error("[journey] handoff read failed", e);
     }
@@ -1321,7 +1327,7 @@ const Onboarding = () => {
       else if (!passwordSet) setNeedsPassword(true);
 
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, seniority_band, answered_band, onboarding_step, skill_ratings, brand_assessment_answers, identity_intelligence, journey_reset_at")
+        .select("first_name, last_name, firm, sector_focus, level, seniority_band, answered_band, onboarding_step, skill_ratings, brand_assessment_answers, brand_assessment_answers_coded, identity_intelligence, journey_reset_at")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
@@ -1370,9 +1376,12 @@ const Onboarding = () => {
       if (answeredBand && p.seniority_band && answeredBand !== p.seniority_band
         && Object.keys(hydratedAnswers).length) {
         hydratedAnswers = {};
-        void upsertProfile(uid, { brand_assessment_answers: null, answered_band: null }, "band change answer reset");
+        void upsertProfile(uid, { brand_assessment_answers: null, brand_assessment_answers_coded: {}, answered_band: null }, "band change answer reset");
       }
       setAnswers(hydratedAnswers);
+      setCodedAnswers(Object.keys(hydratedAnswers).length && (p as any).brand_assessment_answers_coded
+        && typeof (p as any).brand_assessment_answers_coded === "object"
+        ? ((p as any).brand_assessment_answers_coded as CodedAnswers) : {});
       const hasAnswers = Object.keys(hydratedAnswers).length > 0;
       const hasScores = Boolean(p.skill_ratings && typeof p.skill_ratings === "object"
         && Object.keys(p.skill_ratings as Record<string, number>).length > 0);
@@ -1503,13 +1512,13 @@ const Onboarding = () => {
          answers and read sitting in state and on the row. */
       if (subjectRef.current && subjectRef.current !== profile_url) {
         const hadWork = Object.keys(scores).length > 0 || Object.keys(answers).length > 0 || !!reveal;
-        setScores({}); setTouched({}); touchedRef.current = {}; setAnswers({}); setReveal(null); setDimIdx(0); setQIdx(0);
+        setScores({}); setTouched({}); touchedRef.current = {}; setAnswers({}); setCodedAnswers({}); setReveal(null); setDimIdx(0); setQIdx(0);
         setClaims([]);
         try { localStorage.removeItem(`aura_ob_dim_${userId}`); localStorage.removeItem(`aura_ob_q_${userId}`); } catch { /* ignore */ }
         /* These four columns must actually be emptied on the row, not merely in
            state — otherwise the next resume hydrates the last subject's work
            straight back in. `clearKeys` is the deliberate null. */
-        await writeProfile({}, "subject change reset", undefined, [
+        await writeProfile({ brand_assessment_answers_coded: {} }, "subject change reset", undefined, [
           "brand_assessment_answers", "answered_band", "skill_ratings", "audit_results",
         ]);
         if (hadWork) toast("That's a different profile — Aura has cleared the strengths and answers from the last one.");
@@ -1836,7 +1845,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("onboarding_questions" as any) as any)
-        .select("prompt, helper, kind, options, max_choices, why_asked, allow_none, randomise")
+        .select("id, position, framework, band, instrument_version, prompt, helper, kind, options, max_choices, why_asked, allow_none, randomise")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -1957,9 +1966,9 @@ const Onboarding = () => {
      mid-instrument started again from question one with nothing kept. Every
      commit is now persisted, along with the place in the queue. Fire and
      forget: the UI never waits on the write. */
-  const persistQuestionProgress = useCallback((ans: Record<string, string>, idx: number) => {
+  const persistQuestionProgress = useCallback((ans: Record<string, string>, idx: number, coded?: CodedAnswers) => {
     if (!userId && anonToken) {
-      anonStateRef.current = { ...anonStateRef.current, answers: ans, q_idx: idx };
+      anonStateRef.current = { ...anonStateRef.current, answers: ans, ...(coded ? { answers_coded: coded } : {}), q_idx: idx };
       void saveSession(anonToken, anonStateRef.current);
     }
     try {
@@ -1978,23 +1987,23 @@ const Onboarding = () => {
   }, [userId, anonToken]);
 
   /* ── the six questions, then the read ── */
-  const finishQuestions = async (finalAnswers: Record<string, string>) => {
+  const finishQuestions = async (finalAnswers: Record<string, string>, finalCoded: CodedAnswers) => {
     const readRun = newRunId();
     setRevealRunId(readRun);
     setRevealPending(true);
     go(12);
     if (!userId) {
       if (anonToken) {
-        anonStateRef.current = { ...anonStateRef.current, answers: finalAnswers, journey_screen: 12 };
+        anonStateRef.current = { ...anonStateRef.current, answers: finalAnswers, answers_coded: finalCoded, journey_screen: 12 };
         await saveSession(anonToken, anonStateRef.current);
       }
       return;
     }
-    await saveAnswers(userId, finalAnswers);
+    await saveAnswers(userId, finalAnswers, finalCoded);
     try {
       await writeProfile({ instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "instrument stamp");
     } catch (e) { console.error("[journey] stamp threw", e); }
-    const results = await generateMarketRead(userId, finalAnswers, sector || null, band, readRun);
+    const results = await generateMarketRead(userId, finalAnswers, sector || null, band, readRun, finalCoded);
     /* the report needs the raw read, not just the card built from it */
     if (results) setReadRaw(results);
     const built = toRevealData(results, {
@@ -2317,6 +2326,7 @@ const Onboarding = () => {
           identity_intelligence: { ...ii, journey_screen: 0, journey_paused: false },
           onboarding_step: 0,
           brand_assessment_answers: null,
+          brand_assessment_answers_coded: {},
           skill_ratings: null,
           audit_results: null,
           answered_band: null,
@@ -3647,24 +3657,29 @@ const Onboarding = () => {
     } else {
       const q = questions[Math.min(qIdx, questions.length - 1)];
       const last = qIdx >= questions.length - 1;
-      const advance = (value: string) => {
+      const advance = (input: Omit<AnswerInput, "lang">) => {
         /* one commit per question — a held Enter fired this twice and, because
            setQIdx is a functional update, both applied and a question was skipped */
         if (committedQRef.current === qIdx) return;
         committedQRef.current = qIdx;
-        const next = { ...answers, [`Q${qIdx + 1} ${q.prompt}`]: value };
+        /* Coded first; the legacy English entry is rebuilt from the codes and the
+           canonical row, never from what was on screen. */
+        const coded = toCoded(q, { ...input, lang: uiLang === "ar" ? "ar" : "en" });
+        const nextCoded = { ...codedAnswers, [q.id]: coded };
+        const next = { ...answers, [legacyKey(qIdx + 1, q)]: toLegacyEnglish(q, coded) };
         setAnswers(next);
+        setCodedAnswers(nextCoded);
         setTextAnswer("");
         setMultiPicked([]);
         setSinglePicked(null);
         if (userId) {
-          void saveAnswers(userId, next);
+          void saveAnswers(userId, next, nextCoded);
           /* Stamp the band that produced these answers, so a later band change
              discards them instead of merging two prompt sets. */
           if (band) void upsertProfile(userId, { answered_band: band }, "answered band stamp");
         }
-        persistQuestionProgress(next, last ? qIdx : qIdx + 1);
-        if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
+        persistQuestionProgress(next, last ? qIdx : qIdx + 1, nextCoded);
+        if (last) void finishQuestions(next, nextCoded); else setQIdx((i) => i + 1);
       };
       const back = () => {
         committedQRef.current = -1;
@@ -3715,12 +3730,12 @@ const Onboarding = () => {
           {q.kind === "choice" ? (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
-                {opts.map((o, i) => optionButton(i, o.label, () => setSinglePicked(String(i)), singlePicked === String(i)))}
+                {opts.map((o, i) => optionButton(i, o.label, () => setSinglePicked(o.value), singlePicked === o.value))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={!singlePicked} aria-describedby={!singlePicked ? "ob-q-why" : undefined} onClick={() => {
                   if (!singlePicked) return;
-                  advance(opts[Number(singlePicked)]?.label ?? "");
+                  advance({ values: [singlePicked] });
                 }}>Next</OBButton>
                 {!singlePicked ? whyLine("ob-q-why", "Pick one answer to enable this.", true) : null}
               </Actions>
@@ -3732,14 +3747,14 @@ const Onboarding = () => {
                 {opts.map((o, i) => optionButton(
                   i,
                   o.label,
-                  () => setMultiPicked((prev) => prev.includes(String(i)) ? prev.filter((x) => x !== String(i)) : [...prev, String(i)]),
-                  multiPicked.includes(String(i)),
-                  !multiPicked.includes(String(i)) && atCap,
+                  () => setMultiPicked((prev) => prev.includes(o.value) ? prev.filter((x) => x !== o.value) : [...prev, o.value]),
+                  multiPicked.includes(o.value),
+                  !multiPicked.includes(o.value) && atCap,
                 ))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={multiPicked.length === 0} aria-describedby={multiPicked.length === 0 ? "ob-qm-why" : undefined} onClick={() => advance(
-                  multiPicked.map((i) => opts[Number(i)]?.label ?? "").filter(Boolean).join(" · "),
+                  { values: multiPicked.filter((v) => opts.some((o) => o.value === v)) },
                 )}>Next</OBButton>
                 {multiPicked.length === 0 ? whyLine("ob-qm-why", "Pick at least one to enable this.", true) : null}
               </Actions>
@@ -3770,7 +3785,7 @@ const Onboarding = () => {
                     if (!singlePicked) return;
                     const kept = proposals![Number(singlePicked)]?.label ?? "";
                     const dropped = proposals!.filter((_, i) => String(i) !== singlePicked).map((x) => x.label);
-                    advance(`${kept}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
+                    advance({ proposed: { chosen: kept, rejected: dropped } });
                   }}>Next</OBButton>
                   {!singlePicked ? whyLine("ob-qp-why", "Keep the one that's actually you to enable this.", true) : null}
                 </Actions>
@@ -3785,12 +3800,12 @@ const Onboarding = () => {
                   onFocus={rotatePlaceholder}
                   onKeyDown={(e) => {
                     if (e.repeat) return;
-                    if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim());
+                    if (e.key === "Enter" && textAnswer.trim()) advance({ text: textAnswer.trim() });
                   }}
                   placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
                 <Actions style={{ marginBlockStart: 16 }}>
                   <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qtf-why" : undefined}
-                    onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                    onClick={() => advance({ text: textAnswer.trim() })}>Next</OBButton>
                   {!textAnswer.trim() ? whyLine("ob-qtf-why", "Write an answer to enable this.", true) : null}
                 </Actions>
               </>
@@ -3806,12 +3821,12 @@ const Onboarding = () => {
                 onFocus={rotatePlaceholder}
                 onKeyDown={(e) => {
                   if (e.repeat) return;
-                  if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim());
+                  if (e.key === "Enter" && textAnswer.trim()) advance({ text: textAnswer.trim() });
                 }}
                 placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qt-why" : undefined}
-                  onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                  onClick={() => advance({ text: textAnswer.trim() })}>Next</OBButton>
                 {!textAnswer.trim() ? whyLine("ob-qt-why", "Write an answer to enable this.", true) : null}
               </Actions>
             </>
@@ -3819,7 +3834,7 @@ const Onboarding = () => {
 
           <Actions style={{ marginBlockStart: 12 }}>
             {showNone ? (
-              <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
+              <OBButton variant="tertiary" onClick={() => advance({ values: [NONE_CODE] })}>None of these fit</OBButton>
             ) : null}
             <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else goBack(10); }}>Back</OBButton>
           </Actions>

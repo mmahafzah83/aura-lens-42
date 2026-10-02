@@ -1472,6 +1472,7 @@ export type Database = {
           avatar_url: string | null
           band_source: string | null
           brand_assessment_answers: Json | null
+          brand_assessment_answers_coded: Json
           brand_assessment_completed_at: string | null
           brand_assessment_results: Json | null
           brand_pillars: string[]
@@ -1543,6 +1544,7 @@ export type Database = {
           avatar_url?: string | null
           band_source?: string | null
           brand_assessment_answers?: Json | null
+          brand_assessment_answers_coded?: Json
           brand_assessment_completed_at?: string | null
           brand_assessment_results?: Json | null
           brand_pillars?: string[]
@@ -1614,6 +1616,7 @@ export type Database = {
           avatar_url?: string | null
           band_source?: string | null
           brand_assessment_answers?: Json | null
+          brand_assessment_answers_coded?: Json
           brand_assessment_completed_at?: string | null
           brand_assessment_results?: Json | null
           brand_pillars?: string[]

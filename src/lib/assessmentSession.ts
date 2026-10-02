@@ -29,6 +29,8 @@ export type AssessmentState = {
   generated_at?: string | null;
   read?: Record<string, unknown> | null;
   answers?: Record<string, string>;
+  /** Answers by question id and option value — see assessmentAnswers.ts. */
+  answers_coded?: Record<string, any>;
 };
 
 /* ── the token, held in the browser ─────────────────────────────── */

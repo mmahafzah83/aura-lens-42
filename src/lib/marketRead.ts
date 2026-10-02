@@ -160,22 +160,34 @@ async function writeProfile(userId: string, patch: Record<string, any>, label: s
 }
 
 /** Save the six answers immediately, so a failed generation never loses them. */
-export async function saveAnswers(userId: string, answers: Record<string, string>): Promise<void> {
+export async function saveAnswers(
+  userId: string,
+  answers: Record<string, string>,
+  coded?: Record<string, any> | null,
+): Promise<void> {
   try {
     /* Merge, never overwrite. A stale client holding a partial set must not be
        able to blank answers already kept for this member. */
     let merged: Record<string, string> = answers;
+    let mergedCoded: Record<string, any> | null = coded && Object.keys(coded).length ? coded : null;
     try {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("brand_assessment_answers")
+        .select("brand_assessment_answers, brand_assessment_answers_coded")
         .eq("user_id", userId)
         .maybeSingle();
       const existing = (data as any)?.brand_assessment_answers;
       if (existing && typeof existing === "object") {
         merged = { ...(existing as Record<string, string>), ...answers };
       }
+      const existingCoded = (data as any)?.brand_assessment_answers_coded;
+      if (mergedCoded && existingCoded && typeof existingCoded === "object") {
+        mergedCoded = { ...(existingCoded as Record<string, any>), ...mergedCoded };
+      }
     } catch { /* no read means write what we hold */ }
-    await writeProfile(userId, { brand_assessment_answers: merged }, "answers save");
+    await writeProfile(userId, {
+      brand_assessment_answers: merged,
+      ...(mergedCoded ? { brand_assessment_answers_coded: mergedCoded } : {}),
+    }, "answers save");
   } catch (e) {
     console.error("[marketRead] answers save threw", e);
   }
@@ -193,6 +205,8 @@ export async function generateMarketRead(
   /* The run the tab is already watching. Passing it is what lets the waiting
      panel tick against real stage marks instead of guessing. */
   runId?: string | null,
+  /* Coded answers ride along; the function ignores them for now. */
+  answersCoded?: Record<string, any> | null,
 ): Promise<Record<string, any> | null> {
   try {
     const { data: prof } = await (supabase.from("diagnostic_profiles" as any) as any)
@@ -207,6 +221,7 @@ export async function generateMarketRead(
       body: {
         ...(runId ? { run_id: runId } : {}),
         answers,
+        ...(answersCoded && Object.keys(answersCoded).length ? { answers_coded: answersCoded } : {}),
         auditScores: scores || "No scores on file yet",
         sector: sector || null,
         band: band || null,
