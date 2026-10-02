@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation, Trans } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
@@ -53,10 +54,11 @@ function usePositionCount(target: number, start: boolean, duration = 800) {
 }
 
 export default function RequestAccess() {
+  const { t } = useTranslation();
   usePageMeta({
-    title: "Aura — Reserve a founding seat",
+    title: t("auth.meta.requestTitle"),
     description:
-      "The founding fifty is for the weekly loop. Thirty seconds to ask. Read personally, answered within 24 hours.",
+      t("auth.meta.requestDescription"),
     path: "/request-access",
   });
 
@@ -103,11 +105,11 @@ export default function RequestAccess() {
 
   const validate = () => {
     const next: typeof errors = {};
-    if (!name.trim()) next.name = "Your name is required";
-    if (!email.trim()) next.email = "Email is required";
-    else if (!EMAIL_RE.test(email.trim())) next.email = "Enter a valid email";
-    if (!seniority) next.seniority = "Select your level";
-    if (!sector) next.sector = "Select your sector";
+    if (!name.trim()) next.name = t("auth.error.nameRequired");
+    if (!email.trim()) next.email = t("auth.error.emailRequired");
+    else if (!EMAIL_RE.test(email.trim())) next.email = t("auth.error.emailValid");
+    if (!seniority) next.seniority = t("auth.error.levelRequired");
+    if (!sector) next.sector = t("auth.error.sectorRequired");
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -131,7 +133,7 @@ export default function RequestAccess() {
           setValidationMessage(
             typeof efMsg === "string" && efMsg.trim()
               ? efMsg
-              : "Please check the highlighted fields and try again.",
+              : t("auth.error.checkFields"),
           );
           setStatus("validation");
           return;
@@ -179,19 +181,19 @@ export default function RequestAccess() {
 
       <header className="ra-mast">
         <Link className="ra-brand" to="/">
-          <AuraLogo size={24} variant="auto" />
-          <span className="ra-bn">Aura</span>
+          <AuraLogo size={24} variant="auto" title={t("auth.request.logoTitle")} />
+          <span className="ra-bn">{t("auth.request.wordmark")}</span>
         </Link>
         <div className="ra-mr">
-          <Link className="ra-mlink" to="/">← Back to Aura</Link>
-          <Link className="ra-mlink" to="/auth">Sign in</Link>
+          <Link className="ra-mlink" to="/">{t("auth.request.back")}</Link>
+          <Link className="ra-mlink" to="/auth">{t("auth.request.signIn")}</Link>
         </div>
       </header>
 
       <main className="ra-main">
         {/* ── LEFT · the door ── */}
         <div>
-          <div className="ra-eyebrow"><span>The door</span></div>
+          <div className="ra-eyebrow"><span>{t("auth.request.eyebrow")}</span></div>
           <h1 className="ra-h1">{SEAT_HEADING}</h1>
           <p className="ra-lede">{SEAT_LEAD}</p>
           <p className="ra-onejob">{SEAT_ONE_JOB}</p>
@@ -207,10 +209,10 @@ export default function RequestAccess() {
               {seats.claimed < COUNTER_REVEAL_THRESHOLD ? (
                 <>
                   <div className="ra-rackhead">
-                    <span className="ra-lb">Founding circle</span>
+                    <span className="ra-lb">{t("auth.request.foundingCircle")}</span>
                   </div>
                   <p className="ra-rackteaser">
-                    Fifty founding seats. I onboard each one personally.
+                    {t("auth.request.rackTeaser")}
                   </p>
                 </>
               ) : (
@@ -219,7 +221,7 @@ export default function RequestAccess() {
                     <span className="ra-n">
                       {SEAT_RACK_LABEL(seats.claimed, seats.cap)}
                     </span>
-                    <span className="ra-lb">Founding circle</span>
+                    <span className="ra-lb">{t("auth.request.foundingCircle")}</span>
                   </div>
                   <div className="ra-ticks" aria-hidden="true">
                     {Array.from({ length: seats.cap }).map((_, i) => (
@@ -233,7 +235,7 @@ export default function RequestAccess() {
                   </div>
                   <p className={`ra-rackfoot${isDone ? " counted" : ""}`}>
                     <span className="ra-sq" />
-                    {isDone ? "Yours is counted" : "The next one is yours"}
+                    {isDone ? t("auth.request.rackCounted") : t("auth.request.rackYours")}
                   </p>
                 </>
               )}
@@ -242,30 +244,29 @@ export default function RequestAccess() {
 
           <div className="ra-ledger">
             <div className="ra-lrow">
-              <span className="ra-k">You send this</span>
+              <span className="ra-k">{t("auth.request.ledgerSend")}</span>
               <span className="ra-lead" />
-              <span className={`ra-v${isDone ? " cy" : ""}`}>{isDone ? "Done" : "Thirty seconds"}</span>
+              <span className={`ra-v${isDone ? " cy" : ""}`}>{isDone ? t("auth.request.ledgerDone") : t("auth.request.ledgerThirty")}</span>
             </div>
             <div className="ra-lrow">
-              <span className="ra-k">I read it</span>
+              <span className="ra-k">{t("auth.request.ledgerRead")}</span>
               <span className="ra-lead" />
-              <span className="ra-v act">Within 24 hours</span>
+              <span className="ra-v act">{t("auth.request.ledgerWithin")}</span>
             </div>
             <div className="ra-lrow">
-              <span className="ra-k">Your seat opens</span>
+              <span className="ra-k">{t("auth.request.ledgerOpens")}</span>
               <span className="ra-lead" />
-              <span className="ra-v">The assessment first</span>
+              <span className="ra-v">{t("auth.request.ledgerAssessment")}</span>
             </div>
             <div className="ra-lrow">
-              <span className="ra-k">Aura starts reading</span>
+              <span className="ra-k">{t("auth.request.ledgerStarts")}</span>
               <span className="ra-lead" />
-              <span className={`ra-v${isDone ? "" : " cy"}`}>That same night</span>
+              <span className={`ra-v${isDone ? "" : " cy"}`}>{t("auth.request.ledgerNight")}</span>
             </div>
           </div>
 
           <p className="ra-readfree">
-            Not ready for a seat? <Link to="/read">Read yourself free</Link> — no account,
-            ninety seconds.
+            <Trans i18nKey="auth.request.readFree" components={{ 1: <Link to="/read" /> }} />
           </p>
           <p className="ra-ar" dir="rtl">
             حتى السوق يعرفك قبل ما يشوفك <span aria-hidden="true">✦</span>
@@ -276,37 +277,37 @@ export default function RequestAccess() {
         <div className={`ra-sheet${isDone ? " ra-done" : ""}`}>
           {!isDone && (
             <>
-              <h2 className="ra-h2">Tell me who you are.</h2>
-              <p className="ra-sub">Four fields. Nothing you'd have to think about.</p>
+              <h2 className="ra-h2">{t("auth.request.heading")}</h2>
+              <p className="ra-sub">{t("auth.request.sub")}</p>
 
               <form onSubmit={handleSubmit} noValidate className="ra-form">
                 <Field
-                  id="ra-name" label="Your name" placeholder="Your full name"
+                  id="ra-name" label={t("auth.request.nameLabel")} placeholder={t("auth.request.namePlaceholder")}
                   value={name} maxLength={200} error={errors.name}
                   onChange={(v) => { setName(v); if (errors.name) setErrors((p) => ({ ...p, name: undefined })); }}
                 />
                 <Field
-                  id="ra-email" label="Your email" type="email" placeholder="you@email.com"
+                  id="ra-email" label={t("auth.request.emailLabel")} type="email" placeholder={t("auth.request.emailPlaceholder")}
                   value={email} maxLength={255} error={errors.email}
                   onChange={(v) => { setEmail(v); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                 />
                 <Select
-                  id="ra-seniority" label="Your level" placeholder="Select your level"
+                  id="ra-seniority" label={t("auth.request.levelLabel")} placeholder={t("auth.request.levelPlaceholder")}
                   value={seniority} options={SENIORITY} error={errors.seniority}
                   onChange={(v) => { setSeniority(v); if (errors.seniority) setErrors((p) => ({ ...p, seniority: undefined })); }}
                 />
                 <Select
-                  id="ra-sector" label="Your sector" placeholder="Select your sector"
+                  id="ra-sector" label={t("auth.request.sectorLabel")} placeholder={t("auth.request.sectorPlaceholder")}
                   value={sector} options={SECTOR} error={errors.sector}
                   onChange={(v) => { setSector(v); if (errors.sector) setErrors((p) => ({ ...p, sector: undefined })); }}
                 />
 
                 {status === "error" && (
-                  <div className="ra-alert">Didn't connect. Try once more.</div>
+                  <div className="ra-alert">{t("auth.error.didntConnect")}</div>
                 )}
                 {status === "validation" && (
                   <div className="ra-alert">
-                    {validationMessage || "Please check the highlighted fields and try again."}
+                    {validationMessage || t("auth.error.checkFields")}
                   </div>
                 )}
 
@@ -322,27 +323,27 @@ export default function RequestAccess() {
                   onClick={() => setIntent(INTENT_RESERVE)}
                 >
                   {status === "loading" && intent === INTENT_RESERVE
-                    ? <span className="ra-pulse">Sending…</span>
-                    : "Reserve my seat"}
+                    ? <span className="ra-pulse">{t("auth.request.sending")}</span>
+                    : t("auth.request.reserve")}
                 </button>
                 <p className="ra-soft">
-                  <span className="ra-soft-q">Not ready to commit?</span>{" "}
+                  <span className="ra-soft-q">{t("auth.request.notReady")}</span>{" "}
                   <button
                     type="button"
                     className="ra-soft-a"
                     disabled={status === "loading"}
                     onClick={(e) => void handleSubmit(e, INTENT_KEEP_POSTED)}
                   >
-                    Just keep me posted
+                    {t("auth.request.keepPosted")}
                   </button>
                 </p>
               </form>
 
               <p className="ra-fine">
-                No card, nothing charged. You're telling me you want in at this price — I'll come to you when it opens.
+                {t("auth.request.fine")}
               </p>
               <p className="ra-fine ra-fine--small">
-                Protected under Saudi PDPL · <Link to="/privacy">Privacy Policy</Link> · Already have a seat? <Link to="/auth">Sign in →</Link>
+                <Trans i18nKey="auth.request.fineSmall" components={{ 1: <Link to="/privacy" />, 2: <Link to="/auth" /> }} />
               </p>
             </>
           )}
@@ -350,7 +351,7 @@ export default function RequestAccess() {
           {status === "success" && intent === INTENT_RESERVE && (
             <Ceremony
               position={position}
-              seatTag={seats ? `Seat ${seats.claimed} of ${seats.cap} · reserved` : "Reserved"}
+              seatTag={seats ? t("auth.request.seatTag", { claimed: seats.claimed, cap: seats.cap }) : t("auth.request.reserved")}
               title={RESERVED_TITLE}
               body={RESERVED_BODY}
               withSignature
@@ -368,7 +369,7 @@ export default function RequestAccess() {
                   <div className="ra-doors">
                     <button type="button" className="ra-door ra-door-fill"
                       disabled={worthState === "sending"} onClick={() => void sendWorth()}>
-                      {worthState === "sending" ? <span className="ra-pulse">Sending…</span> : WORTH_SEND}
+                      {worthState === "sending" ? <span className="ra-pulse">{t("auth.request.sending")}</span> : WORTH_SEND}
                     </button>
                     <button type="button" className="ra-door ra-door-line"
                       onClick={() => setWorthState("skipped")}>{WORTH_SKIP}</button>
@@ -379,26 +380,25 @@ export default function RequestAccess() {
           )}
 
           {status === "success" && intent === INTENT_KEEP_POSTED && (
-            <Ceremony position={null} title={POSTED_TITLE} body={`Thank you, ${submittedName}.`} />
+            <Ceremony position={null} title={POSTED_TITLE} body={t("auth.request.thanks", { name: submittedName })} />
           )}
 
           {status === "duplicate" && (
             <Ceremony
               position={null}
-              title="You already asked."
-              body="Your request is with me. If I haven't come back to you yet, I will."
-              quiet="Need to check where it stands? Write to support@aura-intel.org and I'll answer."
+              title={t("auth.request.duplicateTitle")}
+              body={t("auth.request.duplicateBody")}
+              quiet={t("auth.request.duplicateQuiet")}
             />
           )}
         </div>
       </main>
 
       <footer className="ra-foot">
-        <span>© 2026 Aura</span>
+        <span>{t("auth.request.copyright")}</span>
         <span>aura-intel.org</span>
         <span>
-          <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> ·{" "}
-          <a href="/contact">Contact</a>
+          <Trans i18nKey="auth.request.footLinks" components={{ 1: <Link to="/privacy" />, 2: <Link to="/terms" />, 3: <a href="/contact" /> }} />
         </span>
       </footer>
     </div>
@@ -455,23 +455,24 @@ function Ceremony({
   children?: React.ReactNode;
 }) {
   const counted = usePositionCount(position ?? 0, position != null);
+  const { t } = useTranslation();
   return (
     <div className="ra-ceremony">
-      <div className="ra-mk"><AuraLogo size={44} variant="auto" /></div>
+      <div className="ra-mk"><AuraLogo size={44} variant="auto" title={t("auth.request.logoTitle")} /></div>
       {seatTag ? (
         <span className="ra-pos"><i className="ra-d" />{seatTag}</span>
       ) : position != null && position > 0 && (
-        <span className="ra-pos"><i className="ra-d" />Number {counted} on the list</span>
+        <span className="ra-pos"><i className="ra-d" />{t("auth.request.position", { count: counted })}</span>
       )}
       <h2 className="ra-h2">{title}</h2>
       <p className="ra-cbody">{body}</p>
       {quiet && <p className="ra-quiet">{quiet}</p>}
       {children}
-      <p className="ra-inbox">Check your inbox — and your spam folder — for a note from Aura.</p>
+      <p className="ra-inbox">{t("auth.request.inbox")}</p>
       {withSignature && (
         <div className="ra-sig">
           <div className="ra-nm">Mohammad Mahafdhah</div>
-          <div className="ra-rl">Aura builder</div>
+          <div className="ra-rl">{t("auth.request.signatureRole")}</div>
         </div>
       )}
     </div>

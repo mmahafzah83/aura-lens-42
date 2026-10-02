@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import AuraLogo from "@/components/brand/AuraLogo";
 import usePageMeta from "@/hooks/usePageMeta";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,9 +13,10 @@ import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE } from "@/lib/brand";
  * URL (preserved as `next` or reconstructed from `token`+`type`).
  */
 export default function AcceptInvitation() {
+  const { t } = useTranslation();
   usePageMeta({
-    title: "Aura — Accept your invitation",
-    description: "You've been invited to join Aura — an AI professional identity platform. Your experience is worth more than your profile shows. Accept your invitation to set up your account.",
+    title: t("auth.meta.inviteTitle"),
+    description: t("auth.meta.inviteDescription"),
     path: "/accept-invitation",
   });
   const [params] = useSearchParams();
@@ -98,7 +100,7 @@ export default function AcceptInvitation() {
         <section className="ai-stage">
           <div className="ai-card">
             <div className="ai-eye ai-mark">
-              <AuraLogo size={60} variant="light" />
+              <AuraLogo size={60} variant="light" title={t("auth.invite.logoTitle")} />
             </div>
           </div>
         </section>
@@ -108,37 +110,37 @@ export default function AcceptInvitation() {
       <section className="ai-stage">
         <div className="ai-card">
           <div className="ai-eye ai-mark">
-            <AuraLogo size={60} variant="light" />
+            <AuraLogo size={60} variant="light" title={t("auth.invite.logoTitle")} />
           </div>
 
           <div className="ai-eyebrow">
-            <span>{isExpired ? "Invitation" : "Your invitation"}</span>
+            <span>{isExpired ? t("auth.invite.eyebrowExpired") : t("auth.invite.eyebrow")}</span>
           </div>
 
           <h1 className="ai-headline">
             {isExpired
-              ? "This invitation has expired."
-              : "Your expertise deserves to be seen."}
+              ? t("auth.invite.expiredHeadline")
+              : t("auth.invite.headline")}
           </h1>
 
           <p className="ai-subline">
             {isExpired
-              ? "Invite links last 24 hours. You can request a fresh one — it only takes a moment."
-              : `Aura is an ${PRODUCT_DESCRIPTOR} that converts what you already know into the digital presence your career demands.`}
+              ? t("auth.invite.expiredSub")
+              : t("auth.invite.sub", { descriptor: PRODUCT_DESCRIPTOR })}
           </p>
 
           {isExpired ? (
             <Link to="/request-access" className="ai-cta">
-              Request a new one →
+              {t("auth.invite.requestNew")}
             </Link>
           ) : (
             <>
               <a href={ctaHref} onClick={handleCtaClick} className="ai-cta">
-                Let the world see what I know →
+                {t("auth.invite.cta")}
               </a>
               <div className="ai-secondary">
                 <a href="#tell-me-more" onClick={scrollToPanels} className="ai-quiet">
-                  Tell me more first ↓
+                  {t("auth.invite.more")}
                 </a>
               </div>
             </>
@@ -152,23 +154,23 @@ export default function AcceptInvitation() {
           <div className="ai-more-inner">
             <Panel
               num="01"
-              title="You read 50 articles a week."
-              body="But none of that knowledge reaches the people who should see it. Your insights stay in your head. Your competitors publish theirs."
+              title={t("auth.invite.panel1Title")}
+              body={t("auth.invite.panel1Body")}
             />
             <Panel
               num="02"
-              title="Aura reads what you already read."
-              body="Paste a link. Aura extracts the strategic signal, matches it to your expertise, and writes content in your voice — not generic AI."
+              title={t("auth.invite.panel2Title")}
+              body={t("auth.invite.panel2Body")}
             />
             <Panel
               num="03"
-              title={`${ASSESSMENT_MINUTES_LINE.charAt(0).toUpperCase() + ASSESSMENT_MINUTES_LINE.slice(1)} to set up. A career of visibility.`}
-              body="No ghostwriter. No social media agency. Just your expertise, made visible — finally."
+              title={t("auth.invite.panel3Title", { minutesLine: ASSESSMENT_MINUTES_LINE.charAt(0).toUpperCase() + ASSESSMENT_MINUTES_LINE.slice(1) })}
+              body={t("auth.invite.panel3Body")}
             />
 
             <div className="ai-more-cta">
               <a href={ctaHref} onClick={handleCtaClick} className="ai-cta ai-cta-static">
-                Let the world see what I know →
+                {t("auth.invite.cta")}
               </a>
             </div>
           </div>

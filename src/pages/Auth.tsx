@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { useTranslation, Trans } from "react-i18next";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import { claimPendingSession } from "@/lib/assessmentSession";
@@ -39,12 +40,13 @@ const Auth = () => {
   const [email, setEmail] = useState(() => readParam("email"));
   const [hasEmailParam] = useState(() => !!readParam("email"));
   const [isAssessment] = useState(() => readParam("intent") === "assessment");
+  const { t } = useTranslation();
 
   usePageMeta({
-    title: isAssessment ? "Aura — Start your professional assessment" : "Aura — Sign in",
+    title: isAssessment ? t("auth.meta.assessmentTitle") : t("auth.meta.signinTitle"),
     description: isAssessment
-      ? "Create your Aura account and start your professional assessment — free, and yours to keep."
-      : "Sign in to Aura — your signals, your drafts, and the work that ran overnight.",
+      ? t("auth.meta.assessmentDescription")
+      : t("auth.meta.signinDescription"),
     path: "/auth",
   });
 
@@ -152,7 +154,7 @@ const Auth = () => {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("msg") === "password_updated") {
-        toast({ title: "Password updated", description: "Sign in with your new password." });
+        toast({ title: t("auth.reset.updatedTitle"), description: t("auth.reset.updatedBody") });
         window.history.replaceState({}, "", "/auth");
       }
     } catch { /* ignore */ }
@@ -198,7 +200,7 @@ const Auth = () => {
       // Inline and persistent. A toast disappears before a person has
       // finished reading it, and this is the message they most need.
       setSignInError(
-        "That email and password don't match. If you've never set a password, use \u201cSet or reset your password\u201d below.",
+        t("auth.error.signinMismatch"),
       );
       setLoading(false);
       pwdRef.current?.focus();
@@ -213,11 +215,11 @@ const Auth = () => {
     setEmailError(null);
     if (signingUp) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setEmailError("That doesn't look like an email address. Check it and try again.");
+      setEmailError(t("auth.error.emailInvalid"));
       emailRef.current?.focus();
       return;
     }
-    if (password.length < 8) { setSignUpError("Use eight characters or more."); pwdRef.current?.focus(); return; }
+    if (password.length < 8) { setSignUpError(t("auth.error.passwordShort")); pwdRef.current?.focus(); return; }
     if (!consent) return;
     setSigningUp(true);
     try {
@@ -239,10 +241,10 @@ const Auth = () => {
         const raw = String(msg);
         setSignUpError(
           result?.code === "signup_limit" || /rate|too many|429|as many accounts/i.test(raw)
-              ? "That's a lot of attempts from here today. Write to support@aura-intel.org and it's sorted by hand."
+              ? t("auth.error.signupLimit")
               : /password/i.test(raw)
-                ? "Use eight characters or more."
-                : "Couldn't open the account just now. Try again in a moment.",
+                ? t("auth.error.passwordShort")
+                : t("auth.error.signupFailed"),
         );
         return;
       }
@@ -252,7 +254,7 @@ const Auth = () => {
       setConfirmCooldown(60);
       setView("verify");
     } catch {
-      setSignUpError("Couldn't open the account just now. Try again in a moment.");
+      setSignUpError(t("auth.error.signupFailed"));
     } finally {
       setSigningUp(false);
     }
@@ -270,7 +272,7 @@ const Auth = () => {
     setEmailError(null);
     setSignInError(null);
     if (!email || !email.includes("@")) {
-      setEmailError("Enter your email first");
+      setEmailError(t("auth.error.emailFirst"));
       emailRef.current?.focus();
       return;
     }
@@ -281,7 +283,7 @@ const Auth = () => {
       setResetSentEmail(target);
       setView("sent");
     } catch {
-      toast({ title: "Couldn't send the link", description: "Please try again.", variant: "destructive" });
+      toast({ title: t("auth.error.sendLinkTitle"), description: t("auth.error.tryAgain"), variant: "destructive" });
     } finally {
       setResetting(false);
     }
@@ -292,9 +294,9 @@ const Auth = () => {
     setResending(true);
     try {
       await sendReset(resetSentEmail);
-      toast({ title: "Sent again", description: `Another link is on its way to ${resetSentEmail}.` });
+      toast({ title: t("auth.reset.sentAgainTitle"), description: t("auth.reset.sentAgainBody", { email: resetSentEmail }) });
     } catch {
-      toast({ title: "Couldn't resend", description: "Please try again.", variant: "destructive" });
+      toast({ title: t("auth.error.resendTitle"), description: t("auth.error.tryAgain"), variant: "destructive" });
     } finally {
       setResending(false);
     }
@@ -314,16 +316,16 @@ const Auth = () => {
       if (error || !result?.ok) {
         setConfirmResendNote({
           kind: "error",
-          text: result?.error || "The link could not be sent just now. Try again in a moment.",
+          text: result?.error || t("auth.error.linkNotSent"),
         });
         return;
       }
-      setConfirmResendNote({ kind: "sent", text: `Another link is on its way to ${target}.` });
+      setConfirmResendNote({ kind: "sent", text: t("auth.signup.resentNote", { email: target }) });
       setConfirmCooldown(60);
     } catch {
       setConfirmResendNote({
         kind: "error",
-        text: "The link could not be sent just now. Try again in a moment.",
+        text: t("auth.error.linkNotSent"),
       });
     } finally {
       setConfirmResending(false);
@@ -357,8 +359,8 @@ const Auth = () => {
       window.location.href = "/auth?msg=password_updated";
     } catch (e: any) {
       toast({
-        title: "Couldn't update the password",
-        description: e?.message || "Please try again.",
+        title: t("auth.error.updatePasswordTitle"),
+        description: e?.message || t("auth.error.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -367,23 +369,23 @@ const Auth = () => {
   };
 
   const headline =
-    view === "newPassword" ? <>Set your <em>password.</em></>
-    : view === "signup" ? <>Start your professional <em>assessment.</em></>
-    : view === "existing" ? <>You already have an account.</>
-    : view === "verify" ? <>Confirm your <em>email.</em></>
-    : view === "sent" ? <>Check your <em>email.</em></>
-    : linkExpired ? <>That link <em>has expired.</em></>
-    : <>Welcome <em>back.</em></>;
+    view === "newPassword" ? <Trans i18nKey="auth.reset.newHeadline" components={{ 1: <em /> }} />
+    : view === "signup" ? <Trans i18nKey="auth.signup.headline" components={{ 1: <em /> }} />
+    : view === "existing" ? <>{t("auth.signup.existingHeadline")}</>
+    : view === "verify" ? <Trans i18nKey="auth.signup.verifyHeadline" components={{ 1: <em /> }} />
+    : view === "sent" ? <Trans i18nKey="auth.reset.sentHeadline" components={{ 1: <em /> }} />
+    : linkExpired ? <Trans i18nKey="auth.reset.expiredHeadline" components={{ 1: <em /> }} />
+    : <Trans i18nKey="auth.signin.headline" components={{ 1: <em /> }} />;
 
   const sub =
-    view === "newPassword" ? "Eight characters or more. You'll sign in with it straight after."
-    : view === "signup" ? `Free, yours to keep. ${ASSESSMENT_MINUTES_LINE}, and you can stop and come back.`
-    : view === "existing" ? "That address is already registered. Sign in and your assessment picks up where it left off."
-    : view === "verify" ? <>A confirmation link is on its way to <b>{email}</b>. Open it and the assessment begins.</>
-    : view === "sent" ? <>A link is on its way to <b>{resetSentEmail}</b>. It opens once and expires in twenty-four hours.</>
-    : linkExpired ? "They last twenty-four hours. Enter your email and a fresh one is on its way."
-    : hasEmailParam ? "Sign in to pick up where the night left off."
-    : "The night shift ran while you were gone. Everything it found is inside.";
+    view === "newPassword" ? t("auth.reset.newSub")
+    : view === "signup" ? t("auth.signup.sub", { minutesLine: ASSESSMENT_MINUTES_LINE })
+    : view === "existing" ? t("auth.signup.existingSub")
+    : view === "verify" ? <Trans i18nKey="auth.signup.verifySub" values={{ email }} components={{ 1: <b /> }} />
+    : view === "sent" ? <Trans i18nKey="auth.reset.sentSub" values={{ email: resetSentEmail }} components={{ 1: <b /> }} />
+    : linkExpired ? t("auth.reset.expiredSub")
+    : hasEmailParam ? t("auth.signin.subReturning")
+    : t("auth.signin.sub");
 
   return (
     <div className="au">
@@ -394,8 +396,8 @@ const Auth = () => {
         <div className="au-pane">
           <div className="au-form">
             <Link className="au-brandrow" to="/">
-              <AuraLogo size={30} variant="auto" />
-              <span className="au-bn">Aura</span>
+              <AuraLogo size={30} variant="auto" title={t("auth.signin.logoTitle")} />
+              <span className="au-bn">{t("auth.signin.wordmark")}</span>
               <span className="au-bsub">
                 <span className="au-bsub-l">{PRODUCT_DESCRIPTOR.split(" ").slice(0, 2).join(" ")}</span>
                 <span className="au-bsub-l">{PRODUCT_DESCRIPTOR.split(" ").slice(2).join(" ")}</span>
@@ -409,12 +411,12 @@ const Auth = () => {
             {view === "signup" && (
               <form onSubmit={handleSignUp} className="au-fields" noValidate>
                 <div>
-                  <label htmlFor="au-suemail">Your email</label>
+                  <label htmlFor="au-suemail">{t("auth.signup.emailLabel")}</label>
                   <input
                     id="au-suemail" ref={emailRef} type="email" value={email} required
                     autoComplete="email" inputMode="email" autoCapitalize="off"
                     autoCorrect="off" spellCheck={false}
-                    placeholder="you@email.com" className="au-field"
+                    placeholder={t("auth.signin.emailPlaceholder")} className="au-field"
                     aria-invalid={!!emailError}
                     aria-describedby={emailError ? "au-suemail-err" : undefined}
                     onChange={(e) => { setEmail(e.target.value); setSignUpError(null); setEmailError(null); }}
@@ -422,7 +424,7 @@ const Auth = () => {
                   <p className="au-err" id="au-suemail-err" aria-live="polite">{emailError || ""}</p>
                 </div>
                 <div>
-                  <label htmlFor="au-supwd">Choose a password</label>
+                  <label htmlFor="au-supwd">{t("auth.signup.passwordLabel")}</label>
                   <div className="au-pwwrap">
                     <input
                       id="au-supwd" ref={pwdRef} type={showLoginPwd ? "text" : "password"} value={password}
@@ -434,14 +436,14 @@ const Auth = () => {
                     />
                     <button
                       type="button" className="au-peek"
-                      aria-label={showLoginPwd ? "Hide password" : "Show password"}
+                      aria-label={showLoginPwd ? t("auth.signin.hidePassword") : t("auth.signin.showPassword")}
                       aria-pressed={showLoginPwd}
                       onClick={() => setShowLoginPwd((s) => !s)}
                     >
                       {showLoginPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
-                  <p className="au-help" id="au-supwd-help">Eight characters or more.</p>
+                  <p className="au-help" id="au-supwd-help">{t("auth.signup.passwordHelp")}</p>
                 </div>
 
                 <div aria-live="polite">
@@ -454,24 +456,22 @@ const Auth = () => {
                     onChange={(e) => setConsent(e.target.checked)}
                   />
                   <span>
-                    I agree to the <Link to="/terms">Terms</Link> and{" "}
-                    <Link to="/privacy">Privacy Policy</Link>. My data is processed under Saudi
-                    PDPL, and I can delete everything in one click.
+                    <Trans i18nKey="auth.signup.consent" components={{ 1: <Link to="/terms" />, 2: <Link to="/privacy" /> }} />
                   </span>
                 </label>
 
                 <button type="submit" disabled={signingUp || !consent} className="au-btn">
                   {signingUp
-                    ? (<><Loader2 className="au-spin" size={16} /> Opening your account…</>)
-                    : (<>Start my assessment <span className="au-a">↗</span></>)}
+                    ? (<><Loader2 className="au-spin" size={16} /> {t("auth.signup.opening")}</>)
+                    : (<>{t("auth.signup.submit")} <span className="au-a">↗</span></>)}
                 </button>
                 <p className="au-trust">
-                  Nothing is posted, shared or shown to anyone — ever, without you clicking.
+                  {t("auth.signup.trust")}
                 </p>
 
                 <div className="au-center">
                   <button type="button" className="au-linkbtn quiet" onClick={() => setView("signin")}>
-                    Already have an account? Sign in →
+                    {t("auth.signup.haveAccount")}
                   </button>
                 </div>
               </form>
@@ -481,11 +481,10 @@ const Auth = () => {
             {view === "verify" && (
               <div className="au-fields">
                 <div className="au-note">
-                  Nothing after a minute or two? Check spam. The assessment opens the moment
-                  you confirm.
+                  {t("auth.signup.verifySpam")}
                 </div>
                 <div className="au-note">
-                  It comes from <b>invites@aura-intel.org</b>.
+                  <Trans i18nKey="auth.signup.verifyFrom" components={{ 1: <b /> }} />
                 </div>
                 <button
                   type="button" className="au-btn"
@@ -493,10 +492,10 @@ const Auth = () => {
                   disabled={confirmResending || confirmCooldown > 0}
                 >
                   {confirmResending
-                    ? (<><Loader2 className="au-spin" size={16} /> Sending…</>)
+                    ? (<><Loader2 className="au-spin" size={16} /> {t("auth.signin.sending")}</>)
                     : confirmCooldown > 0
-                      ? `Resend the link in ${confirmCooldown}s`
-                      : (<>Resend the link <span className="au-a">↗</span></>)}
+                      ? t("auth.signup.resendIn", { count: confirmCooldown })
+                      : (<>{t("auth.signup.resend")} <span className="au-a">↗</span></>)}
                 </button>
                 <div aria-live="polite">
                   {confirmResendNote && (
@@ -510,7 +509,7 @@ const Auth = () => {
                     type="button" className="au-linkbtn"
                     onClick={() => { setConfirmResendNote(null); setView("signup"); }}
                   >
-                    Use a different email →
+                    {t("auth.signup.differentEmail")}
                   </button>
                 </div>
               </div>
@@ -519,22 +518,22 @@ const Auth = () => {
             {view === "existing" && (
               <div className="au-fields">
                 <div className="au-note">
-                  No new account was opened, and this attempt did not count against today's limit.
+                  {t("auth.signup.existingNote")}
                 </div>
                 <button type="button" className="au-btn" onClick={() => setView("signin")}>
-                  Sign in <span className="au-a">↗</span>
+                  {t("auth.signin.submit")} <span className="au-a">↗</span>
                 </button>
                 <div className="au-center">
                   <button
                     type="button" className="au-linkbtn"
                     onClick={() => { setPassword(""); setEmail(""); setView("signup"); }}
                   >
-                    Use a different email →
+                    {t("auth.signup.differentEmail")}
                   </button>
                 </div>
                 <div className="au-center">
                   <button type="button" className="au-linkbtn quiet" onClick={handleForgotPassword} disabled={resetting}>
-                    {resetting ? "Sending…" : "Set or reset your password →"}
+                    {resetting ? t("auth.signin.sending") : t("auth.reset.setOrReset")}
                   </button>
                 </div>
               </div>
@@ -545,22 +544,21 @@ const Auth = () => {
               <form onSubmit={handleSubmit} className="au-fields" noValidate>
                 {linkExpired ? (
                   <div className="au-note warn" role="status">
-                    This reset link is no longer valid. Nothing is wrong with your seat.
+                    {t("auth.reset.expiredNote")}
                   </div>
                 ) : (
                   <div className="au-note">
-                    First time here? <a href="/auth?intent=assessment"><b>Create your account</b></a> —
-                    it takes about thirty seconds.
+                    <Trans i18nKey="auth.signin.firstTime" components={{ 1: <a href="/auth?intent=assessment" />, 2: <b /> }} />
                   </div>
                 )}
 
                 <div>
-                  <label htmlFor="au-email">Email</label>
+                  <label htmlFor="au-email">{t("auth.signin.emailLabel")}</label>
                   <input
                     id="au-email" ref={emailRef} type="email" value={email} required
                     autoComplete="email" inputMode="email" autoCapitalize="off"
                     autoCorrect="off" spellCheck={false}
-                    placeholder="you@email.com" className="au-field"
+                    placeholder={t("auth.signin.emailPlaceholder")} className="au-field"
                     aria-invalid={!!emailError}
                     aria-describedby="au-email-err"
                     onChange={(e) => { setEmail(e.target.value); setEmailError(null); setSignInError(null); }}
@@ -569,7 +567,7 @@ const Auth = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="au-password">Password</label>
+                  <label htmlFor="au-password">{t("auth.signin.passwordLabel")}</label>
                   <div className="au-pwwrap">
                     <input
                       id="au-password" ref={pwdRef} type={showLoginPwd ? "text" : "password"}
@@ -581,7 +579,7 @@ const Auth = () => {
                     />
                     <button
                       type="button" className="au-peek"
-                      aria-label={showLoginPwd ? "Hide password" : "Show password"}
+                      aria-label={showLoginPwd ? t("auth.signin.hidePassword") : t("auth.signin.showPassword")}
                       aria-pressed={showLoginPwd}
                       onClick={() => setShowLoginPwd((s) => !s)}
                     >
@@ -595,19 +593,19 @@ const Auth = () => {
 
                 <button type="submit" disabled={loading} className="au-btn">
                   {loading ? (
-                    <><Loader2 className="au-spin" size={16} /> Signing you in…</>
+                    <><Loader2 className="au-spin" size={16} /> {t("auth.signin.signingIn")}</>
                   ) : (
-                    <>Sign in <span className="au-a">↗</span></>
+                    <>{t("auth.signin.submit")} <span className="au-a">↗</span></>
                   )}
                 </button>
 
                 <div className="au-center">
                   <button type="button" onClick={handleForgotPassword} disabled={resetting} className="au-linkbtn">
                     {resetting
-                      ? "Sending…"
+                      ? t("auth.signin.sending")
                       : linkExpired
-                        ? "Send a new link →"
-                        : "Set or reset your password →"}
+                        ? t("auth.reset.sendNew")
+                        : t("auth.reset.setOrReset")}
                   </button>
                 </div>
               </form>
@@ -617,23 +615,22 @@ const Auth = () => {
             {view === "sent" && (
               <div className="au-fields">
                 <div className="au-note">
-                  Nothing after a minute or two? Check spam. Look for the subject{" "}
-                  <b>Reset your Aura password</b>, from <b>Aura</b>.
+                  <Trans i18nKey="auth.reset.sentNote" components={{ 1: <b />, 2: <b /> }} />
                 </div>
                 <button type="button" onClick={handleResend} disabled={resending} className="au-btn">
-                  {resending ? (<><Loader2 className="au-spin" size={16} /> Sending…</>) : (<>Send it again <span className="au-a">↗</span></>)}
+                  {resending ? (<><Loader2 className="au-spin" size={16} /> {t("auth.signin.sending")}</>) : (<>{t("auth.reset.sendAgain")} <span className="au-a">↗</span></>)}
                 </button>
                 <div className="au-center">
                   <button
                     type="button" className="au-linkbtn"
                     onClick={() => { setView("signin"); setResetSentEmail(""); }}
                   >
-                    Use a different email →
+                    {t("auth.signup.differentEmail")}
                   </button>
                 </div>
                 <div className="au-center">
                   <button type="button" className="au-linkbtn quiet" onClick={() => setView("signin")}>
-                    ← Back to sign in
+                    {t("auth.reset.back")}
                   </button>
                 </div>
               </div>
@@ -643,7 +640,7 @@ const Auth = () => {
             {view === "newPassword" && (
               <div className="au-fields">
                 <div>
-                  <label htmlFor="au-new">New password</label>
+                  <label htmlFor="au-new">{t("auth.reset.newLabel")}</label>
                   <div className="au-pwwrap">
                     <input
                       id="au-new" type={showPwd ? "text" : "password"} value={newPassword}
@@ -652,7 +649,7 @@ const Auth = () => {
                     />
                     <button
                       type="button" className="au-peek"
-                      aria-label={showPwd ? "Hide password" : "Show password"}
+                      aria-label={showPwd ? t("auth.signin.hidePassword") : t("auth.signin.showPassword")}
                       onClick={() => setShowPwd((s) => !s)}
                     >
                       {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -661,7 +658,7 @@ const Auth = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="au-confirm">Confirm password</label>
+                  <label htmlFor="au-confirm">{t("auth.reset.confirmLabel")}</label>
                   <input
                     id="au-confirm" type={showPwd ? "text" : "password"} value={newPasswordConfirm}
                     autoComplete="new-password" placeholder="••••••••" className="au-field"
@@ -673,10 +670,10 @@ const Auth = () => {
                 {/* stated as facts, checked live — never a scolding */}
                 <ul className="au-reqs" aria-live="polite">
                   <li className={longEnough ? "met" : ""}>
-                    <i />At least 8 characters
+                    <i />{t("auth.reset.reqLength")}
                   </li>
                   <li className={matches ? "met" : ""}>
-                    <i />Both entries match
+                    <i />{t("auth.reset.reqMatch")}
                   </li>
                 </ul>
 
@@ -684,15 +681,13 @@ const Auth = () => {
                   type="button" onClick={handleResetPassword}
                   disabled={updatingPwd || !longEnough || !matches} className="au-btn"
                 >
-                  {updatingPwd ? (<><Loader2 className="au-spin" size={16} /> Updating…</>) : (<>Update password <span className="au-a">↗</span></>)}
+                  {updatingPwd ? (<><Loader2 className="au-spin" size={16} /> {t("auth.reset.updating")}</>) : (<>{t("auth.reset.submit")} <span className="au-a">↗</span></>)}
                 </button>
               </div>
             )}
 
             <p className="au-legal au-legal-top">
-              <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> ·{" "}
-              <Link to="/trust">Security</Link> ·{" "}
-              <a href="mailto:support@aura-intel.org">Support</a>
+              <Trans i18nKey="auth.signin.legal" components={{ 1: <Link to="/privacy" />, 2: <Link to="/terms" />, 3: <Link to="/trust" />, 4: <a href="mailto:support@aura-intel.org" /> }} />
             </p>
           </div>
         </div>
@@ -702,56 +697,56 @@ const Auth = () => {
           <div className="au-stars" />
           {isAssessment ? (
             <div className="au-nwrap">
-              <p className="au-neyebrow">What you get, in {ASSESSMENT_MINUTES_WORD} minutes</p>
-              <h2 className="au-nh">Your position, <em>in evidence.</em></h2>
+              <p className="au-neyebrow">{t("auth.night.assessEyebrow", { minutes: ASSESSMENT_MINUTES_WORD })}</p>
+              <h2 className="au-nh"><Trans i18nKey="auth.night.assessHeadline" components={{ 1: <em /> }} /></h2>
 
               <div className="au-card">
-                <div className="au-ctop"><span>How the market reads you</span></div>
-                <p className="au-arch">The Delivery Realist</p>
+                <div className="au-ctop"><span>{t("auth.night.cardTop")}</span></div>
+                <p className="au-arch">{t("auth.night.archetype")}</p>
                 <ul className="au-bars">
                   <li>
-                    <span className="au-blab">Proven</span>
+                    <span className="au-blab">{t("auth.night.barProven")}</span>
                     <span className="au-btrack"><i className="au-bfill cy" style={{ width: "85%" }} /></span>
                   </li>
                   <li>
-                    <span className="au-blab">Real but invisible</span>
+                    <span className="au-blab">{t("auth.night.barInvisible")}</span>
                     <span className="au-btrack"><i className="au-bfill bl" style={{ width: "55%" }} /></span>
                   </li>
                   <li>
-                    <span className="au-blab">Not visible yet</span>
+                    <span className="au-blab">{t("auth.night.barNotVisible")}</span>
                     <span className="au-btrack"><i className="au-bfill gy" style={{ width: "25%" }} /></span>
                   </li>
                 </ul>
-                <div className="au-ctop au-cmid"><span>The space nobody has claimed</span></div>
-                <p className="au-claim">The ground your field keeps circling and no one has put their name to yet.</p>
+                <div className="au-ctop au-cmid"><span>{t("auth.night.spaceTop")}</span></div>
+                <p className="au-claim">{t("auth.night.claim")}</p>
               </div>
 
-              <p className="au-illus">Illustrative — yours is built from your own evidence</p>
+              <p className="au-illus">{t("auth.night.assessIllus")}</p>
               <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
             </div>
           ) : (
           <div className="au-nwrap">
-            <p className="au-neyebrow">While you were away</p>
-            <h2 className="au-nh">The night shift <em>doesn't take nights off.</em></h2>
+            <p className="au-neyebrow">{t("auth.night.eyebrow")}</p>
+            <h2 className="au-nh"><Trans i18nKey="auth.night.headline" components={{ 1: <em /> }} /></h2>
 
             <div className="au-card">
-              <div className="au-ctop"><span>A night inside Aura</span><span>02:00 → 03:12</span></div>
+              <div className="au-ctop"><span>{t("auth.night.cardTitle")}</span><span>02:00 → 03:12</span></div>
               <ul className="au-tl">
-                <li><i className="au-tdot" /><div><span className="au-tt">02:04</span><span className="au-tx">Read every capture from the week.</span></div></li>
-                <li><i className="au-tdot" /><div><span className="au-tt">02:31</span><span className="au-tx">Found a pattern — three sources agree.</span></div></li>
-                <li><i className="au-tdot" /><div><span className="au-tt">03:12</span><span className="au-tx">Built the evidence, in your voice.</span></div></li>
+                <li><i className="au-tdot" /><div><span className="au-tt">02:04</span><span className="au-tx">{t("auth.night.step1")}</span></div></li>
+                <li><i className="au-tdot" /><div><span className="au-tt">02:31</span><span className="au-tx">{t("auth.night.step2")}</span></div></li>
+                <li><i className="au-tdot" /><div><span className="au-tt">03:12</span><span className="au-tx">{t("auth.night.step3")}</span></div></li>
               </ul>
               <div className="au-agents">
-                <span className="au-ag">Reader</span><span className="au-ag">Signal</span>
-                <span className="au-ag">Voice</span><span className="au-ag">Editor</span>
+                <span className="au-ag">{t("auth.night.agentReader")}</span><span className="au-ag">{t("auth.night.agentSignal")}</span>
+                <span className="au-ag">{t("auth.night.agentVoice")}</span><span className="au-ag">{t("auth.night.agentEditor")}</span>
               </div>
             </div>
 
-            <p className="au-illus">Illustrative — your own log is waiting inside</p>
+            <p className="au-illus">{t("auth.night.illus")}</p>
             <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
           </div>
           )}
-          {!isAssessment && <p className="au-nfoot">Founding circle · 2026</p>}
+          {!isAssessment && <p className="au-nfoot">{t("auth.night.foot")}</p>}
         </div>
       </div>
     </div>
