@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { readStoredLang } from "@/i18n";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -136,6 +137,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           if (profile?.brand_assessment_answers) {
             await supabase.functions.invoke("brand-assessment", {
               body: {
+                ui_lang: readStoredLang(),
                 answers: profile.brand_assessment_answers,
                 auditScores: newRatings,
               },

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { readStoredLang } from "@/i18n";
 import { useNavigate } from "react-router-dom";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import {
@@ -215,7 +216,7 @@ const Assessment = () => {
       const res = await fetch(`${base}/functions/v1/mirror-read`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: target, run_id: runId, anon_token: t }),
+        body: JSON.stringify({ profile_url: target, run_id: runId, anon_token: t, ui_lang: readStoredLang() }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok || !data?.read) {

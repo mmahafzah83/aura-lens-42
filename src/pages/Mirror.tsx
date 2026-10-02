@@ -222,7 +222,7 @@ export default function Mirror() {
         method: "POST",
         signal: controller.signal,
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: target, ref: (refArg ?? ref) || undefined, run_id: runId }),
+        body: JSON.stringify({ profile_url: target, ref: (refArg ?? ref) || undefined, run_id: runId, ui_lang: readStoredLang() }),
       });
       const data: MirrorResponse = await res.json().catch(() => ({} as MirrorResponse));
       if (!res.ok || !data.ok || !data.read) {

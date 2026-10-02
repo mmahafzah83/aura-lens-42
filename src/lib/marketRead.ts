@@ -220,6 +220,7 @@ export async function generateMarketRead(
     const { data, error } = await supabase.functions.invoke("brand-assessment", {
       body: {
         ...(runId ? { run_id: runId } : {}),
+        ui_lang: readStoredLang(),
         answers,
         ...(answersCoded && Object.keys(answersCoded).length ? { answers_coded: answersCoded } : {}),
         auditScores: scores || "No scores on file yet",

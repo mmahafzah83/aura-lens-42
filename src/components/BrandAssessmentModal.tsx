@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { readStoredLang } from "@/i18n";
 import { createPortal } from "react-dom";
 import { X, ArrowLeft, Compass, ChevronDown, Copy, Download, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -431,7 +432,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       });
 
       const { data, error } = await supabase.functions.invoke("brand-assessment", {
-        body: { answers: formattedAnswers, auditScores: auditScores || "No audit scores available yet", sector: sector || null, band: band || null },
+        body: { ui_lang: readStoredLang(), answers: formattedAnswers, auditScores: auditScores || "No audit scores available yet", sector: sector || null, band: band || null },
       });
 
       if (timedOut) return;

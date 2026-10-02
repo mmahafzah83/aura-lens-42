@@ -1909,6 +1909,7 @@ const Onboarding = () => {
       .invoke("onboarding-proposals", {
         body: {
           claims: claims.map((c) => c.title),
+          ui_lang: readStoredLang(),
           sector: sector || null,
           level: levelTitle || null,
           /* anonymous run: the read already on file stands in for the posts */
