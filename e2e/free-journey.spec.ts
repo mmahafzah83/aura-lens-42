@@ -38,7 +38,7 @@ test.describe("the free journey", () => {
     await page.getByRole("button", { name: /^Continue/ }).first().click();
     await expect(page).toHaveURL(/\/onboarding/, { timeout: 60_000 });
 
-    await expect(page.getByText(/step 1 of 5/i).first()).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole("progressbar", { name: /^Where you are: / }).first()).toBeVisible({ timeout: 60_000 });
     const start = page.getByRole("button", { name: /^Start$/ });
     await expect(start).toBeVisible();
     await start.click();
