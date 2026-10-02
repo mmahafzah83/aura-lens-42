@@ -392,7 +392,7 @@ const Auth = () => {
   return (
     <div className="au" style={{ position: "relative" }}>
       <style>{AU_CSS}</style>
-      <div style={{ position: "absolute", top: 8, insetInlineEnd: 8, zIndex: 50 }}><LanguageToggle /></div>
+      <div style={{ position: "absolute", top: 8, insetInlineEnd: 8, zIndex: 50 }}><LanguageToggle darkFromPx={901} /></div>
 
       <div className="au-shell">
         {/* ── LEFT · the form ── */}
