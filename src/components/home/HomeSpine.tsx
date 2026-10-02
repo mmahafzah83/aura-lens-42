@@ -8,6 +8,7 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import HomeMasthead from "@/components/home/HomeMasthead";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { moveText } from "@/components/home/moveText";
 import { dateLocale } from "@/i18n";
 import {
   useHomeAddress, useReadChips, useSignalsStrengthened,
@@ -234,7 +235,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
     : null;
 
   // ── three beats: one observation, one recommendation, one action ──
-  const moveTitle = activeMove?.title ?? activeMove?.what ?? "";
+  const activeText = activeMove ? moveText(activeMove, lang) : null;
+  const moveTitle = activeText?.title ?? "";
   const addressBeats = useMemo(() => {
     const all = address.row?.address_md ? sentencesOf(address.row.address_md) : [];
     if (!all.length) return { observation: "", recommendation: [] as string[], rest: [] as string[] };
@@ -419,7 +421,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
             </div>
             {activeMove && (
               <Muted style={{ fontSize: 12.5, color: "var(--v23-on-night)" }}>
-                {t("home.address.moveOutcome", { outcome: activeMove.outcome, minutes: activeMove.est_minutes })}
+                {t("home.address.moveOutcome", { outcome: activeText?.outcome, minutes: activeMove.est_minutes })}
               </Muted>
             )}
             {chips.length > 0 && (
