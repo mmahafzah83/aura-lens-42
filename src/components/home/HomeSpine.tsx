@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import AuraLogo from "@/components/brand/AuraLogo";
 import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import HomeMasthead from "@/components/home/HomeMasthead";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   useHomeAddress, useReadChips, useSignalsStrengthened,
   type HomeMove,
@@ -100,6 +101,7 @@ function useLivePresence(userId: string | null | undefined) {
 
 export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActive, activeTab }: HomeSpineProps) {
   const uid = userId ?? "anon";
+  const { t, lang } = useLanguage();
   const address = useHomeAddress(userId);
   const live = useLivePresence(userId);
   const cachedFacts = address.facts;
@@ -200,12 +202,12 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
       .select(DRAFT_OPEN_COLUMNS).eq("id", id).maybeSingle();
     const row: any = data;
     if (error || !row) {
-      toast({ title: "That draft could not be opened" });
+      toast({ title: t("home.address.draftOpenFailed") });
       return;
     }
     onOpenDraft({ ...draftFromLinkedInPost(row), id });
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [onOpenDraft, onSwitchTab]);
+  }, [onOpenDraft, onSwitchTab, t]);
 
   const dismissDraft = useCallback((id: string) => {
     try { localStorage.setItem(draftDismissKey(id), "1"); } catch { /* noop */ }
@@ -221,8 +223,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
   const moves: HomeMove[] = address.row?.moves ?? [];
   const activeMove: HomeMove | null = moves[moveIdx] ?? moves[0] ?? null;
   const shelf = useMemo(
-    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length, layout, metrics),
-    [facts, moves, themes.length, layout, metrics],
+    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length, layout, metrics, t, lang),
+    [facts, moves, themes.length, layout, metrics, t, lang],
   );
 
   const generatedAt = address.row?.generated_at ?? null;
@@ -282,14 +284,14 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
   const loadingAddress = address.loading && !address.row;
   const chipPrompts: { key: string; label: string; prompt: string; next?: boolean }[] = [
     {
-      key: "evidence", label: "Show me the evidence first",
+      key: "evidence", label: t("home.address.chipEvidence"),
       prompt: moveTitle
-        ? `Show me the evidence behind "${moveTitle}" before I act on it.`
-        : "Show me the evidence behind today's read.",
+        ? t("home.address.promptEvidenceTitle", { title: moveTitle })
+        : t("home.address.promptEvidence"),
     },
     {
-      key: "other", label: "Not this one — pick another",
-      prompt: "Not this one. Pick another move for me today and say why.",
+      key: "other", label: t("home.address.chipOther"),
+      prompt: t("home.address.promptOther"),
       next: moves.length > moveIdx + 1,
     },
   ];
@@ -306,7 +308,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <AuraLogo size={22} variant="dark" />
           <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--v23-on-night)" }}>
-            Aura · your chief of staff
+            {t("home.address.kicker")}
           </span>
           {generatedLabel && (
             <span style={{
@@ -314,12 +316,12 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
               fontSize: 10.5, letterSpacing: ".08em", color: "var(--machine)",
             }}>
               <span aria-hidden style={{ inlineSize: 6, blockSize: 6, borderRadius: 999, background: "var(--machine)" }} />
-              Prepared {generatedLabel}
+              {t("home.address.prepared", { time: generatedLabel })}
             </span>
           )}
           <button
             type="button" onClick={toggleCollapsed}
-            aria-label={collapsed ? "Show the full address" : "Collapse the address"}
+            aria-label={collapsed ? t("home.address.showFull") : t("home.address.collapse")}
             className="ha-i"
             style={{
               marginInlineStart: "auto", background: "var(--v23-night-lift)", border: 0,
@@ -343,8 +345,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
               {address.row?.address_md
                 ? firstSentence(address.row.address_md)
                 : address.errored
-                ? "Aura's read is not available right now. Everything below is still yours."
-                : "Today's address is not written."}
+                ? t("home.address.unavailable")
+                : t("home.address.notWritten")}
             </p>
           ) : addressBeats.observation ? (
             <div style={{ display: "grid", gap: 10 }}>
@@ -370,17 +372,17 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
                     justifySelf: "start", background: "none", border: 0, padding: 0, cursor: "pointer",
                     fontFamily: "var(--font-body)", fontSize: 12.5, fontWeight: 600, color: "var(--v23-on-night)",
                     textDecoration: "underline", textUnderlineOffset: 3,
-                  }}>{showRest ? "Hide the rest" : "Read the rest"}</button>
+                  }}>{showRest ? t("home.address.hideRest") : t("home.address.readRest")}</button>
                 </>
               )}
             </div>
           ) : (
             <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "var(--v23-on-night)" }}>
               {firstRun
-                ? "You have just arrived. Capture one thing you read and the rest of this page fills itself in."
+                ? t("home.address.firstRun")
                 : address.errored
-                ? "Aura's read is not available right now. Everything below is still yours."
-                : "Today's address could not be written. Everything below is still drawn from your own record."}
+                ? t("home.address.unavailable")
+                : t("home.address.couldNotWrite")}
             </p>
           )}
         </div>
@@ -416,7 +418,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
             </div>
             {activeMove && (
               <Muted style={{ fontSize: 12.5, color: "var(--v23-on-night)" }}>
-                {activeMove.outcome} · about {activeMove.est_minutes} minutes
+                {t("home.address.moveOutcome", { outcome: activeMove.outcome, minutes: activeMove.est_minutes })}
               </Muted>
             )}
             {chips.length > 0 && (
@@ -425,11 +427,11 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
                 marginBlockStart: 6, fontSize: 11.5, letterSpacing: ".04em", lineHeight: 1.6,
                 color: "var(--on-dark-1, var(--text-inverse))",
               }}>
-                <span style={{ opacity: .75 }}>BUILT FROM</span>
+                <span style={{ opacity: .75 }}>{t("home.address.builtFrom")}</span>
                 <span>{chips.map((c) => c.label.toLowerCase()).join(" · ")}</span>
                 <span
-                  aria-label="Everything above is drawn from what you gave Aura and what you have captured."
-                  title="Everything above is drawn from what you gave Aura and what you have captured."
+                  aria-label={t("home.address.builtFromInfo")}
+                  title={t("home.address.builtFromInfo")}
                   style={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
                     inlineSize: 15, blockSize: 15, borderRadius: 999, cursor: "help",
@@ -454,7 +456,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
               justifySelf: "start", background: "none", border: 0, padding: 0, cursor: "pointer",
               fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600, color: "var(--act)",
               textDecoration: "none",
-            }}>◂ Back to where you stand</button>
+            }}>{t("home.common.backToStand")}</button>
           )}
 
           <div id="home-stage" aria-live="polite">
@@ -467,17 +469,16 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
             </Card>
           ) : empty && !onStage ? (
             <Card style={{ display: "grid", gap: 12 }}>
-              <Kicker>Start here</Kicker>
+              <Kicker>{t("home.common.startHere")}</Kicker>
               <Body style={{ fontSize: 15, color: "var(--text-primary)" }}>
-                Nothing has been captured yet, so there is nothing that happened to show — only where you
-                stand today.
+                {t("home.common.emptyBody")}
               </Body>
               {/* First Flight already offers the capture button — never two at once. */}
               {!guidedActive && (
                 <div>
                   <ActButton onClick={() => {
                     try { window.dispatchEvent(new CustomEvent("aura:open-capture")); } catch { /* noop */ }
-                  }}>Capture the first thing you read</ActButton>
+                  }}>{t("home.common.captureFirst")}</ActButton>
                 </div>
               )}
             </Card>
@@ -494,7 +495,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
 
         {/* the shelf */}
         <aside style={{ display: "grid", gap: 10, minInlineSize: 0 }}>
-          <Kicker as="h2">Look deeper</Kicker>
+          <Kicker as="h2">{t("home.common.lookDeeper")}</Kicker>
           {shelf.map((s) => {
             const on = onStage === s.key;
             return (
@@ -524,20 +525,20 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
           })}
 
           {/* the quiet index — the rest of Aura, one row each */}
-          <nav aria-label="Elsewhere in Aura" style={{
+          <nav aria-label={t("home.common.elsewhere")} style={{
             marginBlockStart: 4, paddingBlockStart: 10, borderBlockStart: "1px solid var(--rule-divider)",
             display: "grid", gap: 2,
           }}>
             {([
-              { label: "What happened", tab: "momentum" },
-              { label: "Your signals", tab: "intelligence" },
-              { label: "Your widgets", tab: "widgets" },
+              { label: t("home.common.indexHappened"), tab: "momentum" },
+              { label: t("home.common.indexSignals"), tab: "intelligence" },
+              { label: t("home.common.indexWidgets"), tab: "widgets" },
             ] as const).map((r) => {
               const current = activeTab === r.tab;
               return (
               <button
                 key={r.tab} type="button"
-                aria-label={`${r.label} — open this view`}
+                aria-label={t("home.common.openView", { label: r.label })}
                 aria-current={current ? "page" : undefined}
                 onClick={() => { onSwitchTab(r.tab); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className="ha-i ha-index"
