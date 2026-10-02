@@ -1,0 +1,2 @@
+ALTER TABLE public.diagnostic_profiles ADD COLUMN IF NOT EXISTS ui_language text NOT NULL DEFAULT 'en';
+ALTER TABLE public.diagnostic_profiles ADD CONSTRAINT diagnostic_profiles_ui_language_check CHECK (ui_language IN ('en','ar'));
