@@ -320,6 +320,11 @@ html[lang="ar"] {
   --font-display: 'Cairo', var(--ff-ui);
 }
 html[lang="ar"] body { line-height: 1.9; }
+html[lang="ar"] {
+  --ff-mono: 'CairoAR', 'IBM Plex Mono', 'Cairo', ui-monospace, Menlo, monospace;
+  --font-mono: 'CairoAR', 'IBM Plex Mono', 'Cairo', ui-monospace, Menlo, monospace;
+}
+html[lang="ar"] *, html[lang="ar"] *::before, html[lang="ar"] *::after { letter-spacing: 0 !important; }
 
 /* Calibration-tick rule — signature motif */
 .tick-rule {
