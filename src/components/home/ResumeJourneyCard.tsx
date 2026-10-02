@@ -9,7 +9,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence } from "@/constants/vocabulary";
-import { ASSESSMENT_STEPS, stageName } from "@/lib/brand";
+import { ASSESSMENT_STEPS, STAGE_NAMES } from "@/lib/brand";
+
+const stageKey = (n: number) =>
+  `stage.${Math.max(0, Math.min(STAGE_NAMES.length - 1, Math.round(n) - 1)) + 1}`;
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
@@ -67,8 +70,8 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
     }}>
       <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
         {paused.chose
-          ? t("home.resume.chose", { stage: stageName(paused.stage), minutes: left })
-          : t("home.resume.stopped", { stage: stageName(paused.stage) })}
+          ? t("home.resume.chose", { stage: t(stageKey(paused.stage)), minutes: left })
+          : t("home.resume.stopped", { stage: t(stageKey(paused.stage)) })}
       </h2>
       {paused.saved.length ? (
         <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)" }}>

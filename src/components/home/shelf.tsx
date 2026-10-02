@@ -198,7 +198,7 @@ export const OwnCard: React.FC<{
         }}>
           <span style={{ fontSize: 13.5, color: "var(--text-primary)" }}>{th.title}</span>
           <span style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-            {t("home.own.row", { evidence: nEvidence(th.fragments, lang), velocity: velocityWord(th.velocity) })}
+            {t("home.own.row", { evidence: nEvidence(th.fragments, lang), velocity: t(`velocity.${velocityWord(th.velocity)}`) })}
           </span>
         </div>
       ))}

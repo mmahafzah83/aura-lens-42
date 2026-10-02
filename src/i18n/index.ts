@@ -4,6 +4,9 @@ import en from "./locales/en.json";
 import ar from "./locales/ar.json";
 
 export type UiLang = "en" | "ar";
+export const dateLocale = (lang: UiLang): string =>
+  lang === "ar" ? "ar-SA-u-ca-gregory-nu-latn" : "en-GB";
+
 export const UI_LANG_KEY = "kb_ui_lang";
 
 export function readStoredLang(): UiLang {
