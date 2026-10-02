@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { useTranslation, Trans } from "react-i18next";
 import {
   AURA_WHATSAPP_NUMBER,
   WHATSAPP_PAIRING_ENABLED,
@@ -16,8 +17,8 @@ interface WhatsAppLink {
 }
 
 /** Reveals only the last 2 digits: "+966 5• ••• ••82". */
-function maskPhone(raw: string | null): string {
-  if (!raw) return "Connected number hidden";
+function maskPhone(raw: string | null, hiddenLabel: string): string {
+  if (!raw) return hiddenLabel;
   const digits = raw.replace(/[^\d]/g, "");
   if (digits.length < 3) return "••";
   const last2 = digits.slice(-2);
@@ -40,6 +41,7 @@ function waUrl(token: string): string {
 }
 
 export default function WhatsAppPairingCard({ userId }: { userId: string | null }) {
+  const { t } = useTranslation();
   const [link, setLink] = useState<WhatsAppLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [minting, setMinting] = useState(false);
@@ -116,7 +118,7 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
       setNow(Date.now());
       if (openTab) window.open(waUrl(row.pair_token), "_blank", "noopener,noreferrer");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start the link. Try once more.");
+      setError(e instanceof Error ? e.message : t("settings.error.whatsappStart"));
     } finally {
       setMinting(false);
     }
@@ -147,7 +149,7 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Not available yet.</div>
+            <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>{t("settings.whatsapp.notAvailable")}</div>
             <span
               style={{
                 background: "var(--paper-2)",
@@ -161,20 +163,20 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
                 whiteSpace: "nowrap",
               }}
             >
-              Coming soon
+              {t("settings.whatsapp.comingSoon")}
             </span>
           </div>
           <div className="mt-1 text-sm" style={mutedText}>
-            The Aura WhatsApp number isn't live yet. This turns on the moment it is.
+            {t("settings.whatsapp.notLive")}
           </div>
         </div>
-        <Button variant="default" size="sm" disabled>Connect on WhatsApp</Button>
+        <Button variant="default" size="sm" disabled>{t("settings.whatsapp.connect")}</Button>
       </div>
     );
   }
 
   if (loading) {
-    return <div className="text-sm" style={mutedText}>Checking…</div>;
+    return <div className="text-sm" style={mutedText}>{t("settings.whatsapp.checking")}</div>;
   }
 
   // STATE 3 — linked
@@ -183,10 +185,10 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
       <div className="flex items-start justify-between gap-4">
         <div style={{ minWidth: 0 }}>
           <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>
-            {maskPhone(link?.phone_e164 ?? null)}
+            {maskPhone(link?.phone_e164 ?? null, t("settings.whatsapp.numberHidden"))}
           </div>
           <div className="mt-1 text-sm" style={mutedText}>
-            Connected{link?.bound_at ? ` · ${formatDate(link.bound_at)}` : ""}
+            {link?.bound_at ? t("settings.whatsapp.connectedOn", { date: formatDate(link.bound_at) }) : t("settings.whatsapp.connected")}
           </div>
           <div
             className="mt-3 text-sm"
@@ -199,23 +201,22 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
               lineHeight: 1.5,
             }}
           >
-            Save Aura as a contact and pin the chat —<br />
-            it keeps Aura at the top of your forward list.
+            <Trans i18nKey="settings.whatsapp.pin" components={{ 1: <br /> }} />
           </div>
           {error && <div className="mt-2 text-sm" style={{ color: "var(--error)" }}>{error}</div>}
         </div>
         {confirmDisconnect ? (
           <div style={{ maxWidth: 240 }}>
             <div className="text-sm" style={mutedText}>
-              Forwards from this number will stop being captured.
+              {t("settings.whatsapp.stopWarning")}
             </div>
             <div className="mt-2 flex gap-2">
-              <Button variant="destructive" size="sm" onClick={disconnect}>Disconnect</Button>
-              <Button variant="outline" size="sm" onClick={() => setConfirmDisconnect(false)}>Keep it</Button>
+              <Button variant="destructive" size="sm" onClick={disconnect}>{t("settings.whatsapp.disconnect")}</Button>
+              <Button variant="outline" size="sm" onClick={() => setConfirmDisconnect(false)}>{t("settings.whatsapp.keep")}</Button>
             </div>
           </div>
         ) : (
-          <Button variant="outline" size="sm" onClick={() => setConfirmDisconnect(true)}>Disconnect</Button>
+          <Button variant="outline" size="sm" onClick={() => setConfirmDisconnect(true)}>{t("settings.whatsapp.disconnect")}</Button>
         )}
       </div>
     );
@@ -225,13 +226,13 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
   return (
     <div>
       <div style={bodyText}>
-        Forward anything you read — a link, a paragraph, a thought. It lands in Aura.
+        {t("settings.whatsapp.intro")}
       </div>
 
       <div className="mt-4">
         {expired ? (
           <div>
-            <div className="text-sm" style={mutedText}>Code expired.</div>
+            <div className="text-sm" style={mutedText}>{t("settings.whatsapp.expired")}</div>
             <Button
               className="mt-2"
               variant="default"
@@ -240,7 +241,7 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
               disabled={minting}
               onClick={() => mint(true)}
             >
-              Get a new code
+              {t("settings.whatsapp.newCode")}
             </Button>
           </div>
         ) : (
@@ -251,14 +252,14 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
             disabled={minting}
             onClick={() => mint(true)}
           >
-            Connect on WhatsApp
+            {t("settings.whatsapp.connect")}
           </Button>
         )}
       </div>
 
       {token && !expired && (
         <div className="mt-3 text-sm" style={mutedText}>
-          Waiting for your message… this code expires in {mmss}.
+          {t("settings.whatsapp.waiting", { time: mmss })}
         </div>
       )}
 
@@ -268,7 +269,7 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
             ref={canvasRef}
             style={{ border: "1px solid var(--rule)", borderRadius: 12, background: "var(--paper)" }}
           />
-          <div className="text-sm" style={mutedText}>On a laptop? Scan with your phone.</div>
+          <div className="text-sm" style={mutedText}>{t("settings.whatsapp.scan")}</div>
         </div>
       )}
 

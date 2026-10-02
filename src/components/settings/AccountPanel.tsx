@@ -9,6 +9,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
 import { Button } from "@/components/ui/button";
 import SetPasswordModal from "@/components/SetPasswordModal";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   userId: string | null;
@@ -42,6 +43,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 export default function AccountPanel({ userId, email, onSaved }: Props) {
+  const { t } = useTranslation();
   const [firstName, setFirstName] = useState("");
   const [initialName, setInitialName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -102,9 +104,9 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
       const ok = await writeProfile(userId, { avatar_url: publicUrl }, "AccountPanel.handleUpload");
-      if (!ok) { toast.error("That didn't save — try once more."); return; }
+      if (!ok) { toast.error(t("settings.error.didntSave")); return; }
       setAvatarUrl(publicUrl);
-      toast.success("Photo updated");
+      toast.success(t("settings.toast.photoUpdated"));
 
       // Optional enhancement. Runs entirely in this browser; silent if it fails.
       setEnhancing(true);
@@ -115,7 +117,7 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
       }
       setEnhancing(false);
     } catch {
-      toast.error("Upload failed");
+      toast.error(t("settings.error.uploadFailed"));
       setEnhancing(false);
     } finally {
       setUploading(false);
@@ -134,11 +136,11 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
       const ok = await writeProfile(userId, { avatar_cutout_url: publicUrl }, "AccountPanel.keepCutout");
-      if (!ok) { toast.error("That didn't save — try once more."); return; }
+      if (!ok) { toast.error(t("settings.error.didntSave")); return; }
       setCutoutUrl(publicUrl);
       setCutoutPreview(null);
       setCutoutBlob(null);
-      toast.success("Cut-out saved");
+      toast.success(t("settings.toast.cutoutSaved"));
     } catch {
       // Silent by design — the plain square is already in place.
       setCutoutPreview(null);
@@ -154,7 +156,7 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
     if (!userId || !cutoutUrl) return;
     // An explicit clear: the member chose the plain square.
     const ok = await writeProfile(userId, { avatar_cutout_url: null }, "AccountPanel.usePlainSquare");
-    if (!ok) { toast.error("That didn't save — try once more."); return; }
+    if (!ok) { toast.error(t("settings.error.didntSave")); return; }
     setCutoutUrl(null);
   };
 
@@ -162,14 +164,14 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
     if (!userId || saving) return;
     // A blank box is not an instruction to erase the stored name.
     const next = firstName.trim();
-    if (!next) { toast.error("Give us a name to save."); return; }
+    if (!next) { toast.error(t("settings.error.nameRequired")); return; }
     setSaving(true);
     const ok = await writeProfile(userId, { first_name: next }, "AccountPanel.handleSaveName");
     setSaving(false);
-    if (!ok) { toast.error("That didn't save — try once more."); return; }
+    if (!ok) { toast.error(t("settings.error.didntSave")); return; }
     setInitialName(next);
     onSaved?.();
-    toast.success("Name updated");
+    toast.success(t("settings.toast.nameUpdated"));
   };
 
   const handleExport = async () => {
@@ -180,21 +182,21 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
-      if (!token) throw new Error("You need to be signed in to export your data.");
+      if (!token) throw new Error(t("settings.error.exportSignedIn"));
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-my-data`,
         { method: "POST", headers: { Authorization: `Bearer ${token}` } },
       );
       if (!res.ok) {
         setExportStatus(res.status);
-        throw new Error("Export failed. Please try again, or contact support if it keeps happening.");
+        throw new Error(t("settings.error.exportFailedSupport"));
       }
       const blob = await res.blob();
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `aura-data-export-${stamp}.zip`);
-      toast.success("Export downloaded");
+      toast.success(t("settings.toast.exportDownloaded"));
     } catch (e) {
-      setExportError(e instanceof Error ? e.message : "Export failed. Please try again.");
+      setExportError(e instanceof Error ? e.message : t("settings.error.exportFailed"));
     } finally {
       setExporting(false);
     }
@@ -202,11 +204,11 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
 
   return (
     <>
-      <SectionHeader label="Account" subtitle="Your photo, name, and how you sign in." />
+      <SectionHeader label={t("settings.account.title")} subtitle={t("settings.account.subtitle")} />
       <div className="mb-8">
         <AuraCard variant="default" hover="none">
           {loading ? (
-            <div style={{ fontSize: 13, color: "var(--ink-4)" }}>Loading…</div>
+            <div style={{ fontSize: 13, color: "var(--ink-4)" }}>{t("settings.account.loading")}</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               {/* Photo */}
@@ -214,7 +216,7 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  aria-label="Change profile photo"
+                  aria-label={t("settings.account.changePhotoAria")}
                   style={{
                     position: "relative", inlineSize: 64, blockSize: 64, borderRadius: "50%",
                     border: "1px solid var(--rule)", background: "var(--paper-2)",
@@ -231,7 +233,7 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
                   )}
                 </button>
                 <div>
-                  <div style={{ fontSize: 14, color: "var(--ink)" }}>Profile photo</div>
+                  <div style={{ fontSize: 14, color: "var(--ink)" }}>{t("settings.account.photo")}</div>
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
@@ -241,7 +243,7 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
                       color: "var(--action)", fontSize: 13, fontWeight: 500, cursor: "pointer",
                     }}
                   >
-                    {uploading ? "Uploading…" : avatarUrl ? "Change photo" : "Upload photo"}
+                    {uploading ? t("settings.account.uploading") : avatarUrl ? t("settings.account.changePhoto") : t("settings.account.uploadPhoto")}
                   </button>
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
@@ -254,35 +256,35 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
               {enhancing && (
                 <div style={{ fontSize: 12, color: "var(--ink-4)", display: "flex", alignItems: "center", gap: 8 }}>
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Tidying up the background — this happens on your device.
+                  {t("settings.account.tidying")}
                 </div>
               )}
 
               {cutoutPreview && (
                 <div style={{ border: "0.5px solid var(--rule)", borderRadius: 8, padding: 14 }}>
                   <div style={{ fontSize: 13, color: "var(--ink)", marginBlockEnd: 10 }}>
-                    We removed the background so your closing slide can use your photo.
-                    Keep it, or use the plain square.
+                    {t("settings.account.cutoutBody1")}
+                    {" "}{t("settings.account.cutoutBody2")}
                   </div>
                   <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
                     <figure style={{ margin: 0, textAlign: "center" }}>
                       {avatarUrl && (
-                        <img src={avatarUrl} alt="Plain square photo"
+                        <img src={avatarUrl} alt={t("settings.account.plainAlt")}
                           style={{ inlineSize: 72, blockSize: 72, borderRadius: 8, objectFit: "cover", border: "0.5px solid var(--rule)" }} />
                       )}
-                      <figcaption style={{ fontSize: 11, color: "var(--ink-4)", marginBlockStart: 4 }}>Plain square</figcaption>
+                      <figcaption style={{ fontSize: 11, color: "var(--ink-4)", marginBlockStart: 4 }}>{t("settings.account.plain")}</figcaption>
                     </figure>
                     <figure style={{ margin: 0, textAlign: "center" }}>
-                      <img src={cutoutPreview} alt="Photo with the background removed"
+                      <img src={cutoutPreview} alt={t("settings.account.cutoutAlt")}
                         style={{ inlineSize: 72, blockSize: 72, borderRadius: 8, objectFit: "contain", background: "var(--paper-2)", border: "0.5px solid var(--rule)" }} />
-                      <figcaption style={{ fontSize: 11, color: "var(--ink-4)", marginBlockStart: 4 }}>Cut-out</figcaption>
+                      <figcaption style={{ fontSize: 11, color: "var(--ink-4)", marginBlockStart: 4 }}>{t("settings.account.cutout")}</figcaption>
                     </figure>
                     <div style={{ display: "flex", gap: 8 }}>
                       <Button variant="default" size="sm" onClick={keepCutout} disabled={savingCutout}>
-                        {savingCutout ? "Saving…" : "Keep the cut-out"}
+                        {savingCutout ? t("settings.account.saving") : t("settings.account.keepCutout")}
                       </Button>
                       <Button variant="outline" size="sm" onClick={usePlainSquare} disabled={savingCutout}>
-                        Use the plain square
+                        {t("settings.account.usePlain")}
                       </Button>
                     </div>
                   </div>
@@ -291,34 +293,34 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
 
               {/* Name */}
               <div>
-                <label style={labelStyle}>First name</label>
+                <label style={labelStyle}>{t("settings.account.firstName")}</label>
                 <input
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   style={inputStyle}
-                  placeholder="Your first name"
+                  placeholder={t("settings.account.firstNamePlaceholder")}
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label style={labelStyle}>Email</label>
+                <label style={labelStyle}>{t("settings.account.email")}</label>
                 <input value={email || ""} readOnly style={{ ...inputStyle, color: "var(--ink-3)" }} />
                 <p style={{ fontSize: 12, color: "var(--ink-4)", marginBlockStart: 6 }}>
-                  This comes from the account you sign in with and can't be changed here.
+                  {t("settings.account.emailNote")}
                 </p>
               </div>
 
               {/* Password */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 14, color: "var(--ink)" }}>Password</div>
+                  <div style={{ fontSize: 14, color: "var(--ink)" }}>{t("settings.account.password")}</div>
                   <div style={{ fontSize: 12, color: "var(--ink-4)", marginBlockStart: 2 }}>
-                    Set or change the password you use to sign in.
+                    {t("settings.account.passwordNote")}
                   </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setPasswordOpen(true)}>
-                  Change password
+                  {t("settings.account.changePassword")}
                 </Button>
               </div>
 
@@ -329,23 +331,23 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
                   onClick={handleSaveName}
                   disabled={saving || firstName.trim() === initialName}
                 >
-                  {saving ? "Saving…" : "Save changes"}
+                  {saving ? t("settings.account.saving") : t("settings.account.save")}
                 </Button>
               </div>
 
               {/* Export */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 14, color: "var(--ink)" }}>Export my data</div>
+                  <div style={{ fontSize: 14, color: "var(--ink)" }}>{t("settings.account.export")}</div>
                   <div style={{ fontSize: 12, color: "var(--ink-4)", marginBlockStart: 2 }}>
-                    Download everything Aura holds about you — open it in your browser or Excel.
+                    {t("settings.account.exportNote")}
                   </div>
                   {exportError && (
                     <div style={{ fontSize: 12, color: "var(--error)", marginBlockStart: 6 }}>
                       {exportError}
                       {exportStatus !== null && (
                         <span style={{ display: "block", fontSize: 11, opacity: 0.7, marginBlockStart: 2 }}>
-                          Error code {exportStatus}
+                          {t("settings.account.errorCode", { code: exportStatus })}
                         </span>
                       )}
                     </div>
@@ -358,7 +360,7 @@ export default function AccountPanel({ userId, email, onSaved }: Props) {
                   loading={exporting}
                   disabled={exporting}
                 >
-                  {exporting ? "Preparing…" : "Export my data"}
+                  {exporting ? t("settings.account.preparing") : t("settings.account.export")}
                 </Button>
               </div>
             </div>

@@ -546,5 +546,7 @@
   "frame.tier.moveImpactHelper": "يجلب أرقام منشوراتك إلى صفحة الأثر",
   "frame.tier.pts": "+{{n}} نقطة",
   "frame.tier.exportFailed": "تعذّر التصدير",
-  "frame.tier.encodeFailed": "تعذّر تجهيز الصورة"
+  "frame.tier.encodeFailed": "تعذّر تجهيز الصورة",
+  "settings.profile.reportTrust": "التقرير يُبنى من بياناتك وحدها — ولا يغادر إلا بيدك.",
+  "settings.danger.backups": "تُحذف بياناتك الحية فوراً؛ ونسخ النسخ الاحتياطي المعتادة تنتهي دورتها خلال 30 يوماً."
 }
