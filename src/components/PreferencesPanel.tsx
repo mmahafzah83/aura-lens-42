@@ -224,13 +224,13 @@ export default function PreferencesPanel({
   onChangePassword,
   onRetakeBrandAssessment,
 }: PreferencesPanelProps) {
+  const { isAdmin } = useIsAdmin();
+  const { lang, setLang, t } = useLanguage();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [opportunityEmailOn, setOpportunityEmailOn] = useState(false);
 
   // Body scroll lock + Esc to close.
   useEffect(() => {
-  const { isAdmin } = useIsAdmin();
-  const { lang, setLang, t } = useLanguage();
     if (!open || variant === "inline") return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
