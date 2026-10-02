@@ -471,7 +471,7 @@ const Assessment = () => {
             <svg
               viewBox="0 0 420 420"
               role="img"
-              aria-label="An illustration of the assessment: a CV card behind a dark blue report card showing three capability bars, with fragments of evidence feeding in and the Aura eye watching below."
+              aria-label="An illustration of the assessment: a CV card behind a dark blue report card showing three capability bars, with fragments of evidence feeding in and the KnownBy eye watching below."
             >
               <defs>
                 <linearGradient id="asgcard" x1="0" y1="0" x2="1" y2="1">
