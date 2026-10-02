@@ -10,7 +10,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FROM = "Aura <invites@aura-intel.org>";
+const FROM = "KnownBy <invites@aura-intel.org>";
 const esc = (s: string) =>
   String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -43,7 +43,7 @@ serve(async (req) => {
         ${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
 
     const html = renderEmail({
-      preheader: "Your read from Aura",
+      preheader: "Your read from KnownBy",
       body: [
         heading("How people see you"),
         archetype ? `<p style="font-size:20px;font-weight:700;color:${INK};margin:0 0 12px">${esc(archetype)}</p>` : "",
@@ -52,7 +52,7 @@ serve(async (req) => {
         thin.length ? `<p style="font-size:13px;color:${INK_SOFT};margin:22px 0 0">Where you're thinnest</p>${list(thin)}` : "",
         `<p style="font-size:13px;line-height:1.6;color:${INK_SOFT};margin:24px 0 0">This is a read, not a verdict. If it got you wrong, reply to this email and tell me what it missed — I read every reply myself, and the read changes.</p>`,
       ].join(""),
-      cta: { href: "https://www.aura-intel.org/home", label: "Open Aura" },
+      cta: { href: "https://www.aura-intel.org/home", label: "Open KnownBy" },
     });
 
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
@@ -77,7 +77,7 @@ serve(async (req) => {
         to: [user.email],
         // The ask has to land somewhere a person reads.
         reply_to: "Mohammad.Mahafdhah@aura-intel.org",
-        subject: "Your read from Aura",
+        subject: "Your read from KnownBy",
         html,
       }),
     });

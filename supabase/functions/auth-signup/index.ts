@@ -204,9 +204,9 @@ serve(async (req) => {
           method: "POST",
           headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            from: "Aura <invites@aura-intel.org>",
+            from: "KnownBy <invites@aura-intel.org>",
             to: [addr],
-            subject: "Welcome to Aura",
+            subject: "Welcome to KnownBy",
             html,
           }),
         });

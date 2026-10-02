@@ -63,14 +63,14 @@ serve(async (req) => {
     let cta: { href: string; label: string } | undefined;
 
     if (type === "password_set") {
-      subject = "Your Aura password is set";
+      subject = "Your KnownBy password is set";
       heading = "You're all set.";
-      message = `Hi ${name}, your Aura password has been created. You can log in any time at aura-intel.org.`;
-      cta = { href: "https://aura-intel.org/auth", label: "Open Aura" };
+      message = `Hi ${name}, your KnownBy password has been created. You can log in any time at aura-intel.org.`;
+      cta = { href: "https://aura-intel.org/auth", label: "Open KnownBy" };
     } else if (type === "password_changed") {
-      subject = "Your Aura password was changed";
+      subject = "Your KnownBy password was changed";
       heading = "Password updated.";
-      message = `Hi ${name}, your Aura password was just changed. If this was you, nothing else is needed.`;
+      message = `Hi ${name}, your KnownBy password was just changed. If this was you, nothing else is needed.`;
       warningBlock = note("If you didn't make this change, reset your password now at aura-intel.org/auth.");
     } else {
       return new Response(JSON.stringify({ error: "Unknown notification type" }), {
@@ -91,7 +91,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+        from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
         to: [email],
         reply_to: "mohammad.mahafdhah@aura-intel.org",
         subject,
