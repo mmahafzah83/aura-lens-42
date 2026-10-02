@@ -14,7 +14,7 @@ import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { logEfError } from "../_shared/observe.ts";
 // THE DICTIONARY (Deno twin of src/constants/vocabulary.ts). Every member-facing
 // count noun in this file comes from `countNoun` — never hand-written.
-import { countNoun } from "../_shared/vocabulary.ts";
+import { countNoun, nDrafts, nPosts, nSignals, nEvidence, nCaptures } from "../_shared/vocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -329,7 +329,15 @@ function chooseLens(f: Facts): { lens: string; lens_reason: string } {
 type Move = {
   rank: number; key: string; title: string; what: string; why: string;
   how: string; outcome: string; cta_route: string; est_minutes: number;
+  /** Arabic copy for Home. Stored in the moves JSON; never sent to the model. */
+  ar?: { title: string; what: string; why: string; how: string; outcome: string };
 };
+
+const FACET_AR: Record<string, string> = {
+  conviction: "الثقة", discernment: "البصيرة", edge: "التخصّص", voice: "الأسلوب",
+  focus: "التركيز", identity: "الهوية", audience: "الجمهور",
+};
+const facetAr = (k: string): string => FACET_AR[k] ?? k;
 
 /**
  * Numbers in prose. A chief of staff says "six drafts", not "drafts_total is 6".
@@ -403,6 +411,15 @@ function chooseMoves(f: Facts): Move[] {
       outcome: "One idea leaves your notes and reaches the people who need it.",
       cta_route: "/dashboard?tab=authority",
       est_minutes: 8,
+      ar: {
+        title: d?.title ? `انشر مسودة «${d.title}»` : "انشر مسودة تنتظرك",
+        what: "اقرأ المسودة التي كتبها KnownBy، وعدّل ما لا يشبه أسلوبك، ثم انشرها.",
+        why: f.published_through_aura > 0
+          ? `بانتظارك: ${nDrafts(f.drafts_total, "ar")}. المنشور حتى الآن: ${nPosts(f.published_through_aura, "ar")}.`
+          : `بانتظارك: ${nDrafts(f.drafts_total, "ar")}. ولم يخرج منها شيء إلى الناس بعد.`,
+        how: "افتح المكتبة، اختر المسودة، عدّلها، ثم اضغط «نشر».",
+        outcome: "فكرة واحدة تخرج من ملاحظاتك وتصل إلى من يحتاجها.",
+      },
     });
   }
 
@@ -416,6 +433,13 @@ function chooseMoves(f: Facts): Move[] {
       outcome: "The work you have already saved becomes something publishable.",
       cta_route: "/dashboard?tab=signals",
       est_minutes: 12,
+      ar: {
+        title: `حوّل «${f.top_signal.title}» إلى منشور`,
+        what: "خذ أقوى إشارة لم تنشر منها بعد، وابدأ منها مسودة.",
+        why: `إشارات لم تنشر منها بعد: ${nSignals(f.signals_never_published_from, "ar")}. وخلف أقواها: ${nEvidence(f.top_signal.fragment_count ?? 0, "ar")}.`,
+        how: "افتح الإشارة، اقرأ الأدلة التي تسندها، ثم ابدأ الكتابة منها.",
+        outcome: "ما حفظته من قبل يصبح شيئاً قابلاً للنشر.",
+      },
     });
   }
 
@@ -429,6 +453,15 @@ function chooseMoves(f: Facts): Move[] {
       outcome: "KnownBy has a fresh capture to work from tonight.",
       cta_route: "/dashboard?tab=home",
       est_minutes: 2,
+      ar: {
+        title: "التقط رابطاً قرأته اليوم",
+        what: "الصق رابطاً أو تقريراً أو منشوراً اختلفت معه.",
+        why: f.captures_this_week > 0
+          ? `هذا الأسبوع: ${nCaptures(f.captures_this_week, "ar")}. الإجمالي: ${nCaptures(f.captures_total, "ar")}. ولا شيء اليوم.`
+          : `لا التقاط هذا الأسبوع. في سجلّك: ${nCaptures(f.captures_total, "ar")}.`,
+        how: "استخدم خانة الالتقاط في الرئيسية. رابط واحد يكفي.",
+        outcome: "يجد KnownBy التقاطاً جديداً يعمل عليه الليلة.",
+      },
     });
   }
 
@@ -442,6 +475,15 @@ function chooseMoves(f: Facts): Move[] {
       outcome: "Drafts start being written from what your audience already rewards.",
       cta_route: "/dashboard?tab=settings",
       est_minutes: 3,
+      ar: {
+        title: "اربط حسابك على LinkedIn",
+        what: "دع KnownBy يقرأ أداء منشوراتك الفعلي.",
+        why: f.published_total > 0
+          ? `نشرت: ${nPosts(f.published_total, "ar")}. ولا يرى KnownBy كيف استقبلها الناس.`
+          : "لا يرى KnownBy كيف يستقبل الناس ما تنشره، فلا يتعلّم منه.",
+        how: "افتح الإعدادات واربط حسابك. ولن ينشر KnownBy شيئاً من دونك.",
+        outcome: "تنطلق المسودات ممّا يتفاعل معه جمهورك فعلاً.",
+      },
     });
   }
 
@@ -455,6 +497,13 @@ function chooseMoves(f: Facts): Move[] {
       outcome: "KnownBy stops staying quiet where you are strongest but silent.",
       cta_route: "/dashboard?tab=identity",
       est_minutes: 5,
+      ar: {
+        title: `املأ الفراغ في جانب «${facetAr(f.facets_dormant[0])}»`,
+        what: "أضف أدلة للجانب الذي ما زال فارغاً من صورتك.",
+        why: `جانب «${facetAr(f.facets_dormant[0])}» من صورتك لا يسنده شيء بعد.`,
+        how: "التقط شيئاً يبيّن هذا الجانب من عملك.",
+        outcome: "يتكلّم KnownBy عن جانب أنت قوي فيه وما زلت صامتاً عنه.",
+      },
     });
   }
 
