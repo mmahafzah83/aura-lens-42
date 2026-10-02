@@ -81,11 +81,11 @@ serve(async (req) => {
     } catch (_) { /* ignore */ }
     const body = `
       ${heading("Reset your password")}
-      ${paragraph(`Hi ${name}, we received a request to reset the password on your Aura account. Use the button below to set a new one.`)}
+      ${paragraph(`Hi ${name}, we received a request to reset the password on your KnownBy account. Use the button below to set a new one.`)}
       ${note("The link expires in 24 hours. If you didn't ask for this, you can ignore this email.")}
     `;
     const html = renderEmail({
-      preheader: "Reset your Aura password",
+      preheader: "Reset your KnownBy password",
       body,
       cta: { href: resetUrl, label: "Set a new password" },
     });
@@ -97,10 +97,10 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+        from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
         to: [cleanEmail],
         reply_to: "mohammad.mahafdhah@aura-intel.org",
-        subject: "Reset your Aura password",
+        subject: "Reset your KnownBy password",
         html,
         tags: [
           ...(linkData.user?.id ? [{ name: "user_id", value: linkData.user.id }] : []),

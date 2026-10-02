@@ -65,7 +65,7 @@ export function divider(): string {
 }
 
 /** Sign-off. The founder's name is fixed. */
-export function signature(role = "Aura builder"): string {
+export function signature(role = "KnownBy builder"): string {
   return `<p style="margin:24px 0 0;font-family:${BODY};font-size:15px;line-height:1.5;color:${INK};font-weight:600;">Mohammad Mahafdhah</p>
   <p style="margin:2px 0 0;font-family:${BODY};font-size:13px;line-height:1.5;color:${INK_FAINT};">${role}</p>`;
 }
@@ -113,13 +113,13 @@ export function renderEmail(opts: EmailOptions): string {
   <tr><td align="center" style="padding:32px 16px;">
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0"${dirAttr} style="width:100%;max-width:560px;background-color:${CARD};border:1px solid ${BORDER};border-radius:20px;">
       <tr><td align="${align}" style="padding:32px 36px 0;">
-        <img src="${LOGO_URL}" width="36" height="36" alt="Aura" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none;">
+        <img src="${LOGO_URL}" width="36" height="36" alt="KnownBy" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none;">
       </td></tr>
       <tr><td align="${align}" style="padding:24px 36px 8px;font-family:${font};${rtl ? "line-height:1.9;text-align:right;" : ""}">${body}${ctaBlock}</td></tr>
       <tr><td style="padding:20px 36px 28px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
           <td align="${align}" style="border-top:1px solid ${BORDER};padding-top:16px;font-family:${MONO};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">
-            Aura &middot; <a href="https://aura-intel.org" style="color:${INK_FAINT};text-decoration:none;">aura-intel.org</a>
+            KnownBy &middot; <a href="https://aura-intel.org" style="color:${INK_FAINT};text-decoration:none;">aura-intel.org</a>
             &middot; <a href="${prefsHref}" style="color:${INK_FAINT};text-decoration:underline;">${prefsLabel}</a>
           </td>
         </tr></table>
