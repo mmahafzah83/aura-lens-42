@@ -9,7 +9,7 @@ import { claimPendingSession } from "@/lib/assessmentSession";
 import usePageMeta from "@/hooks/usePageMeta";
 import { isOnboarded } from "@/lib/onboarding";
 import { setPendingDestination } from "@/lib/pendingDestination";
-import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE, ASSESSMENT_MINUTES_WORD } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES, ASSESSMENT_MINUTES_LINE, ASSESSMENT_MINUTES_WORD } from "@/lib/brand";
 
 /** The consent text version recorded against every new account. */
 export const CONSENT_VERSION = "2026-08-16";
@@ -379,7 +379,7 @@ const Auth = () => {
 
   const sub =
     view === "newPassword" ? t("auth.reset.newSub")
-    : view === "signup" ? t("auth.signup.sub", { minutesLine: ASSESSMENT_MINUTES_LINE })
+    : view === "signup" ? t("auth.signup.sub", { minutesLine: ASSESSMENT_MINUTES_LINE, minutes: ASSESSMENT_MINUTES })
     : view === "existing" ? t("auth.signup.existingSub")
     : view === "verify" ? <Trans i18nKey="auth.signup.verifySub" values={{ email }} components={{ 1: <b /> }} />
     : view === "sent" ? <Trans i18nKey="auth.reset.sentSub" values={{ email: resetSentEmail }} components={{ 1: <b /> }} />

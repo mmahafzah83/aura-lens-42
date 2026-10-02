@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import AuraLogo from "@/components/brand/AuraLogo";
 import usePageMeta from "@/hooks/usePageMeta";
 import { supabase } from "@/integrations/supabase/client";
-import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES, ASSESSMENT_MINUTES_LINE } from "@/lib/brand";
 
 /**
  * Acceptance page — the ceremonial intermediate screen between the invite
@@ -164,7 +164,7 @@ export default function AcceptInvitation() {
             />
             <Panel
               num="03"
-              title={t("auth.invite.panel3Title", { minutesLine: ASSESSMENT_MINUTES_LINE.charAt(0).toUpperCase() + ASSESSMENT_MINUTES_LINE.slice(1) })}
+              title={t("auth.invite.panel3Title", { minutesLine: ASSESSMENT_MINUTES_LINE.charAt(0).toUpperCase() + ASSESSMENT_MINUTES_LINE.slice(1), minutes: ASSESSMENT_MINUTES })}
               body={t("auth.invite.panel3Body")}
             />
 
