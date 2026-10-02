@@ -7,6 +7,7 @@ import { WidgetBody } from "@/components/widgets/WidgetCards";
 import { nSignals, nEvidence, nPages, nDrafts, CAPTURE, velocityWord } from "@/constants/vocabulary";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { moveText } from "./moveText";
 
 type TFn = (key: string, vars?: Record<string, unknown>) => string;
 type Lang = "en" | "ar";
@@ -85,7 +86,7 @@ export function buildShelf(
 // ── the cards themselves ───────────────────────────────────────────────────
 
 export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => void }> = ({ moves, onGo }) => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   return (
   <Card style={{ padding: 0 }}>
     <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
@@ -98,22 +99,22 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
         <Muted>{t("home.moves.emptyMuted")}</Muted>
       </div>
     )}
-    {moves.map((m, i) => (
+    {moves.map((m, i) => { const mt = moveText(m, lang); return (
       <div key={`${m.what}-${i}`} style={{
         padding: "18px 20px", borderBlockStart: i === 0 ? undefined : "1px solid var(--rule-divider)",
         display: "grid", gap: 8, borderInlineStart: "3px solid var(--act)",
       }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <span style={{ ...MONO, fontSize: 11, color: "var(--act)" }}>{String(i + 1).padStart(2, "0")}</span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{m.what}</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{mt.what}</span>
           <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>{t("home.moves.minutes", { minutes: m.est_minutes })}</span>
         </div>
-        <Body>{m.why}</Body>
-        <Muted>{m.how}</Muted>
-        <Muted><strong style={{ color: "var(--text-secondary)" }}>{t("home.moves.outcome")}</strong> {m.outcome}</Muted>
+        <Body>{mt.why}</Body>
+        <Muted>{mt.how}</Muted>
+        <Muted><strong style={{ color: "var(--text-secondary)" }}>{t("home.moves.outcome")}</strong> {mt.outcome}</Muted>
         <div><ActButton onClick={() => onGo(m.cta_route)}>{t("home.moves.doThis")}</ActButton></div>
       </div>
-    ))}
+    ); })}
   </Card>
   );
 };

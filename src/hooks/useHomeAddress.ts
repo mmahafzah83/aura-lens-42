@@ -21,6 +21,8 @@ export interface HomeMove {
   outcome: string;
   cta_route: string;
   est_minutes: number;
+  /** Arabic copy written beside the English by the server. */
+  ar?: { title: string; what: string; why: string; how: string; outcome: string };
 }
 
 type HomeLens = "record" | "shape";
