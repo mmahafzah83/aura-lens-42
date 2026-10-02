@@ -71,7 +71,7 @@ const Card = ({ item, onCapture, onDraft, captured }: {
         {item.source && (
           <span style={{
             fontSize: 11, color: "hsl(var(--muted-foreground))",
-            marginLeft: "auto", textTransform: "uppercase", letterSpacing: "0.04em",
+            marginInlineStart: "auto", textTransform: "uppercase", letterSpacing: "0.04em",
           }}>{item.source}</span>
         )}
       </div>
@@ -119,7 +119,7 @@ const Card = ({ item, onCapture, onDraft, captured }: {
               display: "inline-flex", alignItems: "center", gap: 4,
             }}
           >
-            Draft post <ArrowRight size={12} />
+            Draft post <ArrowRight size={12} className="rtl:-scale-x-100" />
           </button>
         ) : (
           <>

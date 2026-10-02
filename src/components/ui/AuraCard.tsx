@@ -53,7 +53,7 @@ export function AuraCard({
   const beforeStyle: CSSProperties = {
     content: '""',
     position: "absolute",
-    left: 0,
+    insetInlineStart: 0,
     top: 12,
     bottom: 12,
     width: 2,

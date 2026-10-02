@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useTranslation, Trans } from "react-i18next";
+import { ltrIsolate } from "@/i18n";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import { claimPendingSession } from "@/lib/assessmentSession";
@@ -294,7 +295,7 @@ const Auth = () => {
     setResending(true);
     try {
       await sendReset(resetSentEmail);
-      toast({ title: t("auth.reset.sentAgainTitle"), description: t("auth.reset.sentAgainBody", { email: resetSentEmail }) });
+      toast({ title: t("auth.reset.sentAgainTitle"), description: t("auth.reset.sentAgainBody", { email: ltrIsolate(resetSentEmail) }) });
     } catch {
       toast({ title: t("auth.error.resendTitle"), description: t("auth.error.tryAgain"), variant: "destructive" });
     } finally {
@@ -320,7 +321,7 @@ const Auth = () => {
         });
         return;
       }
-      setConfirmResendNote({ kind: "sent", text: t("auth.signup.resentNote", { email: target }) });
+      setConfirmResendNote({ kind: "sent", text: t("auth.signup.resentNote", { email: ltrIsolate(target) }) });
       setConfirmCooldown(60);
     } catch {
       setConfirmResendNote({
@@ -381,8 +382,8 @@ const Auth = () => {
     view === "newPassword" ? t("auth.reset.newSub")
     : view === "signup" ? t("auth.signup.sub", { minutesLine: ASSESSMENT_MINUTES_LINE, minutes: ASSESSMENT_MINUTES })
     : view === "existing" ? t("auth.signup.existingSub")
-    : view === "verify" ? <Trans i18nKey="auth.signup.verifySub" values={{ email }} components={{ 1: <b /> }} />
-    : view === "sent" ? <Trans i18nKey="auth.reset.sentSub" values={{ email: resetSentEmail }} components={{ 1: <b /> }} />
+    : view === "verify" ? <Trans i18nKey="auth.signup.verifySub" values={{ email }} components={{ 1: <b dir="ltr" style={{ unicodeBidi: "isolate" }} /> }} />
+    : view === "sent" ? <Trans i18nKey="auth.reset.sentSub" values={{ email: resetSentEmail }} components={{ 1: <b dir="ltr" style={{ unicodeBidi: "isolate" }} /> }} />
     : linkExpired ? t("auth.reset.expiredSub")
     : hasEmailParam ? t("auth.signin.subReturning")
     : t("auth.signin.sub");
@@ -615,7 +616,7 @@ const Auth = () => {
             {view === "sent" && (
               <div className="au-fields">
                 <div className="au-note">
-                  <Trans i18nKey="auth.reset.sentNote" components={{ 1: <b />, 2: <b /> }} />
+                  <Trans i18nKey="auth.reset.sentNote" components={{ 1: <b dir="ltr" style={{ unicodeBidi: "isolate" }} />, 2: <b dir="ltr" style={{ unicodeBidi: "isolate" }} /> }} />
                 </div>
                 <button type="button" onClick={handleResend} disabled={resending} className="au-btn">
                   {resending ? (<><Loader2 className="au-spin" size={16} /> {t("auth.signin.sending")}</>) : (<>{t("auth.reset.sendAgain")} <span className="au-a">↗</span></>)}
@@ -730,7 +731,7 @@ const Auth = () => {
             <h2 className="au-nh"><Trans i18nKey="auth.night.headline" components={{ 1: <em /> }} /></h2>
 
             <div className="au-card">
-              <div className="au-ctop"><span>{t("auth.night.cardTitle")}</span><span>02:00 → 03:12</span></div>
+              <div className="au-ctop"><span>{t("auth.night.cardTitle")}</span><span dir="ltr" style={{ unicodeBidi: "isolate" }}>02:00 → 03:12</span></div>
               <ul className="au-tl">
                 <li><i className="au-tdot" /><div><span className="au-tt">02:04</span><span className="au-tx">{t("auth.night.step1")}</span></div></li>
                 <li><i className="au-tdot" /><div><span className="au-tt">02:31</span><span className="au-tx">{t("auth.night.step2")}</span></div></li>
@@ -785,7 +786,7 @@ const AU_CSS = `
 .au-bn{font-family:var(--ser);font-weight:700;font-size:26px;line-height:1;}
 /* Two lines, never four: "AI PROFESSIONAL" / "IDENTITY PLATFORM", centred on the wordmark. */
 .au-bsub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.25;
+  color:var(--n400);padding-inline-start:11px;border-inline-start:1px solid var(--n200);line-height:1.25;
   width:128px;max-width:128px;align-self:center;display:flex;flex-direction:column;}
 .au-bsub-l{display:block;white-space:nowrap;}
 .au-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,128,123,.28);
@@ -811,9 +812,9 @@ const AU_CSS = `
 .au-field::placeholder{color:var(--n400);}
 .au-field:focus{border-color:var(--act);background:var(--n0);box-shadow:0 0 0 4px var(--act-50);}
 .au-field[aria-invalid="true"]{border-color:var(--err);}
-.au-haspeek{padding-right:46px;}
+.au-haspeek{padding-inline-end:46px;}
 .au-pwwrap{position:relative;}
-.au-peek{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;
+.au-peek{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);background:transparent;
   border:0;cursor:pointer;color:var(--n400);padding:10px;display:flex;align-items:center;}
 .au-peek:hover{color:var(--n700);}
 .au-err{margin-top:7px;font-size:12.5px;color:var(--err);}

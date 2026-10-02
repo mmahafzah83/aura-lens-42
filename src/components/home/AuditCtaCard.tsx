@@ -87,7 +87,7 @@ const AuditCtaCard = ({ onNavigateToMyStory }: AuditCtaCardProps) => {
         aria-label="Sharpen the map of what you can do"
         style={{
           background: "var(--brand-ghost, rgba(197,165,90,0.06))",
-          borderLeft: "4px solid var(--brand)",
+          borderInlineStart: "4px solid var(--brand)",
           borderRadius: 10,
           padding: "18px 22px",
           opacity: leaving ? 0 : 1,

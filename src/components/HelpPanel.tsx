@@ -26,7 +26,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         style={{
           width: "100%", background: "transparent", border: 0, padding: 0, cursor: "pointer",
           display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12,
-          textAlign: "left",
+          textAlign: "start",
         }}
       >
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", lineHeight: 1.5 }}>{q}</span>
@@ -107,21 +107,22 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
         style={{
           position: "fixed",
           top: 0,
-          right: 0,
+          insetInlineEnd: 0,
           bottom: 0,
           width: 380,
           maxWidth: "100vw",
           background: "var(--paper-2)",
-          borderLeft: "1px solid var(--rule)",
+          borderInlineStart: "1px solid var(--rule)",
           boxShadow: "var(--shadow-lg)",
           zIndex: 50,
           display: "flex",
           flexDirection: "column",
-          animation: "auraSlideIn 220ms ease-out",
+          animation: `${document.documentElement.dir === "rtl" ? "auraSlideInRtl" : "auraSlideIn"} 220ms ease-out`,
         }}
       >
         <style>{`
           @keyframes auraSlideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+          @keyframes auraSlideInRtl { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
           @keyframes auraStepIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         `}</style>
 

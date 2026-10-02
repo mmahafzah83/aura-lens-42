@@ -485,7 +485,7 @@ export default function TierCeremonyModal({
           style={{
             position: "absolute",
             top: 14,
-            right: 14,
+            insetInlineEnd: 14,
             background: "transparent",
             border: 0,
             color: TEXT_MUTED,
@@ -507,7 +507,7 @@ export default function TierCeremonyModal({
             style={{
               position: "absolute",
               top: 14,
-              left: 14,
+              insetInlineStart: 14,
               background: "transparent",
               border: 0,
               color: TEXT_MUTED,
@@ -516,7 +516,7 @@ export default function TierCeremonyModal({
               borderRadius: 6,
             }}
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={18} className="rtl:-scale-x-100" />
           </button>
         )}
 
@@ -780,7 +780,7 @@ function StepCredential({
                   style={{
                     position: "absolute",
                     top: 4,
-                    right: 4,
+                    insetInlineEnd: 4,
                     width: 24,
                     height: 24,
                     display: "flex",
@@ -845,7 +845,7 @@ function StepCredential({
                 style={{
                   position: "absolute",
                   top: -36,
-                  right: 0,
+                  insetInlineEnd: 0,
                   width: 28,
                   height: 28,
                   display: "flex",

@@ -221,7 +221,7 @@ export default function AuraRail({
 
   const ActiveBar = () => (
     <span aria-hidden style={{
-      position: "absolute", left: -7, top: 6, bottom: 6, width: 3,
+      position: "absolute", insetInlineStart: -7, top: 6, bottom: 6, width: 3,
       borderRadius: 2, background: "var(--act)",
     }} />
   );
@@ -249,7 +249,7 @@ export default function AuraRail({
         display: "inline-flex", alignItems: "center", justifyContent: "center",
       }}
     >
-      {expanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+      {expanded ? <ChevronLeft size={16} className="rtl:-scale-x-100" /> : <ChevronRight size={16} className="rtl:-scale-x-100" />}
     </button>
   );
 
@@ -272,7 +272,7 @@ export default function AuraRail({
   const rowStyle = (active: boolean): React.CSSProperties => ({
     display: "flex", alignItems: "center", gap: 10, width: "100%",
     minHeight: 40, padding: "8px 18px", borderRadius: 0, border: 0,
-    cursor: "pointer", position: "relative", textAlign: "left",
+    cursor: "pointer", position: "relative", textAlign: "start",
     background: active ? "var(--v23-wash-act), var(--v23-night-lift)" : "transparent",
     color: active ? "var(--b-300)" : "var(--v23-on-night)",
     fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 500,
@@ -281,14 +281,14 @@ export default function AuraRail({
 
   const ActiveBarWide = () => (
     <span aria-hidden style={{
-      position: "absolute", left: 0, top: 0, bottom: 0, width: 2.5,
+      position: "absolute", insetInlineStart: 0, top: 0, bottom: 0, width: 2.5,
       background: "var(--act)",
     }} />
   );
 
   const countPill = (text: string) => (
     <span style={{
-      marginLeft: "auto", fontFamily: "var(--ff-mono)", fontSize: 10,
+      marginInlineStart: "auto", fontFamily: "var(--ff-mono)", fontSize: 10,
       fontVariantNumeric: "tabular-nums", color: "var(--v23-rail-label)",
     }}>{text}</span>
   );
@@ -346,7 +346,7 @@ export default function AuraRail({
         <span>{t(g.labelKey)}</span>
         {g.key === "signals" && newSignalCount > 0 && !active && (
           <span aria-label={t("frame.nav.newSignals", { n: newSignalCount })} style={{
-            marginLeft: "auto", width: 6, height: 6, borderRadius: 999,
+            marginInlineStart: "auto", width: 6, height: 6, borderRadius: 999,
             background: "var(--machine)",
           }} />
         )}
@@ -362,7 +362,7 @@ export default function AuraRail({
         href="#aura-main"
         className="v23-skip"
         style={{
-          position: "fixed", left: 8, top: 8, zIndex: 60,
+          position: "fixed", insetInlineStart: 8, top: 8, zIndex: 60,
           transform: "translateY(-160%)",
           background: "var(--surface-card)", color: "var(--text-primary)",
           border: "1px solid var(--border-strong)", borderRadius: 8,
@@ -380,17 +380,17 @@ export default function AuraRail({
           data-testid="aura-rail"
           data-expanded="true"
           aria-label={t("frame.nav.primary")}
-          className="hidden md:flex flex-col fixed top-0 left-0 h-full z-30"
+          className="hidden md:flex flex-col fixed top-0 start-0 h-full z-30"
           style={{
             width: "var(--v23-rail-w)",
             background: "var(--v23-night)",
-            borderRight: "1px solid var(--v23-night-line)",
+            borderInlineEnd: "1px solid var(--v23-night-line)",
             fontFamily: "var(--ff-ui)",
             paddingTop: 14, paddingBottom: 14,
             overflowY: "auto",
           }}
         >
-          <div className="flex items-center justify-between" style={{ padding: "0 14px 0 18px" }}>
+          <div className="flex items-center justify-between" style={{ paddingBlock: 0, paddingInlineEnd: 14, paddingInlineStart: 18 }}>
             <button
               type="button"
               onClick={() => onSelect("home")}
@@ -461,11 +461,11 @@ export default function AuraRail({
         data-testid="aura-rail"
         data-expanded="false"
         aria-label={t("frame.nav.primary")}
-        className="hidden md:flex flex-col items-center fixed top-0 left-0 h-full z-30"
+        className="hidden md:flex flex-col items-center fixed top-0 start-0 h-full z-30"
         style={{
           width: "var(--v23-rail-w)",
           background: "var(--v23-night)",
-          borderRight: "1px solid var(--v23-night-line)",
+          borderInlineEnd: "1px solid var(--v23-night-line)",
           fontFamily: "var(--ff-ui)",
           paddingTop: 14, paddingBottom: 14,
         }}
@@ -539,7 +539,7 @@ export default function AuraRail({
                   <span
                     aria-label={t("frame.nav.newSignals", { n: newSignalCount })}
                     style={{
-                      position: "absolute", top: 7, right: 12, width: 6, height: 6,
+                      position: "absolute", top: 7, insetInlineEnd: 12, width: 6, height: 6,
                       borderRadius: 999, background: "var(--machine)",
                     }}
                   />
@@ -635,9 +635,9 @@ export default function AuraRail({
           aria-label={t("frame.rail.signalsSections")}
           className="v23-flyout hidden md:flex flex-col fixed top-0 h-full z-40"
           style={{
-            left: "var(--v23-rail-w)", width: "var(--v23-flyout-w)",
+            insetInlineStart: "var(--v23-rail-w)", width: "var(--v23-flyout-w)",
             background: "var(--surface-card)",
-            borderRight: "1px solid var(--border-default)",
+            borderInlineEnd: "1px solid var(--border-default)",
             boxShadow: "var(--shadow-lift)",
             fontFamily: "var(--ff-ui)", padding: 14,
             animation: "v23FlyoutIn 200ms ease both",

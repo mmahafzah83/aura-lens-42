@@ -151,7 +151,7 @@ const ThemeChip: React.FC<{
         border: "1px solid var(--rule-outer)", fontFamily: "var(--font-body)",
         fontSize: 12.5, color: "var(--text-secondary)",
       }}>
-        <span aria-hidden style={{ ...MONO, fontSize: 10 }}>{open ? "▾" : "▸"}</span>
+        <span aria-hidden className={open ? undefined : "rtl:inline-block rtl:-scale-x-100"} style={{ ...MONO, fontSize: 10 }}>{open ? "▾" : "▸"}</span>
         {`${nSignals(n, "en")} found`}
       </button>
     </div>

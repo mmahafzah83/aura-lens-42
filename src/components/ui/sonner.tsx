@@ -25,6 +25,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={currentTheme}
       dir={isRTL && !onAdmin ? "rtl" : "ltr"}
+      position={isRTL && !onAdmin ? "bottom-left" : "bottom-right"}
       className="toaster group"
       toastOptions={{
         classNames: {

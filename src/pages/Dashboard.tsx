@@ -1011,7 +1011,7 @@ const Dashboard = () => {
           />
           <aside
             data-surface="dark"
-            className="aura-sidebar-shell absolute left-0 top-0 h-full w-[260px] flex flex-col animate-slide-in-right"
+            className="aura-sidebar-shell absolute start-0 top-0 h-full w-[260px] flex flex-col animate-slide-in-right"
             style={{
               animationName: 'slideInLeft',
               transition: "background-color .25s ease, color .25s ease",
@@ -1077,7 +1077,7 @@ const Dashboard = () => {
                     {item.key === "signals" && newIntelSignalCount > 0 && !isActive && (
                       <span
                         aria-label={tr("frame.nav.newSignals", { n: newIntelSignalCount })}
-                        className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
+                        className="w-2 h-2 rounded-full ms-auto me-1 shrink-0"
                         style={{ background: "var(--pulse-accent)" }}
                       />
                     )}
@@ -1118,7 +1118,7 @@ const Dashboard = () => {
       <main
         id="aura-main"
         className={`grain-overlay flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
-          "md:ml-[var(--v23-rail-w)]"
+          "md:ms-[var(--v23-rail-w)]"
         }`}
         style={{
           paddingTop: 'env(safe-area-inset-top)',
@@ -1481,7 +1481,7 @@ const Dashboard = () => {
           className="md:hidden fixed flex items-center justify-center"
           style={{
             bottom: `calc(76px + env(safe-area-inset-bottom))`,
-            right: 16,
+            insetInlineEnd: 16,
             width: 52,
             height: 52,
             background: "var(--bronze)",

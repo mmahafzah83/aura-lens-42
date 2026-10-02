@@ -182,7 +182,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 placeholder={t("auth.gate.passwordPlaceholder")}
                 className="w-full outline-none"
                 style={{
-                  padding: "13px 40px 13px 15px",
+                  paddingBlock: 13, paddingInlineEnd: 40, paddingInlineStart: 15,
                   fontSize: 15,
                   borderRadius: 12,
                   background: pwFocused ? "var(--surface-card)" : "var(--surface-page)",
@@ -196,7 +196,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
               />
               <button
                 type="button" onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute end-3 top-1/2 -translate-y-1/2"
                 style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--text-muted)" }}
                 aria-label={showPassword ? t("auth.signin.hidePassword") : t("auth.signin.showPassword")}
               >{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
@@ -231,7 +231,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 placeholder={t("auth.gate.confirmPlaceholder")}
                 className="w-full outline-none"
                 style={{
-                  padding: "13px 40px 13px 15px",
+                  paddingBlock: 13, paddingInlineEnd: 40, paddingInlineStart: 15,
                   fontSize: 15,
                   borderRadius: 12,
                   background: confirmFocused ? "var(--surface-card)" : "var(--surface-page)",
@@ -245,7 +245,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
               />
               <button
                 type="button" onClick={() => setShowConfirm((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute end-3 top-1/2 -translate-y-1/2"
                 style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--text-muted)" }}
                 aria-label={showConfirm ? t("auth.signin.hidePassword") : t("auth.signin.showPassword")}
               >{showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}</button>
@@ -290,7 +290,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             ) : isSubmitting ? (
               t("auth.gate.setting")
             ) : (
-              <>{t("auth.gate.enter")} <ArrowRight size={16} /></>
+              <>{t("auth.gate.enter")} <ArrowRight size={16} className="rtl:-scale-x-100" /></>
             )}
           </button>
 

@@ -105,7 +105,7 @@ export default function TodaysIntelligence() {
           background: "transparent",
           border: "none",
           cursor: "pointer",
-          textAlign: "left",
+          textAlign: "start",
         }}
       >
         <span className="flex items-center" style={{ gap: 8 }}>

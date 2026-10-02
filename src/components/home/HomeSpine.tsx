@@ -9,7 +9,7 @@ import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import HomeMasthead from "@/components/home/HomeMasthead";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { moveText } from "@/components/home/moveText";
-import { dateLocale } from "@/i18n";
+import { dateLocale, ltrIsolate } from "@/i18n";
 import {
   useHomeAddress, useReadChips, useSignalsStrengthened,
   type HomeMove,
@@ -319,7 +319,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
               fontSize: 10.5, letterSpacing: ".08em", color: "var(--machine)",
             }}>
               <span aria-hidden style={{ inlineSize: 6, blockSize: 6, borderRadius: 999, background: "var(--machine)" }} />
-              {t("home.address.prepared", { time: generatedLabel })}
+              {t("home.address.prepared", { time: ltrIsolate(generatedLabel) })}
             </span>
           )}
           <button

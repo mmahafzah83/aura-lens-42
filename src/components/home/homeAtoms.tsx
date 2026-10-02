@@ -42,11 +42,18 @@ export const HOME_ATOM_CSS = `
 /* night surface: the border brightens, the fill never turns blue */
 .ha-nightchip:not(:disabled):hover { border-color: color-mix(in srgb, var(--v23-night-line) 40%, var(--v23-on-night)); }
 
+/* right to left: the chevron points the reading way and nudges toward it */
+[dir="rtl"] .ha-chev { transform: scaleX(-1); }
+[dir="rtl"] .ha-shelf:not(:disabled):hover .ha-chev,
+[dir="rtl"] .ha-index:not(:disabled):hover .ha-chev { transform: translateX(-2px) scaleX(-1); }
+
 @media (prefers-reduced-motion: reduce) {
   .ha-i, .ha-chev { transition: background-color 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out; }
   .ha-i:not(:disabled):active { transform: none; }
   .ha-shelf:not(:disabled):hover .ha-chev,
   .ha-index:not(:disabled):hover .ha-chev { transform: none; }
+  [dir="rtl"] .ha-shelf:not(:disabled):hover .ha-chev,
+  [dir="rtl"] .ha-index:not(:disabled):hover .ha-chev { transform: scaleX(-1); }
 }
 `;
 

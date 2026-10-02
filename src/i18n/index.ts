@@ -7,6 +7,11 @@ export type UiLang = "en" | "ar";
 export const dateLocale = (lang: UiLang): string =>
   lang === "ar" ? "ar-SA-u-ca-gregory-nu-latn" : "en-GB";
 
+/** Wraps a Latin value (email, address, time) in left-to-right isolate marks so it
+ *  keeps its order inside an Arabic sentence. Invisible in English. */
+export const ltrIsolate = (v: string | null | undefined): string =>
+  v ? `\u2066${v}\u2069` : (v ?? "");
+
 export const UI_LANG_KEY = "kb_ui_lang";
 
 export function readStoredLang(): UiLang {
