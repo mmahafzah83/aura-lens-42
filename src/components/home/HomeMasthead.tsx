@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Avatar from "@/components/systemb/Avatar";
 import { MONO, ReadFailure } from "./homeAtoms";
-import { STANDING } from "@/constants/vocabulary";
 import { useTierFromImprint, TIER_BANDS } from "@/hooks/useTierFromImprint";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { dateLocale, type UiLang } from "@/i18n";
 
 /**
  * HomeMasthead — the greeting, the clock and the member's standing.
@@ -24,10 +24,11 @@ function greetingFor(hour: number): "morning" | "afternoon" | "evening" {
   return "evening";
 }
 
-function kickerFor(d: Date): string {
-  const day = d.toLocaleDateString(undefined, { weekday: "long" });
-  const date = d.toLocaleDateString(undefined, { day: "numeric", month: "long" });
-  const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+function kickerFor(d: Date, lang: UiLang): string {
+  const loc = lang === "ar" ? dateLocale(lang) : undefined;
+  const day = d.toLocaleDateString(loc, { weekday: "long" });
+  const date = d.toLocaleDateString(loc, { day: "numeric", month: "long" });
+  const time = d.toLocaleTimeString(loc, { hour: "numeric", minute: "2-digit" });
   return `${day} · ${date} · ${time}`.toUpperCase();
 }
 
@@ -37,7 +38,7 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
   const [profileNonce, setProfileNonce] = useState(0);
   const [now, setNow] = useState<Date>(() => new Date());
   const tier = useTierFromImprint(userId);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const tick = useCallback(() => setNow(new Date()), []);
   useEffect(() => {
@@ -93,7 +94,7 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
         <div style={{
           ...MONO, fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase",
           color: "var(--text-muted)",
-        }}>{kickerFor(now)}</div>
+        }}>{kickerFor(now, lang)}</div>
         <h1 style={{
           margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 30,
           letterSpacing: "-0.02em", lineHeight: 1.15, color: "var(--text-primary)",
@@ -106,7 +107,7 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
         <div style={{
           ...MONO, fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase",
           color: "var(--text-muted)",
-        }}>{STANDING.label.toUpperCase()}</div>
+        }}>{t("home.masthead.standingLabel").toUpperCase()}</div>
         {tier.loading || !band ? (
           <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)" }}>
             {tier.loading
@@ -120,10 +121,10 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
             <div style={{
               fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 15,
               color: "var(--text-primary)",
-            }}>{band.name}</div>
+            }}>{t(`tier.${band.key}`)}</div>
             <div style={{ ...MONO, fontSize: 12, color: "var(--text-secondary)" }}>
               {nextBand && pointsToNext != null
-                ? t("home.masthead.pointsTo", { count: pointsToNext, band: nextBand.name })
+                ? t("home.masthead.pointsTo", { count: pointsToNext, band: t(`tier.${nextBand.key}`) })
                 : t("home.masthead.topBand")}
             </div>
             <div aria-hidden style={{

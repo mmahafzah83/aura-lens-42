@@ -8,6 +8,7 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import HomeMasthead from "@/components/home/HomeMasthead";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { dateLocale } from "@/i18n";
 import {
   useHomeAddress, useReadChips, useSignalsStrengthened,
   type HomeMove,
@@ -229,7 +230,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
 
   const generatedAt = address.row?.generated_at ?? null;
   const generatedLabel = generatedAt
-    ? new Date(generatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+    ? new Date(generatedAt).toLocaleTimeString(dateLocale(lang), { hour: "2-digit", minute: "2-digit" })
     : null;
 
   // ── three beats: one observation, one recommendation, one action ──

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence, nSources } from "@/constants/vocabulary";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 
@@ -166,6 +167,7 @@ export interface ReadChipsState {
 }
 
 export function useReadChips(userId: string | null | undefined, facts: HomeFacts | null): ReadChipsState {
+  const { t, lang } = useLanguage();
   const [profile, setProfile] = useState<{ answers: number; calibrated: boolean; linkedin: boolean } | null>(null);
   const [failed, setFailed] = useState(false);
   const [nonce, setNonce] = useState(0);
@@ -203,14 +205,14 @@ export function useReadChips(userId: string | null | undefined, facts: HomeFacts
   }, [userId, nonce]);
 
   const chips: ReadChip[] = [];
-  if (profile?.linkedin || facts?.linkedin_connected) chips.push({ key: "li", label: "Your LinkedIn" });
-  if (profile && profile.answers > 0) chips.push({ key: "as", label: `${profile.answers} answers` });
-  if (profile?.calibrated) chips.push({ key: "cal", label: "Your calibration" });
-  if (facts?.fragments_total) chips.push({ key: "fr", label: nEvidence(facts.fragments_total, "en") });
+  if (profile?.linkedin || facts?.linkedin_connected) chips.push({ key: "li", label: t("home.chips.linkedin") });
+  if (profile && profile.answers > 0) chips.push({ key: "as", label: t("home.chips.answers", { count: profile.answers }) });
+  if (profile?.calibrated) chips.push({ key: "cal", label: t("home.chips.calibration") });
+  if (facts?.fragments_total) chips.push({ key: "fr", label: nEvidence(facts.fragments_total, lang) });
   // `distinct_sources` is a head count of `source_registry` for this member —
   // verified in the `home-address` function — so "sources" is the right word and
   // only needed the dictionary formatter.
-  if (facts?.distinct_sources) chips.push({ key: "src", label: nSources(facts.distinct_sources, "en") });
+  if (facts?.distinct_sources) chips.push({ key: "src", label: nSources(facts.distinct_sources, lang) });
   return { chips, failed, refresh };
 }
 

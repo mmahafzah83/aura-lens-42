@@ -6,6 +6,7 @@ import {
 import type { HomeFacts } from "@/hooks/useHomeAddress";
 import { useShapePast } from "@/hooks/useHomeExtras";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { dateLocale, type UiLang } from "@/i18n";
 
 /**
  * The two lenses. Each renders only from facts and real rows — nothing
@@ -25,8 +26,8 @@ const facetWords = (key: string, t: (k: string) => string) =>
     ? { name: t(`home.shape.facet.${key}.name`), line: t(`home.shape.facet.${key}.line`) as string | null }
     : { name: titleCaseFacet(key), line: null as string | null };
 
-const longDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+const longDate = (iso: string, lang: UiLang) =>
+  new Date(iso).toLocaleDateString(dateLocale(lang), { day: "numeric", month: "long" });
 
 export interface ShapeLensProps {
   facts: HomeFacts | null;
@@ -52,7 +53,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
   const dormant = new Set(facts?.facets_dormant ?? []);
   const past = useShapePast(userId);
   const [showDiagram, setShowDiagram] = useState(false);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const size = 260, cx = size / 2, cy = size / 2, r = size / 2 - 34;
   const values = facets.map((f) => f.value);
@@ -93,7 +94,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
       ? t("home.shape.pastFailed")
       : hasPast
       ? (past.takenOn
-        ? t("home.shape.pastDotted", { date: longDate(past.takenOn) })
+        ? t("home.shape.pastDotted", { date: longDate(past.takenOn, lang) })
         : t("home.shape.pastSolidDotted"))
       : past.values
         ? t("home.shape.pastUnchanged")
@@ -141,7 +142,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
             </Muted>
           )}
           {facts?.facets_dormant_reason && (
-            <Muted style={{ marginBlockStart: 2 }}>{facts.facets_dormant_reason}</Muted>
+            <Muted style={{ marginBlockStart: 2 }}>{t("home.shape.dormantReason")}</Muted>
           )}
           {factsFailed && <ReadFailure onRetry={onRetryFacts} style={{ marginBlockStart: 2 }} />}
         </div>
