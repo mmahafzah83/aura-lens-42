@@ -285,7 +285,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           border: "var(--ask-border, none)",
           transition: "background var(--t-fast) var(--ease)",
           ...(visual.borderColor
-            ? { borderLeft: `2px solid ${visual.borderColor}` }
+            ? { borderInlineStart: `2px solid ${visual.borderColor}` }
             : {}),
         }}
         onMouseEnter={(e) => {
@@ -322,7 +322,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
         {visual.badgeBg && (
           <span
             aria-hidden="true"
-            className={`askaura-anim absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center shadow-md`}
+            className={`askaura-anim absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center shadow-md`}
             style={{
               background: visual.badgeBg,
               color: visual.textColor,
@@ -340,7 +340,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           style={{
             position: "absolute",
             bottom: "calc(100% + 8px)",
-            left: 0,
+            insetInlineStart: 0,
             zIndex: 50,
             fontSize: 12,
             background: "hsl(var(--background))",
@@ -359,7 +359,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
       {/* Tooltip popup */}
       {showTip && top3.length > 0 && (
         <div
-          className="absolute z-50 bottom-[calc(100%+8px)] left-0 w-[280px] rounded-xl border border-border/30 bg-popover shadow-2xl p-2 animate-fade-in"
+          className="absolute z-50 bottom-[calc(100%+8px)] start-0 w-[280px] rounded-xl border border-border/30 bg-popover shadow-2xl p-2 animate-fade-in"
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
         >
@@ -372,7 +372,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
               <button
                 key={e.id}
                 onClick={handleTipItemClick}
-                className="askaura-focusable w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-secondary/40 transition-colors text-left group/item"
+                className="askaura-focusable w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-secondary/40 transition-colors text-start group/item"
               >
                 <Icon aria-hidden="true" className="w-3.5 h-3.5 mt-0.5 shrink-0 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
@@ -392,7 +392,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           })}
           <button
             onClick={handleTipItemClick}
-            className="askaura-focusable w-full text-xs text-primary hover:text-primary/80 px-2 py-1.5 text-right transition-colors"
+            className="askaura-focusable w-full text-xs text-primary hover:text-primary/80 px-2 py-1.5 text-end transition-colors"
           >
             {t("frame.header.seeAll")}
           </button>

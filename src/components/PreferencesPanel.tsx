@@ -87,7 +87,7 @@ const Row = ({
     type="button"
     onClick={onClick}
     disabled={!onClick}
-    className="aura-row w-full text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--act)] focus-visible:ring-offset-1 rounded-md"
+    className="aura-row w-full text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--act)] focus-visible:ring-offset-1 rounded-md"
     style={{
       display: "flex",
       alignItems: "center",
@@ -126,7 +126,7 @@ const Row = ({
       {children}
     </div>
     {chevron && onClick && !danger && (
-      <ChevronRight className="aura-chevron w-4 h-4 transition-colors" style={{ color: "var(--ink-3)", flexShrink: 0 }} />
+      <ChevronRight className="aura-chevron w-4 h-4 transition-colors rtl:-scale-x-100" style={{ color: "var(--ink-3)", flexShrink: 0 }} />
     )}
   </button>
   </>
@@ -167,13 +167,13 @@ const Toggle = ({
       style={{
         position: "absolute",
         top: 2,
-        left: on ? 22 : 2,
+        insetInlineStart: on ? 22 : 2,
         width: 20,
         height: 20,
         borderRadius: "50%",
         background: "#fff",
         boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-        transition: "left 160ms ease",
+        transition: "inset-inline-start 160ms ease",
       }}
     />
   </button>
@@ -541,7 +541,7 @@ export default function PreferencesPanel({
 
       {email && (
         <div style={{ padding: "20px 24px 28px", fontSize: 11, color: "var(--ink-2)", textAlign: "center", fontFamily: "var(--font-body)" }}>
-          {t("settings.preferences.signedInAs", { email })}
+          {t("settings.preferences.signedInAs", { email: ltrIsolate(email) })}
         </div>
       )}
     </>
@@ -587,15 +587,15 @@ export default function PreferencesPanel({
         style={{
           position: "absolute",
           top: 0,
-          right: 0,
+          insetInlineEnd: 0,
           bottom: 0,
           width: "min(420px, 100vw)",
           background: "var(--paper)",
-          borderLeft: "0.5px solid var(--rule)",
-          boxShadow: "-12px 0 40px -10px rgba(0,0,0,0.25)",
+          borderInlineStart: "0.5px solid var(--rule)",
+          boxShadow: document.documentElement.dir === "rtl" ? "12px 0 40px -10px rgba(0,0,0,0.25)" : "-12px 0 40px -10px rgba(0,0,0,0.25)",
           display: "flex",
           flexDirection: "column",
-          animation: "aura-pref-slide-in 240ms cubic-bezier(0.16, 1, 0.3, 1)",
+          animation: (document.documentElement.dir === "rtl" ? "aura-pref-slide-in-rtl" : "aura-pref-slide-in") + " 240ms cubic-bezier(0.16, 1, 0.3, 1)",
           overflow: "hidden",
           height: "100%",
         }}
@@ -603,6 +603,10 @@ export default function PreferencesPanel({
         <style>{`
           @keyframes aura-pref-slide-in {
             from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+          }
+          @keyframes aura-pref-slide-in-rtl {
+            from { transform: translateX(-100%); }
             to { transform: translateX(0); }
           }
           @keyframes aura-pref-fade-in {

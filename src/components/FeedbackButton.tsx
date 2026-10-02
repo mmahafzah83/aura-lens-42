@@ -80,7 +80,7 @@ const FeedbackButton = () => {
           style={{
             position: "fixed",
             bottom: 24,
-            right: 24,
+            insetInlineEnd: 24,
             zIndex: 40,
             height: 40,
             padding: "0 16px",
@@ -107,7 +107,7 @@ const FeedbackButton = () => {
           style={{
             position: "fixed",
             bottom: 24,
-            right: 24,
+            insetInlineEnd: 24,
             zIndex: 50,
             width: 320,
             background: "var(--vellum)",
@@ -123,7 +123,7 @@ const FeedbackButton = () => {
             style={{
               position: "absolute",
               top: 10,
-              right: 10,
+              insetInlineEnd: 10,
               background: "transparent",
               border: "none",
               cursor: "pointer",
@@ -207,7 +207,7 @@ const FeedbackButton = () => {
               </p>
               <p style={{ fontSize: 12, marginTop: 4, textAlign: "center" }}>
                 <a href="mailto:support@aura-intel.org" style={{ color: "var(--brand)" }}>
-                  {t("frame.feedback.founder", { email: "support@aura-intel.org" })}
+                  {t("frame.feedback.founder", { email: ltrIsolate("support@aura-intel.org") })}
                 </a>
               </p>
             </>

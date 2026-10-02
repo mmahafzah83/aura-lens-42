@@ -54,7 +54,7 @@ const MilestoneNotification = ({ userId, auraData }: Props) => {
       style={{
         background: "hsl(var(--card))",
         border: "1px solid hsl(var(--border) / 0.5)",
-        borderLeft: "3px solid hsl(var(--primary))",
+        borderInlineStart: "3px solid hsl(var(--primary))",
         borderRadius: 8,
         padding: "10px 14px",
         display: "flex",

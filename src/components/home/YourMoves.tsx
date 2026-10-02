@@ -76,7 +76,7 @@ const Row = ({ item, onClick, captured }: { item: AuraItem; onClick: () => void;
           lineHeight: 1.4,
         }}>{item.title}</div>
       </div>
-      <ChevronRight size={16} style={{ color: "hsl(var(--muted-foreground))", flexShrink: 0 }} />
+      <ChevronRight size={16} className="rtl:-scale-x-100" style={{ color: "hsl(var(--muted-foreground))", flexShrink: 0 }} />
     </div>
   );
 };

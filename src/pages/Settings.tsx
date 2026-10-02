@@ -363,7 +363,7 @@ const handleDeleteAccount = async () => {
           className="flex items-center gap-1.5 text-sm mb-4"
           style={{ color: "var(--action)" }}
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
           <span>{t("settings.nav.back")}</span>
         </button>
 
@@ -392,7 +392,7 @@ const handleDeleteAccount = async () => {
               flex: "0 0 240px",
               position: "sticky",
               top: 24,
-              borderRight: "1px solid var(--rule)",
+              borderInlineEnd: "1px solid var(--rule)",
               padding: "24px 12px",
             }}
           >
@@ -413,7 +413,7 @@ const handleDeleteAccount = async () => {
                       alignItems: "center",
                       gap: 10,
                       width: "100%",
-                      textAlign: "left",
+                      textAlign: "start",
                       border: 0,
                       cursor: "pointer",
                       padding: "8px 12px",
@@ -544,7 +544,7 @@ const handleDeleteAccount = async () => {
                       {mayPromptReconnect(liStatus)
                         ? t("settings.linkedin.expired")
                         : liState.address
-                          ? t("settings.linkedin.addressOnFile", { address: liState.address.replace(/^https?:\/\/(www\.)?/, "") })
+                          ? t("settings.linkedin.addressOnFile", { address: ltrIsolate(liState.address.replace(/^https?:\/\/(www\.)?/, "")) })
                           : t("settings.linkedin.notConnected")}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>

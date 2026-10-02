@@ -319,7 +319,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
               fontSize: 10.5, letterSpacing: ".08em", color: "var(--machine)",
             }}>
               <span aria-hidden style={{ inlineSize: 6, blockSize: 6, borderRadius: 999, background: "var(--machine)" }} />
-              {t("home.address.prepared", { time: generatedLabel })}
+              {t("home.address.prepared", { time: ltrIsolate(generatedLabel) })}
             </span>
           )}
           <button

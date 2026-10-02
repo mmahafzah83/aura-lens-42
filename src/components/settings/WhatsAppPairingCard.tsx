@@ -259,7 +259,7 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
 
       {token && !expired && (
         <div className="mt-3 text-sm" style={mutedText}>
-          {t("settings.whatsapp.waiting", { time: mmss })}
+          {t("settings.whatsapp.waiting", { time: ltrIsolate(mmss) })}
         </div>
       )}
 

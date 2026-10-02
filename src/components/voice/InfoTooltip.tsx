@@ -19,7 +19,8 @@ export default function InfoTooltip({ term, body }: { term: string; body: string
     const el = btn.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    setPos({ left: Math.max(8, Math.min(r.left, window.innerWidth - 268)), top: r.bottom + 8 });
+    const anchor = document.documentElement.dir === "rtl" ? r.right - 260 : r.left;
+    setPos({ left: Math.max(8, Math.min(anchor, window.innerWidth - 268)), top: r.bottom + 8 });
   }, []);
 
   const hide = useCallback(() => setPos(null), []);
