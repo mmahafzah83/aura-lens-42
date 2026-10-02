@@ -1,5 +1,6 @@
 import { test, expect } from "../playwright-fixture";
 import { isArabicReadyRoute } from "../src/i18n/routes";
+import { seedQuestionsSession } from "./helpers/backend";
 
 /* FREE — no read, no account. With Arabic stored as the choice, a route renders
    Arabic only when the registry says it is ready. The expectation comes from
@@ -17,9 +18,16 @@ test.describe("language follows the ready-routes registry", () => {
     test(`${route} with Arabic stored renders ${ready ? "rtl/ar" : "ltr/en"}`, async ({ page }) => {
       await page.goto("/");
       await page.evaluate(() => localStorage.setItem("kb_ui_lang", "ar"));
+      /* Signed out with no session, /onboarding hands over to /auth — seed a
+         free anonymous session so the page under test is onboarding itself. */
+      if (route === "/onboarding") {
+        const token = await seedQuestionsSession();
+        await page.evaluate((t) => localStorage.setItem("aura_session_token", t), token);
+      }
       await page.goto(route);
       await page.waitForLoadState("networkidle").catch(() => {});
 
+      expect(new URL(page.url()).pathname).toBe(route);
       const html = page.locator("html");
       await expect(html).toHaveAttribute("dir", ready ? "rtl" : "ltr");
       await expect(html).toHaveAttribute("lang", ready ? "ar" : "en");

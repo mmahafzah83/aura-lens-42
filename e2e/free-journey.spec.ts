@@ -1,55 +1,11 @@
-import { readFileSync } from "node:fs";
 import { test, expect } from "../playwright-fixture";
+import { rpc, questionsFor, type QRow } from "./helpers/backend";
 
 /** A public profile with enough posts to read. Override per environment. */
 const PROFILE = process.env.E2E_LINKEDIN_URL || "linkedin.com/in/satyanadella";
 
 /** The read calls a scraper and a model; it is slow by nature. */
 const READ_TIMEOUT = 180_000;
-
-/* The public backend address and publishable key, from the environment or .env.
-   Both are public by design — the app ships them to every browser. */
-function backend(): { url: string; key: string } {
-  let url = process.env.VITE_SUPABASE_URL || "";
-  let key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
-  if (!url || !key) {
-    try {
-      for (const line of readFileSync(".env", "utf8").split("\n")) {
-        const m = line.match(/^\s*(VITE_SUPABASE_URL|VITE_SUPABASE_PUBLISHABLE_KEY)\s*=\s*"?([^"\n]*)"?/);
-        if (m && m[1] === "VITE_SUPABASE_URL" && !url) url = m[2];
-        if (m && m[1] === "VITE_SUPABASE_PUBLISHABLE_KEY" && !key) key = m[2];
-      }
-    } catch { /* no .env */ }
-  }
-  return { url, key };
-}
-
-async function rpc(fn: string, body: Record<string, unknown>) {
-  const { url, key } = backend();
-  const res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
-    method: "POST",
-    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`${fn} ${res.status}: ${text}`);
-  return text ? JSON.parse(text) : null;
-}
-
-type QRow = {
-  id: string; position: number; kind: string; prompt: string;
-  options: { label: string; value: string }[] | null; allow_none: boolean | null;
-};
-
-async function questionsFor(band: string): Promise<QRow[]> {
-  const { url, key } = backend();
-  const q = `select=id,position,kind,prompt,options,allow_none&band=eq.${band}&active=eq.true&sector=is.null&order=position`;
-  const res = await fetch(`${url}/rest/v1/onboarding_questions?${q}`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-  });
-  if (!res.ok) throw new Error(`onboarding_questions ${res.status}`);
-  return res.json();
-}
 
 test.describe("the free journey", () => {
   /* PAID — spends ONE real read (a scraper and a model). Skip with E2E_SKIP_PAID=1. */
