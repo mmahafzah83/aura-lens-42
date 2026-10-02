@@ -11,6 +11,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { canonicalHandle, saveLinkedInAddress } from "@/lib/linkedinAddress";
 import { supabase } from "@/integrations/supabase/client";
 import { causeOf, retryLabel } from "@/lib/failureCause";
@@ -30,6 +31,7 @@ const TONE: Record<LinkedInStatusView["tone"], { fg: string; bg: string; border:
 };
 
 export default function LinkedInAddressCard({ userId }: { userId: string | null }) {
+  const { t } = useTranslation();
   const [value, setValue] = useState("");
   const [state, setState] = useState<LinkedInState | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,8 +69,8 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
     }
     const kept = typeof pd.kept_own_text === "number" ? pd.kept_own_text : 0;
     toast.success(kept > 0
-      ? `Aura read your profile and ${kept} of your posts.`
-      : "Aura read your profile. LinkedIn showed no posts of your own writing yet.");
+      ? t("settings.linkedin.readProfileAndPosts", { count: kept })
+      : t("settings.linkedin.readProfileNoPosts"));
   };
 
   /**
@@ -80,7 +82,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
   const save = async () => {
     if (!userId) return;
     if (inFlight.current) {
-      toast.message("Aura is already reading your profile — give it a moment.");
+      toast.message(t("settings.linkedin.alreadyReading"));
       return;
     }
     inFlight.current = true;
@@ -100,8 +102,8 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
       });
       if (invokeError || !data || (data as any).error) {
         const why = causeOf(invokeError ?? (data as any)?.error, "Reading your profile");
-        setError(`Address saved. ${why}`);
-        toast.error(`Address saved. ${why}`);
+        setError(t("settings.linkedin.addressSaved", { why }));
+        toast.error(t("settings.linkedin.addressSaved", { why }));
         return;
       }
       setState((s) => ({
@@ -112,7 +114,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
 
       await readPosts(profile_url);
     } catch (e) {
-      const why = e instanceof Error ? e.message : "Couldn't save that address.";
+      const why = e instanceof Error ? e.message : t("settings.error.addressSave");
       setError(why);
       toast.error(why);
     } finally {
@@ -128,7 +130,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
   return (
     <div style={{ background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: 16, padding: 16, marginBlockEnd: 24 }} data-testid="linkedin-address-card">
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: INK }}>Your LinkedIn address</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: INK }}>{t("settings.linkedin.cardTitle")}</div>
         <span
           style={{
             fontSize: 10, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
@@ -141,11 +143,13 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
       </div>
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, marginBlockStart: 6, marginBlockEnd: 8 }}>
         {/* Copy moved here from the deleted "Your LinkedIn" card. */}
-        Aura reads what's already public on your profile — your headline and your recent posts —
-        so that what it writes sounds like you and not like anyone else.
+        {t("settings.linkedin.intro")}
+        {" "}
         {state?.handle
-          ? ` Reading @${state.handle} now${state.confirmedByRead ? "" : " — Aura hasn't opened it yet"}.`
-          : " No address set yet."}
+          ? (state.confirmedByRead
+            ? t("settings.linkedin.readingNow", { handle: state.handle })
+            : t("settings.linkedin.readingNotOpened", { handle: state.handle }))
+          : t("settings.linkedin.noAddress")}
       </p>
       <p style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.6, marginBlockStart: 0, marginBlockEnd: 12 }}>
         {view.explanation}
@@ -155,7 +159,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
           value={value}
           onChange={(e) => { setValue(e.target.value); if (error) setError(null); }}
           placeholder="https://www.linkedin.com/in/your-handle"
-          aria-label="LinkedIn profile address"
+          aria-label={t("settings.linkedin.addressAria")}
           inputMode="url"
           autoCapitalize="none"
           spellCheck={false}
@@ -177,7 +181,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
             cursor: busy || !valid ? "not-allowed" : "pointer",
           }}
         >
-          {busy ? "Saving and reading…" : "Save and read my profile"}
+          {busy ? t("settings.linkedin.savingReading") : t("settings.linkedin.saveRead")}
         </button>
       </div>
       {error && (
@@ -186,11 +190,10 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
         </p>
       )}
       <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
-        Aura reads your posts, and can publish for you — but only when you approve it. Nothing goes out in your
-        name on its own.
+        {t("settings.linkedin.approval")}
       </p>
       <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginTop: 6, marginBottom: 0 }}>
-        Aura stores what it reads so it can write as you. You can delete it any time in Settings.
+        {t("settings.linkedin.stores")}
       </p>
     </div>
   );

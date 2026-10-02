@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { writeProfile } from "@/lib/profileWrite";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import type { ThemeName } from "@/carousel/render/themes";
  * chosen here is exactly what appears there.
  */
 export default function SlideDefaultsCard({ userId }: { userId: string | null }) {
+  const { t } = useTranslation();
   const [template, setTemplate] = useState<string | null>(null);
   const [theme, setTheme] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -52,9 +54,9 @@ export default function SlideDefaultsCard({ userId }: { userId: string | null })
     setSaving(true);
     const ok = await writeProfile(userId, { default_template: template, default_theme: theme }, "SlideDefaultsCard.save");
     setSaving(false);
-    if (!ok) { toast.error("That didn't save — try once more."); return; }
-    toast.success("Saved. New slides will open in this look.");
-  }, [userId, template, theme]);
+    if (!ok) { toast.error(t("settings.error.didntSave")); return; }
+    toast.success(t("settings.toast.slidesSaved"));
+  }, [userId, template, theme, t]);
 
   const clear = useCallback(() => { setTemplate(null); setTheme(null); }, []);
 
@@ -64,29 +66,29 @@ export default function SlideDefaultsCard({ userId }: { userId: string | null })
     <AuraCard variant="default" hover="none">
       <div style={{ display: "grid", gap: 18 }}>
         <div style={{ display: "grid", gap: 10 }}>
-          <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Slide family</div>
+          <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>{t("settings.slides.family")}</div>
           <TemplatePicker lang="en" value={template ?? ""} onChange={pickTemplate} />
         </div>
 
         {template && (
           <div style={{ display: "grid", gap: 10 }}>
-            <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Colour</div>
-            <ColourPicker lang="en" template={template} value={theme ?? ""} onChange={(t) => setTheme(t)} />
+            <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>{t("settings.slides.colour")}</div>
+            <ColourPicker lang="en" template={template} value={theme ?? ""} onChange={(next) => setTheme(next)} />
           </div>
         )}
 
         <div className="flex items-center justify-between gap-4">
           <div className="text-sm" style={{ color: "var(--ink-3)" }}>
             {template
-              ? "New slides open in this look. You can change it inside any post."
-              : "No default set. New slides open in the standard look."}
+              ? t("settings.slides.lookSet")
+              : t("settings.slides.noDefault")}
           </div>
           <div className="flex gap-2">
             {template && (
-              <Button variant="ghost" size="sm" onClick={clear} disabled={saving}>Clear</Button>
+              <Button variant="ghost" size="sm" onClick={clear} disabled={saving}>{t("settings.slides.clear")}</Button>
             )}
             <Button variant="default" size="sm" onClick={() => void save()} loading={saving} disabled={saving}>
-              Save
+              {t("settings.slides.save")}
             </Button>
           </div>
         </div>

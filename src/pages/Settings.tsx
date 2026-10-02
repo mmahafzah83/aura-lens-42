@@ -23,6 +23,9 @@ import SlideDefaultsCard from "@/components/settings/SlideDefaultsCard";
 import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
 import { WHATSAPP_PAIRING_ADMIN_ONLY } from "@/config/whatsapp";
 import { useIsAdmin } from "@/lib/isAdmin";
+import { useTranslation, Trans } from "react-i18next";
+import { dateLocale } from "@/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProfileData {
   first_name: string | null;
@@ -54,18 +57,20 @@ import { statusFromLinkedInState, mayPromptReconnect } from "@/lib/linkedinStatu
 
 /* One list, two renderings (rail on desktop, chips on mobile). */
 const NAV_ITEMS = [
-  { key: "profile", label: "Profile & identity", Icon: User },
-  { key: "connections", label: "Connections", Icon: Link2 },
-  { key: "preferences", label: "Preferences", Icon: Settings2 },
-  { key: "slides", label: "Slides & export", Icon: Presentation },
-  { key: "privacy", label: "Data & privacy", Icon: ShieldCheck },
-  { key: "danger", label: "Danger zone", Icon: AlertTriangle },
+  { key: "profile", labelKey: "settings.nav.profile", Icon: User },
+  { key: "connections", labelKey: "settings.nav.connections", Icon: Link2 },
+  { key: "preferences", labelKey: "settings.nav.preferences", Icon: Settings2 },
+  { key: "slides", labelKey: "settings.nav.slides", Icon: Presentation },
+  { key: "privacy", labelKey: "settings.nav.privacy", Icon: ShieldCheck },
+  { key: "danger", labelKey: "settings.nav.danger", Icon: AlertTriangle },
 ] as const;
 
 export default function Settings() {
+  const { t } = useTranslation();
+  const { lang } = useLanguage();
   usePageMeta({
-    title: "Aura — Settings",
-    description: "Your profile, brand, and capabilities.",
+    title: t("settings.meta.title"),
+    description: t("settings.meta.description"),
     path: "/settings",
   });
 
@@ -120,12 +125,12 @@ const handleDeleteAccount = async () => {
   try {
     const { data, error } = await supabase.functions.invoke("delete-account");
     if (error || (data && (data as any).error)) {
-      throw new Error((data as any)?.error || error?.message || "Delete failed");
+      throw new Error((data as any)?.error || error?.message || t("settings.error.deleteFailed"));
     }
     await signOutAndLand(navigate);
   } catch (e: any) {
     console.error("[delete-account] failed", e);
-    toast.error(e?.message || "We couldn't delete your account. Please try again.");
+    toast.error(e?.message || t("settings.error.deleteAccount"));
     setDeleting(false);
   }
 };
@@ -143,7 +148,7 @@ const handleDeleteAccount = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) {
         setLoading(false);
-        setError("Not signed in.");
+        setError(t("settings.error.notSignedInDot"));
         return;
       }
       const { data, error: qErr } = await supabase
@@ -157,7 +162,7 @@ const handleDeleteAccount = async () => {
       setProfile((data as unknown as ProfileData) || null);
 
     } catch (e: any) {
-      setError(e?.message || "Failed to load profile.");
+      setError(e?.message || t("settings.error.loadProfile"));
     } finally {
       setLoading(false);
     }
@@ -213,13 +218,13 @@ const handleDeleteAccount = async () => {
     setSavingCountry(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) throw new Error("Not signed in");
+      if (!session?.user?.id) throw new Error(t("settings.error.notSignedIn"));
       const ok = await writeProfile(session.user.id, { country: name, country_code: code }, "Settings.persistCountry");
-      if (!ok) throw new Error("That didn't save — try once more.");
+      if (!ok) throw new Error(t("settings.error.didntSave"));
       setProfile((p) => (p ? { ...p, country: name, country_code: code } : p));
-      toast.success("Country saved");
+      toast.success(t("settings.toast.countrySaved"));
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't save country");
+      toast.error(e?.message || t("settings.error.countrySave"));
     } finally {
       setSavingCountry(false);
     }
@@ -258,7 +263,7 @@ const handleDeleteAccount = async () => {
 
   const displayName = [profile?.first_name, profile?.last_name]
     .filter(Boolean)
-    .join(" ") || "Your profile";
+    .join(" ") || t("settings.profile.yourProfile");
 
   const capabilityCount = profile?.skill_ratings
     ? Object.keys(profile.skill_ratings).filter(
@@ -286,15 +291,15 @@ const handleDeleteAccount = async () => {
 
   const handleDownloadReport = async () => {
     if (!report || !reportMountRef.current) {
-      toast.error("Report not ready yet.");
+      toast.error(t("settings.error.reportNotReady"));
       return;
     }
     setExportingReport(true);
     try {
       await exportReportPdf(reportMountRef.current, reportFileName());
-      toast.success("Report downloaded");
+      toast.success(t("settings.toast.reportDownloaded"));
     } catch (e: any) {
-      toast.error(e?.message || "Failed to download report");
+      toast.error(e?.message || t("settings.error.reportDownload"));
     } finally {
       setExportingReport(false);
     }
@@ -308,7 +313,7 @@ const handleDeleteAccount = async () => {
       >
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--action)" }} />
         <p className="text-sm" style={{ color: "var(--ink-4)" }}>
-          Loading your profile…
+          {t("settings.profile.loading")}
         </p>
       </div>
     );
@@ -321,7 +326,7 @@ const handleDeleteAccount = async () => {
         style={{ background: "var(--paper)" }}
       >
         <p className="text-sm" style={{ color: "var(--error)" }}>
-          {error || "No profile found."}
+          {error || t("settings.error.noProfile")}
         </p>
         <button
           type="button"
@@ -329,7 +334,7 @@ const handleDeleteAccount = async () => {
           className="text-sm underline"
           style={{ color: "var(--action)" }}
         >
-          Go home
+          {t("settings.nav.goHome")}
         </button>
       </div>
     );
@@ -359,7 +364,7 @@ const handleDeleteAccount = async () => {
           style={{ color: "var(--action)" }}
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
+          <span>{t("settings.nav.back")}</span>
         </button>
 
         {/* Header */}
@@ -373,7 +378,7 @@ const handleDeleteAccount = async () => {
               letterSpacing: "0.02em",
             }}
           >
-            Settings
+            {t("settings.nav.title")}
           </h1>
         </div>
 
@@ -381,7 +386,7 @@ const handleDeleteAccount = async () => {
         <div className="md:flex md:items-start">
           <nav
             className="hidden md:block"
-            aria-label="Settings sections"
+            aria-label={t("settings.nav.sections")}
             style={{
               width: 240,
               flex: "0 0 240px",
@@ -427,7 +432,7 @@ const handleDeleteAccount = async () => {
                     }}
                   >
                     <item.Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
+                    <span>{t(item.labelKey)}</span>
                     {item.key === "connections" ? (
                       <span
                         aria-hidden
@@ -447,7 +452,7 @@ const handleDeleteAccount = async () => {
 
           <div
             className="flex md:hidden"
-            aria-label="Settings sections"
+            aria-label={t("settings.nav.sections")}
             style={{ gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 20 }}
           >
             {NAV_ITEMS.map((item) => {
@@ -477,7 +482,7 @@ const handleDeleteAccount = async () => {
                   }}
                 >
                   <item.Icon className="w-3.5 h-3.5" />
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                   {item.key === "connections" ? (
                     <span
                       aria-hidden
@@ -513,8 +518,8 @@ const handleDeleteAccount = async () => {
           <>
         {/* LinkedIn */}
         <SectionHeader
-          label="LinkedIn"
-          subtitle="Connect your account to publish from Aura and pull your analytics automatically."
+          label={t("settings.linkedin.title")}
+          subtitle={t("settings.linkedin.subtitle")}
         />
         <div className="mb-8">
           <AuraCard variant="default" hover="none">
@@ -526,7 +531,7 @@ const handleDeleteAccount = async () => {
                       className="text-sm font-semibold"
                       style={{ color: "var(--ink)" }}
                     >
-                      {liState.handle ? `linkedin.com/in/${liState.handle}` : "LinkedIn"}
+                      {liState.handle ? `linkedin.com/in/${liState.handle}` : t("settings.linkedin.title")}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
                       {/* The shared rule's sentence — never a locally invented one. */}
@@ -537,10 +542,10 @@ const handleDeleteAccount = async () => {
                   <>
                     <div className="text-sm" style={{ color: "var(--ink)" }}>
                       {mayPromptReconnect(liStatus)
-                        ? "Your LinkedIn sign-in has run out"
+                        ? t("settings.linkedin.expired")
                         : liState.address
-                          ? `Address on file — ${liState.address.replace(/^https?:\/\/(www\.)?/, "")}`
-                          : "Not connected"}
+                          ? t("settings.linkedin.addressOnFile", { address: liState.address.replace(/^https?:\/\/(www\.)?/, "") })
+                          : t("settings.linkedin.notConnected")}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
                       {liStatus.explanation}
@@ -555,7 +560,7 @@ const handleDeleteAccount = async () => {
                 disabled={linkedInBusy}
                 onClick={liState.connected ? handleDisconnectLinkedIn : handleConnectLinkedIn}
               >
-                {liState.connected ? "Disconnect" : mayPromptReconnect(liStatus) ? "Reconnect LinkedIn" : "Connect LinkedIn"}
+                {liState.connected ? t("settings.linkedin.disconnect") : mayPromptReconnect(liStatus) ? t("settings.linkedin.reconnect") : t("settings.linkedin.connect")}
               </Button>
 
             </div>
@@ -565,8 +570,8 @@ const handleDeleteAccount = async () => {
         {(!WHATSAPP_PAIRING_ADMIN_ONLY || isAdmin === true) && (
           <>
             <SectionHeader
-              label="Capture by WhatsApp"
-              subtitle="Forward anything you read straight to Aura. It becomes a capture, in your account, automatically."
+              label={t("settings.whatsapp.title")}
+              subtitle={t("settings.whatsapp.subtitle")}
             />
             <div className="mb-8">
               <AuraCard variant="default" hover="none">
@@ -583,8 +588,8 @@ const handleDeleteAccount = async () => {
         {section === "slides" ? (
         <section id="slides" style={{ scrollMarginTop: 96 }}>
           <SectionHeader
-            label="Slides"
-            subtitle="The family and colour your slides open in. You can still change either inside any post."
+            label={t("settings.slides.title")}
+            subtitle={t("settings.slides.subtitle")}
           />
           <div className="space-y-4">
             <SlideDefaultsCard userId={authUser?.id ?? null} />
@@ -596,18 +601,18 @@ const handleDeleteAccount = async () => {
           <>
         {/* Your data — trust statement */}
         <SectionHeader
-          label="Your data"
-          subtitle="What's private, what we can see, and how we protect it."
+          label={t("settings.privacy.title")}
+          subtitle={t("settings.privacy.subtitle")}
         />
         <div className="mb-8">
           <AuraCard variant="default" hover="none">
             <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--ink-2)" }}>
-              Your captures, drafts, and signals are private to your account — no other user can see them, and nothing in Aura shows them to us. We don't sell your data, and the providers that power Aura operate under business terms that don't use it to train their models by default. Aura isn't end-to-end encrypted — the system has to read your content to turn it into signals — so we protect it with strict per-account isolation instead.{" "}
+              {t("settings.privacy.body")}{" "}
               <Link
                 to="/guide"
                 style={{ color: "var(--action)", fontWeight: 500, textDecoration: "none" }}
               >
-                Full details →
+                {t("settings.privacy.fullDetails")}
               </Link>
             </p>
           </AuraCard>
@@ -622,8 +627,8 @@ const handleDeleteAccount = async () => {
 
         {/* Your CV — the door stays open after the journey ends. */}
         <SectionHeader
-          label="Your CV"
-          subtitle="Aura reads it against your profile and shows you the difference."
+          label={t("settings.profile.cvTitle")}
+          subtitle={t("settings.profile.cvSubtitle")}
         />
         <div className="mb-8">
           <AuraCard variant="default" hover="none">
@@ -633,7 +638,7 @@ const handleDeleteAccount = async () => {
               try { return localStorage.getItem("aura_cv_was_transient") === "1"; } catch { return false; }
             })() ? (
               <p className="mb-4 text-sm text-muted-foreground">
-                Your comparison is saved. Add your CV again from Settings if you'd like Aura to keep it.
+                {t("settings.profile.cvTransient")}
               </p>
             ) : null}
             <CvUploadControl userId={authUser?.id ?? null} />
@@ -643,8 +648,8 @@ const handleDeleteAccount = async () => {
         {/* Location */}
         <section id="location" style={{ scrollMarginTop: 96 }}>
         <SectionHeader
-          label="Location"
-          subtitle="Sets the flag on your Aura Card and helps regionalise your insights."
+          label={t("settings.profile.locationTitle")}
+          subtitle={t("settings.profile.locationSubtitle")}
         />
         <div className="space-y-4">
           <AuraCard variant="default" hover="none">
@@ -660,8 +665,8 @@ const handleDeleteAccount = async () => {
 
         {/* About you — one card, three labelled rows. */}
         <SectionHeader
-          label="About you"
-          subtitle="A read-only summary of what Aura knows about your profile, brand, and capabilities."
+          label={t("settings.profile.aboutTitle")}
+          subtitle={t("settings.profile.aboutSubtitle")}
         />
 
         <div className="space-y-4">
@@ -699,7 +704,7 @@ const handleDeleteAccount = async () => {
               className="text-xs font-semibold uppercase tracking-[0.12em] mb-3"
               style={{ color: "var(--ink)" }}
             >
-              Brand pillars
+              {t("settings.profile.pillars")}
             </div>
             {profile.brand_pillars && profile.brand_pillars.length > 0 ? (
               <div className="flex flex-wrap gap-2">
@@ -719,7 +724,7 @@ const handleDeleteAccount = async () => {
               </div>
             ) : (
               <p className="text-sm italic" style={{ color: "var(--ink-4)" }}>
-                No brand pillars saved yet.
+                {t("settings.profile.noPillars")}
               </p>
             )}
 
@@ -729,21 +734,23 @@ const handleDeleteAccount = async () => {
               className="text-xs font-semibold uppercase tracking-[0.12em] mb-3"
               style={{ color: "var(--ink)" }}
             >
-              Capabilities
+              {t("settings.profile.capabilities")}
             </div>
             <p className="text-sm" style={{ color: "var(--ink-2)" }}>
               {capabilityCount > 0 ? (
-                <>
-                  <span className="font-semibold">{capabilityCount}</span> capability{" "}
-                  {capabilityCount === 1 ? "dimension" : "dimensions"} rated
-                </>
+                <Trans
+                  i18nKey="settings.profile.capabilityCount"
+                  count={capabilityCount}
+                  values={{ count: capabilityCount }}
+                  components={{ 1: <span className="font-semibold" /> }}
+                />
               ) : (
-                <>No capability ratings saved yet.</>
+                <>{t("settings.profile.noCapabilities")}</>
               )}
             </p>
             {profile.audit_results && Object.keys(profile.audit_results).length > 0 && (
               <p className="mt-2 text-sm" style={{ color: "var(--ink-3)" }}>
-                Objective evidence audit completed.
+                {t("settings.profile.auditDone")}
               </p>
             )}
           </AuraCard>
@@ -754,12 +761,12 @@ const handleDeleteAccount = async () => {
               className="text-xs font-semibold uppercase tracking-[0.12em] mb-2"
               style={{ color: "var(--ink)" }}
             >
-              Export
+              {t("settings.profile.export")}
             </div>
             {profile?.brand_assessment_completed_at ? (
               <>
                 <p className="text-sm mb-4" style={{ color: "var(--ink-3)" }}>
-                  Download your Strategic Identity Report as a PDF.
+                  {t("settings.profile.exportBody")}
                 </p>
                 <Button
                   variant="default"
@@ -768,43 +775,38 @@ const handleDeleteAccount = async () => {
                   loading={exportingReport}
                   disabled={exportingReport || reportLoading || !report}
                 >
-                  Export PDF
+                  {t("settings.profile.exportPdf")}
                 </Button>
                 {reportVersion && reportSnapshotAt ? (
                   <p style={{ marginTop: 8, fontSize: 11, color: "var(--ink-4)" }}>
-                    Version {reportVersion} ·{" "}
-                    {new Date(reportSnapshotAt).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
+                    {t("settings.profile.version", {
+                      version: reportVersion,
+                      date: new Date(reportSnapshotAt).toLocaleDateString(dateLocale(lang), {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      }),
                     })}
                   </p>
                 ) : null}
-                {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
+                {/* §16.1 trust line — quiet, caption, muted; one line in the member's language */}
                 <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 2 }}>
                   <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
-                    The report is built from your data alone — and leaves only by your hand.
-                  </p>
-                  <p
-                    dir="rtl"
-                    lang="ar"
-                    style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', var(--font-body), sans-serif" }}
-                  >
-                    التقرير يُبنى من بياناتك وحدها — ولا يغادر إلا بيدك.
+                    {t("settings.profile.reportTrust")}
                   </p>
                 </div>
               </>
             ) : (
               <>
                 <p className="text-sm mb-4" style={{ color: "var(--ink-4)" }}>
-                  Complete your brand assessment to generate your identity report.
+                  {t("settings.profile.assessFirst")}
                 </p>
                 <Button
                   variant="default"
                   size="sm"
                   onClick={() => navigate("/onboarding")}
                 >
-                  Complete brand assessment
+                  {t("settings.profile.assessCta")}
                 </Button>
               </>
             )}
@@ -818,24 +820,17 @@ const handleDeleteAccount = async () => {
           <>
         {/* Danger zone */}
         <SectionHeader
-          label="Danger zone"
-          subtitle="Irreversible account actions."
+          label={t("settings.danger.title")}
+          subtitle={t("settings.danger.subtitle")}
         />
         <div className="mb-8">
           <AuraCard variant="default" hover="none">
             <p className="text-sm" style={{ color: "var(--ink-2)" }}>
-              Deleting your account permanently removes your profile, captures, signals, drafts, and all associated data. This cannot be undone.
+              {t("settings.danger.body")}
             </p>
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 2 }}>
               <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
-                Your live data is removed immediately; routine backups cycle out within 30 days.
-              </p>
-              <p
-                dir="rtl"
-                lang="ar"
-                style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', var(--font-body), sans-serif" }}
-              >
-                تُحذف بياناتك الحية فوراً؛ ونسخ النسخ الاحتياطي المعتادة تنتهي دورتها خلال 30 يوماً.
+                {t("settings.danger.backups")}
               </p>
             </div>
 
@@ -847,18 +842,18 @@ const handleDeleteAccount = async () => {
                   onClick={() => setDangerOpen(true)}
                   className="text-[var(--error)] border-[color-mix(in_srgb,var(--error)_40%,var(--rule))] hover:bg-[color-mix(in_srgb,var(--error)_8%,transparent)]"
                 >
-                  Delete my account
+                  {t("settings.danger.deleteMine")}
                 </Button>
               </div>
             ) : (
               <div className="mt-5" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>
-                  Type DELETE to confirm
+                  {t("settings.danger.typeToConfirm", { word: "DELETE" })}
                 </label>
                 <input
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE to confirm"
+                  placeholder={t("settings.danger.typeToConfirm", { word: "DELETE" })}
                   autoFocus
                   disabled={deleting}
                   className="w-full text-sm bg-transparent outline-none"
@@ -878,7 +873,7 @@ const handleDeleteAccount = async () => {
                     }}
                     disabled={deleting}
                   >
-                    Cancel
+                    {t("settings.danger.cancel")}
                   </Button>
                   <Button
                     variant="destructive"
@@ -889,10 +884,10 @@ const handleDeleteAccount = async () => {
                     {deleting ? (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Deleting…
+                        {t("settings.danger.deleting")}
                       </span>
                     ) : (
-                      "Permanently delete"
+                      t("settings.danger.permanent")
                     )}
                   </Button>
                 </div>

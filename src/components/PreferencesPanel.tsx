@@ -288,7 +288,7 @@ export default function PreferencesPanel({
       if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, notification_prefs: previous } : p));
-      toast.error("That didn't save — try once more.");
+      toast.error(t("settings.error.didntSave"));
     }
   };
 
@@ -303,7 +303,7 @@ export default function PreferencesPanel({
       if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, notification_prefs: previous } : p));
-      toast.error("That didn't save — try once more.");
+      toast.error(t("settings.error.didntSave"));
     }
   };
 
@@ -317,7 +317,7 @@ export default function PreferencesPanel({
       if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, timezone: previousTz } : p));
-      toast.error("That didn't save — try once more.");
+      toast.error(t("settings.error.didntSave"));
     }
   };
 
@@ -332,7 +332,7 @@ export default function PreferencesPanel({
       if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, content_language: previous } : p));
-      toast.error("That didn't save — try once more.");
+      toast.error(t("settings.error.didntSave"));
     }
   };
 
@@ -345,7 +345,7 @@ export default function PreferencesPanel({
       if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, shared_learning_consent: previous } : p));
-      toast.error("That didn't save — try once more.");
+      toast.error(t("settings.error.didntSave"));
     }
   };
 
@@ -371,7 +371,7 @@ export default function PreferencesPanel({
       }
     } catch {
       setOpportunityEmailOn(previous);
-      toast.error("That didn't save — try once more.");
+      toast.error(t("settings.error.didntSave"));
     }
   };
 
@@ -379,8 +379,8 @@ export default function PreferencesPanel({
     const fn = (profile?.first_name || "").trim();
     const ln = (profile?.last_name || "").trim();
     const joined = [fn, ln].filter(Boolean).join(" ");
-    return joined || (fullName?.trim() ?? "") || "Not set";
-  }, [profile, fullName]);
+    return joined || (fullName?.trim() ?? "") || t("settings.preferences.notSet");
+  }, [profile, fullName, t]);
 
   if (!open) return null;
 
@@ -408,35 +408,35 @@ export default function PreferencesPanel({
   const sections = (
     <>
       {/* YOUR PROFILE */}
-      <SectionHeader>Your profile</SectionHeader>
-      <Row label="Name" value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
-      <Row label="Title" value={profile?.level?.trim() || "Not set"} onClick={onEditField ? () => onEditField("level") : undefined} />
-      <Row label="Firm" value={profile?.firm?.trim() || "Not set"} onClick={onEditField ? () => onEditField("firm") : undefined} />
-      <Row label="Sector" value={profile?.sector_focus?.trim() || "Not set"} onClick={onEditField ? () => onEditField("sector_focus") : undefined} />
+      <SectionHeader>{t("settings.preferences.yourProfile")}</SectionHeader>
+      <Row label={t("settings.preferences.name")} value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
+      <Row label={t("settings.preferences.title")} value={profile?.level?.trim() || t("settings.preferences.notSet")} onClick={onEditField ? () => onEditField("level") : undefined} />
+      <Row label={t("settings.preferences.firm")} value={profile?.firm?.trim() || t("settings.preferences.notSet")} onClick={onEditField ? () => onEditField("firm") : undefined} />
+      <Row label={t("settings.preferences.sector")} value={profile?.sector_focus?.trim() || t("settings.preferences.notSet")} onClick={onEditField ? () => onEditField("sector_focus") : undefined} />
 
       {/* INTELLIGENCE */}
-      <SectionHeader>Intelligence</SectionHeader>
+      <SectionHeader>{t("settings.preferences.intelligence")}</SectionHeader>
       <ToggleRow
-        label="Monday intelligence brief"
-        description="Signals, rhythm, and one recommended move. Every Monday."
+        label={t("settings.preferences.weeklyBrief")}
+        description={t("settings.preferences.weeklyBriefDesc")}
         on={weeklyBriefOn}
         onChange={(v) => updatePrefs({ email_weekly_brief: v, weekly_brief: v })}
       />
       <ToggleRow
-        label="Daily nudges"
-        description="In-app reminders when signals need attention or content is due."
+        label={t("settings.preferences.dailyNudges")}
+        description={t("settings.preferences.dailyNudgesDesc")}
         on={dailyNudgesOn}
         onChange={(v) => updatePref("daily_nudges", v)}
       />
       <ToggleRow
-        label="Aura reads for you overnight"
-        description="One relevant finding, only when it clears the bar. Turn off any time."
+        label={t("settings.preferences.overnight")}
+        description={t("settings.preferences.overnightDesc")}
         on={overnightReadingOn}
         onChange={(v) => updatePref("overnight_reading_enabled", v)}
       />
       <ToggleRow
-        label="Daily opportunity card in the morning email"
-        description="One carefully matched opportunity, only when it clears the bar."
+        label={t("settings.preferences.opportunityEmail")}
+        description={t("settings.preferences.opportunityEmailDesc")}
         on={opportunityEmailOn}
         onChange={updateOpportunityEmail}
       />
@@ -451,13 +451,13 @@ export default function PreferencesPanel({
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3 }}>Time zone</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3 }}>{t("settings.preferences.timezone")}</div>
           <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginTop: 4, lineHeight: 1.45 }}>
-            When your Monday brief and overnight email arrive. Defaults to Riyadh.
+            {t("settings.preferences.timezoneDesc")}
           </div>
         </div>
         <select
-          aria-label="Time zone"
+          aria-label={t("settings.preferences.timezone")}
           value={profile?.timezone || "Asia/Riyadh"}
           onChange={(e) => persistTimezone(e.target.value)}
           style={{
@@ -492,13 +492,13 @@ export default function PreferencesPanel({
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3 }}>Writing language</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3 }}>{t("settings.preferences.writingLanguage")}</div>
           <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginTop: 4, lineHeight: 1.45 }}>
-            The language the composer opens in. You can still switch it for a single post.
+            {t("settings.preferences.writingLanguageDesc")}
           </div>
         </div>
         <select
-          aria-label="Writing language"
+          aria-label={t("settings.preferences.writingLanguage")}
           value={profile?.content_language === "ar" ? "ar" : "en"}
           onChange={(e) => persistLanguage(e.target.value === "ar" ? "ar" : "en")}
           style={{
@@ -515,7 +515,7 @@ export default function PreferencesPanel({
           }}
           className="focus-visible:ring-2 focus-visible:ring-[var(--act)]"
         >
-          <option value="en">English</option>
+          <option value="en">{t("settings.preferences.english")}</option>
           <option value="ar">العربية</option>
         </select>
       </div>
@@ -523,25 +523,25 @@ export default function PreferencesPanel({
       {uiSwitch}
 
       {/* PRIVACY */}
-      <SectionHeader>Privacy</SectionHeader>
+      <SectionHeader>{t("settings.preferences.privacy")}</SectionHeader>
       <ToggleRow
-        label="Contribute to shared learning"
-        description="Not running yet. When it starts, Aura will learn anonymous, aggregated patterns from how members across your field use it — never your content, identity, or drafts. This is your permission for that day. Turn it off anytime."
+        label={t("settings.preferences.sharedLearning")}
+        description={t("settings.preferences.sharedLearningDesc")}
         on={sharedLearningOn}
         onChange={updateSharedLearning}
       />
 
       {/* ACCOUNT */}
       {(onChangePassword || onRetakeBrandAssessment || onSignOut) && (
-        <SectionHeader>Account</SectionHeader>
+        <SectionHeader>{t("settings.preferences.account")}</SectionHeader>
       )}
-      {onChangePassword && <Row label="Change password" onClick={onChangePassword} />}
-      {onRetakeBrandAssessment && <Row label="Retake brand assessment" onClick={onRetakeBrandAssessment} />}
-      {onSignOut && <Row label="Sign out" onClick={onSignOut} chevron={false} danger />}
+      {onChangePassword && <Row label={t("settings.preferences.changePassword")} onClick={onChangePassword} />}
+      {onRetakeBrandAssessment && <Row label={t("settings.preferences.retake")} onClick={onRetakeBrandAssessment} />}
+      {onSignOut && <Row label={t("settings.preferences.signOut")} onClick={onSignOut} chevron={false} danger />}
 
       {email && (
         <div style={{ padding: "20px 24px 28px", fontSize: 11, color: "var(--ink-2)", textAlign: "center", fontFamily: "var(--font-body)" }}>
-          Signed in as {email}
+          {t("settings.preferences.signedInAs", { email })}
         </div>
       )}
     </>
@@ -567,7 +567,7 @@ export default function PreferencesPanel({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Preferences"
+      aria-label={t("settings.preferences.panelTitle")}
       style={{ position: "fixed", inset: 0, zIndex: 1000 }}
     >
       {/* Backdrop */}
@@ -634,7 +634,7 @@ export default function PreferencesPanel({
                 lineHeight: 1.2,
               }}
             >
-              Preferences
+              {t("settings.preferences.panelTitle")}
             </h2>
             <p
               style={{
@@ -644,13 +644,13 @@ export default function PreferencesPanel({
                 fontFamily: "var(--font-body)",
               }}
             >
-              How Aura works for you.
+              {t("settings.preferences.panelSub")}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close preferences"
+            aria-label={t("settings.preferences.close")}
             style={{
               background: "transparent",
               border: "none",
