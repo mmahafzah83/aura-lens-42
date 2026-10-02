@@ -172,6 +172,10 @@ const BANNED_RE = new RegExp(`\\b(?:${BANNED_PHRASES.join("|")})\\b`, "i");
 /** The retired product name. On the new-user journey it is a hard fail. */
 const RETIRED_NAME_RE = /(?<![-.\w@/%])(?:Aura|AURA)(?![-.\w%])/;
 const RETIRED_NAME_FILES = [
+  "supabase/functions/_shared/stageKeys.ts",
+  "supabase/functions/send-read-email/index.ts",
+  "supabase/functions/send-resume-email/index.ts",
+  "supabase/functions/send-account-notification/index.ts",
   "src/App.tsx",
   "src/components/CookieConsent.tsx",
   "src/components/ErrorBoundary.tsx",
