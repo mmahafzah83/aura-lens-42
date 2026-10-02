@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const SESSION_KEY = "aura_session_token";
 
 /** Shown only as a heading above the real queue form — never on its own. */
-export const QUEUE_MESSAGE = "Aura is reading at its limit for today.";
+export const QUEUE_MESSAGE = "KnownBy is reading at its limit for today.";
 export const ALREADY_RUN_MESSAGE =
   "This browser has already used its free read, whichever profile you enter. Sign in to see that read, or to run another.";
 const GENERIC = "Something failed on our side. Nothing is lost — try once more.";

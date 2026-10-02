@@ -30,7 +30,7 @@ const ReadCorrection = ({ userId, onNight = false, inline = false }: {
         .eq("user_id", userId);
       if (error) throw error;
       setDone(true);
-      toast.success("Noted. Aura will use that next time it reads you.");
+      toast.success("Noted. KnownBy will use that next time it reads you.");
     } catch (e) {
       console.warn("[read-correction] save failed", e);
       toast.error("Couldn't save that just now. Try once more.");
@@ -40,13 +40,13 @@ const ReadCorrection = ({ userId, onNight = false, inline = false }: {
   };
 
   if (done) {
-    return <p style={{ margin: "14px 0 0", fontSize: 12, color: muted }}>Thanks — Aura has your correction on file.</p>;
+    return <p style={{ margin: "14px 0 0", fontSize: 12, color: muted }}>Thanks — KnownBy has your correction on file.</p>;
   }
 
   const form = (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 10 }}>
-      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="What did Aura get wrong?"
-        aria-label="What did Aura get wrong?"
+      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="What did KnownBy get wrong?"
+        aria-label="What did KnownBy get wrong?"
         style={{
           inlineSize: "100%", padding: "12px 13px", borderRadius: RADIUS.card, fontFamily: "inherit",
           fontSize: 14, color: OB.ink, background: "#FFFFFF", border: `1px solid ${OB.line}`,
@@ -65,7 +65,7 @@ const ReadCorrection = ({ userId, onNight = false, inline = false }: {
         <button type="button" onClick={() => setOpen((v) => !v)} style={{
           background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",
           fontSize: "inherit", color: "inherit", textDecoration: "underline",
-        }}>Tell Aura if it's wrong</button>
+        }}>Tell KnownBy if it's wrong</button>
         {open ? form : null}
       </>
     );
@@ -74,7 +74,7 @@ const ReadCorrection = ({ userId, onNight = false, inline = false }: {
   return (
     <div style={{ marginBlockStart: 14 }}>
       <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: muted }}>
-        This is a read, not a verdict. If it's wrong, tell Aura and it will change.{" "}
+        This is a read, not a verdict. If it's wrong, tell KnownBy and it will change.{" "}
         {!open && (
           <button type="button" onClick={() => setOpen(true)} style={{
             background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",

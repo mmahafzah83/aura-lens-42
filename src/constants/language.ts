@@ -81,13 +81,13 @@ export const LOADING = {
 // TOASTS & NOTIFICATIONS
 // ════════════════════════════════════
 export const TOAST = {
-  captureSaved: "Captured. Aura is on it.",
+  captureSaved: "Captured. KnownBy is on it.",
   draftReady: "Your draft is ready.",
   copied: "Copied. Go put your name on it.",
   draftSaved: "Saved. It's here when you're ready.",
   voiceLocked: "Voice locked in. From now on, every post sounds like the best version of you.",
-  assessmentDone: "Done. Aura sees who you are now — and everything it creates will reflect it.",
-  numbersIn: "Numbers in. Now Aura knows what resonates with your audience.",
+  assessmentDone: "Done. KnownBy sees who you are now — and everything it creates will reflect it.",
+  numbersIn: "Numbers in. Now KnownBy knows what resonates with your audience.",
   inviteSent: "Sent. They're about to discover what you already know.",
   published: "Published.",
   urlLinked: "Linked. Performance data will flow back.",
@@ -100,7 +100,7 @@ export const TOAST = {
 export const ERROR = {
   generic: "Didn't connect. Try once more.",
   invalidUrl: "That link didn't work. Double-check it?",
-  rateLimited: "Give it a second. Aura's catching up.",
+  rateLimited: "Give it a second. KnownBy's catching up.",
   aiResting: "Taking a breather. Back in a moment.",
   sessionExpired: "Session expired. Sign back in — everything's still here.",
   internalError: "Something's off on our end. We're on it.",
@@ -151,12 +151,12 @@ export const SUBTITLES = {
   scoreBreakdown: "One of these three is holding you back. Fix it and watch the score move.",
   rhythm: "You don't need to post every day. You just need to not disappear. Consistency beats volume — every time.",
   myStory: "Everything you know — finally visible to the people who need to see it.",
-  intelligence: "You already see these patterns. Aura just makes them visible — so you can turn what you know into content that builds your name.",
+  intelligence: "You already see these patterns. KnownBy just makes them visible — so you can turn what you know into content that builds your name.",
   publish: "Every post comes from what you actually know. Not templates. Not trends. Your real expertise.",
-  publishVoice: "Aura learned how you write from your real posts. This is your voice — not AI's.",
+  publishVoice: "KnownBy learned how you write from your real posts. This is your voice — not AI's.",
   publishDrafts: "These are ready to go. One click, and your expertise is out there working for you — even while you sleep.",
   impact: "Every week you show up, your name reaches rooms you've never been in. That's how advisory calls, board invitations, and speaking slots find you.",
-  focusAreas: "You keep coming back to these signals. There's a reason — and Aura knows what it is.",
+  focusAreas: "You keep coming back to these signals. There's a reason — and KnownBy knows what it is.",
   capabilities: "The things you do that most people in your space can't. These show up in everything you write.",
 } as const;
 
@@ -165,7 +165,7 @@ export const SUBTITLES = {
 // ════════════════════════════════════
 export const EMPTY_STATE = {
   home: {
-    text: "You have the expertise. The certificates. The years. But does your market know? Right now, to anyone who hasn't met you in person — you're invisible. One article is all it takes to change that. Paste a link and watch Aura turn what you already know into something the market can finally see.",
+    text: "You have the expertise. The certificates. The years. But does your market know? Right now, to anyone who hasn't met you in person — you're invisible. One article is all it takes to change that. Paste a link and watch KnownBy turn what you already know into something the market can finally see.",
     cta: "Paste a link →",
   },
   intelligence: {
@@ -173,7 +173,7 @@ export const EMPTY_STATE = {
     cta: "Start with one article →",
   },
   publishNoSignals: {
-    text: "The gap between \"expert\" and \"recognized expert\" isn't knowledge — it's visibility. You already know enough to lead conversations in your sector. Build your first signals and watch Aura turn them into posts that put your name in the right rooms.",
+    text: "The gap between \"expert\" and \"recognized expert\" isn't knowledge — it's visibility. You already know enough to lead conversations in your sector. Build your first signals and watch KnownBy turn them into posts that put your name in the right rooms.",
     cta: "Build your first signal →",
   },
   publishHasSignals: (n: number) => ({
@@ -193,7 +193,7 @@ export const EMPTY_STATE = {
     placeholder: "What should I write about this week?",
   },
   readingList: {
-    text: "Your reading list builds itself from the gaps in your expertise. Save a few more articles and Aura will start showing you exactly what to read next — not random content, but the pieces that fill the blind spots in your positioning.",
+    text: "Your reading list builds itself from the gaps in your expertise. Save a few more articles and KnownBy will start showing you exactly what to read next — not random content, but the pieces that fill the blind spots in your positioning.",
   },
 } as const;
 
@@ -209,7 +209,7 @@ export const CTA = {
   published: "Published ✓",
   showMeWhoIAm: "Show me who I am in this market →",
   seePositioning: "See my positioning →",
-  teachVoice: "Teach Aura your voice",
+  teachVoice: "Teach KnownBy your voice",
   bringIn: "Bring someone in",
   next: "Next →",
 } as const;
@@ -251,19 +251,19 @@ export const TIERS_AR: Record<string, string> = {
 // ════════════════════════════════════
 export const ONBOARDING = {
   step1Label: "LET'S SEE WHAT YOU'VE GOT",
-  step1Intro: "You're not starting from zero — you have years of expertise the market hasn't seen yet. Tell Aura what you know. 60 seconds.",
+  step1Intro: "You're not starting from zero — you have years of expertise the market hasn't seen yet. Tell KnownBy what you know. 60 seconds.",
   expertisePillarsLabel: "WHAT DO YOU KNOW THAT MOST PEOPLE IN YOUR SECTOR DON'T?",
   assessmentCtaButton: "Show me who I am in this market →",
-  assessmentIntro: "Your expertise deserves a frame. Not a CV — a market position. Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.",
-  assessmentSubtitle: "This shapes everything Aura does for you — from what it reads between the lines to how it writes in your voice. The more honest you are, the more powerful the result.",
+  assessmentIntro: "Your expertise deserves a frame. Not a CV — a market position. Tell KnownBy who you are in 5 minutes, and it'll show you how the market should see you.",
+  assessmentSubtitle: "This shapes everything KnownBy does for you — from what it reads between the lines to how it writes in your voice. The more honest you are, the more powerful the result.",
 } as const;
 
 // ════════════════════════════════════
 // ONBOARDING — screen 0, the intro. Reached AFTER the /assessment read.
 // ════════════════════════════════════
 export const ONBOARDING_INTRO = {
-  lede: "Aura has read your profile. What's left is the part a profile can't carry — your CV, one thing you read this week, and a few answers only you can give.",
-  rowHead: "Inside your Aura Paper",
+  lede: "KnownBy has read your profile. What's left is the part a profile can't carry — your CV, one thing you read this week, and a few answers only you can give.",
+  rowHead: "Inside your KnownBy Paper",
   rowSub: "Five things you don't have anywhere today.",
   outputs: [
     { label: "How you're seen", detail: "The role you actually read as, named in one concrete phrase — not an adjective." },
@@ -291,7 +291,7 @@ export const ENDING = {
   rowCrosscheck: (n: number) => `${n} ${n === 1 ? "finding" : "findings"}, one to do first`,
   rowCrosscheckLabel: "Your CV against your profile",
   rowGapLabel: "The gap",
-  loss: "All of it lives in this browser. Clear your history, or open Aura on your phone, and it is gone.",
+  loss: "All of it lives in this browser. Clear your history, or open KnownBy on your phone, and it is gone.",
   tenthHead: "What this is about a tenth of",
   tenth: [
     "Your position rewritten every time your evidence changes",
@@ -299,7 +299,7 @@ export const ENDING = {
     "Drafts in your own voice, from what you already know",
     "One honest number for whether your standing is growing",
   ],
-  closing: "Aura is not a report. It is the thing that keeps doing this for you, every week, without adding work to your week.",
+  closing: "KnownBy is not a report. It is the thing that keeps doing this for you, every week, without adding work to your week.",
   cta: "Keep my report",
   ctaSignedIn: "Show me my read",
   ctaSub: "Free, and it stays free. Private — only you can see it unless you share it.",
@@ -320,7 +320,7 @@ export const AFTER_KEEP = {
   share: "Share my card",
   download: "Download the image",
   captionLabel: "What it will say",
-  continue: "Continue — set when Aura brings it to you",
+  continue: "Continue — set when KnownBy brings it to you",
 } as const;
 
 // ════════════════════════════════════
@@ -329,20 +329,20 @@ export const AFTER_KEEP = {
 export const EMAIL = {
   invite: {
     subject: "Your expertise deserves to be seen",
-    preheader: "Your Aura beta access is approved. Here's everything you need to get started — and why it matters.",
+    preheader: "Your KnownBy beta access is approved. Here's everything you need to get started — and why it matters.",
     heroHeadline: "You're in. Welcome to Aura.",
     heroTagline: "Your expertise has always been there. Now it starts working for you.",
-    ctaButton: "Open my Aura →",
+    ctaButton: "Open my KnownBy →",
     ctaLabel: "YOUR ACCESS",
     ctaSubtext: "Click below to give your expertise the visibility it deserves. Your first briefing is waiting.",
     sectionWhat: "WHAT HAPPENS INSIDE",
     sectionSteps: "YOUR FIRST 10 MINUTES",
     step1: "Set your password",
-    step2: "Tell Aura who you are — 5 minutes",
+    step2: "Tell KnownBy who you are — 5 minutes",
     step3: "Save one article",
     step4: "Watch your first signal appear",
-    defaultNote: "I built Aura because I kept meeting brilliant professionals whose market didn't know they existed. Not because they lacked expertise — but because no one had built them a system to make it visible. Aura is that system. I hope it changes the way your work is seen.",
-    footer: "Aura · AI Professional Identity Platform",
+    defaultNote: "I built KnownBy because I kept meeting brilliant professionals whose market didn't know they existed. Not because they lacked expertise — but because no one had built them a system to make it visible. KnownBy is that system. I hope it changes the way your work is seen.",
+    footer: "KnownBy · AI Professional Identity Platform",
   },
   weeklyBrief: {
     subject: "What moved in your sector this week",
@@ -351,6 +351,6 @@ export const EMAIL = {
     subject: "Your radar is cooling — 2 minutes to warm it up",
   },
   passwordReset: {
-    subject: "Reset your Aura password",
+    subject: "Reset your KnownBy password",
   },
 } as const;

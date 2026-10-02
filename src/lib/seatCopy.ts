@@ -12,7 +12,7 @@ export const SEAT_LEAD =
   "What you have now is a photograph. It was accurate this morning and it will be wrong by next quarter, because the market moves and your record doesn't move with it.";
 
 export const SEAT_ONE_JOB =
-  "Aura keeps your position true — and works on it every week without adding work to your week.";
+  "KnownBy keeps your position true — and works on it every week without adding work to your week.";
 
 export const SEAT_HOW_LABEL = "How it stays true";
 
@@ -25,7 +25,7 @@ export const SEAT_HOW = [
 
 /** The shopper's answer: why Aura is not another creator tool. */
 export const SEAT_VS_TOOLS =
-  "The creator tools give you posts. Aura reads you first — then keeps your position true.";
+  "The creator tools give you posts. KnownBy reads you first — then keeps your position true.";
 
 /** Kept for the surfaces that render the "how" as a plain row list. */
 export const SEAT_ROWS = SEAT_HOW;
@@ -40,12 +40,12 @@ export const SEAT_CTA_SECONDARY = "Just keep me posted";
 export const SEAT_PATH = "/request-access";
 
 export const SEAT_RESERVE_NOTE =
-  "No card. Nothing is charged. Aura isn't open yet — you're telling me you want in at this price, and I'll come to you when it is.";
+  "No card. Nothing is charged. KnownBy isn't open yet — you're telling me you want in at this price, and I'll come to you when it is.";
 
 export const SEAT_CAP = 50;
 export const SEAT_WAVE_SIZE = 10;
 export const SEAT_NO_CARD =
-  "No card today. You are not charged until Aura is publishing for you.";
+  "No card today. You are not charged until KnownBy is publishing for you.";
 export const SEAT_PROMISE =
   "See yourself for free. Take a seat only if what you see is worth keeping up.";
 

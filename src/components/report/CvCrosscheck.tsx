@@ -406,7 +406,7 @@ export default function CvCrosscheck({
   if (state === "no_cv") {
     return (
       <section style={{ ...card, ...style }}>
-        <p style={prose}>Aura hasn't got a CV to read yet.</p>
+        <p style={prose}>KnownBy hasn't got a CV to read yet.</p>
         {uploadSlot ? <div style={{ marginBlockStart: 16 }}>{uploadSlot}</div> : null}
       </section>
     );
@@ -427,7 +427,7 @@ export default function CvCrosscheck({
   if (state === "error") {
     return (
       <section style={{ ...card, ...style }}>
-        <p style={prose}>Aura couldn't finish the comparison this time. Your CV is saved — try again.</p>
+        <p style={prose}>KnownBy couldn't finish the comparison this time. Your CV is saved — try again.</p>
         {onRetry ? (
           <button type="button" onClick={onRetry} style={{ ...filledBtn, marginBlockStart: 14 }}>Try again</button>
         ) : null}

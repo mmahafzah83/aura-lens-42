@@ -215,15 +215,15 @@ export function provenanceOf(p: ProvenanceRow | null | undefined): Provenance | 
 }
 
 export const PROVENANCE_LABEL: Record<Provenance, string> = {
-  aura_published: "Aura wrote and posted this",
-  aura_drafted: "Aura wrote this",
+  aura_published: "KnownBy wrote and posted this",
+  aura_drafted: "KnownBy wrote this",
   linkedin_only: "Your own post",
 };
 
 export const PROVENANCE_EXPLAIN: Record<Provenance, string> = {
-  aura_published: "Aura wrote it and posted it to LinkedIn for you.",
-  aura_drafted: "Aura wrote it with you. You posted it yourself.",
-  linkedin_only: "You wrote this one. Aura found it on your LinkedIn.",
+  aura_published: "KnownBy wrote it and posted it to LinkedIn for you.",
+  aura_drafted: "KnownBy wrote it with you. You posted it yourself.",
+  linkedin_only: "You wrote this one. KnownBy found it on your LinkedIn.",
 };
 
 export function isMadeWithAura(p: ProvenanceRow | null | undefined): boolean {
@@ -255,9 +255,9 @@ export function countProvenance(rows: ProvenanceRow[] | null | undefined): Prove
 /** The one sentence Home is allowed to say. Two facts, never blended. */
 export function provenanceSentence(c: ProvenanceCounts): string {
   const live = `${c.live} live on LinkedIn`;
-  if (c.madeWithAura === 0) return `${live} · none made with Aura yet`;
+  if (c.madeWithAura === 0) return `${live} · none made with KnownBy yet`;
   const sent = c.sentFromAura > 0
     ? `, ${c.sentFromAura} of them sent from here`
     : ", none sent from here yet";
-  return `${live} · ${c.madeWithAura} made with Aura${sent}`;
+  return `${live} · ${c.madeWithAura} made with KnownBy${sent}`;
 }

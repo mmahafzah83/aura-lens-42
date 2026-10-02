@@ -29,7 +29,7 @@ const PublicFooter = () => (
         <div className="pf-right">
           <LanguageToggle />
           <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
-          <span>© 2026 Aura · Built in Riyadh, for the world.</span>
+          <span>© 2026 KnownBy · Built in Riyadh, for the world.</span>
         </div>
       </div>
     </footer>

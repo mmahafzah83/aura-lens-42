@@ -115,7 +115,7 @@ const App = () => (
                   className="text-lg"
                   style={{ color: "var(--text-primary)", letterSpacing: "0.04em" }}
                 >
-                  Aura
+                  KnownBy
                 </div>
                 <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                   Loading your intelligence…

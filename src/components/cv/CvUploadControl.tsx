@@ -66,9 +66,9 @@ type Failure =
   | { kind: "server" };
 
 const FAILURE_TEXT: Record<Failure["kind"], string> = {
-  no_cv: "Aura hasn't got a CV to read yet.",
-  no_snapshot: "Aura needs to read your profile first. Nothing you've added is lost.",
-  unparseable: "Aura couldn't finish the comparison this time. Your CV is saved — try again.",
+  no_cv: "KnownBy hasn't got a CV to read yet.",
+  no_snapshot: "KnownBy needs to read your profile first. Nothing you've added is lost.",
+  unparseable: "KnownBy couldn't finish the comparison this time. Your CV is saved — try again.",
   server: "Something went wrong on our side. Your CV is saved.",
 };
 
@@ -162,7 +162,7 @@ export default function CvUploadControl({
   };
 
   const transientCompare = async (file: File) => {
-    if (!anonToken) { setUploadError("Aura needs to read your profile first."); return; }
+    if (!anonToken) { setUploadError("KnownBy needs to read your profile first."); return; }
     setUploadError(null);
     setFailure(null);
     const id = newRunId();
@@ -276,10 +276,10 @@ export default function CvUploadControl({
             <div style={{ fontSize: 14, color: INK, overflowWrap: "anywhere" }}>{fileName}</div>
             <div style={{ fontSize: 12.5, color: MUTED, marginBlockStart: 2 }}>
               {comparing
-                ? "Aura is reading it against your profile."
+                ? "KnownBy is reading it against your profile."
                 : userId
                   ? "On file. Only you can see it."
-                  : "Read and discarded. Aura kept the comparison, not the file."}
+                  : "Read and discarded. KnownBy kept the comparison, not the file."}
             </div>
           </div>
           {!busy && !comparing ? (
@@ -305,7 +305,7 @@ export default function CvUploadControl({
           <p style={helpStyle}>
             {userId
               ? "PDF or Word. Only you can see it."
-              : "Aura reads your CV and discards it. It is never stored unless you save your report."}
+              : "KnownBy reads your CV and discards it. It is never stored unless you save your report."}
           </p>
         </>
       )}
@@ -345,7 +345,7 @@ export default function CvUploadControl({
           >
             {CV_PURPOSES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
-          <p style={helpStyle}>Optional. It changes what Aura looks for.</p>
+          <p style={helpStyle}>Optional. It changes what KnownBy looks for.</p>
         </div>
       ) : null}
     </div>

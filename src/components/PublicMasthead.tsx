@@ -28,9 +28,9 @@ const PublicMasthead = ({
   <>
     <style>{PM_CSS}</style>
     <header className="pm">
-      <Link className="pm-brand" to="/" aria-label="Aura home">
+      <Link className="pm-brand" to="/" aria-label="KnownBy home">
         <AuraLogo size={24} variant="auto" />
-        <span className="pm-bn">Aura</span>
+        <span className="pm-bn">KnownBy</span>
       </Link>
       <nav className="pm-nav">
         <LanguageToggle />

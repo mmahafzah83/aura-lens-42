@@ -131,7 +131,7 @@ const SHELF_SUB = [
 
 const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
 const SHELF_HINT = [
-  "Unlocks when Aura has read your profile",
+  "Unlocks when KnownBy has read your profile",
   "Unlocks when you capture your first piece of evidence",
   "Unlocks when you've moved the sliders",
   "Unlocks when your read is written",
@@ -152,7 +152,7 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
 };
 
 /** Shown wherever a post or word count would otherwise read zero. */
-const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you capture.";
+const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. KnownBy will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
 const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
 /** What the free tier deliberately does not do — used on the final screen. */
@@ -168,7 +168,7 @@ const LOSS_LINES = [
  * offered before the account exists; this line is offered instead.
  */
 const CONNECT_AFTER_ACCOUNT =
-  "Available after you save your report — Aura reads your public posts either way.";
+  "Available after you save your report — KnownBy reads your public posts either way.";
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
@@ -547,8 +547,8 @@ function emptyPostsLine(o: Extract<PostsOutcome, { status: "ok" }>): string {
 const Onboarding = () => {
 
   usePageMeta({
-    title: "Aura — Start your shelf",
-    description: `${FULL_PICTURE_LINE}. Aura learns your sector, your level and the way you already write.`,
+    title: "KnownBy — Start your shelf",
+    description: `${FULL_PICTURE_LINE}. KnownBy learns your sector, your level and the way you already write.`,
     path: "/onboarding",
   });
   const navigate = useNavigate();
@@ -849,7 +849,7 @@ const Onboarding = () => {
       } else {
         throw new Error("nowhere to keep this");
       }
-      toast.success("Kept. Aura will use this when it writes for you.");
+      toast.success("Kept. KnownBy will use this when it writes for you.");
       return true;
     } catch (e) {
       console.error("[journey] keep cv evidence failed", e);
@@ -1473,7 +1473,7 @@ const Onboarding = () => {
     setOwnWords(null);
     const profile_url = normaliseLinkedIn(liInput);
     if (!profile_url) {
-      setLiError("Aura couldn't open that page. Check it matches what you see in your browser on your own profile.");
+      setLiError("KnownBy couldn't open that page. Check it matches what you see in your browser on your own profile.");
       return;
     }
     setLiBusy(true);
@@ -1522,7 +1522,7 @@ const Onboarding = () => {
         await writeProfile({ brand_assessment_answers_coded: {} }, "subject change reset", undefined, [
           "brand_assessment_answers", "answered_band", "skill_ratings", "audit_results",
         ]);
-        if (hadWork) toast("That's a different profile — Aura has cleared the strengths and answers from the last one.");
+        if (hadWork) toast("That's a different profile — KnownBy has cleared the strengths and answers from the last one.");
       }
       subjectRef.current = profile_url;
 
@@ -1605,8 +1605,8 @@ const Onboarding = () => {
       /* the read failing never moves them: the field, the error and the manual path all stay here */
       returnToAddress(
         msg && msg.length < 120
-          ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
-          : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.",
+          ? "KnownBy couldn't open that page. Check it matches what you see in your browser on your own profile."
+          : "KnownBy couldn't open that page. Check it matches what you see in your browser on your own profile.",
       );
     } finally {
       setLiBusy(false);
@@ -2502,7 +2502,7 @@ const Onboarding = () => {
         </>
       ) : titlesFailed ? (
         <>
-          <p style={{ ...bodyLight, margin: 0 }}>Aura couldn't load the list of levels. Nothing is lost.</p>
+          <p style={{ ...bodyLight, margin: 0 }}>KnownBy couldn't load the list of levels. Nothing is lost.</p>
           <OBButton variant="secondary" onClick={() => void reloadTitles()}>Try again</OBButton>
         </>
       ) : seniorityTitles.map((t) => (
@@ -2551,7 +2551,7 @@ const Onboarding = () => {
   const quietLoadPanel = () => (
     <PaperShell onExit={saveAndExit} footer={escapeFooter}>
       <h1 style={h1Light}>One moment.</h1>
-      <p style={bodyLight}>Aura is picking the right set for you.</p>
+      <p style={bodyLight}>KnownBy is picking the right set for you.</p>
     </PaperShell>
   );
 
@@ -2721,7 +2721,7 @@ const Onboarding = () => {
   const retryPanel = (retry: () => void) => (
     <>
       <h1 style={h1Light}>Give that one more go.</h1>
-      <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
+      <p style={bodyLight}>KnownBy couldn't reach the shelf for a second. Nothing is lost.</p>
       <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={retry}>Try again</OBButton></Actions>
     </>
   );
@@ -2792,12 +2792,12 @@ const Onboarding = () => {
     content = (
       <PaperShell onExit={saveAndExit} subProgress={step1Phase === "result" ? 0.6 : 0.25} footer={escapeFooter}>
         {step1Phase === "result" ? (
-          <h1 style={h1Light}>This is what Aura can see.</h1>
+          <h1 style={h1Light}>This is what KnownBy can see.</h1>
         ) : (
           <>
             <h1 style={h1Light}>What's your LinkedIn?</h1>
             <p style={bodyLight}>
-              So nothing Aura writes for you sounds generic. It reads what's already public — your profile and your
+              So nothing KnownBy writes for you sounds generic. It reads what's already public — your profile and your
               recent posts — and picks up your sector, your level and the way you already write.
             </p>
           </>
@@ -2806,7 +2806,7 @@ const Onboarding = () => {
         {step1Phase === "ask" && !userId ? (
           <>
             <p style={bodyLight}>
-              Your read was done before you got here. Aura can't find it on this device — open it again and it
+              Your read was done before you got here. KnownBy can't find it on this device — open it again and it
               comes straight back.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
@@ -2850,13 +2850,13 @@ const Onboarding = () => {
               <OBButton variant="tertiary" onClick={() => goBack(0)}>Back</OBButton>
             </Actions>
             <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
-              Aura reads your profile and your public posts. You get drafts in your own words instead of generic ones.
+              KnownBy reads your profile and your public posts. You get drafts in your own words instead of generic ones.
               {userId
                 ? " You can delete what it stored, any time, in Settings."
-                : " You can delete what Aura stored at any time — and if you don't finish, it is deleted automatically after seven days."}
+                : " You can delete what KnownBy stored at any time — and if you don't finish, it is deleted automatically after seven days."}
             </p>
             <p style={{ margin: "8px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.55, color: OB.muted }}>
-              Aura reads the public profile and recent posts at this address, and keeps the result for seven days so you can come back.
+              KnownBy reads the public profile and recent posts at this address, and keeps the result for seven days so you can come back.
             </p>
           </>
         ) : null}
@@ -2867,7 +2867,7 @@ const Onboarding = () => {
             <WorkingPanel
               operation="linkedin_read"
               runId={readRunId}
-              title="Aura is reading your profile."
+              title="KnownBy is reading your profile."
               /* The same four named steps the read shows everywhere else. None
                  of them ticks on its own: each state is read from real data. */
               stages={[
@@ -2970,7 +2970,7 @@ const Onboarding = () => {
           return (
             <div style={{ marginBlockStart: 18 }}>
               <p style={{ margin: "0 0 8px", fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
-                What Aura found in your record
+                What KnownBy found in your record
               </p>
               {where.length ? (
                 <p {...memberText(where.join(" · "))} style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
@@ -3024,7 +3024,7 @@ const Onboarding = () => {
             </blockquote>
             <p {...memberText(facts.recQuote.title)} style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
             <p style={{ margin: "8px 0 0", fontSize: 11.5, color: OB.muted }}>
-              Aura read all {num(facts.recommendations)}.
+              KnownBy read all {num(facts.recommendations)}.
             </p>
           </figure>
         ) : null}
@@ -3056,7 +3056,7 @@ const Onboarding = () => {
               Level ·{" "}
               {levelTitle || bandLabel
                 ? <strong>{levelTitle || bandLabel}</strong>
-                : <span style={{ color: OB.muted }}>tell Aura</span>}
+                : <span style={{ color: OB.muted }}>tell KnownBy</span>}
             </span>
             <OBButton variant="tertiary" onClick={() => setBandPicker((v) => !v)} style={{ flexShrink: 0 }}>
               {bandPicker ? "Close" : "Change"}
@@ -3065,7 +3065,7 @@ const Onboarding = () => {
           {bandPicker && titleList((t, b) => { void chooseTitle(t, b); setBandPicker(false); })}
           {!sector && (
             <div style={{ marginBlockStart: 12 }}>
-              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Which sector should Aura use?</label>
+              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Which sector should KnownBy use?</label>
               <select id="ob-sector" value={sector} onChange={async (e) => {
                 const v = e.target.value;
                 setSector(v);
@@ -3078,7 +3078,7 @@ const Onboarding = () => {
                 {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>
-                Optional — it sharpens what Aura watches for you.
+                Optional — it sharpens what KnownBy watches for you.
               </p>
             </div>
           )}
@@ -3090,7 +3090,7 @@ const Onboarding = () => {
               background: OB.canvas, border: `1px solid ${OB.line}`,
             }}>
               <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
-                Two things Aura can see — both are yours to decide.
+                Two things KnownBy can see — both are yours to decide.
               </p>
 
               <div style={{ display: "flex", gap: 9, marginBlockStart: 14 }}>
@@ -3098,7 +3098,7 @@ const Onboarding = () => {
                 <div>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>What's public · read</p>
                   <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-                    Your profile and your posts. This is how Aura learns the way you write.
+                    Your profile and your posts. This is how KnownBy learns the way you write.
                   </p>
                   {readJustNow ? (
                     <p style={{ margin: "6px 0 0", fontFamily: OB.mono, fontSize: 11.5, color: OB.ink }}>{readJustNow}</p>
@@ -3111,13 +3111,13 @@ const Onboarding = () => {
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>
                     {connected
-                      ? `Connected${connectedName ? ` · ${connectedName}` : ""} · Aura can read your posts and publish when you approve`
+                      ? `Connected${connectedName ? ` · ${connectedName}` : ""} · KnownBy can read your posts and publish when you approve`
                       : "What's private · not connected"}
                   </p>
                   {connected ? null : (
                     <>
                       <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-                        How those posts actually performed. This is how Aura learns which of the signals in your read
+                        How those posts actually performed. This is how KnownBy learns which of the signals in your read
                         your audience already rewards — instead of guessing.
                       </p>
                       {userId ? (
@@ -3140,7 +3140,7 @@ const Onboarding = () => {
               </div>
 
               <p style={{ margin: "16px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
-                Aura reads your posts, and can publish for you — but only when you approve it. Nothing goes out in your name on its own. You can disconnect either one in Settings.
+                KnownBy reads your posts, and can publish for you — but only when you approve it. Nothing goes out in your name on its own. You can disconnect either one in Settings.
               </p>
             </div>
 
@@ -3193,8 +3193,8 @@ const Onboarding = () => {
     const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band && !!levelTitle;
     content = (
       <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
-        <p style={bodyLight}>Four things, and Aura works from these until you point it at your profile.</p>
+        <h1 style={h1Light}>KnownBy couldn't read it — tell it the basics.</h1>
+        <p style={bodyLight}>Four things, and KnownBy works from these until you point it at your profile.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
           <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" aria-label="First name" style={fieldStyle} />
           <input value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="Where you work" aria-label="Where you work" style={fieldStyle} />
@@ -3235,7 +3235,7 @@ const Onboarding = () => {
         <p style={bodyLight}>
           Your CV and your profile are read together. Your profile says what the world can see.
           A CV says what you actually did — the numbers, the programmes, the things nobody posted
-          about. Aura reads it against your profile and shows you the difference.
+          about. KnownBy reads it against your profile and shows you the difference.
         </p>
         <div style={{ marginBlockStart: 20 }}>
           <CvUploadControl
@@ -3293,8 +3293,8 @@ const Onboarding = () => {
         </p>
         <p style={bodyLight}>
           {userId
-            ? "Paste a link to an article or a post. Aura reads it and shows you what it found."
-            : "Paste a link to an article or a post. Aura reads it now and shows you what it found."}
+            ? "Paste a link to an article or a post. KnownBy reads it and shows you what it found."
+            : "Paste a link to an article or a post. KnownBy reads it now and shows you what it found."}
         </p>
         <label htmlFor="ob-link" style={{
           display: "block", margin: "20px 0 6px", fontSize: 12.5, fontWeight: 600, color: OB.ink,
@@ -3331,7 +3331,7 @@ const Onboarding = () => {
         {suggested ? (
           <div style={{ border: `1px solid ${OB.line}`, borderRadius: RADIUS.card, padding: 15, background: OB.canvas }}>
             <p style={{ margin: 0, fontSize: 11.5, color: OB.muted }}>
-              Aura found this in your sector while it read your profile.
+              KnownBy found this in your sector while it read your profile.
             </p>
             <p style={{ margin: "9px 0 0", fontSize: 14.5, fontWeight: 700, lineHeight: 1.4 }} {...memberText(suggested.title)}>
               {suggested.title}
@@ -3370,15 +3370,15 @@ const Onboarding = () => {
       completed: captureRun.completed,
       active: captureRun.active,
       failed: captureRun.failedAt,
-      labels: { fetch: "Article fetched", read: "What Aura found in it" },
+      labels: { fetch: "Article fetched", read: "What KnownBy found in it" },
     });
     const settled = claimsSlow && claims.length === 0;
     content = capturePending ? (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Kept.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Aura couldn't pull anything usable out of this one here — some pages don't open to it.
-          The link is on your record and Aura reads it again when your report is saved.
+          KnownBy couldn't pull anything usable out of this one here — some pages don't open to it.
+          The link is on your record and KnownBy reads it again when your report is saved.
         </p>
         <Actions style={{ marginBlockStart: 22 }}>
           <OBButton onClick={() => { setCapturePending(false); go(7); }}>Carry on</OBButton>
@@ -3388,7 +3388,7 @@ const Onboarding = () => {
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>That one didn't come through.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Aura couldn't reach that link. Try another one, or carry on — you can add it later.
+          KnownBy couldn't reach that link. Try another one, or carry on — you can add it later.
         </p>
         <Actions style={{ marginBlockStart: 22 }}>
           <OBButton onClick={() => { setLinkFailed(false); go(5); }}>Try a different link</OBButton>
@@ -3414,12 +3414,12 @@ const Onboarding = () => {
           </>
         )}
         {proof && proof.lines.length > 0 ? (
-            <WaitProof lines={proof.lines} startAt={0} howLong="While you wait — here's what Aura found in your own posts." />
+            <WaitProof lines={proof.lines} startAt={0} howLong="While you wait — here's what KnownBy found in your own posts." />
         ) : null}
         {settled && (
           <>
             <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
-              Aura is still reading this one. It'll be on your Home when it's done — you don't need to wait here.
+              KnownBy is still reading this one. It'll be on your Home when it's done — you don't need to wait here.
             </p>
             <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
           </>
@@ -3434,7 +3434,7 @@ const Onboarding = () => {
     content = (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>
-          {shown.length ? "Here's what Aura found in it." : "Nothing came out of that one."}
+          {shown.length ? "Here's what KnownBy found in it." : "Nothing came out of that one."}
         </h1>
         {shown.length ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
@@ -3444,7 +3444,7 @@ const Onboarding = () => {
           </div>
         ) : (
           <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 18 }}>
-            Some pages don't open to a reader. The link is kept against your record, and Aura
+            Some pages don't open to a reader. The link is kept against your record, and KnownBy
             reads it again when your report is saved.
           </p>
         )}
@@ -3510,7 +3510,7 @@ const Onboarding = () => {
       content = (
         <PaperShell onExit={saveAndExit} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
-          <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
+          <p style={bodyLight}>KnownBy couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
@@ -3527,7 +3527,7 @@ const Onboarding = () => {
               <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
               <p style={bodyLight}>
                 You put all {dims.length} in more or less the same place. That happens when the sentences don't quite
-                fit, or when it's easier to sit in the middle than to pick. Either is fine — but Aura reads a flat
+                fit, or when it's easier to sit in the middle than to pick. Either is fine — but KnownBy reads a flat
                 answer as "no strong pattern", and it will write more carefully because of it.
               </p>
               <Actions style={{ marginBlockStart: 20 }}>
@@ -3650,7 +3650,7 @@ const Onboarding = () => {
       content = (
         <PaperShell onExit={saveAndExit} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
-          <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
+          <p style={bodyLight}>KnownBy couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
@@ -3765,10 +3765,10 @@ const Onboarding = () => {
             proposedReady ? (
               <>
                 <p style={{ margin: "14px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.12em", color: OB.muted }}>
-                  From what Aura just read in your writing.
+                  From what KnownBy just read in your writing.
                 </p>
                 <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
-                  Keep the one that's actually you. The two you drop tell Aura just as much.
+                  Keep the one that's actually you. The two you drop tell KnownBy just as much.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
                   {proposals!.map((pr, i) => (
@@ -3795,7 +3795,7 @@ const Onboarding = () => {
             ) : proposedFallback ? (
               <>
                 <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
-                  Aura hasn't got enough of your writing to propose three yet — say it in your own words instead.
+                  KnownBy hasn't got enough of your writing to propose three yet — say it in your own words instead.
                 </p>
                 <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                   aria-label={q.prompt}
@@ -3929,7 +3929,7 @@ const Onboarding = () => {
         }
         setWallDone("Your account is open. Sign in and everything you just answered is waiting.");
       } catch {
-        setWallError("We couldn't reach Aura just now. Check your connection — nothing you entered is lost.");
+        setWallError("We couldn't reach KnownBy just now. Check your connection — nothing you entered is lost.");
       } finally {
         setWallBusy(false);
       }
@@ -4224,7 +4224,7 @@ const Onboarding = () => {
               title="Opening your read"
               onNight
               runId={revealOpenRunId}
-              stages={[{ key: "open", label: "Fetching the read Aura wrote for you", state: "active" }]}
+              stages={[{ key: "open", label: "Fetching the read KnownBy wrote for you", state: "active" }]}
               onCarryOn={{ label: "Carry on without it", action: () => go(SHARE_SCREEN) }}
             />
           ) : (
@@ -4232,7 +4232,7 @@ const Onboarding = () => {
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
                 {readDone
                   ? "Your read is saved. You'll find it on your Home."
-                  : "Aura is still writing your read. It'll be on your Home the moment it's done."}
+                  : "KnownBy is still writing your read. It'll be on your Home the moment it's done."}
               </p>
               <Actions style={{ marginBlockStart: 20 }}>
                 <OBButton onClick={() => go(SHARE_SCREEN)}
@@ -4501,7 +4501,7 @@ const Onboarding = () => {
           I'll email your read from an inbox I read myself. If it got you wrong, just reply and tell me — that's how I learn you.
         </p>
 
-        <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
+        <p style={footnote}>KnownBy publishes only when you approve it. Nothing goes out in your name on its own.</p>
       </PaperShell>
     );
   }

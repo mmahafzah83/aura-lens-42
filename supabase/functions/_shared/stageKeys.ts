@@ -41,7 +41,7 @@ export const STAGE_LABELS: Record<InstrumentedOperation, Record<string, string>>
     write: "Writing your read",
   },
   cv_crosscheck: { extract: "Reading your CV", compare: "Comparing it with your profile" },
-  market_read: { gather: "Gathering what Aura knows about you", write: "Writing your read" },
+  market_read: { gather: "Gathering what KnownBy knows about you", write: "Writing your read" },
   capture_ingest: { fetch: "Fetching the source", read: "Reading what is in it" },
   studio_generate: { gather: "Gathering your evidence", write: "Writing the draft" },
   studio_slides: { plan: "Planning the slides", render: "Drawing them" },
