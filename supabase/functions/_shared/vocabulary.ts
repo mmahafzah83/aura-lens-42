@@ -38,7 +38,7 @@ export const SOURCE = { one: "source", many: "sources", One: "Source", Many: "So
 export const NOUN_AR = {
   capture: { one: "التقاط", many: "التقاطات" },
   source: { one: "مصدر", many: "مصادر" },
-  evidence: { one: "قطعة من الأدلة", many: "قطع من الأدلة" },
+  evidence: { one: "دليل", many: "أدلة" },
   signal: { one: "إشارة", many: "إشارات" },
 } as const;
 
@@ -69,10 +69,10 @@ function arabicCount(
 
 export function evidenceCountAr(n: number): string {
   return arabicCount(n, {
-    one: "قطعة واحدة من الأدلة",
-    two: "قطعتان من الأدلة",
-    few: (x) => `${x} قطع من الأدلة`,
-    many: (x) => `${x} قطعة من الأدلة`,
+    one: "دليل واحد",
+    two: "دليلان",
+    few: (x) => `${x} أدلة`,
+    many: (x) => `${x} دليلاً`,
   });
 }
 
@@ -229,9 +229,9 @@ const worded = (text: string): CountParts => ({ pre: text, digit: null, post: ""
 const numbered = (n: number, tail: string): CountParts => ({ pre: "", digit: String(n), post: tail });
 
 export function evidencePartsAr(n: number): CountParts {
-  if (n === 1) return worded("قطعة واحدة من الأدلة");
-  if (n === 2) return worded("قطعتان من الأدلة");
-  return numbered(n, n <= 10 ? " قطع من الأدلة" : " قطعة من الأدلة");
+  if (n === 1) return worded("دليل واحد");
+  if (n === 2) return worded("دليلان");
+  return numbered(n, n <= 10 ? " أدلة" : " دليلاً");
 }
 
 export function evidencePartsEn(n: number): CountParts {
