@@ -681,7 +681,7 @@ const Onboarding = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   /* The same answers by question id and option value — never by display text. */
   const [codedAnswers, setCodedAnswers] = useState<CodedAnswers>({});
-  const { language: uiLang } = useLanguage();
+  const { lang: uiLang } = useLanguage();
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
   /* One rule for every question: select, see it selected, then Next. */
