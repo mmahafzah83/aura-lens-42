@@ -124,6 +124,9 @@ export function applyDocumentLang(lang: UiLang, pathname = window.location.pathn
   document.documentElement.dir = eff === "ar" ? "rtl" : "ltr";
 }
 
+// Resolve ?lang= before i18n picks its first language, so the first paint is right.
+if (typeof window !== "undefined") initLangFromUrl();
+
 void i18n.use(initReactI18next).init({
   resources: { en: { translation: en }, ar: { translation: ar } },
   lng: effectiveLang(readStoredLang(), window.location.pathname),
