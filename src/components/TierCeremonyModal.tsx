@@ -310,9 +310,9 @@ export default function TierCeremonyModal({
       const c = square
         ? await exportCanvas(squareRef.current, 1080, 1080)
         : await exportCanvas(wideRef.current, 1200, 628);
-      if (!c) throw new Error("Export failed");
+      if (!c) throw new Error(t("frame.tier.exportFailed"));
       const blob = await toBlob(c);
-      if (!blob) throw new Error("Encode failed");
+      if (!blob) throw new Error(t("frame.tier.encodeFailed"));
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -332,7 +332,7 @@ export default function TierCeremonyModal({
     setBusy("pdf");
     try {
       const c = await exportCanvas(wideRef.current, 1200, 628);
-      if (!c) throw new Error("Export failed");
+      if (!c) throw new Error(t("frame.tier.exportFailed"));
       const img = c.toDataURL("image/png", 1.0);
       const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1200, 628] });
       pdf.addImage(img, "PNG", 0, 0, 1200, 628);
@@ -350,9 +350,9 @@ export default function TierCeremonyModal({
     setBusy("copy");
     try {
       const c = await exportCanvas(wideRef.current, 1200, 628);
-      if (!c) throw new Error("Export failed");
+      if (!c) throw new Error(t("frame.tier.exportFailed"));
       const blob = await toBlob(c);
-      if (!blob) throw new Error("Encode failed");
+      if (!blob) throw new Error(t("frame.tier.encodeFailed"));
       // @ts-ignore
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       toast.success(t("frame.tier.copied"));

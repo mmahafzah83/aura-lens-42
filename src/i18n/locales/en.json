@@ -604,5 +604,7 @@
   "frame.tier.moveImpactLabel": "IMPACT",
   "frame.tier.moveImpactAction": "Connect LinkedIn",
   "frame.tier.moveImpactHelper": "Syncs analytics into your impact dashboard",
-  "frame.tier.pts": "+{{n}} pts"
+  "frame.tier.pts": "+{{n}} pts",
+  "frame.tier.exportFailed": "Export failed",
+  "frame.tier.encodeFailed": "Encode failed"
 }
