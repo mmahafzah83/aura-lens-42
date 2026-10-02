@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bell, Zap, Brain, Eye, TrendingUp, AlertTriangle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDistanceToNow } from "date-fns";
@@ -44,6 +45,7 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -111,7 +113,7 @@ const NotificationBell = () => {
     <Popover open={open} onOpenChange={handleOpen}>
       <PopoverTrigger asChild>
         <button
-          aria-label="Notifications"
+          aria-label={t("frame.header.notifications")}
           data-testid="nav-notifications"
           className="relative tactile-press inline-flex items-center justify-center"
           style={{
@@ -150,14 +152,14 @@ const NotificationBell = () => {
         }}
       >
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--rule-outer)" }}>
-          <h4 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Strategic alerts</h4>
+          <h4 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t("frame.header.alertsTitle")}</h4>
           {notifications.length > 0 && (
             <button
               onClick={clearAll}
               className="text-xs transition-colors cursor-pointer"
               style={{ color: "var(--text-muted)" }}
             >
-              Clear all
+              {t("frame.header.clearAll")}
             </button>
           )}
         </div>
@@ -165,13 +167,13 @@ const NotificationBell = () => {
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <Bell className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--ink-4)" }} />
-              <p className="text-xs" style={{ color: "var(--ink-3)" }}>No strategic alerts yet</p>
-              <p className="text-xs mt-1" style={{ color: "var(--ink-4)" }}>Aura will notify you when meaningful patterns emerge</p>
+              <p className="text-xs" style={{ color: "var(--ink-3)" }}>{t("frame.header.noAlerts")}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--ink-4)" }}>{t("frame.header.noAlertsSub")}</p>
             </div>
           ) : (
             ([
-              { key: "needs", title: "Needs you", rows: needsYou },
-              { key: "slept", title: "While you slept", rows: whileYouSlept },
+              { key: "needs", title: t("frame.header.needsYou"), rows: needsYou },
+              { key: "slept", title: t("frame.header.whileYouSlept"), rows: whileYouSlept },
             ] as const).filter((g) => g.rows.length > 0).map((group) => (
             <div key={group.key}>
               <div
@@ -220,7 +222,7 @@ const NotificationBell = () => {
                       {/* Alert urgency badge */}
                       {n.metadata?.urgency === "high" && (
                         <span className="inline-block mt-1.5 text-xs uppercase font-bold tracking-wider text-[color:var(--error)] bg-[color-mix(in_srgb,var(--error)_10%,transparent)] px-1.5 py-0.5 rounded">
-                          High Priority
+                          {t("frame.header.highPriority")}
                         </span>
                       )}
 
@@ -235,15 +237,15 @@ const NotificationBell = () => {
                           const activity = Math.min(100, (captures + posts) * 10);
                           const bars = [
                             {
-                              label: "Imprint",
+                              label: t("frame.header.kpiImprint"),
                               barPct: imprint,
                               display: `${imprint}${delta === 0 ? "" : delta > 0 ? ` (+${delta})` : ` (${delta})`}`,
                               color: "bg-primary",
                             },
                             {
-                              label: "Content",
+                              label: t("frame.header.kpiContent"),
                               barPct: activity,
-                              display: `${captures}c · ${posts}p`,
+                              display: t("frame.header.kpiContentValue", { captures, posts }),
                               color: "bg-[color:var(--info)]",
                             },
                           ];

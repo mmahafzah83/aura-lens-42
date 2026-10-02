@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, Link, useNavigate } from "react-router-dom";
@@ -249,6 +250,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
 }
 
 export function HelpButton({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation();
   const [hover, setHover] = useState(false);
   return (
     <button
@@ -257,7 +259,7 @@ export function HelpButton({ onClick }: { onClick: () => void }) {
       data-testid="nav-help"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      aria-label="Help"
+      aria-label={t("frame.header.help")}
       style={{
         width: 44, height: 44, borderRadius: "50%",
         background: "transparent", border: 0, cursor: "pointer",
