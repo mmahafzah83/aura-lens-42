@@ -62,7 +62,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
   };
 
   copyDetails = async () => {
-    const text = `Aura issue\nRoute: ${this.route()}\nError: ${this.state.message}\n${this.state.componentStack}`;
+    const text = `KnownBy issue\nRoute: ${this.route()}\nError: ${this.state.message}\n${this.state.componentStack}`;
     try {
       await navigator.clipboard.writeText(text);
       this.setState({ copied: true });

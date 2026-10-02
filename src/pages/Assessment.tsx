@@ -47,7 +47,7 @@ const QueueCapture = ({ anonToken }: { anonToken: string | null }) => {
     return (
       <section className="asg-panel" role="status">
         <p className="asg-pp">
-          Aura is reading at its limit for today. You are number {position} in line. It opens again at
+          KnownBy is reading at its limit for today. You are number {position} in line. It opens again at
           {" "}03:00 Riyadh time and we will email you the moment yours is ready. Nothing you have entered is lost.
         </p>
       </section>
@@ -56,7 +56,7 @@ const QueueCapture = ({ anonToken }: { anonToken: string | null }) => {
 
   return (
     <section className="asg-panel">
-      <h1 className="asg-ph">Aura is reading at its limit for today.</h1>
+      <h1 className="asg-ph">KnownBy is reading at its limit for today.</h1>
       <p className="asg-pp">
         It opens again at 03:00 Riyadh time. Leave your email and we will write to you the moment yours is ready.
         Nothing you have entered is lost.
@@ -95,9 +95,9 @@ const stampDate = (iso?: string | null): string | null => {
 
 const Assessment = () => {
   usePageMeta({
-    title: "Aura — Start your professional assessment",
+    title: "KnownBy — Start your professional assessment",
     description:
-      `${FULL_PICTURE_LINE}, free, and yours to keep. Aura reads your LinkedIn, your CV and your own answers, then shows what you are provably good at and what is real but invisible.`,
+      `${FULL_PICTURE_LINE}, free, and yours to keep. KnownBy reads your LinkedIn, your CV and your own answers, then shows what you are provably good at and what is real but invisible.`,
     path: "/assessment",
   });
 
@@ -223,8 +223,8 @@ const Assessment = () => {
         // Every code the engine can return gets its own honest line.
         const READ_ERRORS: Record<string, string> = {
           invalid_url: "That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.",
-          profile_unreadable: "LinkedIn didn't return that profile. If it's set to private, Aura can't see it either.",
-          provider_limit: "Aura has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly.",
+          profile_unreadable: "LinkedIn didn't return that profile. If it's set to private, KnownBy can't see it either.",
+          provider_limit: "KnownBy has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly.",
           rate_limited: "That's as many reads as can come from here this hour. Nothing is lost — try again shortly.",
           not_configured: "Reading is briefly unavailable on our side. Nothing is lost — try again shortly.",
         };
@@ -371,7 +371,7 @@ const Assessment = () => {
           {stage === "read" && (
             <div className="asg-read">
               <div className="asg-moment">
-                <div>Ninety seconds ago Aura had never heard of you.</div>
+                <div>Ninety seconds ago KnownBy had never heard of you.</div>
                 <div>
                   {postsRead > 0
                     ? `Here is what your last ${postsRead} posts say to the market.`
@@ -431,7 +431,7 @@ const Assessment = () => {
             </h1>
 
             <p className="asg-sub">
-              Aura reads your LinkedIn, your CV and your own answers, then tells you what you are
+              KnownBy reads your LinkedIn, your CV and your own answers, then tells you what you are
               provably good at, what is real but invisible, and the position nobody else is holding.
               {" "}{FULL_PICTURE_LINE}.
             </p>
@@ -471,7 +471,7 @@ const Assessment = () => {
             <svg
               viewBox="0 0 420 420"
               role="img"
-              aria-label="An illustration of the assessment: a CV card behind a dark blue report card showing three capability bars, with fragments of evidence feeding in and the Aura eye watching below."
+              aria-label="An illustration of the assessment: a CV card behind a dark blue report card showing three capability bars, with fragments of evidence feeding in and the KnownBy eye watching below."
             >
               <defs>
                 <linearGradient id="asgcard" x1="0" y1="0" x2="1" y2="1">

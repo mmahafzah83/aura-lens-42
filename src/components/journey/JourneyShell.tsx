@@ -161,7 +161,7 @@ const JourneyBar = ({ onBack, onExit, name }: {
       {/* slot 2 — the mark. Identity, not navigation. */}
       <span
         role="img"
-        aria-label="Aura"
+        aria-label="KnownBy"
         style={{
           display: "inline-flex", alignItems: "center", gap: 7,
           fontFamily: UI, fontWeight: 700, fontSize: 13,
@@ -169,7 +169,7 @@ const JourneyBar = ({ onBack, onExit, name }: {
         }}
       >
         <AuraLogo size={22} density="compact" variant="light" ink={INK} tick={CYAN_TEXT} title="" />
-        AURA
+        KNOWNBY
       </span>
 
       <span style={{ flex: 1 }} />

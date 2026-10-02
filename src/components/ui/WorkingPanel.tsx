@@ -402,7 +402,7 @@ export function WorkingPanel({
           ) : (
             <>
               <div>
-                Aura has not finished enough runs of this to know how long it takes. Rather than invent a figure, it
+                KnownBy has not finished enough runs of this to know how long it takes. Rather than invent a figure, it
                 says so.
               </div>
               <div style={{ marginBlockStart: 6 }}>

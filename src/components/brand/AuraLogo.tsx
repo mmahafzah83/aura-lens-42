@@ -149,7 +149,7 @@ export function AuraLogo({
   variant = "auto",
   withWordmark = false,
   className,
-  title = "Aura",
+  title = "KnownBy",
   ink,
   tick,
   density = "full",
@@ -181,7 +181,7 @@ export function AuraLogo({
             lineHeight: 1.5,
           }}
         >
-          Aura
+          KnownBy
         </span>
       )}
     </span>

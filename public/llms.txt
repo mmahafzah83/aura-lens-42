@@ -1,18 +1,18 @@
-# Aura
+# KnownBy
 
-> Aura is a personal intelligence system. Your experience is worth more than your profile shows. The AI Professional Identity Platform for senior professionals — it captures what you read, detects the patterns in your expertise, and helps you publish content that compounds presence.
+> KnownBy is a personal intelligence system. Your experience is worth more than your profile shows. The AI Professional Identity Platform for senior professionals — it captures what you read, detects the patterns in your expertise, and helps you publish content that compounds presence.
 
-Aura is built for Directors, VPs, CIOs, and CDOs — especially in the GCC — who read extensively but don't publish enough. The platform turns daily reading into strategic signals, then generates LinkedIn-ready content grounded in those signals and the user's own voice. English and Arabic are both supported.
+KnownBy is built for Directors, VPs, CIOs, and CDOs — especially in the GCC — who read extensively but don't publish enough. The platform turns daily reading into strategic signals, then generates LinkedIn-ready content grounded in those signals and the user's own voice. English and Arabic are both supported.
 
 ## Pages
 
-- [Home](/): Product overview, how Aura works, and how to request access.
-- [Guide](/guide): How Aura works end-to-end — capture, signal detection, content generation, and the digital presence score.
+- [Home](/): Product overview, how KnownBy works, and how to request access.
+- [Guide](/guide): How KnownBy works end-to-end — capture, signal detection, content generation, and the digital presence score.
 - [Request access](/request-access): Apply to the closed beta.
 - [Accept invitation](/accept-invitation): Landing page for invited users opening their welcome email.
-- [Sign in](/auth): Sign in to an existing Aura account.
+- [Sign in](/auth): Sign in to an existing KnownBy account.
 
 ## Legal
 
 - [Terms](/terms): Terms of service, acceptable use, and AI-generated content disclaimers.
-- [Privacy](/privacy): What data Aura collects, how it's stored, and how AI providers process it.
+- [Privacy](/privacy): What data KnownBy collects, how it's stored, and how AI providers process it.

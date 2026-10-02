@@ -67,7 +67,7 @@ export function PaperHeader({ label }: { label: string }) {
             lineHeight: 1,
           }}
         >
-          Aura
+          KnownBy
         </span>
       </div>
       <span
@@ -88,7 +88,7 @@ export function PaperHeader({ label }: { label: string }) {
 
 // ── PaperFooter ────────────────────────────────────────────────────────
 export function PaperFooter({
-  n, total, paperTitle = "The Aura Paper № 01",
+  n, total, paperTitle = "The KnownBy Paper № 01",
 }: { n: number; total: number; paperTitle?: string }) {
   const ticks = Array.from({ length: total }, (_, i) => (
     <span
@@ -236,7 +236,7 @@ export function PaperCover({ data }: { data: ReportData }) {
             marginBottom: 28,
           }}
         >
-          The Aura Paper · № 01
+          The KnownBy Paper · № 01
         </div>
         <h1
           style={{
@@ -914,7 +914,7 @@ export function ClosingPlate({
                 color: T.paper,
               }}
             >
-              Aura
+              KnownBy
             </span>
           </div>
           <span
@@ -1028,7 +1028,7 @@ export function ClosingPlate({
           >
             {fullName ? <div>{fullName}</div> : null}
             <div style={{ color: "rgba(242,245,249,0.6)", marginTop: 3 }}>
-              {paperTitle || "The Aura Paper № 01"} · aura-intel.org{pageLine ? ` · ${pageLine}` : ""}
+              {paperTitle || "The KnownBy Paper № 01"} · aura-intel.org{pageLine ? ` · ${pageLine}` : ""}
             </div>
           </div>
           <span

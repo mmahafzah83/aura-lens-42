@@ -75,7 +75,7 @@ const CookieConsent = () => {
           className="text-xs sm:text-sm text-left"
           style={{ color: "var(--ink)", fontFamily: "var(--font-body)" }}
         >
-          <span className="hidden sm:inline">Aura uses essential cookies for authentication and preferences. </span>
+          <span className="hidden sm:inline">KnownBy uses essential cookies for authentication and preferences. </span>
           <span className="sm:hidden">Essential cookies only. </span>
           <Link to="/privacy" className="v23-textlink">
             <span className="hidden sm:inline">Read our Privacy Policy</span>

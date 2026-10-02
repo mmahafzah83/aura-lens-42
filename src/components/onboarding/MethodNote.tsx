@@ -28,7 +28,7 @@ const MethodNote = ({ onNight = false, inline = false }: { onNight?: boolean; in
             Read from your LinkedIn profile, your recent posts, the claims you saved, and your own answers. Built on
             established ways of reading capability and standing: describing behaviour by example, in plain sentences,
             the leadership-pipeline view of seniority, archetype method from brand work, and uncontested-space
-            strategy. Aura is not affiliated with any of them. This is a professional read, not a clinical or
+            strategy. KnownBy is not affiliated with any of them. This is a professional read, not a clinical or
             psychological test.
           </p>
         ) : null}
@@ -53,7 +53,7 @@ const MethodNote = ({ onNight = false, inline = false }: { onNight?: boolean; in
           Read from your LinkedIn profile, your recent posts, the claims you saved, and your own answers. Built on
           established ways of reading capability and standing: describing behaviour by example, in plain sentences,
           the leadership-pipeline view of seniority, archetype method from brand work, and uncontested-space
-          strategy. Aura is not affiliated with any of them. This is a professional read, not a clinical or
+          strategy. KnownBy is not affiliated with any of them. This is a professional read, not a clinical or
           psychological test.
         </p>
       ) : null}

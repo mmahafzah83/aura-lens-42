@@ -54,7 +54,7 @@ export function bandForSlider(
 }
 
 export const BAND_COPY: Record<CapabilityBand, { label: string; meaning: string; step: number }> = {
-  not_assessed: { label: "Not yet read", meaning: "Aura hasn't seen this one yet.", step: 0 },
+  not_assessed: { label: "Not yet read", meaning: "KnownBy hasn't seen this one yet.", step: 0 },
   developing: { label: "Formation", meaning: "Still building this, with support.", step: 1 },
   solid: { label: "Independence", meaning: "Does this alone and is relied on for it.", step: 2 },
   strong: { label: "Reference", meaning: "Others come to them for this.", step: 3 },

@@ -1,1 +1,2 @@
 - Interface language: the stored choice is applied only on routes listed in `ARABIC_READY_ROUTES` (src/i18n/index.ts); every other route renders English LTR — why: half-translated pages must never flip right-to-left.
+- Retired product name: files listed in `RETIRED_NAME_FILES` (scripts/check-vocabulary.mjs) fail the build if they show "Aura" outside comments and console output — why: the new-user journey must only ever say KnownBy.

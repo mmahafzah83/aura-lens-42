@@ -145,7 +145,7 @@ export default function ReadResult({
       {sparse ? (
         <Card>
           <Heading>Your profile is quieter than your career.</Heading>
-          <Body>Aura can see the shape but not the substance. Two questions or one CV would change that.</Body>
+          <Body>KnownBy can see the shape but not the substance. Two questions or one CV would change that.</Body>
         </Card>
       ) : (
         <>

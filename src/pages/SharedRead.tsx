@@ -102,7 +102,7 @@ export default function SharedRead() {
 
   useEffect(() => {
     if (state !== "ready" || !read) return;
-    const title = `${read.archetype ?? "A read"} — a read from Aura`;
+    const title = `${read.archetype ?? "A read"} — a read from KnownBy`;
     const desc = read.market_read?.slice(0, 155) ?? "A read from Aura.";
     document.title = title;
     setMeta('meta[property="og:title"]', "property", "og:title", title);
@@ -146,7 +146,7 @@ export default function SharedRead() {
     return (
       <Shell>
         <div style={{ paddingTop: 96, display: "grid", gap: 24 }}>
-          <div style={{ ...mono(11), color: OB.mutedNight }}>A READ FROM AURA</div>
+          <div style={{ ...mono(11), color: OB.mutedNight }}>A READ FROM KNOWNBY</div>
           <p style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.3, margin: 0 }}>
             This read is no longer shared.
           </p>
@@ -158,7 +158,7 @@ export default function SharedRead() {
 
   return (
     <Shell>
-      <div style={{ ...mono(11), color: OB.mutedNight }}>A READ FROM AURA</div>
+      <div style={{ ...mono(11), color: OB.mutedNight }}>A READ FROM KNOWNBY</div>
 
       {firstName && (
         <div dir="auto" style={{ marginTop: 10, color: OB.mutedNight, fontSize: 15 }}>
@@ -178,7 +178,7 @@ export default function SharedRead() {
           letterSpacing: "-0.02em",
         }}
       >
-        {read?.archetype || read?.headline || "A read from Aura"}
+        {read?.archetype || read?.headline || "A read from KnownBy"}
       </h1>
 
       {read?.market_read && (
@@ -268,7 +268,7 @@ export default function SharedRead() {
         }}
       >
         <p style={{ margin: 0, fontSize: 17, lineHeight: 1.7, maxWidth: "60ch" }}>
-          Aura reads what you have already published and tells you what the market can see. It
+          KnownBy reads what you have already published and tells you what the market can see. It
           takes {FULL_PICTURE_LINE.toLowerCase()} and costs nothing.
         </p>
         <PrimaryButton label="Read me too" onClick={() => navigate("/assessment")} />

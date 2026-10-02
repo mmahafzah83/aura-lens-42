@@ -111,7 +111,7 @@ export async function shareRevealCard(
 }
 
 /** Stands in wherever a post or word figure would otherwise read zero. */
-export const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you save.";
+export const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. KnownBy will build from what you save.";
 
 const chip = (bg: string, color: string): React.CSSProperties => ({
   display: "inline-block",
@@ -212,7 +212,7 @@ const IdentityRow = ({ data, size }: { data: RevealData; size: number }) => {
 };
 
 /** The signature line: who read it. The date sits beside it, never instead of it. */
-const signatureText = (_data: RevealData): string => "Read by Aura · aura-intel.org";
+const signatureText = (_data: RevealData): string => "Read by KnownBy · aura-intel.org";
 
 /**
  * The date the read was written — mono, tracked, and printed only when the
@@ -403,7 +403,7 @@ const RevealCard = forwardRef<
       borderTop: "1px solid rgba(255,255,255,0.28)",
       display: "flex", alignItems: "center", gap: 16,
     }}>
-      <span style={{ fontFamily: OB.ui, fontWeight: 700, fontSize: 22, letterSpacing: "0.16em" }}>AURA</span>
+      <span style={{ fontFamily: OB.ui, fontWeight: 700, fontSize: 22, letterSpacing: "0.16em" }}>KNOWNBY</span>
       <span style={{ fontFamily: OB.mono, fontSize: 18, letterSpacing: "0.06em", opacity: 0.88 }}>
         {signatureText(data)}<SignatureDate data={data} size={18} />
       </span>

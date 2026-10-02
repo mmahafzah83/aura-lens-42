@@ -16,7 +16,7 @@ interface Props {
 }
 
 const STEPS = [
-  { k: "fragments", label: "What Aura found", note: "Already on your record." },
+  { k: "fragments", label: "What KnownBy found", note: "Already on your record." },
   { k: "signal", label: "A signal", note: "Forms once a few captures point the same way." },
   { k: "post", label: "Something to say", note: "Written from your own evidence, in your words." },
 ];

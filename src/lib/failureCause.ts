@@ -63,7 +63,7 @@ export function causeOf(error: unknown, stageLabel: string): string {
     t.includes("needs_reconnect") || t.includes("not connected") ||
     t.includes("unauthorized") || t.includes("forbidden") || t.includes(" 401") || t.includes(" 403")
   ) {
-    return "Your LinkedIn connection needs renewing before Aura can read this.";
+    return "Your LinkedIn connection needs renewing before KnownBy can read this.";
   }
 
   /* Being asked to slow down. */
@@ -80,10 +80,10 @@ export function causeOf(error: unknown, stageLabel: string): string {
     t.includes("networkerror") ||
     t.includes("503")
   ) {
-    return `Aura couldn't reach the step that ${stage}. This is on us, not your LinkedIn — it's been logged.`;
+    return `KnownBy couldn't reach the step that ${stage}. This is on us, not your LinkedIn — it's been logged.`;
   }
 
-  return `Aura couldn't finish ${stage}. It's been logged and we can see it.`;
+  return `KnownBy couldn't finish ${stage}. It's been logged and we can see it.`;
 }
 
 export default causeOf;

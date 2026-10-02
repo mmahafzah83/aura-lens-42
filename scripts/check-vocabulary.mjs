@@ -169,6 +169,42 @@ const BANNED_PHRASES = [
   "themes",
 ];
 const BANNED_RE = new RegExp(`\\b(?:${BANNED_PHRASES.join("|")})\\b`, "i");
+/** The retired product name. On the new-user journey it is a hard fail. */
+const RETIRED_NAME_RE = /(?<![-.\w@/%])(?:Aura|AURA)(?![-.\w%])/;
+const RETIRED_NAME_FILES = [
+  "supabase/functions/_shared/stageKeys.ts",
+  "supabase/functions/send-read-email/index.ts",
+  "supabase/functions/send-resume-email/index.ts",
+  "supabase/functions/send-account-notification/index.ts",
+  "src/App.tsx",
+  "src/components/CookieConsent.tsx",
+  "src/components/ErrorBoundary.tsx",
+  "src/components/PublicFooter.tsx",
+  "src/components/PublicMasthead.tsx",
+  "src/components/brand/AuraLogo.tsx",
+  "src/components/cv/CvUploadControl.tsx",
+  "src/components/journey/JourneyShell.tsx",
+  "src/components/onboarding/MethodNote.tsx",
+  "src/components/onboarding/NextStrip.tsx",
+  "src/components/onboarding/ReadCorrection.tsx",
+  "src/components/onboarding/RevealCard.tsx",
+  "src/components/read/ReadResult.tsx",
+  "src/components/report/AuraPaper.tsx",
+  "src/components/report/BrandPaperDocument.tsx",
+  "src/components/report/CvCrosscheck.tsx",
+  "src/components/ui/WorkingPanel.tsx",
+  "src/constants/language.ts",
+  "src/lib/assessmentSession.ts",
+  "src/lib/capabilityBands.ts",
+  "src/lib/failureCause.ts",
+  "src/lib/postProvenance.ts",
+  "src/lib/seatCopy.ts",
+  "src/pages/Assessment.tsx",
+  "src/pages/LandingV2.tsx",
+  "src/pages/NotFound.tsx",
+  "src/pages/Onboarding.tsx",
+  "src/pages/SharedRead.tsx"
+];
 const BANNED_ENFORCED = [
   "src/components/voice/",
   "src/components/studio/",
@@ -714,6 +750,10 @@ export function runVocabularyCheck() {
         // screens — and listed everywhere else until those surfaces are redone.
         const enforced = v.arabic ? rel.startsWith("src/features/opportunities/") : isMemberFacing(rel);
         if (enforced) passV.push(hit); else passVDeferred.push(hit);
+      }
+      if (RETIRED_NAME_FILES.includes(rel) && !/console\./.test(line) && RETIRED_NAME_RE.test(line)) {
+        hits.push({ rel, line: idx + 1, text: (rawLines[idx] || "").trim().slice(0, 160), match: "Aura", banned: true });
+        return;
       }
       const banned = findBannedPhrase(line);
       const match = banned || findHit(line);

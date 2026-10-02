@@ -7,7 +7,7 @@ const NotFound = () => {
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-    document.title = "Aura — Page not found";
+    document.title = "KnownBy — Page not found";
   }, [location.pathname]);
 
   return (

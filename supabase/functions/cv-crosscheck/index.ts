@@ -44,7 +44,7 @@ BEHIND — \`cv_is_behind\` lists where the CV is out of date, written as to-dos
 
 HEADLINE — \`headline_suggestion\` is under 200 characters, at most three segments, and leads with what is distinctive about this person rather than a category label.
 
-AURA CAN — \`aura_can\` is a CLOSED LIST. You may only return one of: capture_evidence, draft_post, suggest_headline, track_signal, or null. Never write your own offer of help. Never promise a capability in prose.
+KNOWNBY CAN — \`aura_can\` is a CLOSED LIST. You may only return one of: capture_evidence, draft_post, suggest_headline, track_signal, or null. Never write your own offer of help. Never promise a capability in prose.
 
 FILTERS you must apply to yourself before answering:
 · would_be_false_for_someone_else — every finding must be untrue of a different senior professional in this market. Discard any finding that survives that test.
@@ -286,7 +286,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
     ? `Headline: ${anonState?.headline ?? "Not on file"}
 Public profile: ${anonState?.profile_url ?? "Not on file"}
 Name: ${anonState?.name ?? "Not on file"}
-What Aura already read from their public profile: ${anonRead ? JSON.stringify(anonRead).slice(0, 6000) : "Not on file"}`
+What KnownBy already read from their public profile: ${anonRead ? JSON.stringify(anonRead).slice(0, 6000) : "Not on file"}`
     : `Headline: ${snap.headline ?? "Not on file"}
 About: ${typeof snap.about === "string" ? snap.about.slice(0, 2000) : "Not on file"}
 Experience: ${cut(snap.experience, 5000)}
@@ -420,7 +420,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
                 required: ["cv_line", "profile_line"],
               },
               rewrite: { type: "string", description: "Required when weight is high: the actual replacement sentence, ready to paste." },
-              aura_can: { type: "string", enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal"], description: "Closed list. Omit the field entirely when nothing Aura does helps here." },
+              aura_can: { type: "string", enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal"], description: "Closed list. Omit the field entirely when nothing KnownBy does helps here." },
               do_first: { type: "boolean" },
             },
             required: ["what", "why_it_matters", "do_this", "weight", "what_you_lose", "evidence", "do_first"],
@@ -441,7 +441,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
             properties: {
               action: { type: "string" },
               why_now: { type: "string" },
-              aura_can: { type: "string", enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal"], description: "Closed list. Omit the field entirely when nothing Aura does helps here." },
+              aura_can: { type: "string", enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal"], description: "Closed list. Omit the field entirely when nothing KnownBy does helps here." },
             },
             required: ["action", "why_now"],
           },

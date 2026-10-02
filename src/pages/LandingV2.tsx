@@ -385,7 +385,7 @@ const LANDING_V2_HTML = `
 
 <div class="navshell">
   <nav class="nav">
-    <a class="brand" href="#" data-p="home"><svg class="mark"><use href="#m"/></svg><span class="bn">Aura</span></a>
+    <a class="brand" href="#" data-p="home"><svg class="mark"><use href="#m"/></svg><span class="bn">KnownBy</span></a>
     <div class="links">
       <button data-p="home" class="on">Home</button>
       <button data-p="how">How it works</button>
@@ -406,7 +406,7 @@ const LANDING_V2_HTML = `
     <div>
       <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> AI Professional Identity Platform</span>
       <h1>${HEAD_LEAD}<br><span class="grad">${HEAD_TAIL}</span></h1>
-      <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
+      <p class="sub">KnownBy reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
       <div class="acts">
         <a class="btn bp" id="heropri" href="/assessment">${FREE_CTA}</a>
       </div>
@@ -414,7 +414,7 @@ const LANDING_V2_HTML = `
     </div>
     <div class="loopwrap">
       <div class="jring">
-      <svg viewBox="-120 -24 840 664" fill="none" role="img" aria-label="The nine-step Aura journey, running clockwise from step one. Step one, your assessment, is free. Then: capture what you read, organise it, evidence in fragments, your field's trends, tuned to your voice, the draft by dawn, you publish, and the outcome — your standing moves.">
+      <svg viewBox="-120 -24 840 664" fill="none" role="img" aria-label="The nine-step KnownBy journey, running clockwise from step one. Step one, your assessment, is free. Then: capture what you read, organise it, evidence in fragments, your field's trends, tuned to your voice, the draft by dawn, you publish, and the outcome — your standing moves.">
         <circle cx="300" cy="300" r="200" stroke="#E2E7EE" stroke-width="1" stroke-dasharray="2 5" fill="none"/>
 
         <path d="M248.24 106.82 A200 200 0 0 1 351.76 106.82" stroke="#00CEC9" stroke-width="7" stroke-linecap="round" fill="none"/>
@@ -514,7 +514,7 @@ const LANDING_V2_HTML = `
     </div>
   </div>
 
-  <div class="eyebrow" style="margin-top:56px">What Aura does for you</div>
+  <div class="eyebrow" style="margin-top:56px">What KnownBy does for you</div>
   <div class="trio rv">
     <div class="bene">
       <span class="step">01</span>
@@ -591,7 +591,7 @@ const LANDING_V2_HTML = `
   <div class="hdr">
     <span class="tag">It refuses to write first</span>
     <h2>Four stages.<br><span class="grad">You are only in two of them.</span></h2>
-    <p class="sub">Every other tool writes on day one. Aura will not write until it knows you.</p>
+    <p class="sub">Every other tool writes on day one. KnownBy will not write until it knows you.</p>
   </div>
 
   <div class="eyebrow">The pipeline, end to end</div>
@@ -609,7 +609,7 @@ const LANDING_V2_HTML = `
       <path d="M212 111h22" stroke="#D2D8E0" stroke-width="1.4"/><path d="M230 106l7 5-7 5" fill="#D2D8E0"/>
 
       <rect x="240" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#E2E7EE"/>
-      <text x="260" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#9AA4B0">STAGE 2 · AURA</text>
+      <text x="260" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#9AA4B0">STAGE 2 · KNOWNBY</text>
       <text x="260" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0F1519">It keeps it</text>
       <text x="260" y="134" font-family="Inter, sans-serif" font-size="12" fill="#66707D">Broken into pieces you</text>
       <text x="260" y="150" font-family="Inter, sans-serif" font-size="12" fill="#66707D">can use months later.</text>
@@ -618,7 +618,7 @@ const LANDING_V2_HTML = `
 
       <rect x="470" y="58" width="180" height="106" rx="12" fill="#141D2C" stroke="#2A3648"/>
       <circle class="pulse" cx="628" cy="80" r="4" fill="#00CEC9"/>
-      <text x="490" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#00CEC9">STAGE 3 · AURA</text>
+      <text x="490" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#00CEC9">STAGE 3 · KNOWNBY</text>
       <text x="490" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">It writes</text>
       <text x="490" y="134" font-family="Inter, sans-serif" font-size="12" fill="#8E99A6">Finds the pattern and</text>
       <text x="490" y="150" font-family="Inter, sans-serif" font-size="12" fill="#8E99A6">drafts in your style.</text>
@@ -647,13 +647,13 @@ const LANDING_V2_HTML = `
       <div class="det">A button on any article. The argument, the figures and the source are all kept — you never copy or paste.</div>
     </div>
     <div class="bene">
-      <span class="who a">AURA</span>
+      <span class="who a">KNOWNBY</span>
       <div class="big k">Keep</div>
       <div class="rest">it in usable pieces.</div>
       <div class="det">Each save is broken into roughly nine pieces, so one article can feed a post now and another one in November.</div>
     </div>
     <div class="bene">
-      <span class="who a">AURA · OVERNIGHT</span>
+      <span class="who a">KNOWNBY · OVERNIGHT</span>
       <div class="big c">Write</div>
       <div class="rest">while you are asleep.</div>
       <div class="det">Agents read what you saved, find the idea that repeats, and draft it in your voice — source attached, carousel designed.</div>
@@ -667,7 +667,7 @@ const LANDING_V2_HTML = `
   </div>
 
   <div class="dark rv"><div class="dark-in">
-    <div><h3>Why the order<br><em>matters.</em></h3><p>Aura will not write a word until it has read you.</p></div>
+    <div><h3>Why the order<br><em>matters.</em></h3><p>KnownBy will not write a word until it has read you.</p></div>
     <div class="savegrid">
       <div class="sv h"><div class="n word" style="font-size:24px">Learns first</div><div class="l">A tool that writes before it knows you hands everyone <b>the same paragraph.</b></div></div>
       <div class="sv m"><div class="n word" style="font-size:24px">Then writes</div><div class="l">Your subjects, your evidence, <b>the way you open and close an idea.</b></div></div>
@@ -848,7 +848,7 @@ const LANDING_V2_HTML = `
         <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0670C4"/><stop offset="1" stop-color="#EFF4FA"/></linearGradient>
         <linearGradient id="rise" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E0F7F6"/><stop offset="1" stop-color="#00CEC9"/></linearGradient>
       </defs>
-      <text x="10" y="20" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="#9AA4B0">TODAY, WITHOUT AURA</text>
+      <text x="10" y="20" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="#9AA4B0">TODAY, WITHOUT KNOWNBY</text>
       <rect x="10" y="32" width="600" height="46" rx="10" fill="url(#fade)"/>
       <text x="30" y="61" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" id="dHours">260 hours of reading</text>
       <path class="dash" d="M618 55h100" stroke="#C0392B" stroke-width="1.4"/>
@@ -857,7 +857,7 @@ const LANDING_V2_HTML = `
       <text x="822" y="59" font-family="Inter, sans-serif" font-size="12" fill="#66707D">posts written</text>
       <text x="10" y="100" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#C0392B" id="dCost">= SAR 78,000 OF YOUR OWN TIME, AND NOTHING TO SHOW</text>
       <path d="M10 122h880" stroke="#E2E7EE"/>
-      <text x="10" y="152" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="#00807B">WITH AURA</text>
+      <text x="10" y="152" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="#00807B">WITH KNOWNBY</text>
       <rect x="10" y="164" width="600" height="46" rx="10" fill="url(#rise)"/>
       <text x="30" y="193" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#0F1519" id="dHours2">the same 260 hours</text>
       <path d="M618 187h100" stroke="#00CEC9" stroke-width="1.8"/>
@@ -886,14 +886,14 @@ const LANDING_V2_HTML = `
   <div class="hdr">
     <span class="tag">Against every other option</span>
     <h2>They hand out templates.<br><span class="grad">We start with you.</span></h2>
-    <p class="sub">Every other tool gives all its customers the same shapes. Aura learns you first.</p>
+    <p class="sub">Every other tool gives all its customers the same shapes. KnownBy learns you first.</p>
   </div>
 
 
   <div class="eyebrow">Side by side</div>
   <div class="cmp rv">
     <table>
-      <thead><tr><th></th><th class="us">Aura</th><th>AI chat<br>tools</th><th>Content writing<br>tools</th><th>Design<br>tools</th><th>Ghostwriters &amp;<br>content writers</th></tr></thead>
+      <thead><tr><th></th><th class="us">KnownBy</th><th>AI chat<br>tools</th><th>Content writing<br>tools</th><th>Design<br>tools</th><th>Ghostwriters &amp;<br>content writers</th></tr></thead>
       <tbody>
         <tr><td>Learns what you are good at first</td><td class="us"><span class="dY"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></td><td><span class="dN"></span></td><td><span class="dN"></span></td><td><span class="dN"></span></td><td><span class="dP"></span></td></tr>
         <tr><td>Built on your own experience and reading</td><td class="us"><span class="dY"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></td><td><span class="dN"></span></td><td><span class="dN"></span></td><td><span class="dN"></span></td><td><span class="dP"></span></td></tr>
@@ -936,7 +936,7 @@ const LANDING_V2_HTML = `
         <g stroke="#00CEC9" stroke-width="1.6" stroke-linecap="round"><path d="M100 30h58M100 40h58M100 50h34"/></g>
       </svg></div>
       <div class="big b" style="font-size:28px">We learn<br>you first</div>
-      <div class="det">Aura respects what you already know. It reads your experience and your reading, works out what only you can say — and only then writes. <b>Nobody else gets your version.</b></div>
+      <div class="det">KnownBy respects what you already know. It reads your experience and your reading, works out what only you can say — and only then writes. <b>Nobody else gets your version.</b></div>
     </div>
   </div>
 
@@ -947,7 +947,7 @@ const LANDING_V2_HTML = `
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A designer</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:40%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$30–160</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A posting tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:26%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–100</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">An AI writing tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:18%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–40</span></div>
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0F1519;font-weight:600">Aura, all of it</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">${SEAT_PRICE.split(" ")[0]}</span></div>
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0F1519;font-weight:600">KnownBy, all of it</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">${SEAT_PRICE.split(" ")[0]}</span></div>
     <p style="margin-top:16px;font-size:13.5px;color:var(--ink3);line-height:1.7">Your report is free and stays free. The part that runs every night is ${SEAT_PRICE} — and a founding seat locks that price for as long as you keep it.</p>
     <p class="mi" style="margin-top:12px;line-height:1.7">EXAMPLE FIGURES, ADJUSTABLE TO YOUR OWN HOURS AND RATE. WE DO NOT PROMISE FOLLOWERS OR LIKES.</p>
   </div>
@@ -1011,7 +1011,7 @@ const LANDING_V2_HTML = `
 
   <div class="founder">
     <img src="/aura-founder.jpg" alt="Mohammad Mahafdhah">
-    <div class="t"><b>Mohammad Mahafdhah</b> — I built Aura from my own reading, because I had the same problem. Write to me directly and I will answer.</div>
+    <div class="t"><b>Mohammad Mahafdhah</b> — I built KnownBy from my own reading, because I had the same problem. Write to me directly and I will answer.</div>
   </div>
 
   <div class="hdr" style="margin-top:56px">
@@ -1025,7 +1025,7 @@ const LANDING_V2_HTML = `
     <details><summary>Will it sound like AI?</summary><p>It learns from what you have already written — how you open, how long your sentences run, how you land a point. And it deletes its own drafts that do not pass as you, before you ever see them. If one still gets through, you say so, and it learns.</p></details>
     <details><summary>How much of my time does this take?</summary><p>${ASSESSMENT_QUESTIONS_PHRASE.replace(/^./, (c) => c.toUpperCase())} once at the start. After that, one tap when you read something good, and about two minutes to approve a post. Nothing more.</p></details>
     <details><summary>How many posts will I get?</summary><p>As many as you want. There is no weekly quota. Save two articles and you can publish two posts; save ten and you can publish ten. It follows your reading, not a calendar.</p></details>
-    <details><summary>Do I need a designer for the carousels?</summary><p>No. Aura designs them for you, ready to post — no design tool, no design skill, no fee.</p></details>
+    <details><summary>Do I need a designer for the carousels?</summary><p>No. KnownBy designs them for you, ready to post — no design tool, no design skill, no fee.</p></details>
     <details><summary>Does it work in Arabic?</summary><p>Yes. Arabic is written as Arabic and English as English. One is never a translation of the other.</p></details>
     <details><summary>Who owns what I save?</summary><p>You do. Your articles, your notes, your posts. We never use your work to help anyone else.</p></details>
   </div>
@@ -1043,7 +1043,7 @@ const LANDING_V2_HTML = `
 </section>
 
 <div class="foot">
-  <span>AURA · AURA-INTEL.ORG · BUILT IN RIYADH</span>
+  <span>KNOWNBY · AURA-INTEL.ORG · BUILT IN RIYADH</span>
   <span><a href="/our-story">Our story</a> · <a href="/guide">Guide</a> · <a href="/trust">Security and trust</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span>
 </div>
 
@@ -1070,9 +1070,9 @@ const LandingV2 = () => {
   const [mounted, setMounted] = useState(false);
 
   usePageMeta({
-    title: `Aura — ${BRAND.headline.replace(/\.$/, "")}`,
+    title: `KnownBy — ${BRAND.headline.replace(/\.$/, "")}`,
     description:
-      "Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof. The assessment is free and yours to keep.",
+      "KnownBy finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof. The assessment is free and yours to keep.",
     path: "/",
   });
 
@@ -1118,11 +1118,11 @@ const LandingV2 = () => {
       else delete alt.dataset.signout;
     }
     if (cta) {
-      cta.innerHTML = `${signedIn ? "Open Aura" : FREE_CTA_SHORT_LABEL} <span class="a">↗</span>`;
+      cta.innerHTML = `${signedIn ? "Open KnownBy" : FREE_CTA_SHORT_LABEL} <span class="a">↗</span>`;
       cta.setAttribute("href", signedIn ? "/home" : "/assessment");
     }
     if (hero) {
-      hero.textContent = signedIn ? "Open Aura" : FREE_CTA;
+      hero.textContent = signedIn ? "Open KnownBy" : FREE_CTA;
       hero.setAttribute("href", signedIn ? "/home" : "/assessment");
     }
   }, [signedIn, mounted]);

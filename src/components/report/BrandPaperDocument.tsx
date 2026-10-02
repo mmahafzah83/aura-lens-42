@@ -22,7 +22,7 @@ import { normaliseBrandPaper, type BrandPaper } from "@/lib/buildBrandPaper";
 const SHEET_W = 794;
 const SHEET_H = 1123;
 const PAGE_PAD = 56;
-export const PAPER_TITLE = "The Aura Paper № 00";
+export const PAPER_TITLE = "The KnownBy Paper № 00";
 
 /** Trim to the last full sentence inside the cap — sheets do not reflow.
  *  With no sentence boundary, cut at the last word boundary and close it off
@@ -168,7 +168,7 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
 
   return (
     <Sheet n={1}>
-      <PaperHeader label="The Aura Paper" />
+      <PaperHeader label="The KnownBy Paper" />
       <div style={{ marginTop: 34, flex: 1, display: "flex", flexDirection: "column" }}>
         <MonoLabel color={T.spot} size={13}>
           {PAPER_TITLE.replace(" №", " · №")} · The Read Finds You To Be
