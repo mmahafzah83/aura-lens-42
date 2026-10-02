@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import LanguageToggle from "@/components/LanguageToggle";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AuraLogo from "@/components/brand/AuraLogo";
@@ -93,8 +94,9 @@ export default function AcceptInvitation() {
   };
 
   return (
-    <div className="ai">
+    <div className="ai" style={{ position: "relative" }}>
       <style>{ACCEPT_CSS}</style>
+      <div style={{ position: "absolute", top: 8, insetInlineEnd: 8, zIndex: 50 }}><LanguageToggle /></div>
 
       {precheck === "checking" ? (
         <section className="ai-stage">

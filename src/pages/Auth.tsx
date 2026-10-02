@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import LanguageToggle from "@/components/LanguageToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
@@ -389,8 +390,9 @@ const Auth = () => {
     : t("auth.signin.sub");
 
   return (
-    <div className="au">
+    <div className="au" style={{ position: "relative" }}>
       <style>{AU_CSS}</style>
+      <div style={{ position: "absolute", top: 8, insetInlineEnd: 8, zIndex: 50 }}><LanguageToggle /></div>
 
       <div className="au-shell">
         {/* ── LEFT · the form ── */}

@@ -732,5 +732,7 @@
   "settings.whatsapp.newCode": "اطلب رمزاً جديداً",
   "settings.whatsapp.waiting": "بانتظار رسالتك… تنتهي مدة الرمز بعد {{time}}.",
   "settings.whatsapp.scan": "تستخدم حاسوباً؟ امسح الرمز بجوالك.",
-  "settings.error.whatsappStart": "تعذّر بدء الربط. حاول مرة أخرى."
+  "settings.error.whatsappStart": "تعذّر بدء الربط. حاول مرة أخرى.",
+  "lang.switchToArabic": "التبديل إلى العربية",
+  "lang.switchToEnglish": "التبديل إلى الإنجليزية"
 }

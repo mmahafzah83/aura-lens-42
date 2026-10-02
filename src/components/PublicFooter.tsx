@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import LanguageToggle from "@/components/LanguageToggle";
 
 /**
  * Canonical public footer — System-B light.
@@ -26,6 +27,7 @@ const PublicFooter = () => (
           ))}
         </nav>
         <div className="pf-right">
+          <LanguageToggle />
           <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
           <span>© 2026 Aura · Built in Riyadh, for the world.</span>
         </div>

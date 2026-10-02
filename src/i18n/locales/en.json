@@ -788,5 +788,7 @@
   "settings.whatsapp.newCode": "Get a new code",
   "settings.whatsapp.waiting": "Waiting for your message… this code expires in {{time}}.",
   "settings.whatsapp.scan": "On a laptop? Scan with your phone.",
-  "settings.error.whatsappStart": "Could not start the link. Try once more."
+  "settings.error.whatsappStart": "Could not start the link. Try once more.",
+  "lang.switchToArabic": "Switch to Arabic",
+  "lang.switchToEnglish": "Switch to English"
 }
