@@ -3,6 +3,7 @@
  * seconds later, reads how their field currently sees them. No account, no gate.
  * One page, four states: ask → reading → the read → the list.
  */
+import { readStoredLang } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 import ReadResult from "@/components/read/ReadResult";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";

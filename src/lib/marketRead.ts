@@ -3,6 +3,7 @@
  * Collection journey. Everything that talks to the brand-* backend lives here
  * so the journey page itself stays free of back-office words.
  */
+import { readStoredLang } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { derivePillars } from "@/lib/brandPillars";
