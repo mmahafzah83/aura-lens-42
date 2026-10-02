@@ -916,7 +916,7 @@ const handleDeleteAccount = async () => {
           aria-hidden
           style={{
             position: "absolute",
-            left: -9999,
+            insetInlineStart: -9999,
             top: 0,
             width: 794,
             pointerEvents: "none",
