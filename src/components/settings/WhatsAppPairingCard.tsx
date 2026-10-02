@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useTranslation, Trans } from "react-i18next";
+import { ltrIsolate } from "@/i18n";
 import {
   AURA_WHATSAPP_NUMBER,
   WHATSAPP_PAIRING_ENABLED,

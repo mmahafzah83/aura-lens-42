@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { ltrIsolate } from "@/i18n";
 import { X } from "lucide-react";
 import { reportIssue } from "@/lib/reportIssue";
 import { SectionHeader } from "@/components/ui/SectionHeader";

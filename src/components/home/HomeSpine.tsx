@@ -9,7 +9,7 @@ import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import HomeMasthead from "@/components/home/HomeMasthead";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { moveText } from "@/components/home/moveText";
-import { dateLocale } from "@/i18n";
+import { dateLocale, ltrIsolate } from "@/i18n";
 import {
   useHomeAddress, useReadChips, useSignalsStrengthened,
   type HomeMove,

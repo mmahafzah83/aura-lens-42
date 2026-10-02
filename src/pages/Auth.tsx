@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useTranslation, Trans } from "react-i18next";
+import { ltrIsolate } from "@/i18n";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import { claimPendingSession } from "@/lib/assessmentSession";

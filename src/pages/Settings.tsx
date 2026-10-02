@@ -24,7 +24,7 @@ import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
 import { WHATSAPP_PAIRING_ADMIN_ONLY } from "@/config/whatsapp";
 import { useIsAdmin } from "@/lib/isAdmin";
 import { useTranslation, Trans } from "react-i18next";
-import { dateLocale } from "@/i18n";
+import { dateLocale, ltrIsolate } from "@/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProfileData {
