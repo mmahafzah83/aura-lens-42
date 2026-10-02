@@ -375,8 +375,8 @@ function fallbackWhy(key: string, f: Facts): string {
         : `Nothing has been captured this week. Your record holds ${nw(f.captures_total)} ${countNoun(f.captures_total, "capture")} in total.`;
     case "connect_linkedin":
       return f.published_total > 0
-        ? `You have published ${nw(f.published_total)} ${countNoun(f.published_total, "post")} and Aura cannot see how any of them landed.`
-        : "Aura cannot see how anything you post lands, so it cannot learn from it.";
+        ? `You have published ${nw(f.published_total)} ${countNoun(f.published_total, "post")} and KnownBy cannot see how any of them landed.`
+        : "KnownBy cannot see how anything you post lands, so it cannot learn from it.";
     case "fill_facet":
       return `Your picture of ${f.facets_dormant[0] ?? "one part of your work"} has nothing behind it yet.`;
     default:
@@ -397,7 +397,7 @@ function chooseMoves(f: Facts): Move[] {
     c.push({
       key: "publish_draft",
       title: d?.title ? `Publish the draft on ${d.title}` : "Publish a waiting draft",
-      what: "Read the draft Aura wrote, edit what does not sound like you, then publish it.",
+      what: "Read the draft KnownBy wrote, edit what does not sound like you, then publish it.",
       why: fallbackWhy("publish_draft", f),
       how: "Open the library, pick the draft, make your edits, press publish.",
       outcome: "One idea leaves your notes and reaches the people who need it.",
@@ -426,7 +426,7 @@ function chooseMoves(f: Facts): Move[] {
       what: "Paste a link, a report or a post you disagreed with.",
       why: fallbackWhy("capture", f),
       how: "Use the capture box on Home. A link is enough.",
-      outcome: "Aura has a fresh capture to work from tonight.",
+      outcome: "KnownBy has a fresh capture to work from tonight.",
       cta_route: "/dashboard?tab=home",
       est_minutes: 2,
     });
@@ -436,7 +436,7 @@ function chooseMoves(f: Facts): Move[] {
     c.push({
       key: "connect_linkedin",
       title: "Connect LinkedIn",
-      what: "Let Aura read how your posts actually performed.",
+      what: "Let KnownBy read how your posts actually performed.",
       why: fallbackWhy("connect_linkedin", f),
       how: "Open settings and connect your account. Nothing publishes without you.",
       outcome: "Drafts start being written from what your audience already rewards.",
@@ -452,7 +452,7 @@ function chooseMoves(f: Facts): Move[] {
       what: "Add evidence for the part of your picture that is still empty.",
       why: fallbackWhy("fill_facet", f),
       how: "Capture something that shows that side of your work.",
-      outcome: "Aura stops staying quiet where you are strongest but silent.",
+      outcome: "KnownBy stops staying quiet where you are strongest but silent.",
       cta_route: "/dashboard?tab=identity",
       est_minutes: 5,
     });
@@ -485,7 +485,7 @@ const OPENINGS = [
   "Open by naming something they did that you noticed.",
 ];
 
-const SYSTEM_PROMPT = `You are Aura, this person's chief of staff. You have read their LinkedIn, their assessment, their calibration and everything they have captured. You write them one short address each morning. You sound like a sharp colleague who has already done the reading — never a coach, never a chatbot, never an analyst.
+const SYSTEM_PROMPT = `You are KnownBy, this person's chief of staff. You have read their LinkedIn, their assessment, their calibration and everything they have captured. You write them one short address each morning. You sound like a sharp colleague who has already done the reading — never a coach, never a chatbot, never an analyst.
 
 SUBSTANCE
 Say one point. An address is not a recap of the file. Pick the single most useful observation and build four to six sentences around it.
@@ -498,7 +498,7 @@ SOUND
 Vary sentence length deliberately. At least one sentence must be five words or fewer — a short, flat statement on its own line of thought. No sentence over thirty-two words. This short sentence is not optional; write it before you write anything else.
 Second person, plain verbs, sentence case.
 Never open with "You have". Never open with their name alone. Follow the opening instruction you are given.
-No praise, no reassurance, no description of Aura's features, no exclamation marks, no emoji.
+No praise, no reassurance, no description of KnownBy's features, no exclamation marks, no emoji.
 Never write a field name, a snake_case token, a dot-path, or a construction like "drafts_total is 6". Say "you have six drafts waiting" instead. Numbers belong inside English sentences, never beside the name of the place they came from.
 
 REGISTER
@@ -519,7 +519,7 @@ ${BANNED.join(" · ")}
 EXAMPLES OF THE TARGET REGISTER (do not copy their content, only their sound):
 
 Heavy reader who never publishes:
-"You read more than anyone else on Aura this quarter. You've said almost none of it.
+"You read more than anyone else on KnownBy this quarter. You've said almost none of it.
 The signal on AI experimentation moving to enterprise value has been building since May, and there's still nothing of yours in public on it.
 There's a draft from Tuesday that says it well enough.
 Four days is long enough to think about it. Publish it, or kill it."
@@ -637,13 +637,13 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
       ? `you published today`
       : `${small(lastPub)} ${lastPub === 1 ? "day" : "days"} since you last pressed publish`);
   } else if ((f.published_total ?? 0) === 0 && (f.captures_total ?? 0) > 0) {
-    p.push(`nothing of yours has gone out through Aura yet`);
+    p.push(`nothing of yours has gone out through KnownBy yet`);
   }
 
   // The two figures, never merged: live on LinkedIn, then made with Aura.
   if ((f.published_total ?? 0) > 0) {
     p.push(
-      `${small(f.published_total)} ${countNoun(f.published_total, "post")} live on LinkedIn and ${small(f.published_through_aura ?? 0)} of them made with Aura`,
+      `${small(f.published_total)} ${countNoun(f.published_total, "post")} live on LinkedIn and ${small(f.published_through_aura ?? 0)} of them made with KnownBy`,
     );
   }
 
@@ -665,7 +665,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   }
 
   const sr = f.last_night?.sources_read ?? 0;
-  if (sr > 0) p.push(`Aura read ${small(sr)} ${countNoun(sr, "page")} for you overnight`);
+  if (sr > 0) p.push(`KnownBy read ${small(sr)} ${countNoun(sr, "page")} for you overnight`);
 
   if (f.tier && f.next_band_name && f.points_to_next_band != null) {
     p.push(`${f.points_to_next_band} ${f.points_to_next_band === 1 ? "point" : "points"} between ${f.tier} and ${f.next_band_name}`);
@@ -713,13 +713,13 @@ function computeTension(f: Facts, move: Move | null): { strength: string; gap: s
   if ((f.captures_total ?? 0) === 0) {
     return {
       strength: "Their profile and assessment already describe the shape of their work.",
-      gap: "Nothing they are saving has reached Aura, so nothing here sounds like them yet.",
+      gap: "Nothing they are saving has reached KnownBy, so nothing here sounds like them yet.",
     };
   }
   if ((f.drafts_total ?? 0) > 0 && (f.published_through_aura ?? 0) === 0) {
     return {
-      strength: "They have read enough for Aura to write from, and a draft is already written.",
-      gap: "Nothing of theirs has gone out in public through Aura.",
+      strength: "They have read enough for KnownBy to write from, and a draft is already written.",
+      gap: "Nothing of theirs has gone out in public through KnownBy.",
     };
   }
   if (f.top_signal && (f.signals_never_published_from ?? 0) > 0) {
@@ -730,7 +730,7 @@ function computeTension(f: Facts, move: Move | null): { strength: string; gap: s
   }
   if (!f.captured_today) {
     return {
-      strength: "There is a working record here and Aura reads it every night.",
+      strength: "There is a working record here and KnownBy reads it every night.",
       gap: "Nothing new has come in today, so tonight there is less to read.",
     };
   }
