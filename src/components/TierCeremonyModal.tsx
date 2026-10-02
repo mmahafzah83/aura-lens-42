@@ -199,6 +199,9 @@ export default function TierCeremonyModal({
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, [tierMilestone]);
 
+  // Interface label for the band; the credential image keeps tierName.
+  const tierKey = tierName.toLowerCase();
+  const tierLabel = tierKey ? t(`tier.${tierKey}`) : "";
   const quoteKey = TIER_QUOTE_KEYS.includes(tierName.toLowerCase()) ? tierName.toLowerCase() : "strategist";
   const quote = t(`frame.tier.quote.${quoteKey}`);
 
@@ -414,7 +417,7 @@ export default function TierCeremonyModal({
 
   const nextIdx = TIER_BANDS.findIndex((b) => b.key === tierName.toLowerCase());
   const next = nextIdx >= 0 && TIER_BANDS[nextIdx + 1]
-    ? { name: TIER_BANDS[nextIdx + 1].name, threshold: TIER_BANDS[nextIdx + 1].min }
+    ? { name: t(`tier.${TIER_BANDS[nextIdx + 1].key}`), threshold: TIER_BANDS[nextIdx + 1].min }
     : null;
 
   const SelectedConcept = CONCEPTS.find((c) => c.key === concept)!.component;
@@ -423,7 +426,7 @@ export default function TierCeremonyModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={t("frame.tier.dialog", { tier: tierName })}
+      aria-label={t("frame.tier.dialog", { tier: tierLabel })}
       onClick={(e) => {
         if (e.target !== e.currentTarget || busy) return;
         if (step === 0) closeForSession(); else close();
@@ -519,7 +522,7 @@ export default function TierCeremonyModal({
 
         <div key={step} className="aura-step-fade" style={{ animation: "auraFade 280ms ease-out" }}>
           {step === 0 && (
-            <StepReveal tierName={tierName} quote={quote} fullName={fullName} role={role} />
+            <StepReveal tierName={tierLabel} quote={quote} fullName={fullName} role={role} />
           )}
           {step === 1 && (
             <StepCredential

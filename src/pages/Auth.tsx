@@ -722,7 +722,7 @@ const Auth = () => {
               </div>
 
               <p className="au-illus">{t("auth.night.assessIllus")}</p>
-              <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
+              <p className="au-ar" dir="rtl">ليعرفك السوق قبل أن يراك ✦</p>
             </div>
           ) : (
           <div className="au-nwrap">
@@ -743,7 +743,7 @@ const Auth = () => {
             </div>
 
             <p className="au-illus">{t("auth.night.illus")}</p>
-            <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
+            <p className="au-ar" dir="rtl">ليعرفك السوق قبل أن يراك ✦</p>
           </div>
           )}
           {!isAssessment && <p className="au-nfoot">{t("auth.night.foot")}</p>}
