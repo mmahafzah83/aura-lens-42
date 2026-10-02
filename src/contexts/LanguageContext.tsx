@@ -1,107 +1,60 @@
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from "react";
 import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
+import i18n, { applyDocumentLang, readStoredLang, storeLang, type UiLang } from "@/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 
 interface LanguageContextType {
-  lang: "en";
-  setLang: (lang: "en") => void;
+  lang: UiLang;
+  setLang: (lang: UiLang) => void;
   t: (key: string) => string;
-  isRTL: false;
+  isRTL: boolean;
 }
-
-const translations: Record<string, string> = {
-  "app.name": "Aura",
-  "app.subtitle": PRODUCT_DESCRIPTOR,
-  "header.askAura": "Your Desk",
-  "header.logout": "Sign Out",
-  "tab.briefing": "Briefing",
-  "tab.pursuits": "Pursuits",
-  "tab.influence": "Influence",
-  "tab.growth": "Growth",
-  "tab.uploadDoc": "Upload Document",
-  "briefing.strategicPulse": "Strategic Pulse",
-  "briefing.generatingInsight": "Writing your Director's Insight…",
-  "briefing.noInsight": "Capture some insights to generate your Director's Pulse.",
-  "briefing.recentCaptures": "Recent Captures",
-  "briefing.strategicFocus": "Strategic Focus",
-  "briefing.focusDesc": "Your dominant pillar this week based on capture activity",
-  "briefing.weekCaptures": "This Week",
-  "briefing.voiceNotes": "Voice Notes",
-  "briefing.insights": "Insights",
-  "briefing.pillarBreakdown": "Pillar Breakdown",
-  "influence.title": "Content Pipeline",
-  "influence.subtitle": "Turn your captures into executive-grade LinkedIn posts",
-  "influence.empty": "No captures with summaries yet. Capture some insights first.",
-  "stats.strategicFocus": "Strategic Focus",
-  "stats.pendingPosts": "Pending Brand Posts",
-  "stats.voiceNotes": "Voice Notes",
-  "stats.strategicInsights": "Strategic Insights",
-  "capture.title": "Capture",
-  "capture.subtitle": "Link, voice note, or thought",
-  "training.title": "Log Training",
-  "training.subtitle": "Track skill development",
-  "entries.title": "Recent Captures",
-  "entries.subtitle": "Latest intelligence entries",
-  "entries.search": "Search captures…",
-  "entries.archive": "Archive",
-  "entries.noEntries": "Paste a link to start building your signals.",
-  "entries.noResults": "No results found.",
-  "entries.noArchive": "No archived entries.",
-  "entries.linkedinPost": "Generate EN Post",
-  "entries.linkedinAr": "Generate AR Post",
-  "entries.translate": "Arabic Briefing",
-  "entries.readMore": "Read more",
-  "entries.less": "Less",
-  "draft.title": "LinkedIn Draft",
-  "draft.copy": "Copy to Clipboard",
-  "draft.copied": "Copied!",
-  "chat.title": "Your Desk",
-  "chat.subtitle": "Your Intelligence Vault",
-  "chat.placeholder": "Ask about your captures…",
-  "chat.vaultUnlocked": "Your Vault, Unlocked",
-  "chat.vaultDesc": "Ask about your captures, find frameworks, connect insights, or draft a presentation from your intelligence.",
-  "chat.draftDeck": "Draft Deck",
-  "chat.clearChat": "Clear chat",
-  "auth.signIn": "Sign In",
-  "auth.signUp": "Create Account",
-  "auth.email": "Email",
-  "auth.password": "Password",
-  "auth.hasAccount": "Already have an account?",
-  "auth.needAccount": "Need an account?",
-  "account.title": "Account Intelligence",
-  "account.selectAccount": "Focus Account",
-  "account.selectFirst": "Select an account first",
-  "account.synthesize": "Synthesize",
-  "account.analyzing": "Looking at your intelligence vault…",
-  "account.entries": "entries",
-  "account.docChunks": "doc chunks",
-  "account.strategicSynthesis": "Strategic Synthesis",
-  "account.keyThemes": "Key signals",
-  "account.strategicQuestions": "Questions for GM Discussion",
-  "account.risks": "Risk Factors",
-  "account.opportunities": "Opportunities",
-  "account.architectBrief": "Architect Meeting Brief (PDF)",
-  "account.pdfGenerated": "Meeting brief downloaded",
-  "frameworks.title": "Expert Frameworks",
-  "frameworks.empty": "No frameworks yet. Capture content about expert systems to auto-extract.",
-  "dedup.button": "De-duplicate",
-  "dedup.scanning": "Scanning for duplicates…",
-  "dedup.noDuplicates": "No duplicates found — vault is clean!",
-  "dedup.found": "duplicate group(s) found",
-  "dedup.keep": "Keep",
-  "dedup.remove": "Remove",
-  "dedup.apply": "Merge & Clean",
-  "dedup.applying": "Merging…",
-  "dedup.done": "duplicates removed",
-  "dedup.cancel": "Cancel",
-};
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const t = (key: string): string => translations[key] || key;
+  const [lang, setLangState] = useState<UiLang>(readStoredLang);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const adopt = useCallback((next: UiLang) => {
+    setLangState(next);
+    storeLang(next);
+    void i18n.changeLanguage(next);
+    applyDocumentLang(next);
+  }, []);
+
+  // After sign-in, the profile value wins and is copied to localStorage.
+  useEffect(() => {
+    const load = async (uid: string | null) => {
+      setUserId(uid);
+      if (!uid) return;
+      const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("ui_language").eq("user_id", uid).maybeSingle();
+      const v = (data as any)?.ui_language;
+      if (v === "en" || v === "ar") adopt(v);
+    };
+    void supabase.auth.getSession().then(({ data }) => load(data.session?.user?.id ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        setTimeout(() => void load(session?.user?.id ?? null), 0);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [adopt]);
+
+  const setLang = useCallback((next: UiLang) => {
+    adopt(next);
+    if (userId) void writeProfile(userId, { ui_language: next }, "LanguageContext.setLang");
+  }, [adopt, userId]);
+
+  const t = useCallback((key: string): string => {
+    if (key === "app.subtitle") return PRODUCT_DESCRIPTOR;
+    return i18n.exists(key) ? String(i18n.t(key)) : key;
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <LanguageContext.Provider value={{ lang: "en", setLang: () => {}, t, isRTL: false }}>
+    <LanguageContext.Provider value={{ lang, setLang, t, isRTL: lang === "ar" }}>
       {children}
     </LanguageContext.Provider>
   );
