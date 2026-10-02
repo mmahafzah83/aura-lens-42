@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { EditProfileField } from "@/components/EditProfileModal";
 import { useIsAdmin } from "@/lib/isAdmin";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ltrIsolate } from "@/i18n";
 
 interface PreferencesPanelProps {
   open: boolean;
