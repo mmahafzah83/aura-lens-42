@@ -7,7 +7,7 @@ import { writeProfile } from "@/lib/profileWrite";
 interface LanguageContextType {
   lang: UiLang;
   setLang: (lang: UiLang) => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, unknown>) => string;
   isRTL: boolean;
 }
 
@@ -48,9 +48,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     if (userId) void writeProfile(userId, { ui_language: next }, "LanguageContext.setLang");
   }, [adopt, userId]);
 
-  const t = useCallback((key: string): string => {
+  const t = useCallback((key: string, vars?: Record<string, unknown>): string => {
     if (key === "app.subtitle") return PRODUCT_DESCRIPTOR;
-    return i18n.exists(key) ? String(i18n.t(key)) : key;
+    return i18n.exists(key, vars as any) ? String(i18n.t(key, vars as any)) : key;
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

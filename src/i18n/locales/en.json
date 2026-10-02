@@ -208,7 +208,7 @@
   "home.masthead.reading": "Reading your standing…",
   "home.masthead.failed": "Aura could not read this just now.",
   "home.masthead.notMeasured": "Not measured yet.",
-  "home.masthead.pointsTo_one": "{{count}} point to {{band}}",
+  "home.masthead.pointsTo_one": "{{count}} points to {{band}}",
   "home.masthead.pointsTo_other": "{{count}} points to {{band}}",
   "home.masthead.topBand": "The top band — it is held, not climbed.",
   "home.resume.chose": "You're part-way through — you finished \"{{stage}}\", about {{minutes}} minutes left.",
