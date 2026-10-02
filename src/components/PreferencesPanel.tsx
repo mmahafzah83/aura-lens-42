@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { writeProfile } from "@/lib/profileWrite";
 import { toast } from "sonner";
 import type { EditProfileField } from "@/components/EditProfileModal";
+import { useIsAdmin } from "@/lib/isAdmin";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PreferencesPanelProps {
   open: boolean;
@@ -222,6 +224,8 @@ export default function PreferencesPanel({
   onChangePassword,
   onRetakeBrandAssessment,
 }: PreferencesPanelProps) {
+  const { isAdmin } = useIsAdmin();
+  const { lang, setLang, t } = useLanguage();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [opportunityEmailOn, setOpportunityEmailOn] = useState(false);
 
@@ -380,6 +384,27 @@ export default function PreferencesPanel({
 
   if (!open) return null;
 
+  const uiSwitch = isAdmin === true ? (
+    <div
+      style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, padding: "14px 24px", borderTop: "0.5px solid var(--rule)", fontFamily: "var(--font-body)" }}
+    >
+      <div role="group" aria-label={`${t("lang.en")} / ${t("lang.ar")}`} style={{ display: "inline-flex", border: "0.5px solid var(--rule)", borderRadius: 8, overflow: "hidden" }}>
+        {(["en", "ar"] as const).map((l) => (
+          <button
+            key={l}
+            type="button"
+            aria-pressed={lang === l}
+            onClick={() => setLang(l)}
+            lang={l}
+            style={{ minHeight: 44, padding: "8px 14px", fontSize: 13, fontFamily: l === "ar" ? "'Cairo', var(--font-body)" : "var(--font-body)", background: lang === l ? "var(--paper-2)" : "transparent", color: "var(--ink)", fontWeight: lang === l ? 600 : 400, cursor: "pointer", border: 0 }}
+          >
+            {t(`lang.${l}`)}
+          </button>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
   const sections = (
     <>
       {/* YOUR PROFILE */}
@@ -494,6 +519,8 @@ export default function PreferencesPanel({
           <option value="ar">العربية</option>
         </select>
       </div>
+
+      {uiSwitch}
 
       {/* PRIVACY */}
       <SectionHeader>Privacy</SectionHeader>

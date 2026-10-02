@@ -315,6 +315,11 @@ html *:not(canvas):not(video):not(iframe) {
 
 /* RTL: flip serif slot to Cairo */
 html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-arabic); }
+html[lang="ar"] {
+  --font-body: 'Cairo', var(--ff-ui);
+  --font-display: 'Cairo', var(--ff-ui);
+}
+html[lang="ar"] body { line-height: 1.9; }
 
 /* Calibration-tick rule — signature motif */
 .tick-rule {

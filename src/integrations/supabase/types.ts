@@ -1527,6 +1527,7 @@ export type Database = {
           timezone: string | null
           trial_ends_at: string | null
           ui_dismissals: Json
+          ui_language: string
           user_id: string
           years_experience: string | null
         }
@@ -1597,6 +1598,7 @@ export type Database = {
           timezone?: string | null
           trial_ends_at?: string | null
           ui_dismissals?: Json
+          ui_language?: string
           user_id: string
           years_experience?: string | null
         }
@@ -1667,6 +1669,7 @@ export type Database = {
           timezone?: string | null
           trial_ends_at?: string | null
           ui_dismissals?: Json
+          ui_language?: string
           user_id?: string
           years_experience?: string | null
         }

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Toaster as Sonner, toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { isRTL } = useLanguage();
+  const onAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(() => {
     if (typeof document === "undefined") return "light";
     return (document.documentElement.getAttribute("data-theme") as "light" | "dark") || "light";
@@ -21,6 +24,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={currentTheme}
+      dir={isRTL && !onAdmin ? "rtl" : "ltr"}
       className="toaster group"
       toastOptions={{
         classNames: {

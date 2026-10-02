@@ -103,6 +103,8 @@ export default function AdminShell({ title, subtitle, children, bleed = false }:
   return (
     <div
       className="ac-shell"
+      dir="ltr"
+      lang="en"
       style={{
         minHeight: "100vh",
         width: "100%",

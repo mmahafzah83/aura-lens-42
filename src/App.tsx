@@ -24,6 +24,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import CookieConsent from "./components/CookieConsent";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageViewTracker from "./components/PageViewTracker";
+import DocumentDirection from "./components/DocumentDirection";
 
 // Lazy-loaded heavy / rarely-visited routes
 // Older landing pages remain in the tree but are no longer routed or bundled.
@@ -101,6 +102,7 @@ const App = () => (
         <Sonner />
         <ErrorBoundary>
         <BrowserRouter>
+        <DocumentDirection>
           <PageViewTracker />
           <Suspense
             fallback={
@@ -183,6 +185,7 @@ const App = () => (
           {/* A fixed banner: kept last in the DOM so the journey's skip link
               stays the first focusable element (WCAG SC 2.4.1). */}
           <CookieConsent />
+        </DocumentDirection>
         </BrowserRouter>
         </ErrorBoundary>
       </TooltipProvider>
