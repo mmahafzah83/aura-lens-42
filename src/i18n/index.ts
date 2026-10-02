@@ -23,25 +23,8 @@ export const UI_LANG_PENDING_KEY = "kb_ui_lang_pending";
  */
 export const AUTO_DETECT_BROWSER_LANG = false;
 
-/** The one registry of routes whose text exists in Arabic. Everything else renders English, LTR. */
-export const ARABIC_READY_ROUTES: (string | RegExp)[] = [
-  "/home", "/dashboard", "/opportunities", "/settings",
-  "/auth", "/login", "/request-access", "/accept-invitation",
-];
-
-const normPath = (pathname: string): string => {
-  let p = (pathname || "/").split(/[?#]/)[0] || "/";
-  if (p.length > 1) p = p.replace(/\/+$/, "") || "/";
-  return p;
-};
-
-export function isArabicReadyRoute(pathname: string): boolean {
-  const p = normPath(pathname);
-  if (p === "/admin" || p.startsWith("/admin/")) return false;
-  return ARABIC_READY_ROUTES.some((r) =>
-    typeof r === "string" ? p === r || p.startsWith(`${r}/`) : r.test(p),
-  );
-}
+export { ARABIC_READY_ROUTES, isArabicReadyRoute } from "./routes";
+import { isArabicReadyRoute } from "./routes";
 
 /** The language a route actually renders in: the choice on ready routes, English elsewhere and on /admin. */
 export function effectiveLang(chosen: UiLang, pathname: string): UiLang {
