@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence } from "@/constants/vocabulary";
 import { ASSESSMENT_STEPS, stageName } from "@/lib/brand";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 const dismissKey = (uid: string) => `aura_resume_hidden_${uid}`;
@@ -18,6 +19,7 @@ interface Paused { stage: number; saved: string[]; chose: boolean; }
 
 export default function ResumeJourneyCard({ userId }: { userId: string | null }) {
   const navigate = useNavigate();
+  const { t, lang } = useLanguage();
   const [paused, setPaused] = useState<Paused | null>(null);
   const [hidden, setHidden] = useState(false);
 
@@ -42,9 +44,9 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
       const claims = Array.isArray(ii.claims) ? ii.claims.length : 0;
       const strengths = Object.keys(((data as any).skill_ratings as Record<string, unknown>) || {}).length;
       const saved = [
-        (data as any).headline || (data as any).seniority_band ? "Your profile is read" : "",
-        claims ? `${nEvidence(claims, "en")} saved` : "",
-        strengths ? "your strengths saved" : "",
+        (data as any).headline || (data as any).seniority_band ? t("home.resume.profileRead") : "",
+        claims ? t("home.resume.evidenceSaved", { evidence: nEvidence(claims, lang) }) : "",
+        strengths ? t("home.resume.strengthsSaved") : "",
       ].filter(Boolean) as string[];
       setPaused({
         stage: Number(ii.journey_stage ?? stageOf(screen)) || 1,
@@ -53,7 +55,7 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
       });
     })();
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, t, lang]);
 
   if (!paused || hidden) return null;
   const left = Math.max(2, (ASSESSMENT_STEPS - paused.stage) * 2);
@@ -65,8 +67,8 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
     }}>
       <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
         {paused.chose
-          ? `You're part-way through — you finished "${stageName(paused.stage)}", about ${left} minutes left.`
-          : `You started setting up and stopped at "${stageName(paused.stage)}". It's all still here.`}
+          ? t("home.resume.chose", { stage: stageName(paused.stage), minutes: left })
+          : t("home.resume.stopped", { stage: stageName(paused.stage) })}
       </h2>
       {paused.saved.length ? (
         <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)" }}>
@@ -83,7 +85,7 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
             fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
           }}
         >
-          Pick up where I left off
+          {t("home.resume.pickUp")}
         </button>
         <button
           type="button"
@@ -96,7 +98,7 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
             fontSize: 13, fontWeight: 500, color: "var(--text-secondary)",
           }}
         >
-          Not now
+          {t("home.resume.notNow")}
         </button>
       </div>
     </section>

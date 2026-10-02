@@ -6,6 +6,10 @@ import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetDat
 import { WidgetBody } from "@/components/widgets/WidgetCards";
 import { nSignals, nEvidence, nPages, nDrafts, CAPTURE, velocityWord } from "@/constants/vocabulary";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+type TFn = (key: string, vars?: Record<string, unknown>) => string;
+type Lang = "en" | "ar";
 
 export type ShelfKey = "moves" | "stand" | "own" | "night" | "widgets";
 
@@ -21,8 +25,10 @@ export function buildShelf(
   facts: HomeFacts | null,
   moves: HomeMove[],
   themes: number,
-  layout?: WidgetLayout,
-  metrics?: WidgetMetrics | null,
+  layout: WidgetLayout | undefined,
+  metrics: WidgetMetrics | null | undefined,
+  t: TFn,
+  lang: Lang,
 ): ShelfItem[] {
   const f = facts ?? {};
   const ln = f.last_night;
@@ -31,61 +37,65 @@ export function buildShelf(
   return [
     {
       key: "moves",
-      title: "Today in order",
+      title: t("home.shelf.movesTitle"),
       fact: moves.length
-        ? `${moves.length} move${moves.length === 1 ? "" : "s"} · about ${moves.reduce((a, m) => a + (m.est_minutes || 0), 0)} minutes`
-        : "Nothing today. Keep something you read and one will appear.",
+        ? t("home.shelf.movesFact", { count: moves.length, minutes: moves.reduce((a, m) => a + (m.est_minutes || 0), 0) })
+        : t("home.shelf.movesEmpty"),
     },
     {
       key: "stand",
-      title: "Where you stand",
+      title: t("home.shelf.standTitle"),
       // The band and the points-to-next belong to HomeMasthead. Here: the number only.
       fact: f.imprint != null
-        ? `${f.imprint}/100`
-        : "No number yet. Capturing and publishing both feed it.",
+        ? t("home.shelf.standFact", { score: f.imprint })
+        : t("home.shelf.standEmpty"),
     },
     {
       key: "own",
-      title: "What you own",
+      title: t("home.shelf.ownTitle"),
       // `signals_active` — rows in `strategic_signals`. The dictionary owns the noun.
       fact: themes > 0
-        ? `${nSignals(themes, "en")} live`
-        : `No signals yet. They form once you have a handful of ${CAPTURE.nounPlural}.`,
+        ? t("home.shelf.ownFact", { signals: nSignals(themes, lang) })
+        : t("home.shelf.ownEmpty", { captures: CAPTURE.nounPlural }),
     },
     {
       key: "night",
-      title: "While you slept",
+      title: t("home.shelf.nightTitle"),
       // Bare numbers said nothing. `sources_read` is `agent_findings` rows —
       // PAGES Aura read, never the member's sources (Ruling 1).
       fact: ln
-        ? `${nPages(ln.sources_read, "en")} read · ${nDrafts(ln.drafts_written, "en")} written`
-        : "Aura has not run for you yet. It reads overnight.",
+        ? t("home.shelf.nightFact", { pages: nPages(ln.sources_read, lang), drafts: nDrafts(ln.drafts_written, lang) })
+        : t("home.shelf.nightEmpty"),
       machine: true,
     },
 
     {
       key: "widgets",
-      title: "Your widgets",
+      title: t("home.shelf.widgetsTitle"),
       // `drafts_total` — draft rows. The dictionary owns that noun too.
       fact: widgetsOn > 0
-        ? `${widgetsOn} pinned${drafts ? ` · ${nDrafts(drafts, "en")} waiting` : ""}`
-        : "Nothing pinned yet. Choose the numbers you want to watch.",
+        ? (drafts
+          ? t("home.shelf.widgetsPinnedWaiting", { pinned: widgetsOn, drafts: nDrafts(drafts, lang) })
+          : t("home.shelf.widgetsPinned", { pinned: widgetsOn }))
+        : t("home.shelf.widgetsEmpty"),
     },
   ];
 }
 
 // ── the cards themselves ───────────────────────────────────────────────────
 
-export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => void }> = ({ moves, onGo }) => (
+export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => void }> = ({ moves, onGo }) => {
+  const { t } = useLanguage();
+  return (
   <Card style={{ padding: 0 }}>
     <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-      <Kicker>Today in order</Kicker>
-      <SectionTitle as="h2">What to do, in the order that matters</SectionTitle>
+      <Kicker>{t("home.moves.kicker")}</Kicker>
+      <SectionTitle as="h2">{t("home.moves.title")}</SectionTitle>
     </div>
     {moves.length === 0 && (
       <div style={{ padding: "18px 20px", display: "grid", gap: 6 }}>
-        <Body>Nothing worth your time today.</Body>
-        <Muted>Keep something you read and Aura writes tomorrow's list from it.</Muted>
+        <Body>{t("home.moves.emptyBody")}</Body>
+        <Muted>{t("home.moves.emptyMuted")}</Muted>
       </div>
     )}
     {moves.map((m, i) => (
@@ -96,41 +106,43 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <span style={{ ...MONO, fontSize: 11, color: "var(--act)" }}>{String(i + 1).padStart(2, "0")}</span>
           <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{m.what}</span>
-          <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>{m.est_minutes} min</span>
+          <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>{t("home.moves.minutes", { minutes: m.est_minutes })}</span>
         </div>
         <Body>{m.why}</Body>
         <Muted>{m.how}</Muted>
-        <Muted><strong style={{ color: "var(--text-secondary)" }}>Outcome:</strong> {m.outcome}</Muted>
-        <div><ActButton onClick={() => onGo(m.cta_route)}>Do this</ActButton></div>
+        <Muted><strong style={{ color: "var(--text-secondary)" }}>{t("home.moves.outcome")}</strong> {m.outcome}</Muted>
+        <div><ActButton onClick={() => onGo(m.cta_route)}>{t("home.moves.doThis")}</ActButton></div>
       </div>
     ))}
   </Card>
-);
+  );
+};
 
 export const StandCard: React.FC<{ facts: HomeFacts | null; userId: string | null | undefined }> = ({ facts, userId }) => {
   // The verdict (band, points to next) is owned by HomeMasthead and is not
   // repeated here. This card is the *why*: the number and its three parts.
   const tier = useTierFromImprint(userId);
+  const { t } = useLanguage();
   const c = facts?.components ?? { signal: null, content: null, capture: null };
   const rows: Array<{ label: string; value: number | null; weight: string }> = [
-    { label: "Signal", value: c.signal, weight: "signals you hold" },
-    { label: "Content", value: c.content, weight: "what you published" },
-    { label: "Capture", value: c.capture, weight: "what you feed it" },
+    { label: t("home.stand.signal"), value: c.signal, weight: t("home.stand.signalWeight") },
+    { label: t("home.stand.content"), value: c.content, weight: t("home.stand.contentWeight") },
+    { label: t("home.stand.capture"), value: c.capture, weight: t("home.stand.captureWeight") },
   ];
   return (
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker as="h2">Where you stand</Kicker>
+        <Kicker as="h2">{t("home.stand.kicker")}</Kicker>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <span style={{ ...MONO, fontSize: 34, fontWeight: 700, color: "var(--text-primary)" }}>
             {facts?.imprint ?? "—"}
           </span>
-          <span style={{ ...MONO, fontSize: 13, color: "var(--text-muted)" }}>/100</span>
+          <span style={{ ...MONO, fontSize: 13, color: "var(--text-muted)" }}>{t("home.stand.outOf")}</span>
         </div>
         <Muted style={{ marginBlockStart: 6 }}>
           {facts?.imprint == null
-            ? "No number yet — capture and publish and Aura can measure it"
-            : "What the number is made of."}
+            ? t("home.stand.noNumber")
+            : t("home.stand.madeOf")}
         </Muted>
       </div>
       <div style={{ padding: "18px 20px", display: "grid", gap: 14 }}>
@@ -160,31 +172,33 @@ export interface OwnedTheme { id: string; title: string; fragments: number; velo
 export const OwnCard: React.FC<{
   themes: OwnedTheme[]; onOpen: () => void;
   loading?: boolean; failed?: boolean; onRetry?: () => void;
-}> = ({ themes, onOpen, loading, failed, onRetry }) => (
+}> = ({ themes, onOpen, loading, failed, onRetry }) => {
+  const { t, lang } = useLanguage();
+  return (
   <Card style={{ padding: 0 }}>
     <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-      <Kicker>What you own</Kicker>
-      <SectionTitle as="h2">The signals your reading holds up</SectionTitle>
+      <Kicker>{t("home.own.kicker")}</Kicker>
+      <SectionTitle as="h2">{t("home.own.title")}</SectionTitle>
     </div>
     <div style={{ padding: "8px 0" }}>
       {loading && themes.length === 0 && (
         <div style={{ padding: "12px 20px" }}>
-          <Muted>Reading your signals…</Muted>
+          <Muted>{t("home.own.loading")}</Muted>
         </div>
       )}
       {!loading && !failed && themes.length === 0 && (
         <div style={{ padding: "12px 20px", display: "grid", gap: 6 }}>
-          <Body>No signals yet.</Body>
-          <Muted>A signal forms when several captures point the same way.</Muted>
+          <Body>{t("home.own.emptyBody")}</Body>
+          <Muted>{t("home.own.emptyMuted")}</Muted>
         </div>
       )}
-      {themes.map((t) => (
-        <div key={t.id} style={{
+      {themes.map((th) => (
+        <div key={th.id} style={{
           padding: "12px 20px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline",
         }}>
-          <span style={{ fontSize: 13.5, color: "var(--text-primary)" }}>{t.title}</span>
+          <span style={{ fontSize: 13.5, color: "var(--text-primary)" }}>{th.title}</span>
           <span style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-            {nEvidence(t.fragments, "en")} · {velocityWord(t.velocity)} this week
+            {t("home.own.row", { evidence: nEvidence(th.fragments, lang), velocity: velocityWord(th.velocity) })}
           </span>
         </div>
       ))}
@@ -195,10 +209,11 @@ export const OwnCard: React.FC<{
       )}
     </div>
     <div style={{ padding: "14px 20px", borderBlockStart: "1px solid var(--rule-divider)" }}>
-      <ActButton onClick={onOpen}>Open your signals</ActButton>
+      <ActButton onClick={onOpen}>{t("home.own.open")}</ActButton>
     </div>
   </Card>
-);
+  );
+};
 
 export const NightCard: React.FC<{
   facts: HomeFacts | null;
@@ -208,36 +223,37 @@ export const NightCard: React.FC<{
   strengthened?: number | null;
 }> = ({ facts, onOpen, strengthened }) => {
   const ln = facts?.last_night;
+  const { t, lang } = useLanguage();
   return (
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker>While you slept</Kicker>
+        <Kicker>{t("home.night.kicker")}</Kicker>
         {/* The "Prepared HH:MM" clock is owned by the night address header. */}
-        <SectionTitle as="h2">What Aura did overnight</SectionTitle>
+        <SectionTitle as="h2">{t("home.night.title")}</SectionTitle>
       </div>
       <div style={{ padding: "18px 20px", display: "grid", gap: 10 }}>
         {ln ? (
           <>
             {/* `sources_read` counts `agent_findings` rows: pages Aura read. */}
-            <Body>Read {nPages(ln.sources_read, "en")} overnight.</Body>
+            <Body>{t("home.night.read", { pages: nPages(ln.sources_read, lang) })}</Body>
             {/* Only real, openable signals earn this line. No join, no line. */}
             {!!strengthened && strengthened > 0 && (
-              <Body>Strengthened {nSignals(strengthened, "en")}.</Body>
+              <Body>{t("home.night.strengthened", { signals: nSignals(strengthened, lang) })}</Body>
             )}
             <Body>
               {ln.drafts_written > 0
-                ? `Wrote ${nDrafts(ln.drafts_written, "en")}.`
-                : "Wrote nothing — there was nothing worth writing."}
+                ? t("home.night.wrote", { drafts: nDrafts(ln.drafts_written, lang) })
+                : t("home.night.wroteNothing")}
             </Body>
           </>
 
         ) : (
           <>
-            <Body>Aura has not run for you yet.</Body>
-            <Muted>It reads overnight and writes only when something is worth writing.</Muted>
+            <Body>{t("home.night.notRunBody")}</Body>
+            <Muted>{t("home.night.notRunMuted")}</Muted>
           </>
         )}
-        <div><ActButton onClick={onOpen}>See what Aura read</ActButton></div>
+        <div><ActButton onClick={onOpen}>{t("home.night.open")}</ActButton></div>
       </div>
     </Card>
   );
@@ -248,24 +264,25 @@ export const WidgetsCard: React.FC<{
   failed?: boolean; onRetry?: () => void;
 }> = ({ layout, metrics, onEdit, failed, onRetry }) => {
   const on = WIDGET_DEFS.filter((d) => layout[d.key]);
+  const { t } = useLanguage();
   return (
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker>Your widgets</Kicker>
-        <SectionTitle as="h2">The numbers you chose to keep</SectionTitle>
+        <Kicker>{t("home.widgets.kicker")}</Kicker>
+        <SectionTitle as="h2">{t("home.widgets.title")}</SectionTitle>
       </div>
       <div style={{ padding: 18, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
         {metrics && on.map((d) => <WidgetBody key={d.key} k={d.key} m={metrics} />)}
         {failed && <ReadFailure onRetry={onRetry} />}
         {!failed && on.length === 0 && (
           <div style={{ display: "grid", gap: 6 }}>
-            <Body>Nothing is pinned here yet.</Body>
-            <Muted>Choose the numbers you want to watch and they appear on this card.</Muted>
+            <Body>{t("home.widgets.emptyBody")}</Body>
+            <Muted>{t("home.widgets.emptyMuted")}</Muted>
           </div>
         )}
       </div>
       <div style={{ padding: "14px 20px", borderBlockStart: "1px solid var(--rule-divider)" }}>
-        <ActButton onClick={onEdit}>Choose your widgets</ActButton>
+        <ActButton onClick={onEdit}>{t("home.widgets.choose")}</ActButton>
       </div>
     </Card>
   );

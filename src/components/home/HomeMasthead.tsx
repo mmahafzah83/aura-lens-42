@@ -4,6 +4,7 @@ import Avatar from "@/components/systemb/Avatar";
 import { MONO, ReadFailure } from "./homeAtoms";
 import { STANDING } from "@/constants/vocabulary";
 import { useTierFromImprint, TIER_BANDS } from "@/hooks/useTierFromImprint";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
  * HomeMasthead — the greeting, the clock and the member's standing.
@@ -17,10 +18,10 @@ interface Profile {
   firm: string | null;
 }
 
-function greetingFor(hour: number): string {
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+function greetingFor(hour: number): "morning" | "afternoon" | "evening" {
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
 }
 
 function kickerFor(d: Date): string {
@@ -36,6 +37,7 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
   const [profileNonce, setProfileNonce] = useState(0);
   const [now, setNow] = useState<Date>(() => new Date());
   const tier = useTierFromImprint(userId);
+  const { t } = useLanguage();
 
   const tick = useCallback(() => setNow(new Date()), []);
   useEffect(() => {
@@ -96,7 +98,7 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
           margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 30,
           letterSpacing: "-0.02em", lineHeight: 1.15, color: "var(--text-primary)",
         }}>
-          {firstName ? `${greeting}, ${firstName}.` : `${greeting}.`}
+          {firstName ? t(`home.masthead.${greeting}Name`, { name: firstName }) : t(`home.masthead.${greeting}`)}
         </h1>
       </div>
 
@@ -108,10 +110,10 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
         {tier.loading || !band ? (
           <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)" }}>
             {tier.loading
-              ? "Reading your standing…"
+              ? t("home.masthead.reading")
               : tier.failed
-                ? "Aura could not read this just now."
-                : "Not measured yet."}
+                ? t("home.masthead.failed")
+                : t("home.masthead.notMeasured")}
           </div>
         ) : (
           <>
@@ -121,8 +123,8 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
             }}>{band.name}</div>
             <div style={{ ...MONO, fontSize: 12, color: "var(--text-secondary)" }}>
               {nextBand && pointsToNext != null
-                ? `${pointsToNext} points to ${nextBand.name}`
-                : "The top band — it is held, not climbed."}
+                ? t("home.masthead.pointsTo", { count: pointsToNext, band: nextBand.name })
+                : t("home.masthead.topBand")}
             </div>
             <div aria-hidden style={{
               blockSize: 4, background: "var(--rule-outer)", borderRadius: 999, overflow: "hidden",

@@ -5,6 +5,7 @@ import {
 } from "./homeAtoms";
 import type { HomeFacts } from "@/hooks/useHomeAddress";
 import { useShapePast } from "@/hooks/useHomeExtras";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
  * The two lenses. Each renders only from facts and real rows — nothing
@@ -16,19 +17,13 @@ import { useShapePast } from "@/hooks/useHomeExtras";
 
 // ── THE SHAPE ──────────────────────────────────────────────────────────────
 
-/** Plain-English names and one sentence each. Unmapped keys fall back. */
-const FACET_WORDS: Record<string, { name: string; line: string }> = {
-  conviction:  { name: "Confidence", line: "How sure your writing sounds." },
-  discernment: { name: "Perception", line: "How well you read what is changing." },
-  edge:        { name: "Expertise",  line: "How specific your expertise is." },
-  voice:       { name: "Voice",      line: "How much your writing sounds like you." },
-  focus:       { name: "Focus",      line: "How much you stay on your main signals." },
-  identity:    { name: "Identity",   line: "How clear it is what you stand for." },
-  audience:    { name: "Audience",   line: "How well your signals match who you want to reach." },
-};
+/** Plain-English names and one sentence each (text in en.json). Unmapped keys fall back. */
+const FACET_KEYS = new Set(["conviction", "discernment", "edge", "voice", "focus", "identity", "audience"]);
 
-const facetWords = (key: string) =>
-  FACET_WORDS[key] ?? { name: titleCaseFacet(key), line: null as string | null };
+const facetWords = (key: string, t: (k: string) => string) =>
+  FACET_KEYS.has(key)
+    ? { name: t(`home.shape.facet.${key}.name`), line: t(`home.shape.facet.${key}.line`) as string | null }
+    : { name: titleCaseFacet(key), line: null as string | null };
 
 const longDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
@@ -57,6 +52,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
   const dormant = new Set(facts?.facets_dormant ?? []);
   const past = useShapePast(userId);
   const [showDiagram, setShowDiagram] = useState(false);
+  const { t } = useLanguage();
 
   const size = 260, cx = size / 2, cy = size / 2, r = size / 2 - 34;
   const values = facets.map((f) => f.value);
@@ -72,9 +68,9 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
   if (facets.length === 0 && !hasCaptures && !hasSignals && !factsFailed) {
     return (
       <Card>
-        <Kicker>Where you stand</Kicker>
-        <SectionTitle as="h2">Your shape draws itself as you go</SectionTitle>
-        <Body>Capture something you have read and Aura starts measuring the shape of what you know.</Body>
+        <Kicker>{t("home.shape.kicker")}</Kicker>
+        <SectionTitle as="h2">{t("home.shape.emptyTitle")}</SectionTitle>
+        <Body>{t("home.shape.emptyBody")}</Body>
       </Card>
     );
   }
@@ -83,8 +79,8 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
   if (facets.length === 0 && factsFailed) {
     return (
       <Card>
-        <Kicker>Where you stand</Kicker>
-        <SectionTitle as="h2">What Aura can measure about you today</SectionTitle>
+        <Kicker>{t("home.shape.kicker")}</Kicker>
+        <SectionTitle as="h2">{t("home.shape.title")}</SectionTitle>
         <ReadFailure onRetry={onRetryFacts} />
       </Card>
     );
@@ -92,29 +88,29 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
 
   const anyDormant = facets.some((f) => dormant.has(f.facet));
   const pastCaption = past.loading
-    ? "Reading your earlier shape."
+    ? t("home.shape.pastLoading")
     : past.failed
-      ? "Aura could not read your earlier shape just now."
+      ? t("home.shape.pastFailed")
       : hasPast
       ? (past.takenOn
-        ? `Dotted line: your reading on ${longDate(past.takenOn)}.`
-        : "Solid: today. Dotted: thirty days ago.")
+        ? t("home.shape.pastDotted", { date: longDate(past.takenOn) })
+        : t("home.shape.pastSolidDotted"))
       : past.values
-        ? "Solid: today. Nothing has moved since thirty days ago, so only one outline is drawn."
-        : "Solid: today. Aura holds no reading from thirty days ago, so no past is drawn.";
+        ? t("home.shape.pastUnchanged")
+        : t("home.shape.pastNone");
 
   return (
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "20px 22px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker>Where you stand</Kicker>
-        <SectionTitle as="h2">What Aura can measure about you today</SectionTitle>
+        <Kicker>{t("home.shape.kicker")}</Kicker>
+        <SectionTitle as="h2">{t("home.shape.title")}</SectionTitle>
       </div>
 
       <div style={{ padding: "20px 22px", display: "grid", gap: 20 }}>
         <div style={{ display: "grid", gap: 12 }}>
           {facets.map((f) => {
             const ceiling = f.value >= CEILING;
-            const w = facetWords(f.facet);
+            const w = facetWords(f.facet, t);
             return (
               <div key={f.facet} style={{ display: "grid", gap: 5 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
@@ -123,7 +119,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
                     {Math.round(f.value * 100)}
                     {ceiling && (
                       <span style={{ fontFamily: "var(--font-body)", color: "var(--text-muted)" }}>
-                        {" "}(our highest reading)
+                        {" "}{t("home.shape.highest")}
                       </span>
                     )}
                   </span>
@@ -141,7 +137,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
           })}
           {anyDormant && (
             <Muted style={{ marginBlockStart: 2 }}>
-              Grey means Aura has not seen enough recent work to read this one.
+              {t("home.shape.dormant")}
             </Muted>
           )}
           {facts?.facets_dormant_reason && (
@@ -152,11 +148,11 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
 
         <div style={{ display: "grid", gap: 10 }}>
           <TextButton onClick={() => setShowDiagram((v) => !v)} style={{ justifySelf: "start" }}>
-            {showDiagram ? "Hide the diagram" : "Show the shape as a diagram"}
+            {showDiagram ? t("home.shape.hideDiagram") : t("home.shape.showDiagram")}
           </TextButton>
           {showDiagram && (
         <div style={{ maxInlineSize: 340 }}>
-          <svg width="100%" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Your shape across your facets, today and thirty days ago">
+          <svg width="100%" viewBox={`0 0 ${size} ${size}`} role="img" aria-label={t("home.shape.diagramLabel")}>
             {[0.25, 0.5, 0.75, 1].map((g) => (
               <polygon key={g} points={polygon(facets.map(() => g), cx, cy, r)}
                 fill="none" stroke="var(--rule-outer)" strokeWidth={1} />
