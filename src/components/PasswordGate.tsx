@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { Loader2, Eye, EyeOff, Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 /**
  * PasswordGate — wraps every authenticated route. If the signed-in user has
@@ -72,6 +73,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
   const [companionVisible, setCompanionVisible] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const companionTimer = useRef<number | null>(null);
+  const { t } = useTranslation();
 
   // Companion voice — debounced 1s after typing in the password field
   useEffect(() => {
@@ -121,17 +123,17 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
         onComplete();
       }, 800);
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't set password. Please try again.");
+      toast.error(e?.message || t("auth.error.setPasswordFailed"));
       setIsSubmitting(false);
     }
   };
 
   const checklist: { key: keyof typeof checks; label: string }[] = [
-    { key: "length", label: "At least 8 characters" },
-    { key: "uppercase", label: "One uppercase letter (A–Z)" },
-    { key: "lowercase", label: "One lowercase letter (a–z)" },
-    { key: "number", label: "One number (0–9)" },
-    { key: "special", label: "One special character (!@#$%)" },
+    { key: "length", label: t("auth.gate.reqLength") },
+    { key: "uppercase", label: t("auth.gate.reqUpper") },
+    { key: "lowercase", label: t("auth.gate.reqLower") },
+    { key: "number", label: t("auth.gate.reqNumber") },
+    { key: "special", label: t("auth.gate.reqSpecial") },
   ];
 
   return (
@@ -157,19 +159,19 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
       >
         <div className="mb-6">
           <div className="uppercase mb-3" style={{ color: "var(--text-muted)", fontFamily: FF_MONO, fontSize: 10, letterSpacing: "0.16em" }}>
-            Aura · AI Professional Identity Platform
+            {t("auth.gate.eyebrow")}
           </div>
           <h1 className="mb-2" style={{ fontFamily: FF_SER, fontSize: 32, fontWeight: 400, lineHeight: 1.15, color: "var(--text-primary)" }}>
-            Welcome to the inner circle.
+            {t("auth.gate.headline")}
           </h1>
           <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-            Set a password you'll remember. This space is yours now.
+            {t("auth.gate.sub")}
           </p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block mb-1.5" style={{ color: "var(--text-muted)", fontFamily: FF_MONO, fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase" }}>Your password</label>
+            <label className="block mb-1.5" style={{ color: "var(--text-muted)", fontFamily: FF_MONO, fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase" }}>{t("auth.gate.passwordLabel")}</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -177,7 +179,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 onChange={(e) => setPassword(e.target.value)}
                 onFocus={() => setPwFocused(true)}
                 onBlur={() => setPwFocused(false)}
-                placeholder="Create a password"
+                placeholder={t("auth.gate.passwordPlaceholder")}
                 className="w-full outline-none"
                 style={{
                   padding: "13px 40px 13px 15px",
@@ -196,7 +198,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 type="button" onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2"
                 style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--text-muted)" }}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("auth.signin.hidePassword") : t("auth.signin.showPassword")}
               >{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
             </div>
           </div>
@@ -218,7 +220,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
           </div>
 
           <div>
-            <label className="block mb-1.5" style={{ color: "var(--text-muted)", fontFamily: FF_MONO, fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase" }}>Confirm password</label>
+            <label className="block mb-1.5" style={{ color: "var(--text-muted)", fontFamily: FF_MONO, fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase" }}>{t("auth.gate.confirmLabel")}</label>
             <div className="relative">
               <input
                 type={showConfirm ? "text" : "password"}
@@ -226,7 +228,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 onFocus={() => setConfirmFocused(true)}
                 onBlur={() => setConfirmFocused(false)}
-                placeholder="Confirm password"
+                placeholder={t("auth.gate.confirmPlaceholder")}
                 className="w-full outline-none"
                 style={{
                   padding: "13px 40px 13px 15px",
@@ -245,7 +247,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 type="button" onClick={() => setShowConfirm((s) => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2"
                 style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--text-muted)" }}
-                aria-label={showConfirm ? "Hide password" : "Show password"}
+                aria-label={showConfirm ? t("auth.signin.hidePassword") : t("auth.signin.showPassword")}
               >{showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}</button>
             </div>
           </div>
@@ -256,7 +258,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             ) : (
               <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid var(--border-strong)", display: "inline-block" }} />
             )}
-            <span style={{ color: checks.match ? "var(--text-primary)" : "var(--text-muted)" }}>Passwords match</span>
+            <span style={{ color: checks.match ? "var(--text-primary)" : "var(--text-muted)" }}>{t("auth.gate.match")}</span>
           </div>
 
           <button
@@ -286,9 +288,9 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 ✦
               </span>
             ) : isSubmitting ? (
-              "Setting password..."
+              t("auth.gate.setting")
             ) : (
-              <>Enter <ArrowRight size={16} /></>
+              <>{t("auth.gate.enter")} <ArrowRight size={16} /></>
             )}
           </button>
 
@@ -302,7 +304,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 animation: "pg-fade-in 400ms ease-out forwards",
               }}
             >
-              Setting up your intelligence system…
+              {t("auth.gate.settingUp")}
             </p>
           )}
 
@@ -315,7 +317,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 animation: "pg-fade-in 300ms ease-out forwards",
               }}
             >
-              Good. Let's get you inside.
+              {t("auth.gate.companion")}
             </p>
           )}
         </div>
