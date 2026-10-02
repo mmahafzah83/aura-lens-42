@@ -25,7 +25,7 @@ export function buildShelf(
   facts: HomeFacts | null,
   moves: HomeMove[],
   themes: number,
-  layout?: WidgetLayout,
+  layout: WidgetLayout | undefined,
   metrics: WidgetMetrics | null | undefined,
   t: TFn,
   lang: Lang,
