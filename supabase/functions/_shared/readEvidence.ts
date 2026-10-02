@@ -149,7 +149,7 @@ ${capability.dimensions.map((d) => {
       return `- ${d.label}: ${BAND_LABEL[d.band]}${d.band === "not_assessed" ? "" : d.confidence === "measured" ? " (evidence-backed)" : " (self-reported)"}${why ? ` — ${why}` : ""}`;
     }).join("\n")}
 Always refer to these by name and by band. Never state a capability as a number, a percentage, or a score out of 100.
-A band of Not yet assessed means Aura has not read that capability yet — never treat it as a weakness.`
+A band of Not yet assessed means KnownBy has not read that capability yet — never treat it as a weakness.`
     : "WHERE THEY STAND\nNot yet assessed — this member has not completed a capability read.";
 
   const takenNounsBlock = takenNames.length
