@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { ChevronLeft, Download, Copy, FileText, X, Target, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import useMilestones, { type Milestone } from "@/hooks/useMilestones";
@@ -33,13 +35,8 @@ interface Props {
 
 // One short, dignified ceremony line per tier. Vocabulary mirrors
 // calculate-aura-score (Observer/Explorer/Strategist/Voice/Presence).
-const TIER_QUOTES: Record<string, string> = {
-  observer: "Every signal starts with one capture.",
-  explorer: "Patterns are surfacing — keep reading the market.",
-  strategist: "The market is starting to see what you already know.",
-  voice: "Your perspective is shaping the conversation.",
-  presence: "Your sector watches you before you speak.",
-};
+// Text lives in frame.tier.quote.<tier>.
+const TIER_QUOTE_KEYS = ["observer", "explorer", "strategist", "voice", "presence"];
 
 
 const BG = "#0c0b0a";
@@ -52,6 +49,7 @@ const SERIF = "'Cormorant Garamond', 'Cairo', Georgia, serif";
 export default function TierCeremonyModal({
   userId, forceOpen, onForceClose, forcedTierName, forceOpenStep,
 }: Props) {
+  const { t } = useTranslation();
   const { unacknowledgedMilestones, acknowledgeMilestone, shareMilestone } =
     useMilestones(userId);
   // Live imprint tier — gates the auto-trigger so the ceremony can only
@@ -201,16 +199,17 @@ export default function TierCeremonyModal({
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, [tierMilestone]);
 
-  const quote = TIER_QUOTES[tierName.toLowerCase()] || TIER_QUOTES.strategist;
+  const quoteKey = TIER_QUOTE_KEYS.includes(tierName.toLowerCase()) ? tierName.toLowerCase() : "strategist";
+  const quote = t(`frame.tier.quote.${quoteKey}`);
 
   const fullName = useMemo(() => {
     const parts = [profile.first_name, profile.last_name].filter(Boolean);
-    return parts.join(" ") || "Aura Member";
-  }, [profile]);
+    return parts.join(" ") || t("frame.tier.fallbackName");
+  }, [profile, t]);
 
   const role = useMemo(
-    () => [profile.level, profile.firm].filter(Boolean).join(" · ") || "Strategic Operator",
-    [profile]
+    () => [profile.level, profile.firm].filter(Boolean).join(" · ") || t("frame.tier.fallbackRole"),
+    [profile, t]
   );
 
   const data: CredentialData = {
@@ -311,19 +310,19 @@ export default function TierCeremonyModal({
       const c = square
         ? await exportCanvas(squareRef.current, 1080, 1080)
         : await exportCanvas(wideRef.current, 1200, 628);
-      if (!c) throw new Error("Export failed");
+      if (!c) throw new Error(t("frame.tier.exportFailed"));
       const blob = await toBlob(c);
-      if (!blob) throw new Error("Encode failed");
+      if (!blob) throw new Error(t("frame.tier.encodeFailed"));
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = filename("png", square);
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Credential downloaded");
+      toast.success(t("frame.tier.downloaded"));
       if (tierMilestone) void shareMilestone(tierMilestone.id);
     } catch (e: any) {
-      toast.error(e.message || "Download failed");
+      toast.error(e.message || t("frame.tier.downloadFailed"));
     } finally {
       setBusy(null);
     }
@@ -333,15 +332,15 @@ export default function TierCeremonyModal({
     setBusy("pdf");
     try {
       const c = await exportCanvas(wideRef.current, 1200, 628);
-      if (!c) throw new Error("Export failed");
+      if (!c) throw new Error(t("frame.tier.exportFailed"));
       const img = c.toDataURL("image/png", 1.0);
       const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1200, 628] });
       pdf.addImage(img, "PNG", 0, 0, 1200, 628);
       pdf.save(filename("pdf"));
-      toast.success("PDF downloaded");
+      toast.success(t("frame.tier.pdfDownloaded"));
       if (tierMilestone) void shareMilestone(tierMilestone.id);
     } catch (e: any) {
-      toast.error(e.message || "PDF export failed");
+      toast.error(e.message || t("frame.tier.pdfFailed"));
     } finally {
       setBusy(null);
     }
@@ -351,15 +350,15 @@ export default function TierCeremonyModal({
     setBusy("copy");
     try {
       const c = await exportCanvas(wideRef.current, 1200, 628);
-      if (!c) throw new Error("Export failed");
+      if (!c) throw new Error(t("frame.tier.exportFailed"));
       const blob = await toBlob(c);
-      if (!blob) throw new Error("Encode failed");
+      if (!blob) throw new Error(t("frame.tier.encodeFailed"));
       // @ts-ignore
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      toast.success("Credential copied — paste anywhere");
+      toast.success(t("frame.tier.copied"));
       if (tierMilestone) void shareMilestone(tierMilestone.id);
     } catch (e: any) {
-      toast.error(e.message || "Copy failed — try Download");
+      toast.error(e.message || t("frame.tier.copyFailed"));
     } finally {
       setBusy(null);
     }
@@ -372,7 +371,8 @@ export default function TierCeremonyModal({
     if (which === "AR") {
       return `حققت ${sc} على Aura.\n\nمو اختبار..\n\nنظام يقرأ اللي أقرأه، يكتشف الأنماط اللي ما انتبهت لها، ويخبرني إن السوق تحرّك قبل ما ألاحظ.\n\nالحين يتابع ${sig}..\n\n${confPct}٪ ثقة.. ومستمرة.\n\nإذا خبرتك موجودة بس السوق ما يشوفها..\n\nهذا اللي صنع الفرق.\n\naura-intel.org`;
     }
-    return `Scored ${sc} on Aura.\n\nNot a test. A signal tracker. It reads what I read, finds the patterns I miss, and tells me when the market is moving before I notice.\n\nRight now it's tracking ${sig}. ${confPct}% confidence. Still growing.\n\nIf you're a senior professional whose experience is worth more than their profile shows — you'll want to see this.\n\naura-intel.org`;
+    // The English post is always English, whatever the screen language.
+    return i18n.t("frame.tier.postEn", { lng: "en", score: sc, signal: sig, confidence: confPct, site: "aura-intel.org" });
   };
 
   // Seed/reseed the editable caption when language toggles or when
@@ -404,7 +404,7 @@ export default function TierCeremonyModal({
       });
       if (tierMilestone) void shareMilestone(tierMilestone.id);
     } catch (e: any) {
-      toast.error(e.message || "Share failed");
+      toast.error(e.message || t("frame.tier.shareFailed"));
     } finally {
       setBusy(null);
     }
@@ -423,7 +423,7 @@ export default function TierCeremonyModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`You have reached ${tierName} — your new standing`}
+      aria-label={t("frame.tier.dialog", { tier: tierName })}
       onClick={(e) => {
         if (e.target !== e.currentTarget || busy) return;
         if (step === 0) closeForSession(); else close();
@@ -474,7 +474,7 @@ export default function TierCeremonyModal({
         }}
       >
         <button
-          aria-label="Close"
+          aria-label={t("frame.tier.close")}
           onClick={() => {
             if (busy) return;
             if (step === 0) closeForSession(); else close();
@@ -496,7 +496,7 @@ export default function TierCeremonyModal({
 
         {step > 0 && (
           <button
-            aria-label="Back"
+            aria-label={t("frame.tier.back")}
             onClick={() => {
               if (busy) return;
               setStep((s) => Math.max(0, s - 1));
@@ -556,7 +556,7 @@ export default function TierCeremonyModal({
                 onClick={() => setStep(1)}
                 style={primaryBtn}
               >
-                See your credential →
+                {t("frame.tier.seeCredential")}
               </button>
               <button
                 onClick={closeForSession}
@@ -571,18 +571,18 @@ export default function TierCeremonyModal({
                   fontFamily: "inherit",
                 }}
               >
-                Maybe later
+                {t("frame.tier.maybeLater")}
               </button>
             </>
           )}
           {step === 1 && (
             <button onClick={() => setStep(2)} style={ghostBtn}>
-              Continue →
+              {t("frame.tier.continue")}
             </button>
           )}
           {step === 2 && (
             <button onClick={close} style={primaryBtn}>
-              Let&apos;s go →
+              {t("frame.tier.letsGo")}
             </button>
           )}
         </div>
@@ -704,6 +704,7 @@ function StepCredential({
     : null;
   const LB_W = 600;
   const lbScale = LB_W / 1200;
+  const { t } = useTranslation();
   return (
     <div>
       <div
@@ -716,10 +717,10 @@ function StepCredential({
           marginBottom: 8,
         }}
       >
-        Your Credential
+        {t("frame.tier.credentialEyebrow")}
       </div>
       <div style={{ fontFamily: SERIF, fontSize: 22, color: TEXT, textAlign: "center", marginBottom: 6 }}>
-        Choose a style
+        {t("frame.tier.chooseStyle")}
       </div>
       <div
         style={{
@@ -730,7 +731,7 @@ function StepCredential({
           marginBottom: 18,
         }}
       >
-        You earned this — choose how the right people see it.
+        {t("frame.tier.chooseSub")}
       </div>
 
       {/* Concept selector */}
@@ -772,7 +773,7 @@ function StepCredential({
                     e.stopPropagation();
                     setLightbox(key);
                   }}
-                  aria-label="Enlarge preview"
+                  aria-label={t("frame.tier.enlarge")}
                   style={{
                     position: "absolute",
                     top: 4,
@@ -837,7 +838,7 @@ function StepCredential({
                   e.stopPropagation();
                   setLightbox(null);
                 }}
-                aria-label="Close preview"
+                aria-label={t("frame.tier.closePreview")}
                 style={{
                   position: "absolute",
                   top: -36,
@@ -881,7 +882,7 @@ function StepCredential({
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 14 }}>
         <SubtleBtn onClick={onDownloadPng} disabled={!!busy} icon={<Download size={13} />} label={busy === "png" ? "…" : "PNG"} />
         <SubtleBtn onClick={onDownloadPdf} disabled={!!busy} icon={<FileText size={13} />} label={busy === "pdf" ? "…" : "PDF"} />
-        <SubtleBtn onClick={onCopy} disabled={!!busy} icon={<Copy size={13} />} label={busy === "copy" ? "…" : "Copy"} />
+        <SubtleBtn onClick={onCopy} disabled={!!busy} icon={<Copy size={13} />} label={busy === "copy" ? "…" : t("frame.tier.copy")} />
       </div>
 
       {/* LinkedIn share with language pills */}
@@ -894,7 +895,7 @@ function StepCredential({
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 12 }}>
-          <div style={{ fontSize: 12, color: TEXT_MUTED, letterSpacing: ".05em" }}>Share on LinkedIn</div>
+          <div style={{ fontSize: 12, color: TEXT_MUTED, letterSpacing: ".05em" }}>{t("frame.tier.shareOnLinkedIn")}</div>
           <div style={{ display: "flex", gap: 4 }}>
             {(["EN", "AR"] as const).map((l) => (
               <button
@@ -942,13 +943,13 @@ function StepCredential({
           disabled={!!busy}
           style={{ ...primaryBtn, width: "100%" }}
         >
-          {busy === "share" ? "Preparing…" : `Share on LinkedIn (${lang})`}
+          {busy === "share" ? t("frame.tier.preparing") : t("frame.tier.shareOnLinkedInLang", { lang })}
         </button>
         <LinkedInPostSteps
           withImage
           variant="dark"
           lang={lang === "AR" ? "ar" : "en"}
-          shareLabel={`Share on LinkedIn (${lang})`}
+          shareLabel={t("frame.tier.shareOnLinkedInLang", { lang })}
           downloadLabel="PNG"
         />
       </div>
@@ -967,7 +968,7 @@ function StepCredential({
             letterSpacing: ".05em",
           }}
         >
-          {busy === "sq-png" ? "Preparing…" : "Download square version (1080×1080) ↓"}
+          {busy === "sq-png" ? t("frame.tier.preparing") : t("frame.tier.downloadSquare")}
         </button>
       </div>
     </div>
@@ -983,29 +984,30 @@ function StepNext({
   next: { name: string; threshold: number } | null;
   topSignalTitle?: string;
 }) {
+  const { t } = useTranslation();
   const moves = [
     {
       tone: "danger",
-      label: "PUBLISH",
+      label: t("frame.tier.movePublishLabel"),
       action: topSignalTitle
-        ? `Publish from your ${truncate(topSignalTitle, 40)} signal`
-        : "Publish from your strongest signal",
-      helper: "Biggest single score boost",
-      pts: "+8 pts",
+        ? t("frame.tier.movePublishFrom", { signal: truncate(topSignalTitle, 40) })
+        : t("frame.tier.movePublishStrongest"),
+      helper: t("frame.tier.movePublishHelper"),
+      pts: t("frame.tier.pts", { n: 8 }),
     },
     {
       tone: "warning",
-      label: "CAPTURE",
-      action: "Capture 2 more articles this week",
-      helper: "Raises consistency + confidence",
-      pts: "+5 pts",
+      label: t("frame.tier.moveCaptureLabel"),
+      action: t("frame.tier.moveCaptureAction"),
+      helper: t("frame.tier.moveCaptureHelper"),
+      pts: t("frame.tier.pts", { n: 5 }),
     },
     {
       tone: "info",
-      label: "IMPACT",
-      action: "Connect LinkedIn",
-      helper: "Syncs analytics into your impact dashboard",
-      pts: "+6 pts",
+      label: t("frame.tier.moveImpactLabel"),
+      action: t("frame.tier.moveImpactAction"),
+      helper: t("frame.tier.moveImpactHelper"),
+      pts: t("frame.tier.pts", { n: 6 }),
     },
   ] as const;
 
@@ -1024,20 +1026,20 @@ function StepNext({
             marginBottom: 12,
           }}
         >
-          <Target size={14} /> Your next milestone
+          <Target size={14} /> {t("frame.tier.nextEyebrow")}
         </div>
         {next ? (
           <>
             <div style={{ fontFamily: SERIF, fontSize: 22, color: TEXT, marginBottom: 6 }}>
-              {next.name} standing: {next.threshold} points
+              {t("frame.tier.nextStanding", { name: next.name, threshold: next.threshold })}
             </div>
             <div style={{ fontSize: 13, color: TEXT_MUTED }}>
-              You&apos;re at {score ?? "—"}. Fastest path:
+              {t("frame.tier.youreAt", { score: score ?? "—" })}
             </div>
           </>
         ) : (
           <div style={{ fontFamily: SERIF, fontSize: 22, color: TEXT }}>
-            You&apos;ve reached the top standing — keep compounding.
+            {t("frame.tier.topStanding")}
           </div>
         )}
       </div>

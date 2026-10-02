@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { reportIssue } from "@/lib/reportIssue";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -23,6 +24,9 @@ const FeedbackButton = () => {
   const [failed, setFailed] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const { t } = useTranslation();
+  // The stored report keeps the English rating word; the screen shows it in the member's language.
+  const ratingKey = (label: string) => `frame.feedback.rating${label}`;
 
   useEffect(() => {
     if (!open) return;
@@ -54,7 +58,7 @@ const FeedbackButton = () => {
     });
     setSubmitting(false);
     if (!res.ok) {
-      setFailed("We couldn't send that. Your words are still here — try again.");
+      setFailed(t("frame.feedback.failed"));
       return;
     }
     setThanks(true);
@@ -93,7 +97,7 @@ const FeedbackButton = () => {
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--brand)")}
           onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--brand-line)")}
         >
-          Feedback
+          {t("frame.feedback.button")}
         </button>
       )}
 
@@ -125,18 +129,18 @@ const FeedbackButton = () => {
               cursor: "pointer",
               color: "var(--ink-3)",
             }}
-            aria-label="Close"
+            aria-label={t("frame.feedback.close")}
           >
             <X size={16} />
           </button>
 
           {thanks ? (
             <div style={{ padding: "32px 8px", textAlign: "center", color: "var(--ink)", fontSize: 14 }}>
-              Thank you!
+              {t("frame.feedback.thanks")}
             </div>
           ) : (
             <>
-              <SectionHeader label="Share your feedback" />
+              <SectionHeader label={t("frame.feedback.title")} />
 
               <div style={{ display: "flex", gap: 6, marginTop: 12, marginBottom: 12, flexWrap: "wrap" }}>
                 {RATINGS.map((r) => {
@@ -157,9 +161,9 @@ const FeedbackButton = () => {
                         cursor: "pointer",
                         transition: "all 120ms ease",
                       }}
-                      aria-label={`Rate ${r.label}`}
+                      aria-label={t("frame.feedback.rate", { label: t(ratingKey(r.label)) })}
                     >
-                      {r.label}
+                      {t(ratingKey(r.label))}
                     </button>
                   );
                 })}
@@ -168,7 +172,7 @@ const FeedbackButton = () => {
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="What's on your mind?"
+                placeholder={t("frame.feedback.placeholder")}
                 rows={3}
                 style={{
                   width: "100%",
@@ -195,15 +199,15 @@ const FeedbackButton = () => {
                 disabled={!rating && !message.trim()}
                 style={{ width: "100%" }}
               >
-                {submitting ? "Sending..." : "Send feedback"}
+                {submitting ? t("frame.feedback.sending") : t("frame.feedback.send")}
               </Button>
 
               <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 12, textAlign: "center" }}>
-                Your feedback helps us improve Aura
+                {t("frame.feedback.helps")}
               </p>
               <p style={{ fontSize: 12, marginTop: 4, textAlign: "center" }}>
                 <a href="mailto:support@aura-intel.org" style={{ color: "var(--brand)" }}>
-                  Talk to the founder: support@aura-intel.org
+                  {t("frame.feedback.founder", { email: "support@aura-intel.org" })}
                 </a>
               </p>
             </>

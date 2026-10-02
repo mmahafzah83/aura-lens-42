@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Compass, Paperclip, X, ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NAV_GROUPS, isGroupActive, type NavGroup } from "@/components/nav/navGroups";
@@ -48,6 +49,7 @@ export default function AuraRail({
 }: AuraRailProps) {
   const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { isAdmin } = useIsAdmin();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
@@ -236,7 +238,7 @@ export default function AuraRail({
   const collapseToggle = (
     <button
       type="button"
-      aria-label={expanded ? "Collapse navigation" : "Expand navigation"}
+      aria-label={expanded ? t("frame.rail.collapse") : t("frame.rail.expand")}
       aria-expanded={expanded}
       data-testid="nav-collapse-toggle"
       className="cursor-pointer v23-focus"
@@ -298,7 +300,7 @@ export default function AuraRail({
         <button
           key={g.key}
           type="button"
-          aria-label={g.label}
+          aria-label={t(g.labelKey)}
           aria-current={active ? "page" : undefined}
           data-testid={g.testId}
           data-active={active ? "true" : "false"}
@@ -312,7 +314,7 @@ export default function AuraRail({
           <AuraRing userId={uid} size={28} gap="var(--v23-night)">
             <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
           </AuraRing>
-          <span>{g.label}</span>
+          <span>{t(g.labelKey)}</span>
         </button>
       );
     }
@@ -320,7 +322,7 @@ export default function AuraRail({
       <button
         key={g.key}
         type="button"
-        aria-label={g.label}
+        aria-label={t(g.labelKey)}
         aria-current={active ? "page" : undefined}
         aria-haspopup={hasFlyout(g) ? "true" : undefined}
         aria-expanded={hasFlyout(g) ? (flyout === "intelligence") : undefined}
@@ -341,15 +343,15 @@ export default function AuraRail({
       >
         {active && <ActiveBarWide />}
         <g.icon size={15} strokeWidth={1.75} />
-        <span>{g.label}</span>
+        <span>{t(g.labelKey)}</span>
         {g.key === "signals" && newSignalCount > 0 && !active && (
-          <span aria-label={`${newSignalCount} new signals`} style={{
+          <span aria-label={t("frame.nav.newSignals", { n: newSignalCount })} style={{
             marginLeft: "auto", width: 6, height: 6, borderRadius: 999,
             background: "var(--machine)",
           }} />
         )}
         {g.key === "write" && draftCount !== null && draftCount > 0
-          && countPill(`${draftCount} draft${draftCount === 1 ? "" : "s"}`)}
+          && countPill(t("frame.rail.drafts", { count: draftCount }))}
       </button>
     );
   };
@@ -369,7 +371,7 @@ export default function AuraRail({
         }}
         onFocus={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
         onBlur={(e) => { e.currentTarget.style.transform = "translateY(-160%)"; }}
-      >Skip to content</a>
+      >{t("frame.rail.skip")}</a>
 
       {expanded ? (
         <aside
@@ -377,7 +379,7 @@ export default function AuraRail({
           data-surface="dark"
           data-testid="aura-rail"
           data-expanded="true"
-          aria-label="Primary"
+          aria-label={t("frame.nav.primary")}
           className="hidden md:flex flex-col fixed top-0 left-0 h-full z-30"
           style={{
             width: "var(--v23-rail-w)",
@@ -392,7 +394,7 @@ export default function AuraRail({
             <button
               type="button"
               onClick={() => onSelect("home")}
-              aria-label="Aura home"
+              aria-label={t("frame.rail.home")}
               className="cursor-pointer v23-tap v23-focus"
               style={{
                 background: "transparent", border: 0, cursor: "pointer", padding: 0,
@@ -401,7 +403,7 @@ export default function AuraRail({
               }}
             >
               <AuraLogo size={26} variant="dark" />
-              <span style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 600, letterSpacing: ".01em" }}>Aura</span>
+              <span style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 600, letterSpacing: ".01em" }}>{t("frame.header.brand")}</span>
             </button>
             {collapseToggle}
           </div>
@@ -414,7 +416,7 @@ export default function AuraRail({
             <div style={{ borderTop: "1px solid var(--v23-night-line)", paddingTop: 10, marginTop: 4 }}>
               <button
                 type="button"
-                aria-label="Admin console"
+                aria-label={t("frame.rail.adminConsole")}
                 data-testid="nav-admin"
                 data-active="false"
                 className="cursor-pointer v23-focus"
@@ -424,7 +426,7 @@ export default function AuraRail({
                 style={rowStyle(false)}
               >
                 <ShieldCheck size={15} strokeWidth={1.75} />
-                <span>Admin</span>
+                <span>{t("frame.rail.admin")}</span>
               </button>
             </div>
           )}
@@ -435,7 +437,7 @@ export default function AuraRail({
                 so callers and any future rail entry point keep working. */}
             <button
               type="button"
-              aria-label="Capture"
+              aria-label={t("frame.capture.label")}
               data-testid="nav-capture"
               data-tour="nav-capture"
               className="cursor-pointer v23-focus"
@@ -448,7 +450,7 @@ export default function AuraRail({
               }}
             >
               <Paperclip size={15} strokeWidth={1.75} />
-              <span>Capture something</span>
+              <span>{t("frame.rail.captureSomething")}</span>
             </button>
           </div>
         </aside>
@@ -458,7 +460,7 @@ export default function AuraRail({
         data-surface="dark"
         data-testid="aura-rail"
         data-expanded="false"
-        aria-label="Primary"
+        aria-label={t("frame.nav.primary")}
         className="hidden md:flex flex-col items-center fixed top-0 left-0 h-full z-30"
         style={{
           width: "var(--v23-rail-w)",
@@ -473,7 +475,7 @@ export default function AuraRail({
         <button
           type="button"
           onClick={() => onSelect("home")}
-          aria-label="Aura home"
+          aria-label={t("frame.rail.home")}
           className="cursor-pointer v23-tap v23-focus"
           style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
         >
@@ -486,9 +488,9 @@ export default function AuraRail({
         <div
           tabIndex={0}
           role="status"
-          aria-label="Aura runs overnight. Findings appear on Home."
-          onMouseEnter={showTip("The Overnight", "Aura reads overnight. Findings appear on Home.")}
-          onFocus={showTip("The Overnight", "Aura reads overnight. Findings appear on Home.")}
+          aria-label={t("frame.rail.overnightAria")}
+          onMouseEnter={showTip(t("frame.rail.overnightTitle"), t("frame.rail.overnightTip"))}
+          onFocus={showTip(t("frame.rail.overnightTitle"), t("frame.rail.overnightTip"))}
           onMouseLeave={hideTip}
           onBlur={hideTip}
           style={{
@@ -509,7 +511,7 @@ export default function AuraRail({
               <button
                 key={g.key}
                 type="button"
-                aria-label={g.label}
+                aria-label={t(g.labelKey)}
                 aria-current={active ? "page" : undefined}
                 aria-haspopup={hasFlyout(g) ? "true" : undefined}
                 aria-expanded={hasFlyout(g) ? (flyout === "intelligence") : undefined}
@@ -524,18 +526,18 @@ export default function AuraRail({
                   }
                   open(g);
                 }}
-                onMouseEnter={(e) => { hoverOn(e); showTip(g.label, g.blurb)(e); }}
+                onMouseEnter={(e) => { hoverOn(e); showTip(t(g.labelKey), t(g.blurbKey))(e); }}
                 onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-                onFocus={showTip(g.label, g.blurb)}
+                onFocus={showTip(t(g.labelKey), t(g.blurbKey))}
                 onBlur={hideTip}
                 style={railBtn(active)}
               >
                 {active && <ActiveBar />}
                 <g.icon size={18} strokeWidth={1.75} />
-                <span style={labelStyle(active)}>{g.label}</span>
+                <span style={labelStyle(active)}>{t(g.labelKey)}</span>
                 {g.key === "signals" && newSignalCount > 0 && !active && (
                   <span
-                    aria-label={`${newSignalCount} new signals`}
+                    aria-label={t("frame.nav.newSignals", { n: newSignalCount })}
                     style={{
                       position: "absolute", top: 7, right: 12, width: 6, height: 6,
                       borderRadius: 999, background: "var(--machine)",
@@ -548,20 +550,20 @@ export default function AuraRail({
 
           <button
             type="button"
-            aria-label="Capture"
+            aria-label={t("frame.capture.label")}
             data-testid="nav-capture"
             data-tour="nav-capture"
             data-active="false"
             className="cursor-pointer"
             onClick={() => { setFlyout(null); onOpenCapture(); }}
-            onMouseEnter={(e) => { hoverOn(e); showTip("Capture", "Save a link, note or document for Aura to read.")(e); }}
+            onMouseEnter={(e) => { hoverOn(e); showTip(t("frame.capture.label"), t("frame.capture.tip"))(e); }}
             onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-            onFocus={showTip("Capture", "Save a link, note or document for Aura to read.")}
+            onFocus={showTip(t("frame.capture.label"), t("frame.capture.tip"))}
             onBlur={hideTip}
             style={railBtn(false)}
           >
             <Paperclip size={18} strokeWidth={1.75} />
-            <span style={labelStyle(false)}>Capture</span>
+            <span style={labelStyle(false)}>{t("frame.capture.label")}</span>
           </button>
         </nav>
 
@@ -569,19 +571,19 @@ export default function AuraRail({
           {isAdmin === true && (
             <button
               type="button"
-              aria-label="Admin console"
+              aria-label={t("frame.rail.adminConsole")}
               data-testid="nav-admin"
               data-active="false"
               className="cursor-pointer"
               onClick={() => { setFlyout(null); navigate("/admin"); }}
-              onMouseEnter={(e) => { hoverOn(e); showTip("Admin", "The Aura console.")(e); }}
+              onMouseEnter={(e) => { hoverOn(e); showTip(t("frame.rail.admin"), t("frame.rail.adminTip"))(e); }}
               onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-              onFocus={showTip("Admin", "The Aura console.")}
+              onFocus={showTip(t("frame.rail.admin"), t("frame.rail.adminTip"))}
               onBlur={hideTip}
               style={railBtn(false)}
             >
               <ShieldCheck size={18} strokeWidth={1.75} />
-              <span style={labelStyle(false)}>Admin</span>
+              <span style={labelStyle(false)}>{t("frame.rail.admin")}</span>
             </button>
           )}
           {(() => {
@@ -590,14 +592,14 @@ export default function AuraRail({
             return (
           <button
             type="button"
-            aria-label={you.label}
+            aria-label={t(you.labelKey)}
             data-testid={you.testId}
             data-active={active ? "true" : "false"}
             className="cursor-pointer"
             onClick={() => open(you)}
-            onMouseEnter={(e) => { hoverOn(e); showTip(you.label, you.blurb)(e); }}
+            onMouseEnter={(e) => { hoverOn(e); showTip(t(you.labelKey), t(you.blurbKey))(e); }}
             onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-            onFocus={showTip(you.label, you.blurb)}
+            onFocus={showTip(t(you.labelKey), t(you.blurbKey))}
             onBlur={hideTip}
             style={railBtn(active)}
           >
@@ -605,7 +607,7 @@ export default function AuraRail({
             <AuraRing userId={uid} size={28} gap="var(--v23-night)">
               <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
             </AuraRing>
-            <span style={labelStyle(active)}>{you.label}</span>
+            <span style={labelStyle(active)}>{t(you.labelKey)}</span>
           </button>
             );
           })()}
@@ -630,7 +632,7 @@ export default function AuraRail({
           ref={flyoutRef}
           data-testid="rail-flyout"
           role="dialog"
-          aria-label="Signals sections"
+          aria-label={t("frame.rail.signalsSections")}
           className="v23-flyout hidden md:flex flex-col fixed top-0 h-full z-40"
           style={{
             left: "var(--v23-rail-w)", width: "var(--v23-flyout-w)",
@@ -645,10 +647,10 @@ export default function AuraRail({
             <div style={{
               fontFamily: "var(--ff-mono)", fontSize: 10, letterSpacing: ".14em",
               textTransform: "uppercase", color: "var(--text-muted)",
-            }}>Signals</div>
+            }}>{t("frame.rail.signalsTitle")}</div>
             <button
               type="button"
-              aria-label="Close"
+              aria-label={t("frame.rail.close")}
               className="cursor-pointer"
               onClick={() => setFlyout(null)}
               style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--text-muted)", padding: 4 }}
@@ -672,7 +674,7 @@ export default function AuraRail({
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-subtle)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
-            <span style={{ fontWeight: 600 }}>All signals</span>
+            <span style={{ fontWeight: 600 }}>{t("frame.rail.allSignals")}</span>
             <span style={{
               fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums",
               fontSize: 12, color: "var(--text-secondary)",
@@ -682,8 +684,8 @@ export default function AuraRail({
           <div style={{ height: 1, background: "var(--rule-divider)", margin: "8px 0" }} />
 
           {[
-            { label: "Accelerating", key: "accelerating", value: counts?.accelerating },
-            { label: "Stable", key: "stable", value: counts?.stable },
+            { label: t("frame.rail.accelerating"), key: "accelerating", value: counts?.accelerating },
+            { label: t("frame.rail.stable"), key: "stable", value: counts?.stable },
           ].map((row) => (
             <button
               key={row.label}

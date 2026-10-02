@@ -1,5 +1,6 @@
 import { UserCog, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Avatar from "@/components/systemb/Avatar";
 import AuraRing from "@/components/systemb/AuraRing";
 import {
@@ -42,6 +43,7 @@ export default function ProfileMenu({
   const firstName = fn.split(/\s+/).filter(Boolean)[0] || "";
 
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const itemStyle: React.CSSProperties = {
     width: "100%",
@@ -66,8 +68,8 @@ export default function ProfileMenu({
         <button
           type="button"
           className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-full"
-          title={fn || email || "Account"}
-          aria-label={fn || "Account menu"}
+          title={fn || email || t("frame.header.account")}
+          aria-label={fn || t("frame.header.accountMenu")}
         >
           <AuraRing userId={userId} size={36} gap="var(--paper)">
             <Avatar src={avatarUrl} name={fn || email || null} size="md" />
@@ -142,7 +144,7 @@ export default function ProfileMenu({
           className="hover:bg-[var(--paper-3)] transition-colors"
         >
           <UserCog className="w-4 h-4" />
-          Account & settings
+          {t("frame.header.accountSettings")}
         </button>
 
         <div style={{ height: 0, borderTop: "0.5px solid var(--rule)", margin: "8px 4px" }} />
@@ -170,7 +172,7 @@ export default function ProfileMenu({
           className="hover:bg-[var(--paper-3)] transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          Sign out
+          {t("frame.header.signOut")}
         </button>
       </DropdownMenuContent>
     </DropdownMenu>

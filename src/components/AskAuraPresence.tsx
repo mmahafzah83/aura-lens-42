@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Bell, Clock, AlertTriangle, TrendingUp, FileText, BookOpen, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraMark from "@/components/brand/AuraMark";
+import { useTranslation } from "react-i18next";
 import { formatDistanceToNow } from "date-fns";
 import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 
@@ -72,14 +73,16 @@ const POLL_MS = 5 * 60 * 1000;
 
 type AvatarState = "idle" | "signal" | "window" | "alarm";
 
+/** i18n keys (frame.header.*) for the avatar state tooltip. */
 const AVATAR_TOOLTIPS: Record<AvatarState, string> = {
   idle: "",
-  signal: "New signal detected in the last 24 hours",
-  window: "Publishing window open — your top signal has high momentum",
-  alarm: "No captures in 7+ days — your intelligence is going stale",
+  signal: "frame.header.presenceSignal",
+  window: "frame.header.presenceWindow",
+  alarm: "frame.header.presenceAlarm",
 };
 
 export default function AskAuraPresence({ collapsed = false, onOpen, className, showLabel = true }: Props) {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<NotificationEvent[]>([]);
   const [count, setCount] = useState(0);
   const [showTip, setShowTip] = useState(false);
@@ -269,7 +272,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
       <button
         onClick={handleClick}
         data-testid="nav-ask-aura"
-        aria-label={count > 0 ? `Your Desk — ${count} unread` : "Your Desk"}
+        aria-label={count > 0 ? t("frame.header.yourDeskUnread", { n: count }) : t("frame.header.yourDesk")}
         className={
           (className ??
             "w-full flex items-center gap-3 tactile-press group aura-ask-btn aura-ask-surface") + " askaura-focusable"
@@ -314,7 +317,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           )}
           {/* Persistent silence-alarm dot removed — Home Silence Alarm card is the canonical reminder. */}
         </span>
-        {showLabel && !collapsed && <span className="text-sm font-medium">Your Desk</span>}
+        {showLabel && !collapsed && <span className="text-sm font-medium">{t("frame.header.yourDesk")}</span>}
 
         {visual.badgeBg && (
           <span
@@ -349,7 +352,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
           }}
         >
-          {AVATAR_TOOLTIPS[avatarState]}
+          {t(AVATAR_TOOLTIPS[avatarState])}
         </div>
       )}
 
@@ -361,7 +364,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           onMouseLeave={onLeave}
         >
           <div className="text-xs uppercase tracking-wider text-muted-foreground/70 px-2 py-1">
-            Pending alerts
+            {t("frame.header.pendingAlerts")}
           </div>
           {top3.map((e) => {
             const Icon = TYPE_ICON[e.type] || Bell;
@@ -391,7 +394,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
             onClick={handleTipItemClick}
             className="askaura-focusable w-full text-xs text-primary hover:text-primary/80 px-2 py-1.5 text-right transition-colors"
           >
-            See all →
+            {t("frame.header.seeAll")}
           </button>
         </div>
       )}

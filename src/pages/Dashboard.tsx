@@ -13,6 +13,7 @@ import {
 } from "@/lib/workHandoff";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation, Trans } from "react-i18next";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useCardEntryAnimation } from "@/hooks/useCardEntryAnimation";
 import CaptureModal from "@/components/CaptureModal";
@@ -87,17 +88,17 @@ import { useQuery } from "@tanstack/react-query";
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const NAV_ITEMS = [
-  { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Aura — Home" },
-  { value: "intelligence", label: "Signals", pageHeader: "Signals", icon: Shield, docTitle: "Aura — Signals" },
-  { value: "opportunities", label: "Opportunities", pageHeader: "Opportunities", icon: Crown, docTitle: "Aura — Opportunities" },
-  { value: "library", label: "Library", pageHeader: "Library", icon: LibraryIcon, docTitle: "Aura — Library" },
-  { value: "drafts", label: "Drafts", pageHeader: "Drafts", icon: FileText, docTitle: "Aura — Drafts" },
-  { value: "overnight", label: "The Overnight", pageHeader: "The Overnight", icon: Moon, docTitle: "Aura — The Overnight" },
-  { value: "authority", label: "Composer", pageHeader: "Composer", icon: Crown, docTitle: "Aura — Composer" },
-  { value: "influence", label: "Analytics", pageHeader: "Analytics", icon: TrendingUp, docTitle: "Aura — Analytics" },
-  { value: "momentum", label: "Momentum", pageHeader: "Momentum", icon: Flame, docTitle: "Aura — Momentum" },
-  { value: "widgets", label: "Widgets", pageHeader: "Widgets", icon: LayoutGrid, docTitle: "Aura — Widgets" },
-  { value: "identity", label: "My Story", pageHeader: "My Story", icon: User, docTitle: "Aura — My Story" },
+  { value: "home", labelKey: "frame.nav.tab.home", icon: Compass, metaKey: "frame.meta.home" },
+  { value: "intelligence", labelKey: "frame.nav.tab.intelligence", icon: Shield, metaKey: "frame.meta.intelligence" },
+  { value: "opportunities", labelKey: "frame.nav.tab.opportunities", icon: Crown, metaKey: "frame.meta.opportunities" },
+  { value: "library", labelKey: "frame.nav.tab.library", icon: LibraryIcon, metaKey: "frame.meta.library" },
+  { value: "drafts", labelKey: "frame.nav.tab.drafts", icon: FileText, metaKey: "frame.meta.drafts" },
+  { value: "overnight", labelKey: "frame.nav.tab.overnight", icon: Moon, metaKey: "frame.meta.overnight" },
+  { value: "authority", labelKey: "frame.nav.tab.authority", icon: Crown, metaKey: "frame.meta.authority" },
+  { value: "influence", labelKey: "frame.nav.tab.influence", icon: TrendingUp, metaKey: "frame.meta.influence" },
+  { value: "momentum", labelKey: "frame.nav.tab.momentum", icon: Flame, metaKey: "frame.meta.momentum" },
+  { value: "widgets", labelKey: "frame.nav.tab.widgets", icon: LayoutGrid, metaKey: "frame.meta.widgets" },
+  { value: "identity", labelKey: "frame.nav.tab.identity", icon: User, metaKey: "frame.meta.identity" },
 ] as const;
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
@@ -125,9 +126,10 @@ const originFromParams = originFromParamsShared;
 
 
 const Dashboard = () => {
+  const { t: tr } = useTranslation();
   usePageMeta({
-    title: "Aura — Dashboard",
-    description: "Your strategic intelligence command center: signals, captures, content, and presence growth in one place.",
+    title: tr("frame.meta.dashboard"),
+    description: tr("frame.meta.dashboardDescription"),
     path: "/dashboard",
   });
   const [activeTab, setActiveTab] = useState<TabValue>(() => window.location.pathname === "/opportunities" ? "opportunities" : "home");
@@ -365,9 +367,9 @@ const Dashboard = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
-      const currentEmail = sessionData?.session?.user?.email ?? "another account";
+      const currentEmail = sessionData?.session?.user?.email ?? tr("frame.toast.anotherAccount");
       if (!token) {
-        toast("We can't find that draft.");
+        toast(tr("frame.toast.draftNotFound"));
         return;
       }
       const { data, error } = await supabase.functions.invoke("draft-owner-check", {
@@ -377,13 +379,13 @@ const Dashboard = () => {
       if (error) throw error;
 
       if ((data as any)?.exists && (data as any)?.is_owner === false) {
-        const masked = (data as any)?.owner_email_masked || "a different address";
+        const masked = (data as any)?.owner_email_masked || tr("frame.toast.differentAddress");
         toast(
-          `This draft belongs to a different Aura account (${masked}). You're signed in as ${currentEmail}.`,
+          tr("frame.toast.draftOtherAccount", { masked, email: currentEmail }),
           {
             duration: 20000,
             action: {
-              label: "Sign in as that account",
+              label: tr("frame.toast.signInAsThat"),
               onClick: () => {
                 void (async () => {
                   try { await supabase.auth.signOut(); } catch { /* sign out best-effort */ }
@@ -397,14 +399,14 @@ const Dashboard = () => {
       }
 
       if ((data as any)?.exists === false) {
-        toast("We can't find that draft.");
+        toast(tr("frame.toast.draftNotFound"));
         return;
       }
       // Exists and we own it, yet the read returned nothing — that is a fault,
       // not a deletion.
-      toast("We couldn't load that draft right now. Please try again.");
+      toast(tr("frame.toast.draftLoadFailed"));
     } catch (e: any) {
-      toast("We couldn't load that draft right now. Please try again.");
+      toast(tr("frame.toast.draftLoadFailed"));
       void reportClientError(
         `draft-owner-check failed: ${e?.message ?? "unknown"}`,
         "high",
@@ -520,7 +522,7 @@ const Dashboard = () => {
           setActiveTab("authority");
         } else if (readError) {
           // The query itself failed. Never imply the work is gone.
-          toast("We couldn't load that draft right now. Please try again.");
+          toast(tr("frame.toast.draftLoadFailed"));
           void reportClientError(
             `draft deep link read failed: ${(readError as any)?.message ?? "unknown"}`,
             "high",
@@ -588,7 +590,7 @@ const Dashboard = () => {
       if (url) window.location.href = url;
     } catch (e) {
       console.warn("[FirstFlight] LinkedIn connect failed", e);
-      toast.error("Couldn't start LinkedIn connect. Try again in a moment.");
+      toast.error(tr("frame.toast.linkedinConnectFailed"));
     }
   };
   const writeFromFirstFlightSignal = (sig: { id: string; title: string; what: string | null; explanation: string | null }) => {
@@ -627,7 +629,7 @@ const Dashboard = () => {
           description: data.nudge.body,
           duration: 12000,
           action: {
-            label: "Open Aura",
+            label: tr("frame.toast.openNudge"),
             onClick: () => {
               setChatInitialMessage(data.nudge.body);
               setChatOpen(true);
@@ -888,10 +890,10 @@ const Dashboard = () => {
         receiptShownRef.current = true;
         sessionStorage.removeItem("aura_pending_capture_at");
         const title = row.signal_title.length > 60 ? row.signal_title.slice(0, 58) + "…" : row.signal_title;
-        toast(`Your reading strengthened ${title} — now backed by ${fragCount} pieces of evidence`, {
+        toast(tr("frame.toast.receipt", { title, n: fragCount }), {
           duration: 9000,
           action: {
-            label: "See it →",
+            label: tr("frame.toast.seeIt"),
             onClick: () => {
               setActiveTab("intelligence");
               const next = new URLSearchParams(window.location.search);
@@ -925,8 +927,8 @@ const Dashboard = () => {
   // Keep browser tab title in sync with the active section
   useEffect(() => {
     const item = NAV_ITEMS.find(n => n.value === activeTab);
-    if (item) document.title = item.docTitle;
-  }, [activeTab]);
+    if (item) document.title = tr(item.metaKey);
+  }, [activeTab, tr]);
 
   // Reset scroll to top on tab switch so users always land at the top
   // of the section instead of mid-page from their previous tab.
@@ -1021,7 +1023,7 @@ const Dashboard = () => {
             >
               <div className="flex items-center gap-2.5">
                 <AuraLogo size={32} variant={darkSurface ? "dark" : "light"} />
-                <span className="text-lg font-semibold" style={{ color: darkSurface ? "var(--glass)" : "var(--aura-t1)" }}>Aura</span>
+                <span className="text-lg font-semibold" style={{ color: darkSurface ? "var(--glass)" : "var(--aura-t1)" }}>{tr("frame.header.brand")}</span>
               </div>
               <button
                 onClick={() => setMobileSidebarOpen(false)}
@@ -1042,7 +1044,7 @@ const Dashboard = () => {
                   textTransform: "uppercase",
                 }}
               >
-                Your space
+                {tr("frame.nav.yourSpace")}
               </div>
               {NAV_GROUPS.map((item) => {
                 const isActive = isGroupActive(item, activeTab);
@@ -1054,27 +1056,27 @@ const Dashboard = () => {
                     onClick={() => { setMobileSidebarOpen(false); openDoor(item); }}
                     data-testid={item.testId}
                     data-active={isActive ? "true" : "false"}
-                    aria-label={groupLocked ? `${item.label}, locked` : item.label}
+                    aria-label={groupLocked ? tr("frame.nav.locked", { label: tr(item.labelKey) }) : tr(item.labelKey)}
                     className={`w-full flex items-center gap-3 aura-nav-item ${isActive ? "is-active" : ""}`}
                     style={{
                       padding: "10px 24px",
                       fontWeight: isActive ? 500 : 400,
                       opacity: dimmed ? 0.45 : 1,
                     }}
-                    title={dimmed ? "Your first post comes first" : undefined}
+                    title={dimmed ? tr("frame.nav.firstPostFirst") : undefined}
                   >
                     <item.icon
                       className="w-4.5 h-4.5"
                       style={{ color: isActive ? "var(--aura-accent)" : "var(--aura-t3)" }}
                     />
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-sm font-medium">{tr(item.labelKey)}</span>
                     {groupLocked && (
                       <span aria-hidden className="w-1.5 h-1.5 rounded-full shrink-0"
                         style={{ background: "#E0A82E" }} />
                     )}
                     {item.key === "signals" && newIntelSignalCount > 0 && !isActive && (
                       <span
-                        aria-label={`${newIntelSignalCount} new signals`}
+                        aria-label={tr("frame.nav.newSignals", { n: newIntelSignalCount })}
                         className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
                         style={{ background: "var(--pulse-accent)" }}
                       />
@@ -1105,7 +1107,7 @@ const Dashboard = () => {
                 }}
               >
                 <Paperclip className="w-3.5 h-3.5 shrink-0" />
-                <span>Capture</span>
+                <span>{tr("frame.capture.label")}</span>
               </button>
             </div>
           </aside>
@@ -1229,12 +1231,12 @@ const Dashboard = () => {
             if (!g || g.members.length < 2) return null;
             return (
               <SubTabs
-                ariaLabel={g.label}
+                ariaLabel={tr(g.labelKey)}
                 active={activeTab}
                 onSelect={(v) => switchTab(v as TabValue)}
                 options={g.members.map((m) => ({
                   value: m,
-                  label: NAV_ITEMS.find((n) => n.value === m)?.pageHeader ?? m,
+                  label: (() => { const it = NAV_ITEMS.find((n) => n.value === m); return it ? tr(it.labelKey) : m; })(),
                   dot: locked && LOOP_TABS.has(m) ? "#E0A82E" : undefined,
                 }))}
               />
@@ -1321,10 +1323,10 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <LockedPanel
                     locked={locked}
-                    title="Your radar, every morning"
-                    line="Aura reads your field overnight and matches what moved against your read."
+                    title={tr("frame.locked.signalsTitle")}
+                    line={tr("frame.locked.signalsLine")}
                     count={signalsToday ?? undefined}
-                    countLabel="signals moved in your field today"
+                    countLabel={tr("frame.locked.signalsCountLabel")}
                   >
                     <SignalsBoardV2
                       onOpenCapture={handleOpenCapture}
@@ -1351,8 +1353,8 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <LockedPanel
                     locked={locked}
-                    title="The night shift"
-                    line="Aura works while you sleep and tells you what it found."
+                    title={tr("frame.locked.overnightTitle")}
+                    line={tr("frame.locked.overnightLine")}
                   >
                     <OvernightPage
                       onOpenDraft={(d) => { setDraftPrefill(handoffDraft({ draft: d, surface: "overnight" })); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -1368,8 +1370,8 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <LockedPanel
                     locked={locked}
-                    title="Work you have not finished"
-                    line="Every post you saved for later waits here until you open it again."
+                    title={tr("frame.locked.draftsTitle")}
+                    line={tr("frame.locked.draftsLine")}
                   >
                     <DraftsPage />
                   </LockedPanel>
@@ -1382,8 +1384,8 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <LockedPanel
                     locked={locked}
-                    title="Everything you save, kept"
-                    line="Captures become fragments. Fragments become the evidence behind your next post."
+                    title={tr("frame.locked.libraryTitle")}
+                    line={tr("frame.locked.libraryLine")}
                   >
                     <LibraryPage onOpenCapture={handleOpenCapture} />
                   </LockedPanel>
@@ -1404,8 +1406,8 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <LockedPanel
                     locked={locked}
-                    title="Your presence, measured"
-                    line="One honest number, built from what you actually published."
+                    title={tr("frame.locked.analyticsTitle")}
+                    line={tr("frame.locked.analyticsLine")}
                   >
                     <AnalyticsV2 onOpenChat={openChat} />
                   </LockedPanel>
@@ -1418,8 +1420,8 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <LockedPanel
                     locked={locked}
-                    title="Your rhythm"
-                    line="Weekly consistency, not volume. Aura scores the habit, not the output."
+                    title={tr("frame.locked.momentumTitle")}
+                    line={tr("frame.locked.momentumLine")}
                   >
                     <MomentumPage />
                   </LockedPanel>
@@ -1432,8 +1434,8 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <LockedPanel
                     locked={locked}
-                    title="Your instrument panel"
-                    line="The surfaces you choose, on the home you use."
+                    title={tr("frame.locked.widgetsTitle")}
+                    line={tr("frame.locked.widgetsLine")}
                   >
                     <WidgetsPage />
                   </LockedPanel>
@@ -1453,8 +1455,8 @@ const Dashboard = () => {
               <ErrorBoundary>
                 <LockedPanel
                   locked={locked}
-                  title="Written from what you saved"
-                  line="Never from a prompt. Aura writes only what your own evidence can carry."
+                  title={tr("frame.locked.composerTitle")}
+                  line={tr("frame.locked.composerLine")}
                 >
                   <StudioPanel
                     active={activeTab === "authority" && fullAccess}
@@ -1475,7 +1477,7 @@ const Dashboard = () => {
       {!chatOpen && !showOnboarding && !showDiagnostic && !captureOpen && (
         <button
           onClick={() => setCaptureOpen(true)}
-          aria-label="Capture"
+          aria-label={tr("frame.capture.label")}
           className="md:hidden fixed flex items-center justify-center"
           style={{
             bottom: `calc(76px + env(safe-area-inset-bottom))`,
@@ -1517,7 +1519,7 @@ const Dashboard = () => {
                     <button
                       key="mobile-aura-center"
                       onClick={() => openChat()}
-                      aria-label="Your Desk"
+                      aria-label={tr("frame.header.yourDesk")}
                       className="flex flex-col items-center justify-center"
                       style={{ gap: 4 }}
                     >
@@ -1539,7 +1541,7 @@ const Dashboard = () => {
                           />
                         </span>
                       </span>
-                      <span style={{ fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>Desk</span>
+                      <span style={{ fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>{tr("frame.nav.desk")}</span>
                     </button>
                   );
                 }
@@ -1551,7 +1553,7 @@ const Dashboard = () => {
                     onClick={() => openDoor(tab)}
                     className="flex flex-col items-center justify-center"
                     style={{ gap: 4, opacity: dimmed ? 0.45 : 1 }}
-                    title={dimmed ? "Your first post comes first" : undefined}
+                    title={dimmed ? tr("frame.nav.firstPostFirst") : undefined}
                   >
                     <span
                       className="flex items-center justify-center"
@@ -1572,7 +1574,7 @@ const Dashboard = () => {
                         fontWeight: isActive ? 600 : 400,
                       }}
                     >
-                      {tab.label}
+                      {tr(tab.labelKey)}
                     </span>
                   </button>
                 );

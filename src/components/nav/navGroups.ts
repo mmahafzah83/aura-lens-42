@@ -11,10 +11,12 @@ export type NavGroupKey = "home" | "signals" | "opportunities" | "write" | "reco
 
 export interface NavGroup {
   key: NavGroupKey;
-  label: string;
+  /** i18n key for the door name (frame.nav.*). */
+  labelKey: string;
   icon: typeof Compass;
   testId: string;
-  blurb: string;
+  /** i18n key for the one-line description. */
+  blurbKey: string;
   /** The tab a click on the door opens. */
   primary: string;
   /** Every tab that lights this door. */
@@ -23,33 +25,33 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    key: "home", label: "Home", icon: Compass, testId: "nav-home",
-    blurb: "Your brief: what moved and what to do next.",
+    key: "home", labelKey: "frame.nav.home", icon: Compass, testId: "nav-home",
+    blurbKey: "frame.nav.homeBlurb",
     primary: "home", members: ["home"],
   },
   {
-    key: "signals", label: "Signals", icon: Radar, testId: "nav-intelligence",
-    blurb: "What Aura found, and what it read overnight to find it.",
+    key: "signals", labelKey: "frame.nav.signals", icon: Radar, testId: "nav-intelligence",
+    blurbKey: "frame.nav.signalsBlurb",
     primary: "intelligence", members: ["intelligence", "overnight"],
   },
   {
-    key: "opportunities", label: "Opportunities", icon: BriefcaseBusiness, testId: "nav-opportunities",
-    blurb: "The decisions waiting for you today.",
+    key: "opportunities", labelKey: "frame.nav.opportunities", icon: BriefcaseBusiness, testId: "nav-opportunities",
+    blurbKey: "frame.nav.opportunitiesBlurb",
     primary: "opportunities", members: ["opportunities"],
   },
   {
-    key: "write", label: "Write", icon: PenLine, testId: "nav-publish",
-    blurb: "Make the post, and everything you have made.",
+    key: "write", labelKey: "frame.nav.write", icon: PenLine, testId: "nav-publish",
+    blurbKey: "frame.nav.writeBlurb",
     primary: "authority", members: ["authority", "drafts", "library"],
   },
   {
-    key: "record", label: "Record", icon: BarChart3, testId: "nav-impact",
-    blurb: "What already happened, and what it did.",
+    key: "record", labelKey: "frame.nav.record", icon: BarChart3, testId: "nav-impact",
+    blurbKey: "frame.nav.recordBlurb",
     primary: "momentum", members: ["momentum", "influence"],
   },
   {
-    key: "you", label: "You", icon: User, testId: "nav-mystory",
-    blurb: "Who Aura thinks you are, and what you choose to watch.",
+    key: "you", labelKey: "frame.nav.you", icon: User, testId: "nav-mystory",
+    blurbKey: "frame.nav.youBlurb",
     primary: "identity", members: ["identity", "widgets"],
   },
 ];

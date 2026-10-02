@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Award, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation, Trans } from "react-i18next";
 
 interface Milestone { id: string; name: string; }
 
@@ -17,6 +18,7 @@ interface Props {
 const STORAGE_KEY = "aura_seen_milestones";
 
 const MilestoneNotification = ({ userId, auraData }: Props) => {
+  const { t } = useTranslation();
   const [pending, setPending] = useState<Milestone[]>([]);
   const [dismissed, setDismissed] = useState(false);
 
@@ -65,18 +67,18 @@ const MilestoneNotification = ({ userId, auraData }: Props) => {
     >
       <Award size={16} style={{ color: "hsl(var(--primary))", flexShrink: 0 }} />
       <span style={{ flex: 1 }}>
-        Milestone earned: <strong style={{ fontWeight: 500 }}>{first.name}</strong>
+        <Trans i18nKey="frame.milestone.earned" values={{ name: first.name }} components={{ 1: <strong style={{ fontWeight: 500 }} /> }} />
       </span>
       <Link
         to="/dashboard?tab=identity"
         onClick={() => setDismissed(true)}
         style={{ color: "hsl(var(--primary))", fontSize: 12, textDecoration: "none" }}
       >
-        View on My Story
+        {t("frame.milestone.view")}
       </Link>
       <button
         onClick={() => setDismissed(true)}
-        aria-label="Dismiss"
+        aria-label={t("frame.milestone.dismiss")}
         style={{ background: "none", border: 0, color: "hsl(var(--muted-foreground))", cursor: "pointer", padding: 2 }}
       >
         <X size={14} />
