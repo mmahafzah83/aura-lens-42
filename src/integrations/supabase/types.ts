@@ -591,47 +591,62 @@ export type Database = {
         Row: {
           active: boolean
           anchor_high: string
+          anchor_high_ar: string | null
           anchor_low: string
+          anchor_low_ar: string | null
           anchor_mid: string | null
+          anchor_mid_ar: string | null
           band: Database["public"]["Enums"]["seniority_band"]
           created_at: string
           framework: string | null
           id: string
           instrument_version: number
           name: string
+          name_ar: string | null
           position: number
           sector: string | null
           why_line: string
+          why_line_ar: string | null
         }
         Insert: {
           active?: boolean
           anchor_high: string
+          anchor_high_ar?: string | null
           anchor_low: string
+          anchor_low_ar?: string | null
           anchor_mid?: string | null
+          anchor_mid_ar?: string | null
           band: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
           framework?: string | null
           id?: string
           instrument_version?: number
           name: string
+          name_ar?: string | null
           position: number
           sector?: string | null
           why_line: string
+          why_line_ar?: string | null
         }
         Update: {
           active?: boolean
           anchor_high?: string
+          anchor_high_ar?: string | null
           anchor_low?: string
+          anchor_low_ar?: string | null
           anchor_mid?: string | null
+          anchor_mid_ar?: string | null
           band?: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
           framework?: string | null
           id?: string
           instrument_version?: number
           name?: string
+          name_ar?: string | null
           position?: number
           sector?: string | null
           why_line?: string
+          why_line_ar?: string | null
         }
         Relationships: []
       }
@@ -7614,6 +7629,7 @@ export type Database = {
           feeds: string | null
           framework: string | null
           helper: string | null
+          helper_ar: string | null
           id: string
           instrument_version: number
           kind: string
@@ -7621,9 +7637,11 @@ export type Database = {
           options: Json | null
           position: number
           prompt: string
+          prompt_ar: string | null
           randomise: boolean
           sector: string | null
           why_asked: string | null
+          why_asked_ar: string | null
         }
         Insert: {
           active?: boolean
@@ -7633,6 +7651,7 @@ export type Database = {
           feeds?: string | null
           framework?: string | null
           helper?: string | null
+          helper_ar?: string | null
           id?: string
           instrument_version?: number
           kind?: string
@@ -7640,9 +7659,11 @@ export type Database = {
           options?: Json | null
           position: number
           prompt: string
+          prompt_ar?: string | null
           randomise?: boolean
           sector?: string | null
           why_asked?: string | null
+          why_asked_ar?: string | null
         }
         Update: {
           active?: boolean
@@ -7652,6 +7673,7 @@ export type Database = {
           feeds?: string | null
           framework?: string | null
           helper?: string | null
+          helper_ar?: string | null
           id?: string
           instrument_version?: number
           kind?: string
@@ -7659,9 +7681,11 @@ export type Database = {
           options?: Json | null
           position?: number
           prompt?: string
+          prompt_ar?: string | null
           randomise?: boolean
           sector?: string | null
           why_asked?: string | null
+          why_asked_ar?: string | null
         }
         Relationships: []
       }
