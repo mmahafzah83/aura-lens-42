@@ -1,3 +1,4 @@
 - Interface language: the stored choice is applied only on routes listed in `ARABIC_READY_ROUTES` (src/i18n/index.ts); every other route renders English LTR — why: half-translated pages must never flip right-to-left.
 - Retired product name: files listed in `RETIRED_NAME_FILES` (scripts/check-vocabulary.mjs) fail the build if they show "Aura" outside comments and console output — why: the new-user journey must only ever say KnownBy.
 - The Arabic-ready route registry lives in `src/i18n/routes.ts` (re-exported from `src/i18n`) — why: e2e specs import it in Node, where the i18n bootstrap cannot load.
+- Assessment item text (questions, options, slider dimensions) is displayed only through `src/lib/assessmentItems.ts`; `*_ar` columns and option `label_ar` are display-only — why: stored answers, slider keys and model input must stay on the canonical English fields.

@@ -84,6 +84,7 @@ import {
 } from "@/lib/seatCopy";
 import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { itemText, optionLabel, itemsPreviewFromSearch, type ItemLang } from "@/lib/assessmentItems";
 import { toCoded, toLegacyEnglish, legacyKey, NONE_CODE, type AnswerInput, type CodedAnswers } from "@/lib/assessmentAnswers";
 
 
@@ -195,7 +196,7 @@ const optionButton = (
   blocked = false,
   why?: string,
 ) => (
-  <button key={key} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
+  <button key={key} type="button" disabled={blocked} onClick={onClick} aria-pressed={picked} className="ob-opt" style={{
     textAlign: "start", padding: "14px 15px", borderRadius: 14,
     cursor: blocked ? "not-allowed" : "pointer",
     border: `1px solid ${OB.line}`,
@@ -282,12 +283,15 @@ const whyLine = (id: string, text: string, centred = false) => (
 interface Dimension {
   name: string; why_line: string | null;
   anchor_low: string | null; anchor_mid: string | null; anchor_high: string | null;
+  name_ar?: string | null; why_line_ar?: string | null;
+  anchor_low_ar?: string | null; anchor_mid_ar?: string | null; anchor_high_ar?: string | null;
 }
 interface JourneyQuestion {
   id: string; position: number; framework: string | null; band: string | null; instrument_version: number | null;
   prompt: string; helper: string | null; kind: string; max_choices: number | null;
-  options: { label: string; value: string }[] | null;
+  options: { label: string; value: string; label_ar?: string | null }[] | null;
   why_asked: string | null; allow_none: boolean | null; randomise: boolean | null;
+  prompt_ar?: string | null; helper_ar?: string | null; why_asked_ar?: string | null;
 }
 
 /** A stable shuffle — the same question never reshuffles under the member. */
@@ -683,6 +687,11 @@ const Onboarding = () => {
   /* The same answers by question id and option value — never by display text. */
   const [codedAnswers, setCodedAnswers] = useState<CodedAnswers>({});
   const { lang: uiLang } = useLanguage();
+  /* `?items=ar` — the founder's review switch: Arabic for the ITEMS only. */
+  const [itemsPreview] = useState(() => itemsPreviewFromSearch(window.location.search));
+  const itemLang: ItemLang = itemsPreview ? "ar" : uiLang === "ar" ? "ar" : "en";
+  /* dir/lang only on the item text, only when Arabic is forced — English renders untouched. */
+  const itemAttrs = itemsPreview ? { dir: "rtl" as const, lang: "ar" } : {};
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
   /* One rule for every question: select, see it selected, then Next. */
@@ -1824,7 +1833,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("capability_dimensions" as any) as any)
-        .select("name, why_line, anchor_low, anchor_mid, anchor_high")
+        .select("name, why_line, anchor_low, anchor_mid, anchor_high, name_ar, why_line_ar, anchor_low_ar, anchor_mid_ar, anchor_high_ar")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -1846,7 +1855,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("onboarding_questions" as any) as any)
-        .select("id, position, framework, band, instrument_version, prompt, helper, kind, options, max_choices, why_asked, allow_none, randomise")
+        .select("id, position, framework, band, instrument_version, prompt, helper, kind, options, max_choices, why_asked, allow_none, randomise, prompt_ar, helper_ar, why_asked_ar")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -3542,17 +3551,17 @@ const Onboarding = () => {
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             {dimIdx + 1} / {dims.length}
           </p>
-          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "var(--ob-h2)" }}>{d.name}</h1>
-          {d.why_line ? <p style={bodyLight}>{d.why_line}</p> : null}
+          <h1 {...itemAttrs} style={{ ...h1Light, marginBlockStart: 10, fontSize: "var(--ob-h2)" }}>{itemText(d, "name", itemLang)}</h1>
+          {d.why_line ? <p {...itemAttrs} style={bodyLight}>{itemText(d, "why_line", itemLang)}</p> : null}
           <input
             type="range" min={0} max={100} step={1} value={value}
             className="ob-slider"
-            aria-label={d.name}
+            aria-label={itemText(d, "name", itemLang)}
             aria-valuetext={value < SOLID_MIN
-              ? `${BAND_COPY.developing.label}: ${d.anchor_low ?? ""}`
+              ? `${BAND_COPY.developing.label}: ${d.anchor_low ? itemText(d, "anchor_low", itemLang) : ""}`
               : value < STRONG_MIN
-                ? `${BAND_COPY.solid.label}: ${d.anchor_mid ?? ""}`
-                : `${BAND_COPY.strong.label}: ${d.anchor_high ?? ""}`}
+                ? `${BAND_COPY.solid.label}: ${d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : ""}`
+                : `${BAND_COPY.strong.label}: ${d.anchor_high ? itemText(d, "anchor_high", itemLang) : ""}`}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
             onPointerUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
             onKeyUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
@@ -3560,9 +3569,9 @@ const Onboarding = () => {
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
             {([
-              [BAND_COPY.developing.label, d.anchor_low, value < SOLID_MIN],
-              [BAND_COPY.solid.label, d.anchor_mid, value >= SOLID_MIN && value < STRONG_MIN],
-              [BAND_COPY.strong.label, d.anchor_high, value >= STRONG_MIN],
+              [BAND_COPY.developing.label, d.anchor_low ? itemText(d, "anchor_low", itemLang) : null, value < SOLID_MIN],
+              [BAND_COPY.solid.label, d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : null, value >= SOLID_MIN && value < STRONG_MIN],
+              [BAND_COPY.strong.label, d.anchor_high ? itemText(d, "anchor_high", itemLang) : null, value >= STRONG_MIN],
             ] as [string, string | null, boolean][])
               .filter(([, text]) => !!text)
               .map(([tag, text, live]) => (
@@ -3574,7 +3583,7 @@ const Onboarding = () => {
                   transition: `color 220ms ${EASE}`,
                 }}>
                   <span style={{ fontFamily: OB.mono, fontSize: "var(--ob-mono)", letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
-                  <span>{text}</span>
+                  <span {...itemAttrs}>{text}</span>
                 </div>
               ))}
           </div>
@@ -3702,14 +3711,14 @@ const Onboarding = () => {
       /* "None of these fit" belongs to a list of options, never to an open box. */
       const showNone = !!q.allow_none && (q.kind === "choice" || q.kind === "multi");
       /* The cap is printed once, above the options — so a helper that repeats it is dropped. */
-      const helperText = q.helper && !/pick up to/i.test(q.helper) ? q.helper : null;
+      const helperText = q.helper && !/pick up to/i.test(q.helper) ? itemText(q, "helper", itemLang) : null;
       /* A suggestion built from what Aura already read. Never submitted. */
       const phList = smartPlaceholders(facts, sector || null, String(liProfile?.headline || "") || null);
       const placeholder = phList[phIdx % phList.length];
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
       /* The headline can never promise three positions we are about to withdraw. */
-      const promptText = proposedFallback ? "What position could only you credibly take?" : q.prompt;
+      const promptText = proposedFallback ? "What position could only you credibly take?" : itemText(q, "prompt", itemLang);
 
 
       content = (
@@ -3720,19 +3729,19 @@ const Onboarding = () => {
           {qIdx === 0 ? (
             <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>Saved as you go — you can stop any time.</p>
           ) : null}
-          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{promptText}</h1>
-          {helperText ? <p style={bodyLight}>{helperText}</p> : null}
+          <h1 {...(proposedFallback ? {} : itemAttrs)} style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{promptText}</h1>
+          {helperText ? <p {...itemAttrs} style={bodyLight}>{helperText}</p> : null}
           {q.why_asked ? (
             <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted }}>
               <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", marginInlineEnd: 7 }}>Why this</span>
-              {q.why_asked}
+              <span {...itemAttrs}>{itemText(q, "why_asked", itemLang)}</span>
             </p>
           ) : null}
 
           {q.kind === "choice" ? (
             <>
-              <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
-                {opts.map((o, i) => optionButton(i, o.label, () => setSinglePicked(o.value), singlePicked === o.value))}
+              <div {...itemAttrs} style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
+                {opts.map((o, i) => optionButton(i, optionLabel(o, itemLang), () => setSinglePicked(o.value), singlePicked === o.value))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={!singlePicked} aria-describedby={!singlePicked ? "ob-q-why" : undefined} onClick={() => {
@@ -3745,10 +3754,10 @@ const Onboarding = () => {
           ) : q.kind === "multi" ? (
             <>
               <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>Pick up to {cap}</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
+              <div {...itemAttrs} style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
                 {opts.map((o, i) => optionButton(
                   i,
-                  o.label,
+                  optionLabel(o, itemLang),
                   () => setMultiPicked((prev) => prev.includes(o.value) ? prev.filter((x) => x !== o.value) : [...prev, o.value]),
                   multiPicked.includes(o.value),
                   !multiPicked.includes(o.value) && atCap,
@@ -3798,7 +3807,7 @@ const Onboarding = () => {
                   KnownBy hasn't got enough of your writing to propose three yet — say it in your own words instead.
                 </p>
                 <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
-                  aria-label={q.prompt}
+                  aria-label={itemText(q, "prompt", itemLang)}
                   onFocus={rotatePlaceholder}
                   onKeyDown={(e) => {
                     if (e.repeat) return;
@@ -3819,7 +3828,7 @@ const Onboarding = () => {
           ) : (
             <>
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
-                aria-label={q.prompt}
+                aria-label={itemText(q, "prompt", itemLang)}
                 onFocus={rotatePlaceholder}
                 onKeyDown={(e) => {
                   if (e.repeat) return;
@@ -4589,6 +4598,12 @@ const Onboarding = () => {
             boxShadow: "0 8px 24px rgba(15,21,25,.22)",
           }}>{exitNote}</span>
         </div>
+      ) : null}
+      {itemsPreview ? (
+        <div role="note" lang="en" dir="ltr" style={{
+          position: "fixed", insetBlockEnd: 12, insetInlineStart: 12, zIndex: 60, pointerEvents: "none",
+          background: OB.ink, color: OB.white, fontSize: 11, borderRadius: 999, padding: "5px 10px",
+        }}>Arabic items preview</div>
       ) : null}
       <JourneyNav.Provider value={{
         onBack: screen === 1 && step1Phase === "result"
