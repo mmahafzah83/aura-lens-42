@@ -19,6 +19,7 @@ import { useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AuraLogo } from "@/components/brand/AuraLogo";
 import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const CARD = "#FFFFFF";
 const LINE = "#E2E7EE";
@@ -158,7 +159,7 @@ const JourneyBar = ({ onBack, onExit, name }: {
             visibility: onBack ? "visible" : "hidden",
             pointerEvents: onBack ? "auto" : "none" }}
         >
-          <ArrowLeft size={17} aria-hidden />
+          <ArrowLeft size={17} aria-hidden style={isRTL ? { transform: "scaleX(-1)" } : undefined} />
         </button>
       </div>
 
@@ -198,6 +199,8 @@ const JourneyBar = ({ onBack, onExit, name }: {
           }}>{first}</span>
         ) : null}
       </div>
+
+      <LanguageToggle />
 
       {/* slot 4 — the one quiet way out. A label, never an X. */}
       <button type="button" onClick={onExit} style={{ ...TAP, color: INK2, flexShrink: 0 }}>

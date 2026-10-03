@@ -97,6 +97,8 @@ const PM_CSS = `
 .pm-a{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;
   background:rgba(255,255,255,.16);font-size:10px;transition:transform .22s cubic-bezier(.2,.7,.3,1);}
 .pm-cta:hover .pm-a{transform:translate(2px,-2px);}
+[dir="rtl"] .pm-a{transform:scaleX(-1);}
+[dir="rtl"] .pm-cta:hover .pm-a{transform:translate(-2px,-2px) scaleX(-1);}
 @media (max-width:520px){
   .pm-cta{font-size:12.5px;padding:10px 13px;}
   .pm-link{padding:11px 9px;}

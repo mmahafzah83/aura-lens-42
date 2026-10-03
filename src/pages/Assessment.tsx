@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { readStoredLang } from "@/i18n";
+import i18n, { readStoredLang, dateLocale } from "@/i18n";
 import { numberWord } from "@/i18n/numberWord";
 import { Trans } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -65,7 +65,7 @@ const QueueCapture = ({ anonToken }: { anonToken: string | null }) => {
       </p>
       <label className="asg-lbl" htmlFor="asg-queue-email">{t("assess.queue.emailLabel")}</label>
       <input
-        id="asg-queue-email" className="asg-in" type="email" value={email}
+        id="asg-queue-email" dir="ltr" className="asg-in" type="email" value={email}
         placeholder={t("assess.queue.emailPlaceholder")}
         onChange={(e) => setEmail(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") void submit(); }}
@@ -91,7 +91,7 @@ const stampDate = (iso?: string | null): string | null => {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+  return d.toLocaleDateString(dateLocale(i18n.language === "ar" ? "ar" : "en"), { day: "2-digit", month: "short", year: "numeric" })
     .replace(/\s+/g, " ").toUpperCase();
 };
 
@@ -328,7 +328,7 @@ const Assessment = () => {
               <p className="asg-pp">{t("assess.address.sub")}</p>
               <label className="asg-lbl" htmlFor="asg-addr">{t("assess.address.label")}</label>
               <input
-                id="asg-addr" className="asg-in" autoFocus value={addr}
+                id="asg-addr" className="asg-in" dir="ltr" autoFocus value={addr}
                 placeholder={t("assess.address.placeholder")}
                 onChange={(e) => setAddr(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") void runRead(); }}
@@ -694,6 +694,14 @@ const ASG_CSS = `
 button.asg-btn{border:none;cursor:pointer;font-family:var(--ui);}
 button.asg-bg{border:1px solid var(--line);}
 @media(max-width:700px){.asg-panel{padding:20px;}.asg-ph{font-size:21px;}}
+/* ── Arabic: Cairo, no tracking, taller lines; mono stays for digits ── */
+.asg-in{text-align:left;}
+html[lang="ar"] .asg{--ui:'CairoAR','Cairo',"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",'CairoAR',monospace;}
+html[lang="ar"] .asg *{letter-spacing:0 !important;}
+html[lang="ar"] .asg :is(.asg-k,.asg-pill){font-family:var(--ui);font-size:12px;text-transform:none;}
+html[lang="ar"] .asg :is(.asg-sub,.asg-pp,.asg-trust,.asg-card p,.asg-item p,.asg-notice,.asg-err,.asg-saved,.asg-c,.asg-lbl){line-height:1.9;}
+html[lang="ar"] .asg :is(.asg-h1,.asg-ph,.asg-ih,.asg-moment div){line-height:1.6;}
+html[lang="ar"] .asg-a{transform:scaleX(-1);}
 `;
 
 export default Assessment;
