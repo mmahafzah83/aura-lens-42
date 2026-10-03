@@ -141,7 +141,7 @@ const SHELF_HINT = [
 ];
 
 /** Domain and age of a suggested read — a senior reader wants to know where a link goes. */
-const sourceLine = (a: { url: string; source?: string; published_at?: string | null }): string => {
+const sourceLine = (a: { url: string; source?: string; published_at?: string | null }, t: (k: string, o?: any) => string): string => {
   let domain = (a.source || "").trim();
   try { domain = new URL(a.url).hostname.replace(/^www\./, ""); } catch { /* keep whatever came back */ }
   const iso = a.published_at;
@@ -149,8 +149,8 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return domain;
   const days = Math.floor((Date.now() - t) / 86400000);
-  const age = days <= 0 ? "today" : days === 1 ? "1 day ago" : days < 30 ? `${days} days ago`
-    : days < 60 ? "1 month ago" : `${Math.floor(days / 30)} months ago`;
+  const age = days <= 0 ? t("ob.age.today") : days < 30 ? t("ob.age.days", { count: days })
+    : t("ob.age.months", { count: days < 60 ? 1 : Math.floor(days / 30) });
   return domain ? `${domain} · ${age}` : age;
 };
 
@@ -700,6 +700,16 @@ const Onboarding = () => {
   const shelfLabel = (key: string) => tr(`ob.shelf.${key}`);
   const shelfHint = (key: string) => tr(`ob.shelf.hint.${key}`);
   const capBand = (b: "developing" | "solid" | "strong") => (isAr ? tr(`cap.band.${b}`) : BAND_COPY[b].label);
+  /** A counted key: the count picks the form, the formatted numeral is what prints. */
+  const tc = (key: string, n: number, extra: Record<string, unknown> = {}) =>
+    tr(key, { count: n, replace: { ...extra, count: num(n) } } as any);
+  /** A translated line with one value set in mono — the sentence stays one key. */
+  const monoLine = (text: string, mark: string, value: React.ReactNode) => {
+    const [a, b = ""] = text.split(mark);
+    return <>{a}<span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{value}</span>{b}</>;
+  };
+  const stageLabel = (n: number) => tr(`ob.stage.${Math.max(1, Math.min(5, Math.round(n)))}`);
+  const dirLtr = { dir: "ltr" as const };
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
   /* One rule for every question: select, see it selected, then Next. */
@@ -1708,7 +1718,7 @@ const Onboarding = () => {
     if (!v) return;
     if (sendingLinkRef.current) return;
     if (!/^https?:\/\/\S+\.\S+/i.test(v)) {
-      setLinkError("That needs to be a web link, starting with https://");
+      setLinkError(tr("ob.s5.linkError.https"));
       return;
     }
     setLinkError(null);
@@ -2226,11 +2236,11 @@ const Onboarding = () => {
       const win = window.open(url, "aura_li_oauth", "width=600,height=700,menubar=no,toolbar=no");
       if (!win) {
         if (opts?.allowRedirect) {
-          setConnectNote("Your browser blocked the pop-up, so this opens in the same tab. You'll come straight back.");
+          setConnectNote(tr("ob.s1.connectNote.sameTab"));
           window.location.href = url;
           return;
         }
-        setConnectNote("Your browser blocked the pop-up. You can connect from Settings the moment you're in — nothing here is lost.");
+        setConnectNote(tr("ob.s1.connectNote.blocked"));
         setConnecting(false);
         return;
       }
@@ -2248,7 +2258,7 @@ const Onboarding = () => {
           /* The OAuth callback now preserves source_status and re-confirms it
              from the snapshot, so nothing needs re-writing here. */
         }
-        else setConnectNote(d.message || "LinkedIn didn't finish. You can do this from Settings later.");
+        else setConnectNote(d.message || tr("ob.s1.connectNote.unfinished"));
       };
       window.addEventListener("message", onMessage);
       const watch = window.setInterval(() => {
@@ -2259,7 +2269,7 @@ const Onboarding = () => {
         }
       }, 700);
     } catch {
-      setConnectNote("LinkedIn connection only works on aura-intel.org — you can do this from Settings after you're in.");
+      setConnectNote(tr("ob.s1.connectNote.domain"));
       setConnecting(false);
     }
   };
@@ -2390,8 +2400,8 @@ const Onboarding = () => {
         {resumeAsking
           ? "This clears your answers so far."
           : resumedAt.readDone
-            ? `Welcome back — your read is done. You were on "${stageName(resumedAt.stage)}".`
-            : `Welcome back — you were on "${stageName(resumedAt.stage)}".`}
+            ? tr("ob.resume.bannerDone", { stage: stageLabel(resumedAt.stage) })
+            : tr("ob.resume.banner", { stage: stageLabel(resumedAt.stage) })}
       </span>
       {resumeAsking ? (
         <>
@@ -2408,7 +2418,7 @@ const Onboarding = () => {
         <>
           <button type="button" onClick={() => setResumeAsking(true)}
             style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 13, color: OB.muted, textDecoration: "underline" }}>
-            Start over
+            {tr("ob.resume.startOver")}
           </button>
           <button type="button" aria-label="Dismiss" onClick={() => setResumedAt(null)}
             style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 16, lineHeight: 1, color: OB.muted, minInlineSize: 44, minBlockSize: 44 }}>
@@ -2749,37 +2759,39 @@ const Onboarding = () => {
   if (screen === 0) {
     content = (
       <PaperShell onExit={saveAndExit} subProgress={readDone ? 0.5 : undefined} footer={escapeFooter}>
-        <h1 style={h1Light}>{BRAND.headline}</h1>
-        <p style={bodyLight}>{ONBOARDING_INTRO.lede}</p>
+        <h1 style={h1Light}>{tr("ob.s0.headline")}</h1>
+        <p style={bodyLight}>{tr("ob.s0.lede")}</p>
         <p style={bodyLight}>
-          {ASSESSMENT_STEPS_WORD.charAt(0).toUpperCase() + ASSESSMENT_STEPS_WORD.slice(1)} short steps,{" "}
-          {FULL_PICTURE_LINE.toLowerCase()}. You can stop anywhere — everything saves as you go. Free, and it stays free.
+          {tr("ob.s0.steps", {
+            steps: numberWord(ASSESSMENT_STEPS, { cases: "cap", lang: uiLang }),
+            minutes: numberWord(ASSESSMENT_MINUTES, { lang: uiLang }),
+          })}
         </p>
         <p style={{
           margin: "26px 0 8px", fontFamily: OB.ui, fontSize: 11, letterSpacing: "0.12em",
-          color: OB.muted, fontWeight: 600,
+          color: OB.muted, fontWeight: 600, ...(isAr ? { letterSpacing: 0 } : {}),
         }}>
-          {ONBOARDING_INTRO.rowHead}
+          {tr("ob.s0.rowHead")}
         </p>
         <p style={{ margin: "0 0 18px", fontSize: 13.5, lineHeight: 1.55, color: OB.muted }}>
-          {ONBOARDING_INTRO.rowSub}
+          {tr("ob.s0.rowSub")}
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, margin: "0 0 6px" }}>
-          {ONBOARDING_INTRO.outputs.map((o) => (
+          {ONBOARDING_INTRO.outputs.map((o, oi) => (
             <div key={o.label} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
               <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: 999, background: OB.line, marginTop: 7 }} />
               <div>
-                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.35, color: OB.ink }}>{o.label}</p>
-                <p style={{ margin: "3px 0 0", fontSize: 13.5, lineHeight: 1.55, color: OB.muted }}>{o.detail}</p>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.35, color: OB.ink }}>{tr(`ob.s0.out${oi + 1}.label`)}</p>
+                <p style={{ margin: "3px 0 0", fontSize: 13.5, lineHeight: 1.55, color: OB.muted }}>{tr(`ob.s0.out${oi + 1}.detail`)}</p>
               </div>
             </div>
           ))}
         </div>
-        <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
+        <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>{tr("ob.start")}</OBButton></Actions>
         <p style={{ margin: "18px 0 0", fontSize: 14, lineHeight: 1.55, color: OB.ink }}>
-          {ONBOARDING_INTRO.loss}
+          {tr("ob.s0.loss")}
         </p>
-        <p style={footnote}>{REPORT_FREE_LINE}</p>
+        <p style={footnote}>{tr("ob.reportFree")}</p>
       </PaperShell>
     );
   }
@@ -2788,34 +2800,33 @@ const Onboarding = () => {
   if (screen === 1) {
     const mono = (v: React.ReactNode) => <span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{v}</span>;
     const rows: { key: string; label: string; line: React.ReactNode; done: boolean; drop: boolean }[] = [
-      { key: "p", label: POST_NOUN.Many, line: postsLine(upPosts, mono), done: !!postsRead, drop: readDone && !postsRead },
-      { key: "w", label: "Your own writing", line: <>{mono(num(upWords))} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
-      { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
-      { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
+      { key: "p", label: tr("ob.s1.row.posts.label"), line: monoLine(tr("ob.s1.row.posts.line", { count: upPosts, replace: { count: "\u0000" } } as any), "\u0000", num(upPosts)), done: !!postsRead, drop: readDone && !postsRead },
+      { key: "w", label: tr("ob.s1.row.writing.label"), line: monoLine(tr("ob.s1.row.writing.line", { count: upWords, replace: { count: "\u0000" } } as any), "\u0000", num(upWords)), done: !!ownWords, drop: readDone && !ownWords },
+      { key: "s", label: tr("ob.s1.row.sector.label"), line: monoLine(tr("ob.s1.row.sector", { value: "\u0000" }), "\u0000", sector), done: !!sector, drop: readDone && !sector },
+      { key: "b", label: tr("ob.s1.row.level.label"), line: monoLine(tr("ob.s1.row.level", { value: "\u0000" }), "\u0000", bandLabel), done: !!bandLabel, drop: readDone && !bandLabel },
     ].filter((r) => !r.drop);
     const nothingPublic = readDone && !postsRead && !ownWords && postsState?.status !== "failed";
     // A zero for posts is never printed — the empty-post line stands in for it.
     const figures = [
-      ...(postsRead ? [{ v: postsRead, l: "posts read" }] : []),
-      ...(liProfile?.followers ? [{ v: liProfile.followers, l: "following you" }] : []),
-      ...(liProfile?.skills_count ? [{ v: liProfile.skills_count, l: "skills on record" }] : []),
+      ...(postsRead ? [{ v: postsRead, l: tr("ob.s1.fig.posts") }] : []),
+      ...(liProfile?.followers ? [{ v: liProfile.followers, l: tr("ob.s1.fig.followers") }] : []),
+      ...(liProfile?.skills_count ? [{ v: liProfile.skills_count, l: tr("ob.s1.fig.skills") }] : []),
     ];
     const readJustNow = [
-      postsRead ? nPosts(postsRead, "en") : "",
-      ownWords ? `${num(ownWords)} words` : "",
-      "read just now",
+      postsRead ? tc("ob.s1.now.posts", postsRead) : "",
+      ownWords ? tc("ob.s1.now.words", ownWords) : "",
+      tr("ob.s1.now.read"),
     ].filter(Boolean).join(" · ");
 
     content = (
       <PaperShell onExit={saveAndExit} subProgress={step1Phase === "result" ? 0.6 : 0.25} footer={escapeFooter}>
         {step1Phase === "result" ? (
-          <h1 style={h1Light}>This is what KnownBy can see.</h1>
+          <h1 style={h1Light}>{tr("ob.s1.canSee")}</h1>
         ) : (
           <>
-            <h1 style={h1Light}>What's your LinkedIn?</h1>
+            <h1 style={h1Light}>{tr("assess.address.heading")}</h1>
             <p style={bodyLight}>
-              So nothing KnownBy writes for you sounds generic. It reads what's already public — your profile and your
-              recent posts — and picks up your sector, your level and the way you already write.
+              {tr("ob.s1.why")}
             </p>
           </>
         )}
@@ -2823,14 +2834,13 @@ const Onboarding = () => {
         {step1Phase === "ask" && !userId ? (
           <>
             <p style={bodyLight}>
-              Your read was done before you got here. KnownBy can't find it on this device — open it again and it
-              comes straight back.
+              {tr("ob.s1.readElsewhere")}
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
               <OBButton onClick={() => { void backToRead(); }}>
-                {(anonStateRef.current as any)?.read ? "Open my read" : "Read my profile"}
+                {(anonStateRef.current as any)?.read ? tr("assess.resume.open") : tr("assess.address.button")}
               </OBButton>
-              <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>{tr("ob.s1.typeMyself")}</OBButton>
             </Actions>
           </>
         ) : null}
@@ -2842,7 +2852,8 @@ const Onboarding = () => {
               onChange={(e) => { setLiInput(e.target.value); setLiError(""); }}
               onKeyDown={(e) => { if (e.key === "Enter" && liInput.trim()) void readProfile(); }}
               placeholder="linkedin.com/in/yourname"
-              aria-label="Your LinkedIn address"
+              aria-label={tr("assess.address.label")}
+              {...dirLtr}
               inputMode="url"
               autoCapitalize="none"
               autoCorrect="off"
@@ -2853,27 +2864,25 @@ const Onboarding = () => {
               <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.err }}>{liError}</p>
             ) : null}
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…"
+              <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel={tr("ob.reading")}
                 aria-describedby={!liInput.trim() ? "ob-li-why" : undefined}>
-                Read my profile
+                {tr("assess.address.button")}
               </OBButton>
               {!liInput.trim() ? (
                 /* A disabled control always carries its reason, next to itself. */
                 <p id="ob-li-why" style={{ margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-                  Paste your LinkedIn address first.
+                  {tr("ob.s1.pasteFirst")}
                 </p>
               ) : null}
-              <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
-              <OBButton variant="tertiary" onClick={() => goBack(0)}>Back</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>{tr("ob.s1.typeMyself")}</OBButton>
+              <OBButton variant="tertiary" onClick={() => goBack(0)}>{tr("ob.back")}</OBButton>
             </Actions>
             <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
-              KnownBy reads your profile and your public posts. You get drafts in your own words instead of generic ones.
-              {userId
-                ? " You can delete what it stored, any time, in Settings."
-                : " You can delete what KnownBy stored at any time — and if you don't finish, it is deleted automatically after seven days."}
+              {tr("ob.s1.reads")}
+              {" "}{userId ? tr("ob.s1.deleteSignedIn") : tr("ob.s1.deleteAnon")}
             </p>
             <p style={{ margin: "8px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.55, color: OB.muted }}>
-              KnownBy reads the public profile and recent posts at this address, and keeps the result for seven days so you can come back.
+              {tr("ob.s1.keeps")}
             </p>
           </>
         ) : null}
@@ -2884,16 +2893,16 @@ const Onboarding = () => {
             <WorkingPanel
               operation="linkedin_read"
               runId={readRunId}
-              title="KnownBy is reading your profile."
+              title={tr("ob.s1.readingTitle")}
               /* The same four named steps the read shows everywhere else. None
                  of them ticks on its own: each state is read from real data. */
               stages={[
-                { key: "open", label: "Opening your LinkedIn", state: readDone || postsRead ? "done" : "active" },
-                { key: "posts", label: "Reading your posts", state: readDone || postsRead ? "done" : "waiting" },
-                { key: "evidence", label: "Finding what only you have", state: readDone ? "done" : (postsRead ? "active" : "waiting") },
-                { key: "write", label: "Writing your read", state: readDone ? "done" : "waiting" },
+                { key: "open", label: tr("journey.stage.linkedin_read.open"), state: readDone || postsRead ? "done" : "active" },
+                { key: "posts", label: tr("journey.stage.linkedin_read.posts"), state: readDone || postsRead ? "done" : "waiting" },
+                { key: "evidence", label: tr("journey.stage.linkedin_read.evidence"), state: readDone ? "done" : (postsRead ? "active" : "waiting") },
+                { key: "write", label: tr("journey.stage.linkedin_read.write"), state: readDone ? "done" : "waiting" },
               ]}
-              onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(5) }}
+              onCarryOn={{ label: tr("ob.carryOnLater"), action: () => go(5) }}
             />
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
@@ -2902,11 +2911,11 @@ const Onboarding = () => {
               ))}
             </div>
             {nothingPublic ? (
-              <p style={{ ...bodyLight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
+              <p style={{ ...bodyLight, marginBlockStart: 16 }}>{tr("ob.emptyPosts")}</p>
             ) : null}
             {/* Nothing after this depends on the read being back. */}
             <Actions style={{ marginBlockStart: 20 }}>
-              <OBButton variant="tertiary" onClick={() => go(5)}>Carry on while it reads</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(5)}>{tr("ob.s1.carryOnWhile")}</OBButton>
             </Actions>
           </div>
         ) : null}
@@ -2915,7 +2924,7 @@ const Onboarding = () => {
           <>
         <div style={{ display: "flex", gap: 13, alignItems: "center", marginBlockStart: 20 }}>
           {liProfile?.photo_url ? (
-            <img src={liProfile.photo_url} alt={`${liProfile?.full_name || "Your"} LinkedIn photo`} loading="lazy"
+            <img src={liProfile.photo_url} alt={liProfile?.full_name ? tr("ob.s1.photoAlt", { name: liProfile.full_name }) : tr("ob.s1.photoAltYou")} loading="lazy"
               style={{ inlineSize: 56, blockSize: 56, borderRadius: "50%", objectFit: "cover", border: `1px solid ${OB.line}` }} />
           ) : null}
           <div style={{ minInlineSize: 0 }}>
@@ -2953,41 +2962,41 @@ const Onboarding = () => {
           <div style={{ marginBlockStart: 18 }}>
             <WorkingPanel
               runId={readRunId}
-              title="Reading what LinkedIn shows"
+              title={tr("ob.s1.postsFail.title")}
               stages={[
-                { key: "profile", label: "Reading your profile", state: "done" },
-                { key: "posts", label: "Reading your posts", state: postsBusy ? "active" : "failed" },
+                { key: "profile", label: tr("ob.s1.postsFail.profile"), state: "done" },
+                { key: "posts", label: tr("journey.stage.linkedin_read.posts"), state: postsBusy ? "active" : "failed" },
               ]}
               failure={postsBusy ? null : { stageKey: "posts", error: (postsState as { error: unknown }).error }}
               onRetryFromStage={() => void retryPosts()}
-              onCarryOn={{ label: "Carry on without my posts", action: () => setPostsState(null) }}
+              onCarryOn={{ label: tr("ob.s1.postsFail.carryOn"), action: () => setPostsState(null) }}
             />
           </div>
         ) : postsState?.status === "ok" ? (
           <p style={{ ...bodyLight, marginBlockStart: 18 }}>{emptyPostsLine(postsState)}</p>
         ) : (
-          <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
+          <p style={{ ...bodyLight, marginBlockStart: 18 }}>{tr("ob.emptyPosts")}</p>
         )}
 
 
         {/* What Aura found in your record. Each part computed; anything missing is simply absent. */}
         {facts ? (() => {
           const where = [
-            facts.role && facts.company ? `${facts.role} at ${facts.company}` : facts.role || facts.company,
+            facts.role && facts.company ? tr("ob.s1.roleAt", { role: facts.role, company: facts.company }) : facts.role || facts.company,
             facts.location,
           ].filter(Boolean) as string[];
           const counts = [
-            facts.roles ? `${num(facts.roles)} ${facts.roles === 1 ? "role" : "roles"}` : "",
-            facts.certifications ? `${num(facts.certifications)} certifications` : "",
-            facts.skills ? `${num(facts.skills)} skills` : "",
-            facts.projects ? `${num(facts.projects)} projects` : "",
-            facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : "",
+            facts.roles ? tc("ob.s1.count.roles", facts.roles) : "",
+            facts.certifications ? tc("ob.s1.count.certs", facts.certifications) : "",
+            facts.skills ? tc("ob.s1.count.skills", facts.skills) : "",
+            facts.projects ? tc("ob.s1.count.projects", facts.projects) : "",
+            facts.joinedYear ? tr("ob.s1.count.since", { year: facts.joinedYear }) : "",
           ].filter(Boolean);
           if (!where.length && !counts.length && !facts.topSkills.length && !facts.aboutFirstLine) return null;
           return (
             <div style={{ marginBlockStart: 18 }}>
               <p style={{ margin: "0 0 8px", fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
-                What KnownBy found in your record
+                {tr("ob.s1.found")}
               </p>
               {where.length ? (
                 <p {...memberText(where.join(" · "))} style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
@@ -3028,10 +3037,9 @@ const Onboarding = () => {
           }}>
             <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>
               <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: OB.ink, marginBlockEnd: 6 }}>
-                What people who worked with you said
+                {tr("ob.s1.recs.title")}
               </span>
-              {num(facts.recommendations)} {facts.recommendations === 1 ? "person has" : "people have"} written a
-              recommendation for you
+              {tc("ob.s1.recs.count", facts.recommendations)}
             </figcaption>
             <blockquote {...memberText(facts.recQuote.text)} style={{
               margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink,
@@ -3041,7 +3049,7 @@ const Onboarding = () => {
             </blockquote>
             <p {...memberText(facts.recQuote.title)} style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
             <p style={{ margin: "8px 0 0", fontSize: 11.5, color: OB.muted }}>
-              KnownBy read all {num(facts.recommendations)}.
+              {tc("ob.s1.recs.readAll", facts.recommendations)}
             </p>
           </figure>
         ) : null}
@@ -3052,14 +3060,14 @@ const Onboarding = () => {
             margin: "20px 0 0", padding: "15px 17px", borderRadius: RADIUS.card,
             background: OB.canvas, borderInlineStart: `3px solid ${OB.blue}`,
           }}>
-            <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>You wrote this:</figcaption>
+            <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>{tr("ob.s1.youWrote")}</figcaption>
             <blockquote {...memberText(ownLine.text)} style={{
               margin: 0, fontSize: 15, lineHeight: 1.6, color: OB.ink, ...(memberText(ownLine.text).style || {}),
             }}>
               “{ownLine.text}”
             </blockquote>
             <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>
-              — your post{ownLine.when ? `, ${ownLine.when}` : ""}
+              {ownLine.when ? tr("ob.s1.yourPostWhen", { when: ownLine.when }) : tr("ob.s1.yourPost")}
             </p>
           </figure>
         ) : null}
@@ -3070,19 +3078,19 @@ const Onboarding = () => {
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <span style={{ fontSize: 14 }}>
-              Level ·{" "}
+              {tr("ob.s1.levelLabel")}{" "}
               {levelTitle || bandLabel
                 ? <strong>{levelTitle || bandLabel}</strong>
-                : <span style={{ color: OB.muted }}>tell KnownBy</span>}
+                : <span style={{ color: OB.muted }}>{tr("ob.s1.tell")}</span>}
             </span>
             <OBButton variant="tertiary" onClick={() => setBandPicker((v) => !v)} style={{ flexShrink: 0 }}>
-              {bandPicker ? "Close" : "Change"}
+              {bandPicker ? tr("ob.close") : tr("ob.change")}
             </OBButton>
           </div>
           {bandPicker && titleList((t, b) => { void chooseTitle(t, b); setBandPicker(false); })}
           {!sector && (
             <div style={{ marginBlockStart: 12 }}>
-              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Which sector should KnownBy use?</label>
+              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>{tr("ob.s1.sectorAsk")}</label>
               <select id="ob-sector" value={sector} onChange={async (e) => {
                 const v = e.target.value;
                 setSector(v);
@@ -3091,11 +3099,11 @@ const Onboarding = () => {
                   await writeProfile({ sector_focus: v }, "sector save");
                 }
               }} style={{ ...fieldStyle, marginBlockStart: 8 }}>
-                <option value="">Choose your sector</option>
+                <option value="">{tr("ob.s1.sectorChoose")}</option>
                 {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>
-                Optional — it sharpens what KnownBy watches for you.
+                {tr("ob.s1.sectorOptional")}
               </p>
             </div>
           )}
@@ -3107,15 +3115,15 @@ const Onboarding = () => {
               background: OB.canvas, border: `1px solid ${OB.line}`,
             }}>
               <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
-                Two things KnownBy can see — both are yours to decide.
+                {tr("ob.s1.two.title")}
               </p>
 
               <div style={{ display: "flex", gap: 9, marginBlockStart: 14 }}>
                 <Check size={16} style={{ color: "#12805C", flexShrink: 0, marginBlockStart: 2 }} />
                 <div>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>What's public · read</p>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>{tr("ob.s1.public.title")}</p>
                   <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-                    Your profile and your posts. This is how KnownBy learns the way you write.
+                    {tr("ob.s1.public.body")}
                   </p>
                   {readJustNow ? (
                     <p style={{ margin: "6px 0 0", fontFamily: OB.mono, fontSize: 11.5, color: OB.ink }}>{readJustNow}</p>
@@ -3128,24 +3136,23 @@ const Onboarding = () => {
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>
                     {connected
-                      ? `Connected${connectedName ? ` · ${connectedName}` : ""} · KnownBy can read your posts and publish when you approve`
-                      : "What's private · not connected"}
+                      ? (connectedName ? tr("ob.s1.connectedNamed", { name: connectedName }) : tr("ob.s1.connected"))
+                      : tr("ob.s1.private.title")}
                   </p>
                   {connected ? null : (
                     <>
                       <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-                        How those posts actually performed. This is how KnownBy learns which of the signals in your read
-                        your audience already rewards — instead of guessing.
+                        {tr("ob.s1.private.body")}
                       </p>
                       {userId ? (
                         <Actions style={{ marginBlockStart: 12 }}>
-                          <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
-                            Connect LinkedIn
+                          <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel={tr("ob.connecting")}>
+                            {tr("ob.s1.connect")}
                           </OBButton>
                         </Actions>
                       ) : (
                         <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>
-                          {CONNECT_AFTER_ACCOUNT}
+                          {tr("ob.s1.connectAfterAccount")}
                         </p>
                       )}
                       {userId && connectNote ? (
@@ -3157,7 +3164,7 @@ const Onboarding = () => {
               </div>
 
               <p style={{ margin: "16px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
-                KnownBy reads your posts, and can publish for you — but only when you approve it. Nothing goes out in your name on its own. You can disconnect either one in Settings.
+                {tr("ob.s1.approve")}
               </p>
             </div>
 
@@ -3168,7 +3175,7 @@ const Onboarding = () => {
               {readCache ? (
                 readCache.notice
                   ? readCache.notice
-                  : `Read from your profile on ${new Date(readCache.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`
+                  : tr("ob.s1.readOn", { date: new Date(readCache.generated_at).toLocaleDateString(dateLocale(isAr ? "ar" : "en"), { day: "numeric", month: "long" }) })
               ) : null}
               {readCache ? (
                 <>
@@ -3182,7 +3189,7 @@ const Onboarding = () => {
                       display: "inline-block",
                     }}
                   >
-                    Read again
+                    {tr("ob.s1.readAgain")}
                   </button>
                 </>
               ) : null}
@@ -3193,10 +3200,10 @@ const Onboarding = () => {
                 aria-describedby={!(sector && (levelTitle || band)) ? "ob-sector-continue-why" : undefined}
                 onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}
               >
-                Continue
+                {tr("assess.read.continue")}
               </OBButton>
-              {!(sector && (levelTitle || band)) ? whyLine("ob-sector-continue-why", "Add your role and sector to continue.") : null}
-              <OBButton variant="tertiary" onClick={() => go(5)}>I'll do that later</OBButton>
+              {!(sector && (levelTitle || band)) ? whyLine("ob-sector-continue-why", tr("ob.s1.needRoleSector")) : null}
+              <OBButton variant="tertiary" onClick={() => go(5)}>{tr("ob.later")}</OBButton>
             </Actions>
           </>
         ) : null}
@@ -3210,17 +3217,17 @@ const Onboarding = () => {
     const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band && !!levelTitle;
     content = (
       <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={h1Light}>KnownBy couldn't read it — tell it the basics.</h1>
-        <p style={bodyLight}>Four things, and KnownBy works from these until you point it at your profile.</p>
+        <h1 style={h1Light}>{tr("ob.manual.title")}</h1>
+        <p style={bodyLight}>{tr("ob.manual.body")}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
-          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" aria-label="First name" style={fieldStyle} />
-          <input value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="Where you work" aria-label="Where you work" style={fieldStyle} />
-          <select value={sector} onChange={(e) => setSector(e.target.value)} aria-label="Your sector" style={fieldStyle}>
-            <option value="">Your sector</option>
+          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={tr("ob.manual.firstName")} aria-label={tr("ob.manual.firstName")} style={fieldStyle} />
+          <input value={firm} onChange={(e) => setFirm(e.target.value)} placeholder={tr("ob.manual.firm")} aria-label={tr("ob.manual.firm")} style={fieldStyle} />
+          <select value={sector} onChange={(e) => setSector(e.target.value)} aria-label={tr("ob.manual.sector")} style={fieldStyle}>
+            <option value="">{tr("ob.manual.sector")}</option>
             {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>Your level</p>
+        <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>{tr("ob.manual.level")}</p>
         {titleList((t, b) => { setLevelTitle(t); setBand(b); })}
         <Actions style={{ marginBlockStart: 20 }}>
         <OBButton disabled={!ready} aria-describedby={!ready ? "ob-manual-why" : undefined} onClick={async () => {
@@ -3231,9 +3238,9 @@ const Onboarding = () => {
             seniority_band: band, band_source: "corrected",
           }, "identity save");
           go(5);
-        }}>Save and carry on</OBButton>
-        {!ready ? whyLine("ob-manual-why", "Fill in your name, where you work, your sector and your level to enable this.") : null}
-        <OBButton variant="tertiary" onClick={() => goBack(1)}>Back</OBButton>
+        }}>{tr("ob.manual.save")}</OBButton>
+        {!ready ? whyLine("ob-manual-why", tr("ob.manual.need")) : null}
+        <OBButton variant="tertiary" onClick={() => goBack(1)}>{tr("ob.back")}</OBButton>
         </Actions>
       </PaperShell>
     );
@@ -3248,11 +3255,9 @@ const Onboarding = () => {
     };
     content = (
       <PaperShell onExit={saveAndExit} subProgress={0.5} footer={escapeFooter} backFallback={() => go(1)}>
-        <h1 style={h1Light}>Have a CV handy?</h1>
+        <h1 style={h1Light}>{tr("ob.cv.title")}</h1>
         <p style={bodyLight}>
-          Your CV and your profile are read together. Your profile says what the world can see.
-          A CV says what you actually did — the numbers, the programmes, the things nobody posted
-          about. KnownBy reads it against your profile and shows you the difference.
+          {tr("ob.cv.body")}
         </p>
         <div style={{ marginBlockStart: 20 }}>
           <CvUploadControl
@@ -3279,21 +3284,21 @@ const Onboarding = () => {
         {/* The ask comes after the whole comparison, and it is loss-framed. */}
         {!userId && cvCrosscheck && !reviewMode ? (
           <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.line}`, paddingBlockStart: 20 }}>
-            <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>Keep this.</h2>
+            <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>{tr("ob.cv.keep.title")}</h2>
             <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 8 }}>
-              Only this browser can reach this comparison. Make an account and it's yours anywhere.
+              {tr("ob.cv.keep.body")}
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton variant="tertiary" onClick={() => go(12)}>Skip ahead to my report</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(12)}>{tr("ob.cv.skip")}</OBButton>
               <p style={{ margin: "-4px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-                You'll skip the questions — your report will be thinner.
+                {tr("ob.cv.skipNote")}
               </p>
             </Actions>
           </div>
         ) : null}
         <Actions style={{ marginBlockStart: 20 }}>
           <OBButton onClick={leaveCv}>
-            {cvUploads > 0 ? "Read it" : "Continue"}
+            {cvUploads > 0 ? tr("ob.cv.readIt") : tr("assess.read.continue")}
           </OBButton>
         </Actions>
       </PaperShell>
@@ -3304,19 +3309,19 @@ const Onboarding = () => {
   if (screen === 5) {
     content = (
       <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={h1Light}>Something you read this week.</h1>
+        <h1 style={h1Light}>{tr("ob.s5.title")}</h1>
         <p style={bodyLight}>
-          Your profile says what you've done. It doesn't say what you think. One link is enough to start.
+          {tr("ob.s5.p1")}
         </p>
         <p style={bodyLight}>
           {userId
-            ? "Paste a link to an article or a post. KnownBy reads it and shows you what it found."
-            : "Paste a link to an article or a post. KnownBy reads it now and shows you what it found."}
+            ? tr("ob.s5.pasteSignedIn")
+            : tr("ob.s5.pasteAnon")}
         </p>
         <label htmlFor="ob-link" style={{
           display: "block", margin: "20px 0 6px", fontSize: 12.5, fontWeight: 600, color: OB.ink,
-        }}>Link</label>
-        <input id="ob-link" value={linkInput}
+        }}>{tr("ob.s5.linkLabel")}</label>
+        <input id="ob-link" value={linkInput} {...dirLtr}
           onChange={(e) => { setLinkInput(e.target.value); if (linkError) setLinkError(null); }}
           onKeyDown={(e) => { if (e.key === "Enter") void submitLink(); }}
           placeholder="https://hbr.org/2026/07/the-exit-ready-cfo" inputMode="url"
@@ -3325,22 +3330,22 @@ const Onboarding = () => {
           <p style={{ margin: "7px 0 0", fontSize: 12, color: "#C0392B" }}>{linkError}</p>
         ) : (
           <p style={{ margin: "7px 0 0", fontSize: 12, color: OB.muted }}>
-            A web link for now. Files and documents are coming.
+            {tr("ob.s5.linkNote")}
           </p>
         )}
         <Actions style={{ marginBlockStart: 14 }}>
-          <OBButton disabled={!linkInput.trim() || sendingLink} loading={sendingLink} loadingLabel="Sending…"
+          <OBButton disabled={!linkInput.trim() || sendingLink} loading={sendingLink} loadingLabel={tr("ob.sending")}
             aria-describedby={!linkInput.trim() ? "ob-add-why" : undefined}
-            onClick={() => void submitLink()}>Add it</OBButton>
-          {!linkInput.trim() ? whyLine("ob-add-why", "Paste a link to enable this.", true) : null}
+            onClick={() => void submitLink()}>{tr("ob.s5.add")}</OBButton>
+          {!linkInput.trim() ? whyLine("ob-add-why", tr("ob.s5.needLink"), true) : null}
           {/* Nobody is held here for want of an article. */}
-          <OBButton variant="tertiary" onClick={() => go(8)}>I'll add one later</OBButton>
+          <OBButton variant="tertiary" onClick={() => go(8)}>{tr("ob.s5.addLater")}</OBButton>
         </Actions>
 
         {suggested || !suggestDead ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 16px" }}>
             <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
-            <span style={{ fontSize: 11.5, color: OB.muted }}>Nothing to hand?</span>
+            <span style={{ fontSize: 11.5, color: OB.muted }}>{tr("ob.s5.nothing")}</span>
             <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
           </div>
         ) : null}
@@ -3348,14 +3353,14 @@ const Onboarding = () => {
         {suggested ? (
           <div style={{ border: `1px solid ${OB.line}`, borderRadius: RADIUS.card, padding: 15, background: OB.canvas }}>
             <p style={{ margin: 0, fontSize: 11.5, color: OB.muted }}>
-              KnownBy found this in your sector while it read your profile.
+              {tr("ob.s5.suggested")}
             </p>
             <p style={{ margin: "9px 0 0", fontSize: 14.5, fontWeight: 700, lineHeight: 1.4 }} {...memberText(suggested.title)}>
               {suggested.title}
             </p>
             <p style={{
               margin: "5px 0 0", fontFamily: OB.mono, fontSize: 11, color: OB.muted, letterSpacing: "0.02em",
-            }}>{sourceLine(suggested)}</p>
+            }}>{sourceLine(suggested, tr)}</p>
             {suggested.summary ? (
               <p style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}
                 {...memberText(suggested.summary)}>
@@ -3363,15 +3368,15 @@ const Onboarding = () => {
               </p>
             ) : null}
             <div style={{ marginBlockStart: 14 }}>
-              <OBButton variant="secondary" disabled={sendingLink} loading={sendingLink} loadingLabel="Sending…"
+              <OBButton variant="secondary" disabled={sendingLink} loading={sendingLink} loadingLabel={tr("ob.sending")}
                 onClick={() => void sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}>
-                Use this one
+                {tr("ob.s5.useThis")}
               </OBButton>
             </div>
           </div>
         ) : !suggestDead ? (
           <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted }}>
-            <Loader2 size={14} className="animate-spin" /> Looking for one from your sector…
+            <Loader2 size={14} className="animate-spin" /> {tr("ob.s5.looking")}
           </div>
         ) : null}
       </PaperShell>
@@ -3387,58 +3392,57 @@ const Onboarding = () => {
       completed: captureRun.completed,
       active: captureRun.active,
       failed: captureRun.failedAt,
-      labels: { fetch: "Article fetched", read: "What KnownBy found in it" },
+      labels: { fetch: tr("ob.s6.stage.fetch"), read: tr("ob.s6.stage.read") },
     });
     const settled = claimsSlow && claims.length === 0;
     content = capturePending ? (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Kept.</h1>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>{tr("ob.s6.kept.title")}</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          KnownBy couldn't pull anything usable out of this one here — some pages don't open to it.
-          The link is on your record and KnownBy reads it again when your report is saved.
+          {tr("ob.s6.kept.body")}
         </p>
         <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => { setCapturePending(false); go(7); }}>Carry on</OBButton>
+          <OBButton onClick={() => { setCapturePending(false); go(7); }}>{tr("ob.carryOn")}</OBButton>
         </Actions>
       </NightShell>
     ) : linkFailed ? (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>That one didn't come through.</h1>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>{tr("ob.s6.failed.title")}</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          KnownBy couldn't reach that link. Try another one, or carry on — you can add it later.
+          {tr("ob.s6.failed.body")}
         </p>
         <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => { setLinkFailed(false); go(5); }}>Try a different link</OBButton>
-          <OBButton variant="tertiary" onClick={() => { setLinkFailed(false); go(8); }}>Carry on</OBButton>
+          <OBButton onClick={() => { setLinkFailed(false); go(5); }}>{tr("ob.s6.tryOther")}</OBButton>
+          <OBButton variant="tertiary" onClick={() => { setLinkFailed(false); go(8); }}>{tr("ob.carryOn")}</OBButton>
         </Actions>
       </NightShell>
     ) : (
       <NightShell onExit={saveAndExit} face footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
-        <p style={{ ...bodyNight, textAlign: "center" }}>Finding the parts you can use.</p>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>{tr("ob.s6.reading.title")}</h1>
+        <p style={{ ...bodyNight, textAlign: "center" }}>{tr("ob.s6.reading.body")}</p>
         {settled ? null : (
           <>
             <div style={{ marginBlockStart: 22 }}>
               <WorkingPanel
                 onNight
                 operation="capture_ingest"
-                title="Reading it"
+                title={tr("ob.s6.panelTitle")}
                 stages={captureStages}
                 runId={captureRunId}
-                onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(8) }}
+                onCarryOn={{ label: tr("ob.carryOnLater"), action: () => go(8) }}
               />
             </div>
           </>
         )}
         {proof && proof.lines.length > 0 ? (
-            <WaitProof lines={proof.lines} startAt={0} howLong="While you wait — here's what KnownBy found in your own posts." />
+            <WaitProof lines={proof.lines} startAt={0} howLong={tr("ob.s6.whileWait")} />
         ) : null}
         {settled && (
           <>
             <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
-              KnownBy is still reading this one. It'll be on your Home when it's done — you don't need to wait here.
+              {tr("ob.s6.still")}
             </p>
-            <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
+            <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => go(8)}>{tr("ob.keepGoing")}</OBButton></Actions>
           </>
         )}
       </NightShell>
@@ -3451,7 +3455,7 @@ const Onboarding = () => {
     content = (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>
-          {shown.length ? "Here's what KnownBy found in it." : "Nothing came out of that one."}
+          {shown.length ? tr("ob.s7.found") : tr("ob.s7.none")}
         </h1>
         {shown.length ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
@@ -3461,12 +3465,11 @@ const Onboarding = () => {
           </div>
         ) : (
           <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 18 }}>
-            Some pages don't open to a reader. The link is kept against your record, and KnownBy
-            reads it again when your report is saved.
+            {tr("ob.s7.noneBody")}
           </p>
         )}
         <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
-          You'll know when something moves these — without going looking.
+          {tr("ob.s7.youllKnow")}
         </p>
         <NextStrip count={shown.length} onNight />
         <div style={{
@@ -3479,7 +3482,7 @@ const Onboarding = () => {
               unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
           ))}
         </div>
-        <Actions style={{ marginBlockStart: 18 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
+        <Actions style={{ marginBlockStart: 18 }}><OBButton onClick={() => go(8)}>{tr("ob.keepGoing")}</OBButton></Actions>
       </NightShell>
     );
   }
@@ -4306,7 +4309,7 @@ const Onboarding = () => {
           ) : null}
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
-            {REPORT_FREE_LINE}
+            {tr("ob.reportFree")}
           </p>
           <p style={{
             margin: "12px 0 0", fontSize: 12, lineHeight: 1.7,
