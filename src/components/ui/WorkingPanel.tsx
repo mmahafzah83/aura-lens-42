@@ -13,10 +13,12 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, useWeightedProgress, waitCopy,
+  mmss, useElapsed, useWaitEstimate, useWeightedProgress, waitCopy,
   type WaitOperation,
 } from "@/lib/waitEstimate";
 import { causeOf, retryLabel } from "@/lib/failureCause";
+import { Trans } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 /* ── System-B values. Module scope, always. ─────────────────────────────── */
@@ -151,6 +153,7 @@ export function WorkingPanel({
   operation = null, title, stages, onNight = false, failure = null,
   onRetryFromStage, onCarryOn = null, onNotifyMe, rtl = false, runId = 0,
 }: WorkingPanelProps) {
+  const { t } = useLanguage();
   const est = useWaitEstimate(operation);
   const secs = useElapsed(true, runId);
   const reduced = useReducedMotion();
@@ -206,10 +209,10 @@ export function WorkingPanel({
 
   /* Screen readers hear stage changes, never percent ticks. */
   const announce = failed
-    ? `${title}. ${failureLine}`
+    ? t("wait.announceFailed", { title, cause: failureLine })
     : active
-      ? `${title}. ${active.label}.`
-      : complete ? `${title}. Done.` : title;
+      ? t("wait.announceStage", { title, stage: active.label })
+      : complete ? t("wait.announceDone", { title }) : title;
 
 
   const linkStyle: React.CSSProperties = {
@@ -297,7 +300,7 @@ export function WorkingPanel({
           background: AMBER_BG, color: AMBER_TEXT, border: `1px solid ${AMBER_LINE}`,
           fontSize: 12.5,
         }}>
-          {OVER_P95_LINE}
+          {t("wait.overP95")}
         </p>
       ) : null}
 
@@ -362,7 +365,7 @@ export function WorkingPanel({
               aria-controls="wp-how-long"
               style={linkStyle}
             >
-              How long is this?
+              {t("wait.howLong")}
             </button>
             {/* A carry-on door is for a slow run, not only a failed one:
                 past a minute there is always a way out. */}
@@ -370,7 +373,7 @@ export function WorkingPanel({
               <button type="button" onClick={onCarryOn.action} style={linkStyle}>{onCarryOn.label}</button>
             ) : null}
             {onNotifyMe ? (
-              <button type="button" onClick={onNotifyMe} style={linkStyle}>Email me when it's ready</button>
+              <button type="button" onClick={onNotifyMe} style={linkStyle}>{t("wait.notifyMe")}</button>
             ) : null}
           </span>
         ) : null}
@@ -389,25 +392,30 @@ export function WorkingPanel({
           {est.known ? (
             <>
               <div>
-                Measured from <span dir="ltr" style={{ fontFamily: MONO }}>{est.sample}</span> finished runs of this
-                same work: half finish inside{" "}
-                <span dir="ltr" style={{ fontFamily: MONO }}>{mmss(est.p50)}</span>, almost all inside{" "}
-                <span dir="ltr" style={{ fontFamily: MONO }}>{mmss(est.p95)}</span>.
+                <Trans
+                  i18nKey="wait.howLong.measured"
+                  count={est.sample}
+                  values={{ count: est.sample, p50: mmss(est.p50), p95: mmss(est.p95) }}
+                  components={{ 1: <span dir="ltr" style={{ fontFamily: MONO }} />, 3: <span dir="ltr" style={{ fontFamily: MONO }} />, 5: <span dir="ltr" style={{ fontFamily: MONO }} /> }}
+                />
               </div>
               <div style={{ marginBlockStart: 6 }}>
-                You are at <span dir="ltr" style={{ fontFamily: MONO }}>{mmss(secs)}</span>. Leaving this page does not
-                stop the work.
+                <Trans
+                  i18nKey="wait.howLong.youAreAt"
+                  values={{ elapsed: mmss(secs) }}
+                  components={{ 1: <span dir="ltr" style={{ fontFamily: MONO }} /> }}
+                />
               </div>
             </>
           ) : (
             <>
-              <div>
-                KnownBy has not finished enough runs of this to know how long it takes. Rather than invent a figure, it
-                says so.
-              </div>
+              <div>{t("wait.howLong.unknown")}</div>
               <div style={{ marginBlockStart: 6 }}>
-                What is real: <span dir="ltr" style={{ fontFamily: MONO }}>{mmss(secs)}</span> elapsed. Leaving this
-                page does not stop the work.
+                <Trans
+                  i18nKey="wait.howLong.whatIsReal"
+                  values={{ elapsed: mmss(secs) }}
+                  components={{ 1: <span dir="ltr" style={{ fontFamily: MONO }} /> }}
+                />
               </div>
             </>
           )}

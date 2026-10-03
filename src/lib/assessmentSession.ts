@@ -9,7 +9,7 @@
  * This is a browser-held token, NOT an HttpOnly cookie — an HttpOnly cookie would
  * have to be set by an edge function, which is a later step.
  */
-import { readStoredLang } from "@/i18n";
+import i18n, { readStoredLang } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 
 export const SESSION_KEY = "aura_session_token";

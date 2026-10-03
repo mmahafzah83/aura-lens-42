@@ -1,40 +1,44 @@
 import { Link } from "react-router-dom";
 import LanguageToggle from "@/components/LanguageToggle";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
  * Canonical public footer — System-B light.
  * Sits at the bottom of any flex-column page via marginTop:auto.
  * Scoped under .pf.
  */
-const LINKS: Array<{ label: string; to: string }> = [
-  { label: "Home", to: "/" },
-  { label: "Our Story", to: "/our-story" },
-  { label: "The Guide", to: "/guide" },
-  { label: "Contact", to: "/contact" },
-  { label: "Security & Trust", to: "/trust" },
-  { label: "Privacy", to: "/privacy" },
-  { label: "Terms", to: "/terms" },
+const LINKS: Array<{ labelKey: string; to: string }> = [
+  { labelKey: "pub.footer.home", to: "/" },
+  { labelKey: "pub.footer.ourStory", to: "/our-story" },
+  { labelKey: "pub.footer.guide", to: "/guide" },
+  { labelKey: "pub.footer.contact", to: "/contact" },
+  { labelKey: "pub.footer.trust", to: "/trust" },
+  { labelKey: "pub.footer.privacy", to: "/privacy" },
+  { labelKey: "pub.footer.terms", to: "/terms" },
 ];
 
-const PublicFooter = () => (
+const PublicFooter = () => {
+  const { t } = useLanguage();
+  return (
   <>
     <style>{PF_CSS}</style>
     <footer className="pf">
       <div className="pf-in">
         <nav className="pf-links">
           {LINKS.map((l) => (
-            <Link key={l.to} to={l.to}>{l.label}</Link>
+            <Link key={l.to} to={l.to}>{t(l.labelKey)}</Link>
           ))}
         </nav>
         <div className="pf-right">
           <LanguageToggle />
           <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
-          <span>© 2026 KnownBy · Built in Riyadh, for the world.</span>
+          <span>{t("pub.footer.copyright")}</span>
         </div>
       </div>
     </footer>
   </>
-);
+  );
+};
 
 export default PublicFooter;
 
