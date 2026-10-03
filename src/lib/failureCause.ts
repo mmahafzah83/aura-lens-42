@@ -12,6 +12,8 @@
  * removed from the member's screen only.
  */
 
+import i18n from "@/i18n";
+
 /** Everything we can read off an unknown thrown value, lowercased. */
 function textOf(error: unknown): string {
   if (error == null) return "";
@@ -37,9 +39,9 @@ function statusOf(error: unknown): number | null {
 }
 
 /** "Reading your posts" → "reading your posts", for use mid-sentence. */
-function lower(stageLabel: string): string {
+function lower(stageLabel: string): string | null {
   const s = (stageLabel || "").trim();
-  if (!s) return "this step";
+  if (!s) return null;
   return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
@@ -54,7 +56,7 @@ export function causeOf(error: unknown, stageLabel: string): string {
 
   /* The clock, first — an abort is not a fault. */
   if (t.includes("abort") || t.includes("timeout") || t.includes("timed out") || t.includes("aborterror")) {
-    return "That read didn't come back in time. Nothing you had is lost.";
+    return i18n.t("fail.timeout");
   }
 
   /* The connection needs renewing — the member CAN act on this one. */
@@ -63,12 +65,12 @@ export function causeOf(error: unknown, stageLabel: string): string {
     t.includes("needs_reconnect") || t.includes("not connected") ||
     t.includes("unauthorized") || t.includes("forbidden") || t.includes(" 401") || t.includes(" 403")
   ) {
-    return "Your LinkedIn connection needs renewing before KnownBy can read this.";
+    return i18n.t("fail.reconnect");
   }
 
   /* Being asked to slow down. */
   if (status === 429 || t.includes("429") || t.includes("rate limit") || t.includes("too many requests")) {
-    return "LinkedIn is asking us to slow down. This usually clears within the hour.";
+    return i18n.t("fail.rateLimit");
   }
 
   /* Ours, and we say so. Includes supabase-js FunctionsFetchError. */
@@ -80,10 +82,10 @@ export function causeOf(error: unknown, stageLabel: string): string {
     t.includes("networkerror") ||
     t.includes("503")
   ) {
-    return `KnownBy couldn't reach the step that ${stage}. This is on us, not your LinkedIn — it's been logged.`;
+    return stage === null ? i18n.t("fail.unreachableNoStage") : i18n.t("fail.unreachable", { stage });
   }
 
-  return `KnownBy couldn't finish ${stage}. It's been logged and we can see it.`;
+  return stage === null ? i18n.t("fail.genericNoStage") : i18n.t("fail.generic", { stage });
 }
 
 export default causeOf;
@@ -95,5 +97,5 @@ export default causeOf;
  */
 export function retryLabel(stageLabel: string): string {
   const s = lower(stageLabel);
-  return s === "this step" ? "Try that step again" : `Try ${s} again`;
+  return s === null ? i18n.t("fail.retryNoStage") : i18n.t("fail.retry", { stage: s });
 }
