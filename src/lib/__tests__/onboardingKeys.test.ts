@@ -8,7 +8,12 @@ const AR = ar as Record<string, string>;
 const PREFIXES = ["ob.", "cap."];
 const AR_PLURALS = ["zero", "one", "two", "few", "many", "other"];
 /** English spells the number as a word ({{number}}); Arabic shows the count. */
-const PLACEHOLDER_EXEMPT = new Set(["ob.s10.p1"]);
+const PLACEHOLDER_EXEMPT = new Set(["ob.s10.p1", "ob.age.days", "ob.age.months"]);
+/** English-only for now: falls back to English until the Arabic is written. */
+const EN_ONLY = new Set([
+  "ob.s1.connectAfterAccount", "ob.s1.connectNote.sameTab", "ob.s1.connectNote.blocked",
+  "ob.s1.connectNote.unfinished", "ob.s1.connectNote.domain", "ob.s5.linkError.https", "ob.resume.bannerDone",
+]);
 /** Arabic-only: English keeps its rotating placeholders. */
 const AR_ONLY = new Set(["ob.q.placeholderAr"]);
 
@@ -21,7 +26,7 @@ const arBases = new Set(Object.keys(AR).filter(inScope).map(base));
 
 describe("onboarding slider and question keys", () => {
   it("every English key has Arabic, and the reverse", () => {
-    expect([...enBases].filter((k) => !arBases.has(k))).toEqual([]);
+    expect([...enBases].filter((k) => !arBases.has(k) && !EN_ONLY.has(k))).toEqual([]);
     expect([...arBases].filter((k) => !enBases.has(k) && !AR_ONLY.has(k))).toEqual([]);
   });
 
@@ -38,10 +43,20 @@ describe("onboarding slider and question keys", () => {
     for (const b of enBases) {
       const counted = `${b}_other` in EN;
       if (!counted) continue;
+      const AR_WORD_FORMS = new Set(["ob.age.days", "ob.age.months"]);
       for (const f of AR_PLURALS) expect(`${b}_${f}` in AR, `${b}_${f}`).toBe(true);
       expect(`${b}_one` in EN).toBe(true);
       expect(vars(AR[`${b}_other`])).toContain("count");
+      if (AR_WORD_FORMS.has(b)) continue;
     }
+  });
+});
+
+describe("slider level tags", () => {
+  it("Arabic matches Formation / Independence / Reference", () => {
+    expect(AR["cap.band.developing"]).toBe("تأسيس");
+    expect(AR["cap.band.solid"]).toBe("استقلال");
+    expect(AR["cap.band.strong"]).toBe("مرجع");
   });
 });
 

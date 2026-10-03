@@ -75,7 +75,7 @@ import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { ensureTimezone, browserTimezone } from "@/lib/ensureTimezone";
 import {
-  ASSESSMENT_STEPS_WORD, FULL_PICTURE_LINE,
+  ASSESSMENT_STEPS, ASSESSMENT_MINUTES, ASSESSMENT_STEPS_WORD, FULL_PICTURE_LINE,
   ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stageName,
 } from "@/lib/brand";
 import {
@@ -87,6 +87,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { itemText, optionLabel, type ItemLang } from "@/lib/assessmentItems";
 import { arabicPreviewOn } from "@/i18n";
 import { numberWord } from "@/i18n/numberWord";
+import { dateLocale } from "@/i18n";
 import { toCoded, toLegacyEnglish, legacyKey, NONE_CODE, type AnswerInput, type CodedAnswers } from "@/lib/assessmentAnswers";
 
 
