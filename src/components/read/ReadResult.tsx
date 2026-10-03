@@ -3,6 +3,7 @@
  * by step one of the assessment. One source, so the two can never drift.
  */
 import { useRef, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import RevealCard, {
   rasteriseRevealCard, type RevealData,
 } from "@/components/onboarding/RevealCard";
@@ -81,6 +82,7 @@ export default function ReadResult({
   /** Quiet line about the age of a cached read. */
   ageNote?: string | null;
 }) {
+  const { t } = useLanguage();
   const exportRef = useRef<HTMLDivElement>(null);
   const [shareNote, setShareNote] = useState<string>();
 
@@ -95,7 +97,7 @@ export default function ReadResult({
     marketRead: read.market_read ?? "",
     subjects: (read.themes ?? []).slice(0, 3),
     softGround: [],
-    figures: postsRead > 0 ? [{ value: String(postsRead), label: "posts of yours read" }] : [],
+    figures: postsRead > 0 ? [{ value: String(postsRead), label: t("reveal.figure.postsRead", { count: postsRead }) }] : [],
   };
 
   /* The shareable artefact carries his own sentence; on screen it has its own
@@ -124,9 +126,9 @@ export default function ReadResult({
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 4000);
-      setShareNote("Saved to your device.");
+      setShareNote(t("reveal.save.done"));
     } catch {
-      setShareNote("The card didn't render. Try once more.");
+      setShareNote(t("reveal.save.failed"));
     }
   };
 
@@ -144,14 +146,14 @@ export default function ReadResult({
 
       {sparse ? (
         <Card>
-          <Heading>Your profile is quieter than your career.</Heading>
-          <Body>KnownBy can see the shape but not the substance. Two questions or one CV would change that.</Body>
+          <Heading>{t("reveal.sparse.heading")}</Heading>
+          <Body>{t("reveal.sparse.body")}</Body>
         </Card>
       ) : (
         <>
           {read.own_words_quote ? (
             <Card>
-              <Heading>In your own words</Heading>
+              <Heading>{t("reveal.inYourOwnWords")}</Heading>
               {(() => {
                 const arabic = ARABIC_RE.test(read.own_words_quote ?? "");
                 const script: React.CSSProperties = arabic
@@ -176,14 +178,14 @@ export default function ReadResult({
 
           {read.uncontested_space ? (
             <Card>
-              <Heading dot={CYAN}>The space nobody has claimed</Heading>
+              <Heading dot={CYAN}>{t("reveal.uncontested")}</Heading>
               <Body>{read.uncontested_space}</Body>
             </Card>
           ) : null}
 
           {read.honest_gap ? (
             <Card>
-              <Heading dot={AMBER}>One honest gap</Heading>
+              <Heading dot={AMBER}>{t("reveal.honestGap")}</Heading>
               <Body>{read.honest_gap}</Body>
             </Card>
           ) : null}
@@ -193,14 +195,14 @@ export default function ReadResult({
       <div>
         <button
           onClick={save}
-          title="This read is anonymous. It lives in this browser only. Clear your history or switch to your phone and it is gone."
+          title={t("reveal.save.title")}
           style={{
             inlineSize: "100%", padding: "13px 18px", borderRadius: 8,
             border: `1px solid ${LINE}`, background: "transparent", color: INK,
             fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "pointer",
             minHeight: 48,
           }}
-        >Save this card to your desktop</button>
+        >{t("reveal.save.button")}</button>
         {shareNote ? <p style={{ margin: "8px 0 0", fontSize: 12.5, color: INK2 }}>{shareNote}</p> : null}
       </div>
     </div>
