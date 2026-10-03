@@ -3810,7 +3810,7 @@ const Onboarding = () => {
                     if (e.repeat) return;
                     if (e.key === "Enter" && textAnswer.trim()) advance({ text: textAnswer.trim() });
                   }}
-                  dir="auto" placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
+                  dir={isAr && !textAnswer ? "rtl" : "auto"} placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
                 <Actions style={{ marginBlockStart: 16 }}>
                   <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qtf-why" : undefined}
                     onClick={() => advance({ text: textAnswer.trim() })}>{tr("ob.next")}</OBButton>
@@ -3831,7 +3831,7 @@ const Onboarding = () => {
                   if (e.repeat) return;
                   if (e.key === "Enter" && textAnswer.trim()) advance({ text: textAnswer.trim() });
                 }}
-                dir="auto" placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
+                dir={isAr && !textAnswer ? "rtl" : "auto"} placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qt-why" : undefined}
                   onClick={() => advance({ text: textAnswer.trim() })}>{tr("ob.next")}</OBButton>
