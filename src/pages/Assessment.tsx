@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readStoredLang } from "@/i18n";
+import { numberWord } from "@/i18n/numberWord";
+import { Trans } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import {
@@ -12,10 +15,10 @@ import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
 import { JourneyChrome, readStageFraction } from "@/components/journey/JourneyShell";
-import {
-  ASSESSMENT_MINUTES, FIRST_READ_LINE, FULL_PICTURE_LINE,
-  FIRST_READ_SHORT,
-} from "@/lib/brand";
+import { ASSESSMENT_MINUTES } from "@/lib/brand";
+
+/** The first read's promise, in seconds — English writes it as a word. */
+const FIRST_READ_SECONDS = 90;
 
 /**
  * The Gate — and the quick read, which is step one of the one assessment.
@@ -29,6 +32,7 @@ type Stage = "gate" | "address" | "reading" | "read" | "resume";
  * written to `read_queue` and the position shown is the position held.
  */
 const QueueCapture = ({ anonToken }: { anonToken: string | null }) => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [position, setPosition] = useState<number | null>(null);
@@ -47,8 +51,7 @@ const QueueCapture = ({ anonToken }: { anonToken: string | null }) => {
     return (
       <section className="asg-panel" role="status">
         <p className="asg-pp">
-          KnownBy is reading at its limit for today. You are number {position} in line. It opens again at
-          {" "}03:00 Riyadh time and we will email you the moment yours is ready. Nothing you have entered is lost.
+          {t("assess.queue.held", { count: position })}
         </p>
       </section>
     );
@@ -56,21 +59,20 @@ const QueueCapture = ({ anonToken }: { anonToken: string | null }) => {
 
   return (
     <section className="asg-panel">
-      <h1 className="asg-ph">KnownBy is reading at its limit for today.</h1>
+      <h1 className="asg-ph">{t("assess.queue.heading")}</h1>
       <p className="asg-pp">
-        It opens again at 03:00 Riyadh time. Leave your email and we will write to you the moment yours is ready.
-        Nothing you have entered is lost.
+        {t("assess.queue.body")}
       </p>
-      <label className="asg-lbl" htmlFor="asg-queue-email">Your email</label>
+      <label className="asg-lbl" htmlFor="asg-queue-email">{t("assess.queue.emailLabel")}</label>
       <input
         id="asg-queue-email" className="asg-in" type="email" value={email}
-        placeholder="you@company.com"
+        placeholder={t("assess.queue.emailPlaceholder")}
         onChange={(e) => setEmail(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") void submit(); }}
       />
       <div aria-live="polite">{err && <p className="asg-err">{err}</p>}</div>
       <button className="asg-btn asg-bp asg-full" disabled={busy || !email.trim()} onClick={() => void submit()}>
-        {busy ? "Saving your place…" : "Hold my place"}
+        {busy ? t("assess.queue.saving") : t("assess.queue.hold")}
       </button>
     </section>
   );
@@ -94,10 +96,11 @@ const stampDate = (iso?: string | null): string | null => {
 };
 
 const Assessment = () => {
+  const { t } = useLanguage();
+  const minutesVars = { count: ASSESSMENT_MINUTES, minutes: numberWord(ASSESSMENT_MINUTES) };
   usePageMeta({
-    title: "KnownBy — Start your professional assessment",
-    description:
-      `${FULL_PICTURE_LINE}, free, and yours to keep. KnownBy reads your LinkedIn, your CV and your own answers, then shows what you are provably good at and what is real but invisible.`,
+    title: t("assess.meta.title"),
+    description: t("assess.meta.description", minutesVars),
     path: "/assessment",
   });
 
@@ -182,7 +185,7 @@ const Assessment = () => {
     setNotice(null);
     const target = (urlArg ?? addr).trim();
     if (!target.toLowerCase().includes("linkedin.com/in/")) {
-      setAddrError("That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.");
+      setAddrError(t("assess.err.notLinkedIn"));
       return;
     }
     setAddrError(null);
@@ -191,7 +194,7 @@ const Assessment = () => {
       // Someone arriving from a link has no session yet — open one silently.
       const opened = await createSession();
       if (opened.error || !opened.token) {
-        setNotice(opened.error ?? "Your session has expired. Start again — nothing is lost.");
+        setNotice(opened.error ?? t("assess.err.sessionExpired"));
         setStage("gate"); return;
       }
       t = opened.token;
@@ -222,15 +225,15 @@ const Assessment = () => {
       if (!res.ok || !data?.ok || !data?.read) {
         // Every code the engine can return gets its own honest line.
         const READ_ERRORS: Record<string, string> = {
-          invalid_url: "That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.",
-          profile_unreadable: "LinkedIn didn't return that profile. If it's set to private, KnownBy can't see it either.",
-          provider_limit: "KnownBy has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly.",
-          rate_limited: "That's as many reads as can come from here this hour. Nothing is lost — try again shortly.",
-          not_configured: "Reading is briefly unavailable on our side. Nothing is lost — try again shortly.",
+          invalid_url: t("assess.err.notLinkedIn"),
+          profile_unreadable: t("assess.err.profileUnreadable"),
+          provider_limit: t("assess.err.providerLimit"),
+          rate_limited: t("assess.err.rateLimited"),
+          not_configured: t("assess.err.notConfigured"),
         };
         setNotice(
           READ_ERRORS[String(data?.error ?? "")] ??
-          "The read didn't come back clean. Nothing is lost — try once more.");
+          t("assess.err.readNotClean"));
         setStage("address");
         return;
       }
@@ -245,7 +248,7 @@ const Assessment = () => {
       } as AssessmentState);
       setStage("read");
     } catch {
-      setNotice("Something failed on our side. Nothing is lost — try once more.");
+      setNotice(t("assess.session.generic"));
       setStage("address");
     }
   };
@@ -275,7 +278,7 @@ const Assessment = () => {
 
   /** A new read replaces the one already held — so it is confirmed first. */
   const startNewRead = async () => {
-    const ok = window.confirm("Start a new read? This replaces the read you already have.");
+    const ok = window.confirm(t("assess.read.confirmNew"));
     if (!ok) return;
     setAgeNote(null);
     setPostsRead(0);
@@ -311,7 +314,7 @@ const Assessment = () => {
         <main id="journey-main" tabIndex={-1} className="asg-wrap asg-flow">
           {stage === "read" || stage === "resume" ? (
             <div className="asg-strip-under">
-              <p className="asg-saved">Your read is saved.</p>
+              <p className="asg-saved">{t("assess.read.saved")}</p>
             </div>
           ) : null}
           {notice && <div className="asg-notice" role="status">{notice}</div>}
@@ -320,32 +323,32 @@ const Assessment = () => {
 
           {stage === "address" && !queued && (
             <section className="asg-panel">
-              <span className="asg-k">STEP ONE · THE QUICK READ</span>
-              <h1 className="asg-ph">What's your LinkedIn?</h1>
-              <p className="asg-pp">We read what is already public. Nothing is posted or shared.</p>
-              <label className="asg-lbl" htmlFor="asg-addr">Your LinkedIn address</label>
+              <span className="asg-k">{t("assess.address.kicker", { count: 1, step: numberWord(1, { cases: "upper" }) })}</span>
+              <h1 className="asg-ph">{t("assess.address.heading")}</h1>
+              <p className="asg-pp">{t("assess.address.sub")}</p>
+              <label className="asg-lbl" htmlFor="asg-addr">{t("assess.address.label")}</label>
               <input
                 id="asg-addr" className="asg-in" autoFocus value={addr}
-                placeholder="linkedin.com/in/yourname"
+                placeholder={t("assess.address.placeholder")}
                 onChange={(e) => setAddr(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") void runRead(); }}
               />
               <div aria-live="polite">{addrError && <p className="asg-err">{addrError}</p>}</div>
               <button className="asg-btn asg-bp asg-full" onClick={() => void runRead()}>
-                Read my profile <span className="asg-a">↗</span>
+                {t("assess.address.button")} <span className="asg-a">↗</span>
               </button>
-              <p className="asg-trust">No account needed. You can stop and come back — this page remembers.</p>
+              <p className="asg-trust">{t("assess.address.trust")}</p>
             </section>
           )}
 
           {stage === "reading" && (
             <section className="asg-panel">
-              <span className="asg-k">READING</span>
+              <span className="asg-k">{t("assess.reading.kicker")}</span>
               <div style={{ marginBlockStart: 14 }}>
                 <WorkingPanel
                   operation="linkedin_read"
                   runId={readRunId ?? 0}
-                  title="Reading your profile"
+                  title={t("assess.reading.title")}
                   stages={readRun.stages}
                 />
               </div>
@@ -354,28 +357,28 @@ const Assessment = () => {
 
           {stage === "resume" && (
             <section className="asg-panel">
-              <h1 className="asg-ph">You already have a read.</h1>
+              <h1 className="asg-ph">{t("assess.resume.heading")}</h1>
               <p className="asg-resume-meta">
                 {[state.name, stampDate(state.generated_at)].filter(Boolean).join(" · ")}
               </p>
               <button className="asg-btn asg-bp asg-full" onClick={() => setStage("read")}>
-                Open my read <span className="asg-a">↗</span>
+                {t("assess.resume.open")} <span className="asg-a">↗</span>
               </button>
               <button type="button" className="asg-textbtn" onClick={() => void startNewRead()}>
-                Start a new one
+                {t("assess.resume.startNew")}
               </button>
-              <p className="asg-trust">This replaces the read above.</p>
+              <p className="asg-trust">{t("assess.resume.trust")}</p>
             </section>
           )}
 
           {stage === "read" && (
             <div className="asg-read">
               <div className="asg-moment">
-                <div>Ninety seconds ago KnownBy had never heard of you.</div>
+                <div>{t("assess.read.moment", { count: FIRST_READ_SECONDS, seconds: numberWord(FIRST_READ_SECONDS, { cases: "cap" }) })}</div>
                 <div>
                   {postsRead > 0
-                    ? `Here is what your last ${postsRead} posts say to the market.`
-                    : "Here is what your profile says to the market."}
+                    ? t("assess.read.posts", { count: postsRead })
+                    : t("assess.read.profile")}
                 </div>
               </div>
               <ReadResult
@@ -389,13 +392,13 @@ const Assessment = () => {
                 ageNote={ageNote}
               />
               <button type="button" className="asg-textbtn" onClick={() => void startNewRead()}>
-                This isn't me — read a different profile
+                {t("assess.read.notMe")}
               </button>
               <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
-                Continue <span className="asg-a">↗</span>
+                {t("assess.read.continue")} <span className="asg-a">↗</span>
               </button>
               <p className="asg-trust">
-                Saved as you go. No account yet — we ask once, at the end.
+                {t("assess.read.trust")}
               </p>
             </div>
           )}
@@ -421,48 +424,48 @@ const Assessment = () => {
               <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
                 <circle cx="5" cy="5" r="3" fill="#00807B" />
               </svg>
-              BEFORE YOU START
+              {t("assess.gate.pill")}
             </span>
 
             <h1 className="asg-h1">
-              {FIRST_READ_LINE}, and you&rsquo;ll see
-              <br />
-              <span className="asg-h1b">what your profile has been hiding.</span>
+              <Trans
+                i18nKey="assess.gate.headline"
+                count={FIRST_READ_SECONDS}
+                values={{ count: FIRST_READ_SECONDS, seconds: numberWord(FIRST_READ_SECONDS) }}
+                components={{ 1: <br />, 2: <span className="asg-h1b" /> }}
+              />
             </h1>
 
             <p className="asg-sub">
-              KnownBy reads your LinkedIn, your CV and your own answers, then tells you what you are
-              provably good at, what is real but invisible, and the position nobody else is holding.
-              {" "}{FULL_PICTURE_LINE}.
+              {t("assess.gate.sub", minutesVars)}
             </p>
 
             <div className="asg-stats">
               <div className="asg-stat">
-                <span className="asg-n">{FIRST_READ_SHORT}</span>
-                <span className="asg-c">to your first read</span>
+                <span className="asg-n">{t("assess.gate.statFirstRead", { count: FIRST_READ_SECONDS })}</span>
+                <span className="asg-c">{t("assess.gate.statFirstReadCaption")}</span>
               </div>
               <div className="asg-stat">
-                <span className="asg-n">Free</span>
-                <span className="asg-c">and yours to keep</span>
+                <span className="asg-n">{t("assess.gate.statFree")}</span>
+                <span className="asg-c">{t("assess.gate.statFreeCaption")}</span>
               </div>
             </div>
 
             <div className="asg-acts">
               <button className="asg-btn asg-bp" onClick={() => void begin()} disabled={busy}>
-                {busy ? "Opening…" : (<>Start with my LinkedIn <span className="asg-a">↗</span></>)}
+                {busy ? t("assess.gate.opening") : (<>{t("assess.gate.start")} <span className="asg-a">↗</span></>)}
               </button>
               <button
                 type="button"
                 className="asg-btn asg-bg"
                 onClick={scrollToInside}
               >
-                What&rsquo;s inside the report
+                {t("assess.gate.inside")}
               </button>
             </div>
 
             <p className="asg-trust">
-              No account needed to begin. Nothing is posted, shared or shown to anyone — ever,
-              without you clicking.
+              {t("assess.gate.trust")}
             </p>
           </div>
 
@@ -471,7 +474,7 @@ const Assessment = () => {
             <svg
               viewBox="0 0 420 420"
               role="img"
-              aria-label="An illustration of the assessment: a CV card behind a dark blue report card showing three capability bars, with fragments of evidence feeding in and the KnownBy eye watching below."
+              aria-label={t("assess.gate.artAria")}
             >
               <defs>
                 <linearGradient id="asgcard" x1="0" y1="0" x2="1" y2="1">
@@ -558,39 +561,39 @@ const Assessment = () => {
         {/* ── below · the shape of the journey ── */}
         <section className="asg-three">
           <article className="asg-card">
-            <span className="asg-k">FIRST · {FIRST_READ_SHORT.toUpperCase()}</span>
-            <h2>Your LinkedIn, read</h2>
-            <p>We read what is already public and turn it into a first picture of how you land.</p>
+            <span className="asg-k">{t("assess.three.firstKicker", { count: FIRST_READ_SECONDS })}</span>
+            <h2>{t("assess.three.firstTitle")}</h2>
+            <p>{t("assess.three.firstBody")}</p>
           </article>
           <article className="asg-card">
-            <span className="asg-k">THEN · {ASSESSMENT_MINUTES} MINUTES</span>
-            <h2>Your CV, your reading, a few questions</h2>
-            <p>Upload your CV, tell us what you&apos;ve been reading, and answer a handful of questions in your own words. Stop and come back whenever you like.</p>
+            <span className="asg-k">{t("assess.three.thenKicker", { count: ASSESSMENT_MINUTES })}</span>
+            <h2>{t("assess.three.thenTitle")}</h2>
+            <p>{t("assess.three.thenBody")}</p>
           </article>
           <article className="asg-card">
-            <span className="asg-k">AT THE END</span>
-            <h2>Your report</h2>
-            <p>What you are provably good at, what is real but invisible, and the position open to you.</p>
+            <span className="asg-k">{t("assess.three.endKicker")}</span>
+            <h2>{t("assess.three.endTitle")}</h2>
+            <p>{t("assess.three.endBody")}</p>
           </article>
         </section>
 
         {/* ── what the report actually contains ── */}
         <section className="asg-inside" id="inside" ref={insideRef}>
-          <span className="asg-k">WHAT&rsquo;S INSIDE</span>
-          <h2 className="asg-ih">Six things you will know that you did not know this morning.</h2>
+          <span className="asg-k">{t("assess.inside.kicker")}</span>
+          <h2 className="asg-ih">{t("assess.inside.heading", { count: INSIDE_ITEMS.length, number: numberWord(INSIDE_ITEMS.length, { cases: "cap" }) })}</h2>
 
           <div className="asg-grid">
             {INSIDE_ITEMS.map((item) => (
-              <div className="asg-item" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.line}</p>
+              <div className="asg-item" key={item}>
+                <h3>{t(`assess.inside.${item}.title`)}</h3>
+                <p>{t(`assess.inside.${item}.line`)}</p>
               </div>
             ))}
           </div>
 
           <div className="asg-acts asg-acts-c">
             <button className="asg-btn asg-bp" onClick={() => void begin()} disabled={busy}>
-              {busy ? "Opening…" : (<>Start with my LinkedIn <span className="asg-a">↗</span></>)}
+              {busy ? t("assess.gate.opening") : (<>{t("assess.gate.start")} <span className="asg-a">↗</span></>)}
             </button>
           </div>
         </section>
@@ -601,14 +604,8 @@ const Assessment = () => {
   );
 };
 
-const INSIDE_ITEMS = [
-  { title: "Your capability map", line: "What is proven, what is real but invisible, what is not there yet." },
-  { title: "CV against LinkedIn", line: "Where the two disagree, and what each one is hiding." },
-  { title: "The space nobody has claimed", line: "The position that is open to you." },
-  { title: "Your three subjects", line: "Instead of writing about ten." },
-  { title: "How three people read you", line: "A headhunter, a client, a peer." },
-  { title: "The report itself", line: "A PDF and a card, yours to keep." },
-];
+/** Keys of the six report items: assess.inside.<n>.title / .line */
+const INSIDE_ITEMS = [1, 2, 3, 4, 5, 6] as const;
 
 const ASG_CSS = `
 .asg{--ink:#0F1519;--ink2:#37424F;--ink3:#66707D;--ink4:#5B6673;--line:#E2E7EE;--white:#FFF;
