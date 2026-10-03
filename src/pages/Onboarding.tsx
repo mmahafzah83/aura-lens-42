@@ -151,7 +151,7 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
   if (!Number.isFinite(t)) return domain;
   const days = Math.floor((Date.now() - t) / 86400000);
   const age = days <= 0 ? tt("ob.age.today") : days < 30 ? tt("ob.age.days", { count: days })
-    : t("ob.age.months", { count: days < 60 ? 1 : Math.floor(days / 30) });
+    : tt("ob.age.months", { count: days < 60 ? 1 : Math.floor(days / 30) });
   return domain ? `${domain} · ${age}` : age;
 };
 
