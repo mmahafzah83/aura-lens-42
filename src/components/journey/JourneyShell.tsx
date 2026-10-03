@@ -19,6 +19,7 @@ import { useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AuraLogo } from "@/components/brand/AuraLogo";
 import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const CARD = "#FFFFFF";
 const LINE = "#E2E7EE";
@@ -90,6 +91,8 @@ html{scroll-padding-top:${CHROME_H + 8}px;}
   padding:12px 16px;min-block-size:44px;display:inline-flex;align-items:center;
   font-family:${UI};font-size:14px;font-weight:600;text-decoration:none;}
 .jshell-skip:focus{inset-block-start:8px;}
+/* When the language switch shares the bar on a phone, the first name gives way to it. */
+@media (max-width:420px){.jshell:has(.kb-lt) .jshell-first{display:none;}}
 `;
 
 let cssMounted = 0;
@@ -135,7 +138,7 @@ const TAP: React.CSSProperties = {
 const JourneyBar = ({ onBack, onExit, name }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
 }) => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const first = firstNameOf(name);
   const initials = initialsOf(name);
   return (
@@ -158,7 +161,7 @@ const JourneyBar = ({ onBack, onExit, name }: {
             visibility: onBack ? "visible" : "hidden",
             pointerEvents: onBack ? "auto" : "none" }}
         >
-          <ArrowLeft size={17} aria-hidden />
+          <ArrowLeft size={17} aria-hidden style={isRTL ? { transform: "scaleX(-1)" } : undefined} />
         </button>
       </div>
 
@@ -192,12 +195,14 @@ const JourneyBar = ({ onBack, onExit, name }: {
           visibility: initials ? "visible" : "hidden",
         }}>{initials || "··"}</span>
         {first ? (
-          <span style={{
+          <span className="jshell-first" style={{
             fontFamily: UI, fontSize: 14, fontWeight: 600, color: INK,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxInlineSize: 120,
           }}>{first}</span>
         ) : null}
       </div>
+
+      <LanguageToggle />
 
       {/* slot 4 — the one quiet way out. A label, never an X. */}
       <button type="button" onClick={onExit} style={{ ...TAP, color: INK2, flexShrink: 0 }}>

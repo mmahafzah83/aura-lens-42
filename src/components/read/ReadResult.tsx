@@ -4,6 +4,7 @@
  */
 import { useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import i18n, { dateLocale } from "@/i18n";
 import RevealCard, {
   rasteriseRevealCard, type RevealData,
 } from "@/components/onboarding/RevealCard";
@@ -59,7 +60,7 @@ const longDate = (iso?: string | null): string | undefined => {
   if (!iso) return undefined;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return undefined;
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+  return d.toLocaleDateString(dateLocale(i18n.language === "ar" ? "ar" : "en"), { day: "2-digit", month: "short", year: "numeric" })
     .replace(/\s+/g, " ").toUpperCase();
 };
 

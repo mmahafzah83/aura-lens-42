@@ -42,6 +42,7 @@ function statusOf(error: unknown): number | null {
 function lower(stageLabel: string): string | null {
   const s = (stageLabel || "").trim();
   if (!s) return null;
+  if (i18n.language !== "en") return s;
   return s.charAt(0).toLowerCase() + s.slice(1);
 }
 

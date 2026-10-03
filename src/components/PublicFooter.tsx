@@ -58,12 +58,13 @@ const PF_CSS = `
 .pf-links{display:flex;flex-wrap:wrap;gap:6px 18px;}
 .pf-links a{color:var(--n500);padding:6px 0;transition:color .2s ease;}
 .pf-links a:hover{color:var(--n900);}
-.pf-right{display:flex;flex-direction:column;gap:6px;color:var(--n400);text-align:right;}
+.pf-right{display:flex;flex-direction:column;gap:6px;color:var(--n400);text-align:end;}
 .pf-right a{transition:color .2s ease;}
 .pf-right a:hover{color:var(--n900);}
 @media (max-width:640px){
   .pf-in{flex-direction:column;}
-  .pf-right{text-align:left;}
+  .pf-right{text-align:start;}
 }
+[dir="rtl"] .pf-in{letter-spacing:0;font-family:'CairoAR',var(--mono);font-size:11.5px;}
 @media (prefers-reduced-motion:reduce){ .pf *{transition:none !important;} }
 `;
