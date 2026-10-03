@@ -195,7 +195,7 @@ const optionButton = (
   blocked = false,
   why?: string,
 ) => (
-  <button key={key} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
+  <button key={key} type="button" disabled={blocked} onClick={onClick} aria-pressed={picked} className="ob-opt" style={{
     textAlign: "start", padding: "14px 15px", borderRadius: 14,
     cursor: blocked ? "not-allowed" : "pointer",
     border: `1px solid ${OB.line}`,
@@ -282,12 +282,15 @@ const whyLine = (id: string, text: string, centred = false) => (
 interface Dimension {
   name: string; why_line: string | null;
   anchor_low: string | null; anchor_mid: string | null; anchor_high: string | null;
+  name_ar?: string | null; why_line_ar?: string | null;
+  anchor_low_ar?: string | null; anchor_mid_ar?: string | null; anchor_high_ar?: string | null;
 }
 interface JourneyQuestion {
   id: string; position: number; framework: string | null; band: string | null; instrument_version: number | null;
   prompt: string; helper: string | null; kind: string; max_choices: number | null;
-  options: { label: string; value: string }[] | null;
+  options: { label: string; value: string; label_ar?: string | null }[] | null;
   why_asked: string | null; allow_none: boolean | null; randomise: boolean | null;
+  prompt_ar?: string | null; helper_ar?: string | null; why_asked_ar?: string | null;
 }
 
 /** A stable shuffle — the same question never reshuffles under the member. */
@@ -683,6 +686,11 @@ const Onboarding = () => {
   /* The same answers by question id and option value — never by display text. */
   const [codedAnswers, setCodedAnswers] = useState<CodedAnswers>({});
   const { lang: uiLang } = useLanguage();
+  /* `?items=ar` — the founder's review switch: Arabic for the ITEMS only. */
+  const [itemsPreview] = useState(() => itemsPreviewFromSearch(window.location.search));
+  const itemLang: ItemLang = itemsPreview ? "ar" : uiLang === "ar" ? "ar" : "en";
+  /* dir/lang only on the item text, only when Arabic is forced — English renders untouched. */
+  const itemAttrs = itemsPreview ? { dir: "rtl" as const, lang: "ar" } : {};
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
   /* One rule for every question: select, see it selected, then Next. */
@@ -4589,6 +4597,12 @@ const Onboarding = () => {
             boxShadow: "0 8px 24px rgba(15,21,25,.22)",
           }}>{exitNote}</span>
         </div>
+      ) : null}
+      {itemsPreview ? (
+        <div role="note" lang="en" dir="ltr" style={{
+          position: "fixed", insetBlockEnd: 12, insetInlineStart: 12, zIndex: 60, pointerEvents: "none",
+          background: OB.ink, color: OB.white, fontSize: 11, borderRadius: 999, padding: "5px 10px",
+        }}>Arabic items preview</div>
       ) : null}
       <JourneyNav.Provider value={{
         onBack: screen === 1 && step1Phase === "result"
