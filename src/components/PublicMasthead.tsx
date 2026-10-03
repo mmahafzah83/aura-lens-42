@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import LanguageToggle from "@/components/LanguageToggle";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { FREE_CTA_SHORT_LABEL } from "@/lib/brand";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export type MastheadCta = { label: string; href: string; variant: "primary" | "quiet" };
 
@@ -24,11 +25,15 @@ const PublicMasthead = ({
   authed?: boolean;
   /** Pass null on single-action pages (the Gate) so nothing competes with the page's own action. */
   cta?: MastheadCta | null;
-}) => (
+}) => {
+  const { t } = useLanguage();
+  /* The default door carries a known sentence; callers' own labels are theirs. */
+  const ctaLabel = cta === DEFAULT_MASTHEAD_CTA ? t("pub.startFree") : cta?.label;
+  return (
   <>
     <style>{PM_CSS}</style>
     <header className="pm">
-      <Link className="pm-brand" to="/" aria-label="KnownBy home">
+      <Link className="pm-brand" to="/" aria-label={t("pub.homeAria")}>
         <AuraLogo size={24} variant="auto" />
         <span className="pm-bn">KnownBy</span>
       </Link>
@@ -36,19 +41,19 @@ const PublicMasthead = ({
         <LanguageToggle />
         {authed ? (
           <Link className="pm-cta" to="/dashboard">
-            Back to your dashboard <span className="pm-a">↗</span>
+            {t("pub.backToDashboard")} <span className="pm-a">↗</span>
           </Link>
         ) : (
           <>
-            <Link className="pm-link" to="/auth">Sign in</Link>
+            <Link className="pm-link" to="/auth">{t("pub.signIn")}</Link>
             {cta &&
               (cta.variant === "primary" ? (
                 <Link className="pm-cta" to={cta.href}>
-                  {cta.label} <span className="pm-a">↗</span>
+                  {ctaLabel} <span className="pm-a">↗</span>
                 </Link>
               ) : (
                 <Link className="pm-link" to={cta.href}>
-                  {cta.label}
+                  {ctaLabel}
                 </Link>
               ))}
           </>
@@ -56,7 +61,8 @@ const PublicMasthead = ({
       </nav>
     </header>
   </>
-);
+  );
+};
 
 export default PublicMasthead;
 

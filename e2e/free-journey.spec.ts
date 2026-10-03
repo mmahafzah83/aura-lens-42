@@ -199,7 +199,11 @@ test.describe("the free journey", () => {
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
     // Untranslated options fall back to English, one string at a time.
     const second = (first.options ?? [])[1];
-    if (second) await expect(page.getByRole("button", { name: second.label, exact: true })).toBeVisible();
+    // Arabic now stored for some options: check the fallback only where label_ar is empty.
+    if (second) {
+      const ar = typeof (second as any).label_ar === "string" && (second as any).label_ar.trim() ? (second as any).label_ar : null;
+      await expect(page.getByRole("button", { name: ar ?? second.label, exact: true })).toBeVisible();
+    }
 
     const opt = page.getByRole("button", { name: `${MARK} خيار`, exact: true });
     await expect(opt).toHaveAttribute("aria-pressed", "false");

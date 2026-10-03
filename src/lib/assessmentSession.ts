@@ -9,7 +9,7 @@
  * This is a browser-held token, NOT an HttpOnly cookie — an HttpOnly cookie would
  * have to be set by an edge function, which is a later step.
  */
-import { readStoredLang } from "@/i18n";
+import i18n, { readStoredLang } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 
 export const SESSION_KEY = "aura_session_token";
@@ -56,10 +56,10 @@ const codeOf = (err: unknown): string => {
 
 export const messageFor = (code: string): string => {
   switch (code) {
-    case "RUN_ALREADY_USED": return ALREADY_RUN_MESSAGE;
+    case "RUN_ALREADY_USED": return i18n.t("assess.session.alreadyRun");
     case "DAILY_CEILING":
-    case "RATE_LIMIT_IP": return QUEUE_MESSAGE;
-    default: return GENERIC;
+    case "RATE_LIMIT_IP": return i18n.t("assess.queue.heading");
+    default: return i18n.t("assess.session.generic");
   }
 };
 
@@ -70,7 +70,7 @@ export async function createSession(): Promise<{ token?: string; error?: string 
   const { data, error } = await supabase.rpc("create_assessment_session", {});
   if (error) return { error: messageFor(codeOf(error)) };
   const token = typeof data === "string" ? data : null;
-  if (!token) return { error: GENERIC };
+  if (!token) return { error: i18n.t("assess.session.generic") };
   writeToken(token);
   return { token };
 }
@@ -127,8 +127,8 @@ export async function joinReadQueue(
   });
   if (error) {
     const raw = String((error as { message?: string })?.message ?? "");
-    if (raw.includes("INVALID_EMAIL")) return { ok: false, error: "That doesn't look like an email address." };
-    return { ok: false, error: GENERIC };
+    if (raw.includes("INVALID_EMAIL")) return { ok: false, error: i18n.t("assess.queue.invalidEmail") };
+    return { ok: false, error: i18n.t("assess.session.generic") };
   }
   return { ok: true, position: Number(data ?? 1) };
 }

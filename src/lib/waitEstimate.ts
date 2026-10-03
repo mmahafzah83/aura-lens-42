@@ -13,6 +13,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useRef, useState } from "react";
 import type { InstrumentedOperation } from "@/lib/operationStages";
+import i18n from "@/i18n";
+import { numberWord } from "@/i18n/numberWord";
 
 /**
  * DERIVED, not restated. The stage definition is the only list of operations;
@@ -43,24 +45,24 @@ const UNKNOWN: WaitEstimate = { known: false, stages: [] };
 /** "four minutes", "a minute and a half" — never raw seconds. */
 export function humanDuration(seconds: number): string {
   const s = Math.max(1, Math.round(seconds));
-  if (s < 20) return "a few seconds";
-  if (s < 45) return "half a minute";
-  if (s < 75) return "about a minute";
-  if (s < 105) return "a minute and a half";
+  if (s < 20) return i18n.t("wait.duration.fewSeconds");
+  if (s < 45) return i18n.t("wait.duration.halfMinute");
+  if (s < 75) return i18n.t("wait.duration.aboutMinute");
+  if (s < 105) return i18n.t("wait.duration.minuteAndHalf");
   const mins = s / 60;
   const whole = Math.floor(mins);
   const rest = mins - whole;
-  const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
-  const word = (n: number) => (n <= 10 ? WORDS[n] : String(n));
-  if (rest < 0.25) return `${word(whole)} minutes`;
-  if (rest < 0.75) return `${word(whole)} and a half minutes`;
-  return `${word(whole + 1)} minutes`;
+  /* English spells one to ten; the key takes the number. */
+  const word = (n: number) => numberWord(n, { max: 10 });
+  if (rest < 0.25) return i18n.t("wait.duration.minutes", { count: whole, minutes: word(whole) });
+  if (rest < 0.75) return i18n.t("wait.duration.minutesAndHalf", { count: whole, minutes: word(whole) });
+  return i18n.t("wait.duration.minutes", { count: whole + 1, minutes: word(whole + 1) });
 }
 
 /** The line above the counter. Always says something true. */
 export function waitCopy(est: WaitEstimate): string {
-  if (!est.known) return "This takes a few minutes. We are still learning how long — the counter below is real.";
-  return `This usually takes about ${humanDuration(est.p50)} and almost always under ${humanDuration(est.p95)}. You can leave this open — the counter below is real.`;
+  if (!est.known) return i18n.t("wait.unknown");
+  return i18n.t("wait.known", { p50: humanDuration(est.p50), p95: humanDuration(est.p95) });
 }
 
 export const OVER_P95_LINE = "This one is taking longer than most. It is still running.";

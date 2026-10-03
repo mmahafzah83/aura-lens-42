@@ -17,6 +17,13 @@ export {
 
 import { OPERATION_STAGES, STAGE_LABELS, type InstrumentedOperation } from "../../supabase/functions/_shared/stageKeys";
 import type { WorkingStage, StageState } from "@/components/ui/WorkingPanel";
+import i18n from "@/i18n";
+
+/** The stage's words in the rendered language. The server key is never changed. */
+export const stageLabel = (operation: InstrumentedOperation, key: string): string => {
+  const k = `journey.stage.${operation}.${key}`;
+  return i18n.exists(k) ? i18n.t(k) : (STAGE_LABELS[operation][key] ?? key);
+};
 
 /**
  * Build the step list for an instrumented operation from a record of what has
@@ -38,7 +45,7 @@ export function buildStages(
   const done = new Set(opts.completed);
   return OPERATION_STAGES[operation].map((key): WorkingStage => ({
     key,
-    label: opts.labels?.[key] ?? STAGE_LABELS[operation][key] ?? key,
+    label: opts.labels?.[key] ?? stageLabel(operation, key),
     ms: opts.ms?.[key],
     state: (done.has(key)
       ? "done"

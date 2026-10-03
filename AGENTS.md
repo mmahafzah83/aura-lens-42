@@ -2,3 +2,5 @@
 - Retired product name: files listed in `RETIRED_NAME_FILES` (scripts/check-vocabulary.mjs) fail the build if they show "Aura" outside comments and console output — why: the new-user journey must only ever say KnownBy.
 - The Arabic-ready route registry lives in `src/i18n/routes.ts` (re-exported from `src/i18n`) — why: e2e specs import it in Node, where the i18n bootstrap cannot load.
 - Assessment item text (questions, options, slider dimensions) is displayed only through `src/lib/assessmentItems.ts`; `*_ar` columns and option `label_ar` are display-only — why: stored answers, slider keys and model input must stay on the canonical English fields.
+- Numbers English spells as words ("ninety seconds", "STEP ONE") are passed to translation keys as numbers and turned into words by `numberWord` (src/i18n/numberWord.ts) only when English renders — why: Arabic must be able to show digits from the same key.
+- Waiting-panel stage names are translated at display by `journey.stage.<operation>.<key>` (stageLabel in src/lib/operationStages.ts); server stage keys and STAGE_LABELS stay unchanged — why: the server records and sends the keys and must not move with the wording.

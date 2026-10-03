@@ -5,6 +5,8 @@
 import { POST_NOUN, nPosts } from "@/constants/vocabulary";
 import { forwardRef, useEffect, useState } from "react";
 import { OB, RADIUS, EASE, reducedMotion } from "./tokens";
+import i18n from "@/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
  * EXPORT LAW: the shared card and the screen print the same strings. These two
@@ -136,11 +138,11 @@ const privatePanel: React.CSSProperties = {
   padding: 20,
 };
 
-const onlyYou = (
+const OnlyYou = () => (
   <p style={{
     margin: 0, fontFamily: OB.mono, fontSize: 10.5, letterSpacing: "0.16em",
     textTransform: "uppercase", color: "rgba(255,255,255,0.80)",
-  }}>Only you see this</p>
+  }}>{i18n.t("reveal.onlyYou")}</p>
 );
 
 const privateHeading: React.CSSProperties = {
@@ -212,7 +214,7 @@ const IdentityRow = ({ data, size }: { data: RevealData; size: number }) => {
 };
 
 /** The signature line: who read it. The date sits beside it, never instead of it. */
-const signatureText = (_data: RevealData): string => "Read by KnownBy · aura-intel.org";
+const signatureText = (_data: RevealData): string => i18n.t("reveal.signature");
 
 /**
  * The date the read was written — mono, tracked, and printed only when the
@@ -263,7 +265,10 @@ const RVC_CSS = `
 const RevealCard = forwardRef<
   HTMLDivElement,
   { data: RevealData; forExport?: boolean; emptyFiguresLine?: string }
->(({ data, forExport = false, emptyFiguresLine = EMPTY_POSTS_LINE }, ref) => forExport ? (
+>(({ data, forExport = false, emptyFiguresLine }, ref) => {
+  const { t } = useLanguage();
+  const emptyLine = emptyFiguresLine ?? t("reveal.emptyPosts");
+  return forExport ? (
   /* ── the shareable frame: one fixed 1080 × 1350 image, nothing that scrolls ── */
   <div
     ref={ref}
@@ -293,7 +298,7 @@ const RevealCard = forwardRef<
     <p style={{
       margin: 0, fontSize: 20, letterSpacing: "0.20em", textTransform: "uppercase",
       fontFamily: OB.mono, opacity: 0.85,
-    }}>How people see you</p>
+    }}>{t("reveal.howPeopleSeeYou")}</p>
 
     <h2 style={{
       margin: "34px 0 0", fontSize: 54, fontWeight: 900, lineHeight: 1.04, letterSpacing: "-0.03em",
@@ -307,7 +312,7 @@ const RevealCard = forwardRef<
       <p style={{
         margin: "20px 0 0", fontFamily: OB.mono, fontSize: 18,
         letterSpacing: "0.10em", lineHeight: 1.4, opacity: 0.8,
-      }}>{`SECOND READ · ${data.secondaryRead}`}</p>
+      }}>{t("reveal.secondRead", { read: data.secondaryRead })}</p>
     ) : null}
 
     {data.ownWordsQuote ? (
@@ -318,7 +323,7 @@ const RevealCard = forwardRef<
         <p style={{
           margin: 0, fontFamily: OB.mono, fontSize: 15, letterSpacing: "0.18em",
           textTransform: "uppercase", opacity: 0.82,
-        }}>In your own words</p>
+        }}>{t("reveal.inYourOwnWords")}</p>
         {(() => {
           const arabic = ARABIC_RE.test(data.ownWordsQuote ?? "");
           const script: React.CSSProperties = arabic
@@ -352,7 +357,7 @@ const RevealCard = forwardRef<
           <p style={{
             margin: "0 0 16px", fontFamily: OB.mono, fontSize: 15,
             letterSpacing: "0.18em", opacity: 0.82,
-          }}>{LABEL_SIGNALS}</p>
+          }}>{t("reveal.signals")}</p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
             {data.subjects.slice(0, 3).map((s) => (
               <span key={s} style={{
@@ -370,7 +375,7 @@ const RevealCard = forwardRef<
           <p style={{
             margin: "0 0 16px", fontFamily: OB.mono, fontSize: 15,
             letterSpacing: "0.18em", opacity: 0.82,
-          }}>{LABEL_SOFT}</p>
+          }}>{t("reveal.soft")}</p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
             {data.softGround.slice(0, 2).map((s) => (
               <span key={s} style={{
@@ -395,7 +400,7 @@ const RevealCard = forwardRef<
           ))}
         </div>
       ) : (
-        <p style={{ margin: 0, fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{emptyFiguresLine}</p>
+        <p style={{ margin: 0, fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{emptyLine}</p>
       )}
 
     <div style={{
@@ -433,7 +438,7 @@ const RevealCard = forwardRef<
       <p style={{
         margin: 0, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase",
         fontFamily: OB.mono, opacity: 0.85,
-      }}>How people see you</p>
+      }}>{t("reveal.howPeopleSeeYou")}</p>
 
       <h2 className="rvc-arch" style={{
         margin: "12px 0 0", fontSize: "clamp(34px, 9vw, 40px)", fontWeight: 900,
@@ -453,7 +458,7 @@ const RevealCard = forwardRef<
       <>
         <p className="rvc-seq" style={{
           margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85, animationDelay: "0.6s",
-        }}>{LABEL_SIGNALS}</p>
+        }}>{t("reveal.signals")}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
           {data.subjects.slice(0, 3).map((s, i) => (
             <span key={s} className="rvc-seq"
@@ -466,8 +471,8 @@ const RevealCard = forwardRef<
 
     {data.theGap ? (
       <div style={{ ...privatePanel, marginBlockStart: 24 }}>
-        {onlyYou}
-        <h3 style={privateHeading}>The gap</h3>
+        <OnlyYou />
+        <h3 style={privateHeading}>{t("reveal.theGap")}</h3>
         <p style={{
           margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, color: "rgba(255,255,255,0.95)",
         }}>{data.theGap}</p>
@@ -476,8 +481,8 @@ const RevealCard = forwardRef<
 
     {data.ownWordsQuote ? (
       <div style={{ ...privatePanel, marginBlockStart: 12 }}>
-        {onlyYou}
-        <h3 style={privateHeading}>In your own words</h3>
+        <OnlyYou />
+        <h3 style={privateHeading}>{t("reveal.inYourOwnWords")}</h3>
         <p style={{
           margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, fontStyle: "italic",
           color: "rgba(255,255,255,0.95)",
@@ -494,13 +499,13 @@ const RevealCard = forwardRef<
       <p style={{
         margin: "12px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,0.80)",
       }}>
-        The gap and your own words stay here. Only the card above is ever shared.
+        {t("reveal.privateNote")}
       </p>
     ) : null}
 
     {data.softGround.length > 0 && (
       <>
-        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>{LABEL_SOFT}</p>
+        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>{t("reveal.soft")}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
           {data.softGround.slice(0, 2).map((s) => (
             <span key={s} style={chip(OB.amber, OB.night)}>{s}</span>
@@ -524,7 +529,7 @@ const RevealCard = forwardRef<
     ) : (
       <p className="rvc-seq" style={{
         margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92, animationDelay: "1.08s",
-      }}>{emptyFiguresLine}</p>
+      }}>{emptyLine}</p>
     )}
 
     <p style={{
@@ -539,7 +544,8 @@ const RevealCard = forwardRef<
       }}>{data.ageNote}</p>
     ) : null}
   </div>
-));
+);
+});
 
 RevealCard.displayName = "RevealCard";
 export default RevealCard;

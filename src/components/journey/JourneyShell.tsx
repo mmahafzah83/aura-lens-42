@@ -18,6 +18,7 @@
 import { useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AuraLogo } from "@/components/brand/AuraLogo";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const CARD = "#FFFFFF";
 const LINE = "#E2E7EE";
@@ -38,6 +39,8 @@ export { STAGE_NAMES } from "@/lib/brand";
 
 /** The three beats of the one journey. Always all three, always visible. */
 export const BEATS = ["Your read", "Your evidence", "Your position"] as const;
+/** The translation key for each beat, same order as BEATS. */
+const BEAT_KEYS = ["journey.beat.read", "journey.beat.evidence", "journey.beat.position"] as const;
 
 /**
  * THE BAR IS WEIGHTED BY REAL EFFORT, NOT BY BEAT COUNT.
@@ -132,6 +135,7 @@ const TAP: React.CSSProperties = {
 const JourneyBar = ({ onBack, onExit, name }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
 }) => {
+  const { t } = useLanguage();
   const first = firstNameOf(name);
   const initials = initialsOf(name);
   return (
@@ -147,7 +151,7 @@ const JourneyBar = ({ onBack, onExit, name }: {
         <button
           type="button"
           onClick={onBack}
-          aria-label="Back one step"
+          aria-label={t("journey.backAria")}
           aria-hidden={onBack ? undefined : true}
           tabIndex={onBack ? undefined : -1}
           style={{ ...TAP, inlineSize: 44, padding: 0, color: INK2,
@@ -197,7 +201,7 @@ const JourneyBar = ({ onBack, onExit, name }: {
 
       {/* slot 4 — the one quiet way out. A label, never an X. */}
       <button type="button" onClick={onExit} style={{ ...TAP, color: INK2, flexShrink: 0 }}>
-        Finish later
+        {t("journey.finishLater")}
       </button>
     </div>
   );
@@ -229,6 +233,7 @@ export const fractionOf = (beat: Beat, sub?: JourneySub | null): number => {
 export const JourneyProgress = ({ beat, sub, fraction }: {
   beat: Beat; sub?: JourneySub | null; fraction?: number;
 }) => {
+  const { t } = useLanguage();
   const fill = Math.max(0, Math.min(1, fraction ?? fractionOf(beat, sub)));
 
   return (
@@ -245,7 +250,7 @@ export const JourneyProgress = ({ beat, sub, fraction }: {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(fill * 100)}
-        aria-label={`Where you are: ${BEATS[beat - 1]}`}
+        aria-label={t("journey.whereYouAre", { beat: t(BEAT_KEYS[beat - 1]) })}
         style={{
           position: "relative", blockSize: 4, borderRadius: 999,
           background: LINE, overflow: "hidden",
@@ -285,7 +290,7 @@ export const JourneyProgress = ({ beat, sub, fraction }: {
                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
               }}
             >
-              {name}
+              {t(BEAT_KEYS[i])}
             </span>
           );
         })}
@@ -309,6 +314,7 @@ export const JourneyChrome = ({ onBack, onExit, name, beat, sub, fraction, showP
   beat: Beat; sub?: JourneySub | null; fraction?: number; showProgress?: boolean;
 }) => {
   useShellCss();
+  const { t } = useLanguage();
   return (
     <header
       role="banner"
@@ -318,7 +324,7 @@ export const JourneyChrome = ({ onBack, onExit, name, beat, sub, fraction, showP
         background: CARD, borderBlockEnd: `1px solid ${LINE}`, boxShadow: "none",
       }}
     >
-      <a className="jshell-skip" href="#journey-main">Skip to content</a>
+      <a className="jshell-skip" href="#journey-main">{t("journey.skip")}</a>
       <JourneyBar onBack={onBack} onExit={onExit} name={name} />
       {showProgress ? <JourneyProgress beat={beat} sub={sub} fraction={fraction} /> : null}
     </header>
