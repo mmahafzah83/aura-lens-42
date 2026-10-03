@@ -3807,7 +3807,7 @@ const Onboarding = () => {
                   KnownBy hasn't got enough of your writing to propose three yet — say it in your own words instead.
                 </p>
                 <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
-                  aria-label={q.prompt}
+                  aria-label={itemText(q, "prompt", itemLang)}
                   onFocus={rotatePlaceholder}
                   onKeyDown={(e) => {
                     if (e.repeat) return;
@@ -3828,7 +3828,7 @@ const Onboarding = () => {
           ) : (
             <>
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
-                aria-label={q.prompt}
+                aria-label={itemText(q, "prompt", itemLang)}
                 onFocus={rotatePlaceholder}
                 onKeyDown={(e) => {
                   if (e.repeat) return;
