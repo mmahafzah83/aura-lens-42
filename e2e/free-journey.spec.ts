@@ -1,5 +1,5 @@
 import { test, expect } from "../playwright-fixture";
-import { rpc, questionsFor, type QRow } from "./helpers/backend";
+import { rpc, questionsFor, seedQuestionsSession, type QRow } from "./helpers/backend";
 
 /** A public profile with enough posts to read. Override per environment. */
 const PROFILE = process.env.E2E_LINKEDIN_URL || "linkedin.com/in/satyanadella";
@@ -160,5 +160,62 @@ test.describe("the free journey", () => {
     }
     expect(Object.keys(legacy).filter((k) => /^Q\d+ /.test(k))).toHaveLength(9);
     expect(coded[backChanged!.id].values).toEqual([backChanged!.second]);
+  });
+
+  /* FREE — the Arabic items review switch. No database row is written: the
+     public anon key cannot write onboarding_questions, so the Arabic marker is
+     injected into the questions response in the browser only. */
+  test("?items=ar shows Arabic items but stores the canonical answer", async ({ page }) => {
+    test.setTimeout(90_000);
+    const MARK = "اختبار";
+    const qs = await questionsFor("work");
+    const first = qs[0];
+    const firstOpt = (first.options ?? [])[0];
+    test.skip(!firstOpt || (first.kind !== "choice" && first.kind !== "multi"), "question 1 has no options");
+    const token = await seedQuestionsSession("work");
+
+    await page.route("**/rest/v1/onboarding_questions?*", async (r) => {
+      if (r.request().method() !== "GET") return r.continue();
+      const res = await r.fetch();
+      const rows = await res.json();
+      for (const row of rows) {
+        if (row.id === first.id) {
+          row.prompt_ar = `${MARK} سؤال`;
+          row.options = (row.options ?? []).map((o: any) => o.value === firstOpt.value ? { ...o, label_ar: `${MARK} خيار` } : o);
+        }
+      }
+      await r.fulfill({ response: res, json: rows });
+    });
+
+    await page.goto("/");
+    await page.evaluate((t) => localStorage.setItem("aura_session_token", t), token);
+    await page.goto("/onboarding?items=ar");
+
+    await expect(page.getByText("Question 1 of", { exact: false })).toBeVisible({ timeout: 30_000 });
+    const h1 = page.getByRole("heading", { level: 1 });
+    await expect(h1).toHaveText(`${MARK} سؤال`);
+    await expect(h1).toHaveAttribute("dir", "rtl");
+    await expect(page.getByText("Arabic items preview", { exact: true })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+    // Untranslated options fall back to English, one string at a time.
+    const second = (first.options ?? [])[1];
+    if (second) await expect(page.getByRole("button", { name: second.label, exact: true })).toBeVisible();
+
+    const opt = page.getByRole("button", { name: `${MARK} خيار`, exact: true });
+    await expect(opt).toHaveAttribute("aria-pressed", "false");
+    await opt.click();
+    await expect(opt).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(page.getByText("Question 2 of", { exact: false })).toBeVisible();
+
+    let state: any = null;
+    await expect.poll(async () => {
+      const rows = await rpc("get_assessment_session", { p_token: token });
+      state = Array.isArray(rows) ? rows[0]?.state : null;
+      return state?.answers_coded?.[first.id]?.values ?? null;
+    }, { timeout: 30_000 }).toEqual([firstOpt.value]);
+    expect(state.answers_coded[first.id].answered_lang).toBe("en");
+    expect(state.answers[`Q1 ${first.prompt}`]).toBe(firstOpt.label);
+    expect(JSON.stringify(state)).not.toContain(MARK);
   });
 });
