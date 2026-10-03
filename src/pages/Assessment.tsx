@@ -189,20 +189,20 @@ const Assessment = () => {
       return;
     }
     setAddrError(null);
-    let t = token ?? readToken();
-    if (!t) {
+    let tok = token ?? readToken();
+    if (!tok) {
       // Someone arriving from a link has no session yet — open one silently.
       const opened = await createSession();
       if (opened.error || !opened.token) {
         setNotice(opened.error ?? t("assess.err.sessionExpired"));
         setStage("gate"); return;
       }
-      t = opened.token;
-      setToken(t);
-      await saveSession(t, { step: "address", answers: {} });
+      tok = opened.token;
+      setToken(tok);
+      await saveSession(tok, { step: "address", answers: {} });
     }
 
-    const gate = await startRun(t);
+    const gate = await startRun(tok);
     if (gate.ok !== true) {
       /* At the ceiling we do not console anyone — we take their place in line. */
       if (gate.code === "DAILY_CEILING" || gate.code === "RATE_LIMIT_IP") { setQueued(true); return; }
@@ -219,7 +219,7 @@ const Assessment = () => {
       const res = await fetch(`${base}/functions/v1/mirror-read`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: target, run_id: runId, anon_token: t, ui_lang: readStoredLang() }),
+        body: JSON.stringify({ profile_url: target, run_id: runId, anon_token: tok, ui_lang: readStoredLang() }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok || !data?.read) {
