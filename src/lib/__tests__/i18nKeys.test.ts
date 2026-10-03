@@ -38,6 +38,8 @@ describe("translation keys", () => {
     expect(missing).toEqual([]);
   });
 
+  it("the scan finds the keys", () => expect(used.size).toBeGreaterThan(300));
+
   it("the route prefixes are actually used", () => {
     for (const p of PREFIXES) expect([...used.keys()].some((k) => k.startsWith(p))).toBe(true);
   });
