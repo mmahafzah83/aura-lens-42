@@ -99,6 +99,8 @@ const PM_CSS = `
 .pm-cta:hover .pm-a{transform:translate(2px,-2px);}
 [dir="rtl"] .pm-a{transform:scaleX(-1);}
 [dir="rtl"] .pm-cta:hover .pm-a{transform:translate(-2px,-2px) scaleX(-1);}
+[dir="rtl"] .pm-link{letter-spacing:0;font-family:'CairoAR',var(--mono);font-size:12.5px;}
+[dir="rtl"] .pm{font-family:'CairoAR',var(--ui);}
 @media (max-width:520px){
   .pm-cta{font-size:12.5px;padding:10px 13px;}
   .pm-link{padding:11px 9px;}

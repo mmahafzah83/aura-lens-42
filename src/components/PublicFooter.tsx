@@ -65,5 +65,6 @@ const PF_CSS = `
   .pf-in{flex-direction:column;}
   .pf-right{text-align:start;}
 }
+[dir="rtl"] .pf-in{letter-spacing:0;font-family:'CairoAR',var(--mono);font-size:11.5px;}
 @media (prefers-reduced-motion:reduce){ .pf *{transition:none !important;} }
 `;

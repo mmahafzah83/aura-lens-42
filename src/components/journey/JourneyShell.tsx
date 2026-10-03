@@ -91,6 +91,8 @@ html{scroll-padding-top:${CHROME_H + 8}px;}
   padding:12px 16px;min-block-size:44px;display:inline-flex;align-items:center;
   font-family:${UI};font-size:14px;font-weight:600;text-decoration:none;}
 .jshell-skip:focus{inset-block-start:8px;}
+/* When the language switch shares the bar on a phone, the first name gives way to it. */
+@media (max-width:420px){.jshell:has(.kb-lt) .jshell-first{display:none;}}
 `;
 
 let cssMounted = 0;
@@ -193,7 +195,7 @@ const JourneyBar = ({ onBack, onExit, name }: {
           visibility: initials ? "visible" : "hidden",
         }}>{initials || "··"}</span>
         {first ? (
-          <span style={{
+          <span className="jshell-first" style={{
             fontFamily: UI, fontSize: 14, fontWeight: 600, color: INK,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxInlineSize: 120,
           }}>{first}</span>
