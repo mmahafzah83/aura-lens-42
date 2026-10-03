@@ -142,7 +142,7 @@ const SHELF_HINT = [
 ];
 
 /** Domain and age of a suggested read — a senior reader wants to know where a link goes. */
-const sourceLine = (a: { url: string; source?: string; published_at?: string | null }, t: (k: string, o?: any) => string): string => {
+const sourceLine = (a: { url: string; source?: string; published_at?: string | null }, tt: (k: string, o?: any) => string): string => {
   let domain = (a.source || "").trim();
   try { domain = new URL(a.url).hostname.replace(/^www\./, ""); } catch { /* keep whatever came back */ }
   const iso = a.published_at;
@@ -150,7 +150,7 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return domain;
   const days = Math.floor((Date.now() - t) / 86400000);
-  const age = days <= 0 ? t("ob.age.today") : days < 30 ? t("ob.age.days", { count: days })
+  const age = days <= 0 ? tt("ob.age.today") : days < 30 ? tt("ob.age.days", { count: days })
     : t("ob.age.months", { count: days < 60 ? 1 : Math.floor(days / 30) });
   return domain ? `${domain} · ${age}` : age;
 };
