@@ -3744,7 +3744,7 @@ const Onboarding = () => {
                 <OBButton disabled={!singlePicked} aria-describedby={!singlePicked ? "ob-q-why" : undefined} onClick={() => {
                   if (!singlePicked) return;
                   advance({ values: [singlePicked] });
-                }}>Next</OBButton>
+                }}>{tr("ob.next")}</OBButton>
                 {!singlePicked ? whyLine("ob-q-why", tr("ob.q.needOne"), true) : null}
               </Actions>
             </>
@@ -3763,7 +3763,7 @@ const Onboarding = () => {
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={multiPicked.length === 0} aria-describedby={multiPicked.length === 0 ? "ob-qm-why" : undefined} onClick={() => advance(
                   { values: multiPicked.filter((v) => opts.some((o) => o.value === v)) },
-                )}>Next</OBButton>
+                )}>{tr("ob.next")}</OBButton>
                 {multiPicked.length === 0 ? whyLine("ob-qm-why", tr("ob.q.needAtLeastOne"), true) : null}
               </Actions>
             </>
@@ -3794,7 +3794,7 @@ const Onboarding = () => {
                     const kept = proposals![Number(singlePicked)]?.label ?? "";
                     const dropped = proposals!.filter((_, i) => String(i) !== singlePicked).map((x) => x.label);
                     advance({ proposed: { chosen: kept, rejected: dropped } });
-                  }}>Next</OBButton>
+                  }}>{tr("ob.next")}</OBButton>
                   {!singlePicked ? whyLine("ob-qp-why", tr("ob.q.proposed.need"), true) : null}
                 </Actions>
               </>
@@ -3813,7 +3813,7 @@ const Onboarding = () => {
                   dir="auto" placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
                 <Actions style={{ marginBlockStart: 16 }}>
                   <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qtf-why" : undefined}
-                    onClick={() => advance({ text: textAnswer.trim() })}>Next</OBButton>
+                    onClick={() => advance({ text: textAnswer.trim() })}>{tr("ob.next")}</OBButton>
                   {!textAnswer.trim() ? whyLine("ob-qtf-why", tr("ob.q.needText"), true) : null}
                 </Actions>
               </>
@@ -3834,7 +3834,7 @@ const Onboarding = () => {
                 dir="auto" placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qt-why" : undefined}
-                  onClick={() => advance({ text: textAnswer.trim() })}>Next</OBButton>
+                  onClick={() => advance({ text: textAnswer.trim() })}>{tr("ob.next")}</OBButton>
                 {!textAnswer.trim() ? whyLine("ob-qt-why", tr("ob.q.needText"), true) : null}
               </Actions>
             </>
@@ -4064,7 +4064,7 @@ const Onboarding = () => {
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={shelfLabel(s.key)} sublabel={SHELF_SUB[i]}
               tone={s.tone}
-              icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
+              icon={SHELF_ICON[i]} hint={shelfHint(s.key)}
               unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
           ))}
         </div>
