@@ -136,7 +136,7 @@ const TAP: React.CSSProperties = {
 const JourneyBar = ({ onBack, onExit, name }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
 }) => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const first = firstNameOf(name);
   const initials = initialsOf(name);
   return (
