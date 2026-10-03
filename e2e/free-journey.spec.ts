@@ -165,7 +165,7 @@ test.describe("the free journey", () => {
   /* FREE — the Arabic items review switch. No database row is written: the
      public anon key cannot write onboarding_questions, so the Arabic marker is
      injected into the questions response in the browser only. */
-  test("?items=ar shows Arabic items but stores the canonical answer", async ({ page }) => {
+  test("?items=ar shows the page in Arabic but stores the canonical answer", async ({ page }) => {
     test.setTimeout(90_000);
     const MARK = "اختبار";
     const qs = await questionsFor("work");
@@ -191,12 +191,13 @@ test.describe("the free journey", () => {
     await page.evaluate((t) => localStorage.setItem("aura_session_token", t), token);
     await page.goto("/onboarding?items=ar");
 
-    await expect(page.getByText("Question 1 of", { exact: false })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("السؤال 1 من", { exact: false })).toBeVisible({ timeout: 30_000 });
     const h1 = page.getByRole("heading", { level: 1 });
     await expect(h1).toHaveText(`${MARK} سؤال`);
-    await expect(h1).toHaveAttribute("dir", "rtl");
-    await expect(page.getByText("Arabic items preview", { exact: true })).toBeVisible();
-    await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+    await expect(page.getByText("Arabic preview", { exact: true })).toBeVisible();
+    // The preview makes the whole page Arabic for this tab.
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect(page.locator("html")).toHaveAttribute("lang", "ar");
     // Untranslated options fall back to English, one string at a time.
     const second = (first.options ?? [])[1];
     // Arabic now stored for some options: check the fallback only where label_ar is empty.
@@ -209,8 +210,8 @@ test.describe("the free journey", () => {
     await expect(opt).toHaveAttribute("aria-pressed", "false");
     await opt.click();
     await expect(opt).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(page.getByText("Question 2 of", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "التالي", exact: true }).click();
+    await expect(page.getByText("السؤال 2 من", { exact: false })).toBeVisible();
 
     let state: any = null;
     await expect.poll(async () => {
@@ -218,7 +219,8 @@ test.describe("the free journey", () => {
       state = Array.isArray(rows) ? rows[0]?.state : null;
       return state?.answers_coded?.[first.id]?.values ?? null;
     }, { timeout: 30_000 }).toEqual([firstOpt.value]);
-    expect(state.answers_coded[first.id].answered_lang).toBe("en");
+    // The member read it in Arabic; the code and the English legacy value are unchanged.
+    expect(state.answers_coded[first.id].answered_lang).toBe("ar");
     expect(state.answers[`Q1 ${first.prompt}`]).toBe(firstOpt.label);
     expect(JSON.stringify(state)).not.toContain(MARK);
   });

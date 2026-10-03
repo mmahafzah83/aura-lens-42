@@ -26,8 +26,25 @@ export const AUTO_DETECT_BROWSER_LANG = false;
 export { ARABIC_READY_ROUTES, isArabicReadyRoute } from "./routes";
 import { isArabicReadyRoute } from "./routes";
 
+/**
+ * `?items=ar` on /onboarding — the founder's review switch. Remembered for this
+ * tab only (sessionStorage); loading /onboarding without the flag clears it.
+ */
+export const ARABIC_PREVIEW_KEY = "kb_ar_preview";
+const isPreviewRoute = (pathname: string): boolean => {
+  const p = (pathname || "/").split(/[?#]/)[0];
+  return p === "/onboarding" || p.startsWith("/onboarding/");
+};
+export function readArabicPreview(): boolean {
+  try { return sessionStorage.getItem(ARABIC_PREVIEW_KEY) === "1"; } catch { return false; }
+}
+/** True when the preview switch is on and this route is the one it covers. */
+export const arabicPreviewOn = (pathname: string, preview = readArabicPreview()): boolean =>
+  preview && isPreviewRoute(pathname);
+
 /** The language a route actually renders in: the choice on ready routes, English elsewhere and on /admin. */
-export function effectiveLang(chosen: UiLang, pathname: string): UiLang {
+export function effectiveLang(chosen: UiLang, pathname: string, preview = readArabicPreview()): UiLang {
+  if (arabicPreviewOn(pathname, preview)) return "ar";
   return chosen === "ar" && isArabicReadyRoute(pathname) ? "ar" : "en";
 }
 
@@ -85,6 +102,12 @@ export function initLangFromUrl() {
   try {
     const url = new URL(window.location.href);
     const param = url.searchParams.get("lang");
+    if (isPreviewRoute(url.pathname)) {
+      try {
+        if (url.searchParams.get("items") === "ar") sessionStorage.setItem(ARABIC_PREVIEW_KEY, "1");
+        else sessionStorage.removeItem(ARABIC_PREVIEW_KEY);
+      } catch { /* ignore */ }
+    }
     const r = resolveInitialLang({
       stored: localStorage.getItem(UI_LANG_KEY),
       urlParam: param,

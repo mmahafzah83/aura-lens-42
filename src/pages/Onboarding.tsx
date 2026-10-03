@@ -84,7 +84,9 @@ import {
 } from "@/lib/seatCopy";
 import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { itemText, optionLabel, itemsPreviewFromSearch, type ItemLang } from "@/lib/assessmentItems";
+import { itemText, optionLabel, type ItemLang } from "@/lib/assessmentItems";
+import { arabicPreviewOn } from "@/i18n";
+import { numberWord } from "@/i18n/numberWord";
 import { toCoded, toLegacyEnglish, legacyKey, NONE_CODE, type AnswerInput, type CodedAnswers } from "@/lib/assessmentAnswers";
 
 
@@ -686,12 +688,18 @@ const Onboarding = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   /* The same answers by question id and option value — never by display text. */
   const [codedAnswers, setCodedAnswers] = useState<CodedAnswers>({});
-  const { lang: uiLang } = useLanguage();
-  /* `?items=ar` — the founder's review switch: Arabic for the ITEMS only. */
-  const [itemsPreview] = useState(() => itemsPreviewFromSearch(window.location.search));
-  const itemLang: ItemLang = itemsPreview ? "ar" : uiLang === "ar" ? "ar" : "en";
-  /* dir/lang only on the item text, only when Arabic is forced — English renders untouched. */
-  const itemAttrs = itemsPreview ? { dir: "rtl" as const, lang: "ar" } : {};
+  const { lang: uiLang, t: tr } = useLanguage();
+  /* `?items=ar` — the founder's review switch: the whole page in Arabic for this tab. */
+  const [itemsPreview] = useState(() => arabicPreviewOn(window.location.pathname));
+  const isAr = uiLang === "ar";
+  /* Items follow the page language — page and items always agree. */
+  const itemLang: ItemLang = isAr ? "ar" : "en";
+  const itemAttrs = {};
+  /* Small mono labels: in Arabic, Cairo, no capitals, no tracking. */
+  const arMono: React.CSSProperties = isAr ? { fontFamily: "inherit", textTransform: "none", letterSpacing: 0 } : {};
+  const shelfLabel = (key: string) => tr(`ob.shelf.${key}`);
+  const shelfHint = (key: string) => tr(`ob.shelf.hint.${key}`);
+  const capBand = (b: "developing" | "solid" | "strong") => (isAr ? tr(`cap.band.${b}`) : BAND_COPY[b].label);
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
   /* One rule for every question: select, see it selected, then Next. */
@@ -2435,11 +2443,11 @@ const Onboarding = () => {
       <button type="button" onClick={saveAndExit} style={{
         background: "none", border: "none", color: OB.muted, fontSize: 12,
         cursor: "pointer", textDecoration: "underline", fontFamily: "inherit",
-      }}>Finish later →</button>
+      }}>{tr("journey.finishLater")}{isAr ? "" : " →"}</button>
     </div>
   ) : null;
 
-  const bandLabel = band ? BAND_LABEL[band] : null;
+  const bandLabel = band ? tr(`ob.band.${band}`) : null;
 
   /* The browser's back button walks the journey, and Escape is Finish later. */
   useEffect(() => {
@@ -2519,7 +2527,7 @@ const Onboarding = () => {
           onClick={() => (t.title === "Other" ? setOtherPicker(true) : onPick(t.title, t.band as Band))}
           style={titleRowStyle(levelTitle === t.title)}>
           <span>{t.title}</span>
-          <span style={{ fontSize: 11.5, color: OB.muted }}>{TITLE_BAND_LABEL[t.band as TitleBand]}</span>
+          <span style={{ fontSize: 11.5, color: OB.muted }}>{TITLE_BAND_LABEL[t.band as TitleBand] ? tr(`ob.band.${t.band}`) : null}</span>
         </button>
       ))}
     </div>
@@ -2544,7 +2552,7 @@ const Onboarding = () => {
   const bandPrompt = (night = false) => {
     const inner = (
       <>
-        <h1 style={night ? h1Night : h1Light}>One thing first — which of these is closest to your title?</h1>
+        <h1 style={night ? h1Night : h1Light}>{tr("ob.bandPrompt.title")}</h1>
         {titleList((t, b) => { void chooseTitle(t, b); })}
       </>
     );
@@ -2559,8 +2567,8 @@ const Onboarding = () => {
      a wait, not a failure — the failure panel belongs to contentError alone. */
   const quietLoadPanel = () => (
     <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-      <h1 style={h1Light}>One moment.</h1>
-      <p style={bodyLight}>KnownBy is picking the right set for you.</p>
+      <h1 style={h1Light}>{tr("ob.quiet.title")}</h1>
+      <p style={bodyLight}>{tr("ob.quiet.body")}</p>
     </PaperShell>
   );
 
@@ -2729,9 +2737,9 @@ const Onboarding = () => {
 
   const retryPanel = (retry: () => void) => (
     <>
-      <h1 style={h1Light}>Give that one more go.</h1>
-      <p style={bodyLight}>KnownBy couldn't reach the shelf for a second. Nothing is lost.</p>
-      <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={retry}>Try again</OBButton></Actions>
+      <h1 style={h1Light}>{tr("ob.retry.title")}</h1>
+      <p style={bodyLight}>{tr("ob.retry.body")}</p>
+      <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={retry}>{tr("ob.retry.button")}</OBButton></Actions>
     </>
   );
 
@@ -3466,8 +3474,8 @@ const Onboarding = () => {
           gap: 8, justifyItems: "center", maxWidth: 420, margin: "22px auto 4px",
         }}>
           {SHELF.map((s, i) => (
-            <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight
-              icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
+            <ShelfBadge key={s.key} label={shelfLabel(s.key)} tone={s.tone} onNight
+              icon={SHELF_ICON[i]} hint={shelfHint(s.key)}
               unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
           ))}
         </div>
@@ -3483,23 +3491,19 @@ const Onboarding = () => {
     // Sector rows do not exist yet — every member gets the band set, so the
     // copy may only promise the level.
     const pickedLine = bandLabel && sliderCount
-      ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel}.`
+      ? tr("ob.s8.picked", { count: sliderCount, band: bandLabel })
       : null;
     content = (
       <PaperShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
           <>
-            <h1 style={{ ...h1Light, textAlign: "center" }}>Now your own read.</h1>
-            <p style={{ ...bodyLight, textAlign: "center" }}>
-              Where your own read and your posts disagree is where the useful part is.
-            </p>
-            <p style={{ ...bodyLight, textAlign: "center" }}>
-              This isn't a test. Each one asks what you've actually done, in plain sentences rather than numbers.
-            </p>
+            <h1 style={{ ...h1Light, textAlign: "center" }}>{tr("ob.s8.title")}</h1>
+            <p style={{ ...bodyLight, textAlign: "center" }}>{tr("ob.s8.p1")}</p>
+            <p style={{ ...bodyLight, textAlign: "center" }}>{tr("ob.s8.p2")}</p>
             {pickedLine ? <p style={{ ...bodyLight, textAlign: "center" }}>{pickedLine}</p> : null}
             <Actions style={{ marginBlockStart: 24 }}>
-              <OBButton onClick={() => { setDimIdx(0); go(9); }} loading={!dims} loadingLabel="Loading…">
-                Okay
+              <OBButton onClick={() => { setDimIdx(0); go(9); }} loading={!dims} loadingLabel={tr("ob.loading")}>
+                {tr("ob.okay")}
               </OBButton>
             </Actions>
           </>
@@ -3518,9 +3522,9 @@ const Onboarding = () => {
     } else if (contentError) {
       content = (
         <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-          <h1 style={h1Light}>Give that one more go.</h1>
-          <p style={bodyLight}>KnownBy couldn't reach the shelf for a second. Nothing is lost.</p>
-          <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
+          <h1 style={h1Light}>{tr("ob.retry.title")}</h1>
+          <p style={bodyLight}>{tr("ob.retry.body")}</p>
+          <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>{tr("ob.retry.button")}</OBButton></Actions>
         </PaperShell>
       );
     } else if (!dims) {
@@ -3533,23 +3537,19 @@ const Onboarding = () => {
         <PaperShell onExit={saveAndExit} subProgress={(dimIdx + 1) / dims.length} footer={escapeFooter}>
           {flatWarn ? (
             <>
-              <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
-              <p style={bodyLight}>
-                You put all {dims.length} in more or less the same place. That happens when the sentences don't quite
-                fit, or when it's easier to sit in the middle than to pick. Either is fine — but KnownBy reads a flat
-                answer as "no strong pattern", and it will write more carefully because of it.
-              </p>
+              <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>{tr("ob.s9.flat.title")}</h1>
+              <p style={bodyLight}>{tr("ob.s9.flat.body", { count: dims.length })}</p>
               <Actions style={{ marginBlockStart: 20 }}>
-                <OBButton onClick={() => { setFlatWarn(false); setDimIdx(0); }}>Let me have another look</OBButton>
+                <OBButton onClick={() => { setFlatWarn(false); setDimIdx(0); }}>{tr("ob.s9.flat.again")}</OBButton>
                 <OBButton variant="tertiary" onClick={() => { setFlatAck(true); setFlatWarn(false); go(10); }}>
-                  No, that's right for me
+                  {tr("ob.s9.flat.keep")}
                 </OBButton>
               </Actions>
             </>
           ) : (
           <>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
-            {dimIdx + 1} / {dims.length}
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, ...arMono }}>
+            {tr("ob.progress.fraction", { n: dimIdx + 1, total: dims.length })}
           </p>
           <h1 {...itemAttrs} style={{ ...h1Light, marginBlockStart: 10, fontSize: "var(--ob-h2)" }}>{itemText(d, "name", itemLang)}</h1>
           {d.why_line ? <p {...itemAttrs} style={bodyLight}>{itemText(d, "why_line", itemLang)}</p> : null}
@@ -3558,10 +3558,10 @@ const Onboarding = () => {
             className="ob-slider"
             aria-label={itemText(d, "name", itemLang)}
             aria-valuetext={value < SOLID_MIN
-              ? `${BAND_COPY.developing.label}: ${d.anchor_low ? itemText(d, "anchor_low", itemLang) : ""}`
+              ? `${capBand("developing")}: ${d.anchor_low ? itemText(d, "anchor_low", itemLang) : ""}`
               : value < STRONG_MIN
-                ? `${BAND_COPY.solid.label}: ${d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : ""}`
-                : `${BAND_COPY.strong.label}: ${d.anchor_high ? itemText(d, "anchor_high", itemLang) : ""}`}
+                ? `${capBand("solid")}: ${d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : ""}`
+                : `${capBand("strong")}: ${d.anchor_high ? itemText(d, "anchor_high", itemLang) : ""}`}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
             onPointerUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
             onKeyUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
@@ -3569,9 +3569,9 @@ const Onboarding = () => {
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
             {([
-              [BAND_COPY.developing.label, d.anchor_low ? itemText(d, "anchor_low", itemLang) : null, value < SOLID_MIN],
-              [BAND_COPY.solid.label, d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : null, value >= SOLID_MIN && value < STRONG_MIN],
-              [BAND_COPY.strong.label, d.anchor_high ? itemText(d, "anchor_high", itemLang) : null, value >= STRONG_MIN],
+              [capBand("developing"), d.anchor_low ? itemText(d, "anchor_low", itemLang) : null, value < SOLID_MIN],
+              [capBand("solid"), d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : null, value >= SOLID_MIN && value < STRONG_MIN],
+              [capBand("strong"), d.anchor_high ? itemText(d, "anchor_high", itemLang) : null, value >= STRONG_MIN],
             ] as [string, string | null, boolean][])
               .filter(([, text]) => !!text)
               .map(([tag, text, live]) => (
@@ -3582,7 +3582,7 @@ const Onboarding = () => {
                   padding: "6px 0",
                   transition: `color 220ms ${EASE}`,
                 }}>
-                  <span style={{ fontFamily: OB.mono, fontSize: "var(--ob-mono)", letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
+                  <span style={{ fontFamily: OB.mono, fontSize: "var(--ob-mono)", letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2, ...arMono }}>{tag}</span>
                   <span {...itemAttrs}>{text}</span>
                 </div>
               ))}
@@ -3596,12 +3596,12 @@ const Onboarding = () => {
               const finalValues = dims.map((x) => committed[x.name] ?? value);
               const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
               if (flatNow && !flatAck) setFlatWarn(true); else go(10);
-            }}>{last ? `Done — that's all ${dims.length}` : "Next"}</OBButton>
+            }}>{last ? tr("ob.s9.done", { count: dims.length }) : tr("ob.next")}</OBButton>
             {/* Back always exists here, and the first slider steps back a stage
                 rather than off the beginning of the flow. */}
             <OBButton variant="tertiary" onClick={() => {
               if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else goBack(8);
-            }}>Back</OBButton>
+            }}>{tr("ob.back")}</OBButton>
           </Actions>
           {last && (
             <div style={{
@@ -3609,8 +3609,8 @@ const Onboarding = () => {
               gap: 8, justifyItems: "center", maxWidth: 420, marginLeft: "auto", marginRight: "auto", marginTop: 22,
             }}>
               {SHELF.map((s, i) => (
-                <ShelfBadge key={s.key} label={s.label} tone={s.tone}
-                  icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
+                <ShelfBadge key={s.key} label={shelfLabel(s.key)} tone={s.tone}
+                  icon={SHELF_ICON[i]} hint={shelfHint(s.key)}
                   unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
               ))}
             </div>
@@ -3629,19 +3629,15 @@ const Onboarding = () => {
       <PaperShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
-            <h1 style={{ ...h1Light, textAlign: "center" }}>This next bit is what makes it yours.</h1>
+            <h1 style={{ ...h1Light, textAlign: "center" }}>{tr("ob.s10.title")}</h1>
             <p style={{ ...bodyLight, textAlign: "center" }}>
-              {ASSESSMENT_QUESTIONS_WORD.charAt(0).toUpperCase() + ASSESSMENT_QUESTIONS_WORD.slice(1)} questions about
-              how you actually work — read together with your posts, what you captured and your sliders.
+              {tr("ob.s10.p1", { count: ASSESSMENT_QUESTIONS, number: numberWord(ASSESSMENT_QUESTIONS, { cases: "cap" }) })}
             </p>
-            <p style={{ ...bodyLight, textAlign: "center" }}>
-              What comes out is the signals in your read, the space nobody near you has claimed, and where the ground is
-              still soft.
-            </p>
-            <p style={{ ...bodyLight, textAlign: "center" }}>{ASSESSMENT_QUESTIONS} questions. Two minutes. Saved as you go.</p>
+            <p style={{ ...bodyLight, textAlign: "center" }}>{tr("ob.s10.p2")}</p>
+            <p style={{ ...bodyLight, textAlign: "center" }}>{tr("ob.s10.p3", { count: ASSESSMENT_QUESTIONS })}</p>
             <Actions style={{ marginBlockStart: 24 }}>
-              <OBButton onClick={() => { setQIdx(0); go(11); }} loading={!questions} loadingLabel="Loading…">
-                Let's do it
+              <OBButton onClick={() => { setQIdx(0); go(11); }} loading={!questions} loadingLabel={tr("ob.loading")}>
+                {tr("ob.s10.go")}
               </OBButton>
             </Actions>
           </>
@@ -3658,9 +3654,9 @@ const Onboarding = () => {
     } else if (contentError) {
       content = (
         <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-          <h1 style={h1Light}>Give that one more go.</h1>
-          <p style={bodyLight}>KnownBy couldn't reach the shelf for a second. Nothing is lost.</p>
-          <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
+          <h1 style={h1Light}>{tr("ob.retry.title")}</h1>
+          <p style={bodyLight}>{tr("ob.retry.body")}</p>
+          <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>{tr("ob.retry.button")}</OBButton></Actions>
         </PaperShell>
       );
     } else if (!questions) {
@@ -3714,26 +3710,27 @@ const Onboarding = () => {
       const helperText = q.helper && !/pick up to/i.test(q.helper) ? itemText(q, "helper", itemLang) : null;
       /* A suggestion built from what Aura already read. Never submitted. */
       const phList = smartPlaceholders(facts, sector || null, String(liProfile?.headline || "") || null);
-      const placeholder = phList[phIdx % phList.length];
+      const AR_PLACEHOLDER = "ob.q.placeholderAr";
+      const placeholder = isAr ? tr(AR_PLACEHOLDER) : phList[phIdx % phList.length];
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
       /* The headline can never promise three positions we are about to withdraw. */
-      const promptText = proposedFallback ? "What position could only you credibly take?" : itemText(q, "prompt", itemLang);
+      const promptText = proposedFallback ? tr("ob.q.fallbackPrompt") : itemText(q, "prompt", itemLang);
 
 
       content = (
         <PaperShell onExit={saveAndExit} subProgress={(qIdx + 1) / questions.length} footer={escapeFooter}>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
-            Question {qIdx + 1} of {questions.length}
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, ...arMono }}>
+            {tr("ob.q.counter", { n: qIdx + 1, total: questions.length })}
           </p>
           {qIdx === 0 ? (
-            <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>Saved as you go — you can stop any time.</p>
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>{tr("ob.q.saved")}</p>
           ) : null}
           <h1 {...(proposedFallback ? {} : itemAttrs)} style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{promptText}</h1>
           {helperText ? <p {...itemAttrs} style={bodyLight}>{helperText}</p> : null}
           {q.why_asked ? (
             <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted }}>
-              <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", marginInlineEnd: 7 }}>Why this</span>
+              <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", marginInlineEnd: 7, ...arMono }}>{tr("ob.q.whyThis")}</span>
               <span {...itemAttrs}>{itemText(q, "why_asked", itemLang)}</span>
             </p>
           ) : null}
@@ -3747,13 +3744,13 @@ const Onboarding = () => {
                 <OBButton disabled={!singlePicked} aria-describedby={!singlePicked ? "ob-q-why" : undefined} onClick={() => {
                   if (!singlePicked) return;
                   advance({ values: [singlePicked] });
-                }}>Next</OBButton>
-                {!singlePicked ? whyLine("ob-q-why", "Pick one answer to enable this.", true) : null}
+                }}>{tr("ob.next")}</OBButton>
+                {!singlePicked ? whyLine("ob-q-why", tr("ob.q.needOne"), true) : null}
               </Actions>
             </>
           ) : q.kind === "multi" ? (
             <>
-              <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>Pick up to {cap}</p>
+              <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>{tr("ob.q.pickUpTo", { count: cap })}</p>
               <div {...itemAttrs} style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
                 {opts.map((o, i) => optionButton(
                   i,
@@ -3766,18 +3763,18 @@ const Onboarding = () => {
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={multiPicked.length === 0} aria-describedby={multiPicked.length === 0 ? "ob-qm-why" : undefined} onClick={() => advance(
                   { values: multiPicked.filter((v) => opts.some((o) => o.value === v)) },
-                )}>Next</OBButton>
-                {multiPicked.length === 0 ? whyLine("ob-qm-why", "Pick at least one to enable this.", true) : null}
+                )}>{tr("ob.next")}</OBButton>
+                {multiPicked.length === 0 ? whyLine("ob-qm-why", tr("ob.q.needAtLeastOne"), true) : null}
               </Actions>
             </>
           ) : q.kind === "proposed" ? (
             proposedReady ? (
               <>
-                <p style={{ margin: "14px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.12em", color: OB.muted }}>
-                  From what KnownBy just read in your writing.
+                <p style={{ margin: "14px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.12em", color: OB.muted, ...arMono }}>
+                  {tr("ob.q.proposed.from")}
                 </p>
                 <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
-                  Keep the one that's actually you. The two you drop tell KnownBy just as much.
+                  {tr("ob.q.proposed.keep")}
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
                   {proposals!.map((pr, i) => (
@@ -3797,14 +3794,14 @@ const Onboarding = () => {
                     const kept = proposals![Number(singlePicked)]?.label ?? "";
                     const dropped = proposals!.filter((_, i) => String(i) !== singlePicked).map((x) => x.label);
                     advance({ proposed: { chosen: kept, rejected: dropped } });
-                  }}>Next</OBButton>
-                  {!singlePicked ? whyLine("ob-qp-why", "Keep the one that's actually you to enable this.", true) : null}
+                  }}>{tr("ob.next")}</OBButton>
+                  {!singlePicked ? whyLine("ob-qp-why", tr("ob.q.proposed.need"), true) : null}
                 </Actions>
               </>
             ) : proposedFallback ? (
               <>
                 <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
-                  KnownBy hasn't got enough of your writing to propose three yet — say it in your own words instead.
+                  {tr("ob.q.proposed.fallback")}
                 </p>
                 <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                   aria-label={itemText(q, "prompt", itemLang)}
@@ -3813,16 +3810,16 @@ const Onboarding = () => {
                     if (e.repeat) return;
                     if (e.key === "Enter" && textAnswer.trim()) advance({ text: textAnswer.trim() });
                   }}
-                  placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
+                  dir={isAr && !textAnswer ? "rtl" : "auto"} placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
                 <Actions style={{ marginBlockStart: 16 }}>
                   <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qtf-why" : undefined}
-                    onClick={() => advance({ text: textAnswer.trim() })}>Next</OBButton>
-                  {!textAnswer.trim() ? whyLine("ob-qtf-why", "Write an answer to enable this.", true) : null}
+                    onClick={() => advance({ text: textAnswer.trim() })}>{tr("ob.next")}</OBButton>
+                  {!textAnswer.trim() ? whyLine("ob-qtf-why", tr("ob.q.needText"), true) : null}
                 </Actions>
               </>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted, marginBlockStart: 20 }}>
-                <Loader2 size={14} className="animate-spin" /> Reading your posts and what you captured…
+                <Loader2 size={14} className="animate-spin" /> {tr("ob.q.proposed.loading")}
               </div>
             )
           ) : (
@@ -3834,20 +3831,20 @@ const Onboarding = () => {
                   if (e.repeat) return;
                   if (e.key === "Enter" && textAnswer.trim()) advance({ text: textAnswer.trim() });
                 }}
-                placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
+                dir={isAr && !textAnswer ? "rtl" : "auto"} placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qt-why" : undefined}
-                  onClick={() => advance({ text: textAnswer.trim() })}>Next</OBButton>
-                {!textAnswer.trim() ? whyLine("ob-qt-why", "Write an answer to enable this.", true) : null}
+                  onClick={() => advance({ text: textAnswer.trim() })}>{tr("ob.next")}</OBButton>
+                {!textAnswer.trim() ? whyLine("ob-qt-why", tr("ob.q.needText"), true) : null}
               </Actions>
             </>
           )}
 
           <Actions style={{ marginBlockStart: 12 }}>
             {showNone ? (
-              <OBButton variant="tertiary" onClick={() => advance({ values: [NONE_CODE] })}>None of these fit</OBButton>
+              <OBButton variant="tertiary" onClick={() => advance({ values: [NONE_CODE] })}>{tr("ob.q.none")}</OBButton>
             ) : null}
-            <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else goBack(10); }}>Back</OBButton>
+            <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else goBack(10); }}>{tr("ob.back")}</OBButton>
           </Actions>
 
           {/* Named once, on the last screen before the account wall — nowhere else. */}
@@ -3856,9 +3853,9 @@ const Onboarding = () => {
               marginBlockStart: 20, padding: "14px 16px", borderRadius: 12,
               background: OB.canvas, border: `1px solid ${OB.line}`,
             }}>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: OB.ink }}>This is still anonymous.</p>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: OB.ink }}>{tr("ob.q.anon.title")}</p>
               <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.6, color: OB.muted }}>
-                Everything you've done is saved to this browser. Saving your report is what makes it yours.
+                {tr("ob.q.anon.body")}
               </p>
             </div>
           ) : null}
@@ -4065,9 +4062,9 @@ const Onboarding = () => {
           gap: 8, justifyItems: "center", maxWidth: 420, margin: "24px auto 6px",
         }}>
           {SHELF.map((s, i) => (
-            <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
+            <ShelfBadge key={s.key} label={shelfLabel(s.key)} sublabel={SHELF_SUB[i]}
               tone={s.tone}
-              icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
+              icon={SHELF_ICON[i]} hint={shelfHint(s.key)}
               unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
           ))}
         </div>
@@ -4603,7 +4600,7 @@ const Onboarding = () => {
         <div role="note" lang="en" dir="ltr" style={{
           position: "fixed", insetBlockEnd: 12, insetInlineStart: 12, zIndex: 60, pointerEvents: "none",
           background: OB.ink, color: OB.white, fontSize: 11, borderRadius: 999, padding: "5px 10px",
-        }}>Arabic items preview</div>
+        }}>Arabic preview</div>
       ) : null}
       <JourneyNav.Provider value={{
         onBack: screen === 1 && step1Phase === "result"
