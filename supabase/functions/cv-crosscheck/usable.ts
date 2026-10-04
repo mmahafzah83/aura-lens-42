@@ -105,7 +105,6 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     if (!words.length && opts.hasBanned(text, words)) return "banned:default_list";
     return null;
   };
-  const offends = (text: string): boolean => offender(text) !== null;
 
   /* Findings: drop, downgrade, or strip a field. */
   const before: any[] = Array.isArray(p.findings) ? p.findings : [];
@@ -141,7 +140,11 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   const recs: any[] = [];
   for (const r of Array.isArray(p.recommendations) ? p.recommendations : []) {
     if (!r || !s(r.action) || !s(r.why_now)) { notes.push("dropped_recommendation:incomplete"); continue; }
-    if (opts.lang === "en" && offends(vocabText(r))) { notes.push("dropped_recommendation:banned_or_platitude"); continue; }
+    if (opts.lang === "en") {
+      let o: string | null = null;
+      for (const [k, v] of Object.entries(r)) { o = offender(v); if (o) { o = `${o}@${k}`; break; } }
+      if (o) { notes.push(`dropped_recommendation:${o}`); continue; }
+    }
     if (r.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) { delete r.aura_can; notes.push("removed:recommendation_aura_can"); }
     recs.push(r);
   }
@@ -158,14 +161,21 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     p[k] = p[k].filter((x: unknown) => !isBlankValue(x));
     if (p[k].length < nAll) notes.push(`dropped_blank:${k}`);
     const n = p[k].length;
-    p[k] = p[k].filter((x: unknown) => !(proseScanned && typeof x === "string" && offends(x)));
-    if (p[k].length < n) notes.push(`dropped_item:${k}:${n - p[k].length}`);
+    p[k] = p[k].filter((x: unknown) => {
+      const o = proseScanned ? offender(x) : null;
+      if (o) notes.push(`dropped_item:${o}@${k}`);
+      return !o;
+    });
+    void n;
   }
   for (const k of ["the_hard_truth", "profile_vs_voice", "reading_the_shape", "peer_comparison"]) {
-    if (proseScanned && typeof p[k] === "string" && offends(p[k])) { p[k] = null; notes.push(`nulled:${k}`); }
+    const o = proseScanned ? offender(p[k]) : null;
+    if (o) { p[k] = null; notes.push(`nulled:${o}@${k}`); }
   }
   if (p.headline_suggestion !== undefined && isBlankValue(p.headline_suggestion)) p.headline_suggestion = null;
-  if (typeof p.headline_suggestion === "string" && offends(p.headline_suggestion)) { p.headline_suggestion = null; notes.push("nulled:headline_suggestion"); }
+  if (typeof p.headline_suggestion === "string" && BRACKET_GAP.test(p.headline_suggestion)) { p.headline_suggestion = null; notes.push("headline_removed:bracket_gap"); }
+  const hlOff = offender(p.headline_suggestion);
+  if (hlOff) { p.headline_suggestion = null; notes.push(`headline_removed:${hlOff}`); }
   const badHl = bad(p.headline_suggestion);
   if (badHl.length) { p.headline_suggestion = null; notes.push(`headline_removed:unsupported_figure:${badHl.join(",")}`); }
   if (typeof p.headline_suggestion === "string") p.headline_suggestion = intent(p.headline_suggestion, "headline_sentence_removed:intention");
@@ -183,10 +193,11 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   const { result, changes } = normaliseCrosscheck(p);
   notes.push(...changes);
 
-  if (!s(result.headline_finding) || (proseScanned && offends(result.headline_finding))) {
+  const hfOff = proseScanned ? offender(result.headline_finding) : null;
+  if (!s(result.headline_finding) || hfOff) {
     const first = result.findings.find((f: any) => f?.do_first === true) ?? result.findings[0];
     result.headline_finding = first.what;
-    notes.push("replaced:headline_finding");
+    notes.push(hfOff ? `replaced:${hfOff}@headline_finding` : "replaced:headline_finding");
   }
 
   if (opts.lang === "ar" && wholeArabicShare(result) < 0.5) {
