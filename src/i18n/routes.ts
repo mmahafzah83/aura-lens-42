@@ -3,6 +3,7 @@
  * Kept free of browser and i18next imports so the e2e specs can read it in Node.
  */
 export const ARABIC_READY_ROUTES: (string | RegExp)[] = [
+  "/", "/v2",
   "/home", "/dashboard", "/opportunities", "/settings",
   "/auth", "/login", "/request-access", "/accept-invitation",
   "/assessment", "/onboarding",
