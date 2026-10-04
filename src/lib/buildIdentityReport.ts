@@ -267,7 +267,9 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
       .maybeSingle(),
     // The LinkedIn address lives on linkedin_connections — the profile columns are deprecated.
     supabase.from("linkedin_connections").select("handle").eq("user_id", userId).maybeSingle(),
+    (supabase.from("capability_dimensions" as any) as any).select("name, name_ar"),
   ]);
+  const capabilityNameRows = ((capNamesRes as any)?.data || []) as { name: string; name_ar?: string | null }[];
 
   const p: any = (profileRes as any)?.data || null;
 

@@ -10,7 +10,8 @@ import ReportDocument from "@/components/ReportDocument";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
-import { brandPaperHasContent } from "@/lib/buildBrandPaper";
+import { brandPaperHasContent, attachCapabilityNamesAr, type CapabilityNameRow } from "@/lib/buildBrandPaper";
+import { supabase } from "@/integrations/supabase/client";
 
 const SHEET_W = 794; // A4 @ 96dpi — fixed, must be scaled to fit on screen.
 
@@ -52,6 +53,17 @@ export default function ReportViewerSection({
   const loading = usingOverride ? false : live.loading;
   const hasAssessment = usingOverride ? true : live.hasAssessment;
   const paperReady = brandPaperHasContent((report as any)?.brand_paper ?? null);
+  const [capNames, setCapNames] = useState<CapabilityNameRow[] | null>(null);
+  // Saved editions may predate Arabic capability names; add them at display.
+  useEffect(() => {
+    let off = false;
+    (supabase.from("capability_dimensions" as any) as any).select("name, name_ar")
+      .then(({ data }: any) => { if (!off) setCapNames(data || null); });
+    return () => { off = true; };
+  }, []);
+  const exportPaper = report?.brand_paper
+    ? { ...report.brand_paper, capabilities: attachCapabilityNamesAr(report.brand_paper.capabilities || [], capNames) }
+    : null;
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
@@ -221,7 +233,7 @@ export default function ReportViewerSection({
           style={{ position: "absolute", left: -9999, top: 0, width: SHEET_W, pointerEvents: "none" }}
         >
           {brandPaperHasContent(report.brand_paper) ? (
-            <BrandPaperDocument paper={report.brand_paper} showClosing={false} />
+            <BrandPaperDocument paper={exportPaper} showClosing={false} />
           ) : null}
           <ReportDocument data={report} />
         </div>

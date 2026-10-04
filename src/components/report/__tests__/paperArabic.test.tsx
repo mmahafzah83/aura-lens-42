@@ -33,3 +33,15 @@ describe("paper language", () => {
     expect(html).not.toMatch(/\b(Finding|Chapter|Source|Page|Figure|Issued)\b/);
   });
 });
+
+import { attachCapabilityNamesAr } from "@/lib/buildBrandPaper";
+describe("placement names", () => {
+  it("attaches stored Arabic by canonical name and keeps English when missing", () => {
+    const out = attachCapabilityNamesAr(
+      [{ name: "Being called first", score: 49 }, { name: "Unknown one", score: 10 }],
+      [{ name: "Being called first", name_ar: "أن تُستشار أولًا" }],
+    );
+    expect(out[0].name_ar).toBe("أن تُستشار أولًا");
+    expect(out[1].name_ar).toBeUndefined();
+  });
+});
