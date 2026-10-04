@@ -9,7 +9,7 @@
  * their loss and their replacement line, then the long tail. A member reads
  * roughly 425 words of the ~1,750 we generate — these are the 425.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { OB } from "@/components/onboarding/tokens";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -45,6 +45,8 @@ export type CvCrosscheckData = {
   the_hard_truth?: string | null;
   recommendations?: CvRecommendation[] | null;
   peer_comparison?: string | null;
+  /** The language the comparison was written in. */
+  lang?: "ar" | "en" | null;
 };
 
 const strings = (v: unknown): string[] =>
@@ -203,13 +205,13 @@ function Section({
   );
 }
 
-function PlainList({ items }: { items: string[] }) {
+function PlainList({ items, extra }: { items: string[]; extra?: CSSProperties }) {
   return (
     <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
       {items.map((s, i) => (
         <li key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
           <span aria-hidden style={{ inlineSize: 5, blockSize: 5, borderRadius: 999, background: OB.cyan, marginBlockStart: 10, flex: "0 0 auto" }} />
-          <span style={prose}>{s}</span>
+          <span dir="auto" style={{ ...prose, ...extra }}>{s}</span>
         </li>
       ))}
     </ul>
@@ -368,7 +370,7 @@ export default function CvCrosscheck({
     context: { finding?: CvFinding; recommendation?: CvRecommendation },
   ) => void | boolean | Promise<void | boolean>;
 }) {
-  const { t } = useLanguage();
+  const { t, lang: uiLang } = useLanguage();
   const [fetched, setFetched] = useState<unknown>(null);
   const [headlineOpen, setHeadlineOpen] = useState(0);
   /* One "Kept ✓" per thing kept — pressing twice cannot write twice. */
@@ -443,6 +445,12 @@ export default function CvCrosscheck({
 
   if (!d) return null;
 
+  /* Model-written Arabic gets the Arabic font; direction follows the text. */
+  const mt: CSSProperties = d.lang === "ar"
+    ? { fontFamily: "Cairo, 'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9, letterSpacing: 0 }
+    : {};
+  const fellBack = uiLang === "ar" && d.lang === "en";
+
   const behind = strings(d.cv_is_behind);
   const proof = strings(d.defensibility);
   const recs = (Array.isArray(d.recommendations) ? d.recommendations : []).filter((r) => r && text(r.action));
@@ -507,21 +515,21 @@ export default function CvCrosscheck({
     return (
       <article style={{ display: "grid", gap: 10 }}>
         {first && f.do_first === true ? <p className="cvx-mono" style={{ ...mono, color: OB.cyanText }}>{t("cvx.doFirst")}</p> : null}
-        {text(f.what) ? <h3 style={h3}>{f.what}</h3> : null}
-        {text(f.what_you_lose) ? <p style={prose}>{f.what_you_lose}</p> : null}
+        {text(f.what) ? <h3 dir="auto" style={{ ...h3, ...mt }}>{f.what}</h3> : null}
+        {text(f.what_you_lose) ? <p dir="auto" style={{ ...prose, ...mt }}>{f.what_you_lose}</p> : null}
         {rewrite ? (
           <div style={boxed}>
             <p className="cvx-mono" style={mono}>{t("cvx.useLine")}</p>
-            <p style={{ ...prose, marginBlockStart: 8 }}>{rewrite}</p>
+            <p dir="auto" style={{ ...prose, marginBlockStart: 8 }}>{rewrite}</p>
             <div style={{ marginBlockStart: 12 }}>
               <CopyButton value={rewrite} label={t("cvx.copyRewrite")} />
             </div>
           </div>
         ) : null}
         {text(f.why_it_matters) ? (
-          <p style={{ ...prose, fontSize: 15, color: OB.muted }}>{f.why_it_matters}</p>
+          <p dir="auto" style={{ ...prose, fontSize: 15, color: OB.muted, ...mt }}>{f.why_it_matters}</p>
         ) : null}
-        {text(f.do_this) ? <p style={{ ...prose, fontSize: 15, color: OB.blue }}>{f.do_this}</p> : null}
+        {text(f.do_this) ? <p dir="auto" style={{ ...prose, fontSize: 15, color: OB.blue, ...mt }}>{f.do_this}</p> : null}
         <EvidenceToggle cv={cvLine} profile={profileLine} />
         {auraControl(f.aura_can, { finding: f })}
       </article>
@@ -542,7 +550,7 @@ export default function CvCrosscheck({
       >
         <p className="cvx-mono" style={{ ...mono, color: OB.cyan }}>{t("cvx.title")}</p>
         {text(d.headline_finding) ? (
-          <p
+          <p dir="auto"
             style={{
               fontFamily: OB.ui,
               fontSize: 26,
@@ -551,12 +559,14 @@ export default function CvCrosscheck({
               color: OB.white,
               margin: "14px 0 0",
               letterSpacing: "-0.02em",
+              ...mt,
             }}
           >
             {d.headline_finding}
           </p>
         ) : null}
       </section>
+      {fellBack ? <p style={{ ...prose, fontSize: 14, color: OB.muted }}>{t("assess.read.langFallback")}</p> : null}
 
       {/* stale */}
       {state === "stale" ? (
@@ -589,7 +599,7 @@ export default function CvCrosscheck({
 
       {behind.length > 0 ? (
         <Disclosure id="cvx-missing" label={t("cvx.missing")} count={behind.length} previewText={preview(behind[0])}>
-          <PlainList items={behind} />
+          <PlainList items={behind} extra={mt} />
         </Disclosure>
       ) : null}
 
@@ -597,7 +607,7 @@ export default function CvCrosscheck({
         <Disclosure id="cvx-defensibility" label={t("cvx.cfo")} count={proof.length} previewText={preview(proof[0])}>
           <div style={{ display: "grid", gap: 12 }}>
             {proof.map((s, i) => (
-              <div key={i} style={boxed}><p style={prose}>{s}</p></div>
+              <div key={i} style={boxed}><p dir="auto" style={{ ...prose, ...mt }}>{s}</p></div>
             ))}
           </div>
         </Disclosure>
@@ -611,7 +621,7 @@ export default function CvCrosscheck({
           openSignal={headlineOpen}
         >
           <div style={boxed}>
-            <p style={prose}>{headlineSuggestion}</p>
+            <p dir="auto" style={prose}>{headlineSuggestion}</p>
             <div style={{ marginBlockStart: 12 }}>
               <CopyButton value={headlineSuggestion} label={t("cvx.copyHeadline")} />
             </div>
@@ -621,19 +631,19 @@ export default function CvCrosscheck({
 
       {shape ? (
         <Disclosure id="cvx-shape" label={t("cvx.shape")} previewText={preview(shape)}>
-          <p style={prose}>{shape}</p>
+          <p dir="auto" style={{ ...prose, ...mt }}>{shape}</p>
         </Disclosure>
       ) : null}
 
       {voice ? (
         <Disclosure id="cvx-voice" label={t("cvx.voice")} previewText={preview(voice)}>
-          <p style={prose}>{voice}</p>
+          <p dir="auto" style={{ ...prose, ...mt }}>{voice}</p>
         </Disclosure>
       ) : null}
 
       {hardTruth ? (
         <Disclosure id="cvx-truth" label={t("cvx.hardTruth")} previewText={preview(hardTruth)}>
-          <p style={{ ...prose, fontSize: 20, fontWeight: 700, lineHeight: 1.45 }}>{hardTruth}</p>
+          <p dir="auto" style={{ ...prose, fontSize: 20, fontWeight: 700, lineHeight: 1.45, ...mt }}>{hardTruth}</p>
         </Disclosure>
       ) : null}
 
@@ -642,8 +652,8 @@ export default function CvCrosscheck({
           <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 18 }}>
             {recs.map((r, i) => (
               <li key={i}>
-                <p style={{ ...prose, fontWeight: 600 }}>{r.action}</p>
-                {text(r.why_now) ? <p style={{ ...prose, fontSize: 15, color: OB.muted }}>{r.why_now}</p> : null}
+                <p dir="auto" style={{ ...prose, fontWeight: 600, ...mt }}>{r.action}</p>
+                {text(r.why_now) ? <p dir="auto" style={{ ...prose, fontSize: 15, color: OB.muted, ...mt }}>{r.why_now}</p> : null}
                 {auraControl(r.aura_can, { recommendation: r })}
               </li>
             ))}
@@ -653,7 +663,7 @@ export default function CvCrosscheck({
 
       {peer ? (
         <Disclosure id="cvx-peers" label={t("cvx.peers")} previewText={preview(peer)}>
-          <p style={prose}>{peer}</p>
+          <p dir="auto" style={{ ...prose, ...mt }}>{peer}</p>
         </Disclosure>
       ) : null}
     </div>
