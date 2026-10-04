@@ -1015,7 +1015,7 @@ function ResultsView({
       const firstSlug = (paper.profile.first_name || "profile")
         .toString().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "profile";
       const date = new Date().toISOString().slice(0, 10);
-      await exportReportPdf(paperMountRef.current, `aura-position-${firstSlug}-${date}.pdf`);
+      await exportReportPdf(paperMountRef.current, `knownby-position-${firstSlug}-${date}.pdf`);
       sonner.success("Report downloaded");
     } catch (e: any) {
       onCopyToast(e?.message || "Failed to download report");

@@ -5,7 +5,7 @@
 export const ARABIC_READY_ROUTES: (string | RegExp)[] = [
   "/home", "/dashboard", "/opportunities", "/settings",
   "/auth", "/login", "/request-access", "/accept-invitation",
-  "/assessment",
+  "/assessment", "/onboarding",
 ];
 
 const normPath = (pathname: string): string => {

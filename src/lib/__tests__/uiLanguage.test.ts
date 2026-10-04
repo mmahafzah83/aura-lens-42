@@ -16,7 +16,7 @@ describe("effectiveLang", () => {
   it("not-ready routes are English", () => {
     expect(effectiveLang("ar", "/")).toBe("en");
     expect(effectiveLang("ar", "/assessment")).toBe("ar");
-    expect(effectiveLang("ar", "/onboarding?x=1")).toBe("en");
+    expect(effectiveLang("ar", "/onboarding?x=1")).toBe("ar");
     expect(effectiveLang("ar", "/authx")).toBe("en");
   });
 });

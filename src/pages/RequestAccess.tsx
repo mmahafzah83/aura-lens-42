@@ -8,8 +8,7 @@ import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
-  SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_HEADING, SEAT_LEAD,
-  SEAT_ONE_JOB, SEAT_HOW, SEAT_HOW_LABEL, SEAT_VS_TOOLS, SEAT_CONSTRAINT, SEAT_RACK_LABEL,
+  SEAT_LEAD, SEAT_HOW, SEAT_VS_TOOLS, SEAT_RACK_LABEL,
   INTENT_RESERVE, INTENT_KEEP_POSTED, RESERVED_TITLE, RESERVED_BODY, POSTED_TITLE,
   WORTH_QUESTION, WORTH_PLACEHOLDER, WORTH_SEND, WORTH_SKIP, WORTH_THANKS,
   type SeatIntent,
@@ -196,15 +195,15 @@ export default function RequestAccess() {
         {/* ── LEFT · the door ── */}
         <div>
           <div className="ra-eyebrow"><span>{t("auth.request.eyebrow")}</span></div>
-          <h1 className="ra-h1">{SEAT_HEADING}</h1>
+          <h1 className="ra-h1">{t("seat.heading")}</h1>
           <p className="ra-lede">{SEAT_LEAD}</p>
-          <p className="ra-onejob">{SEAT_ONE_JOB}</p>
-          <p className="ra-howlb">{SEAT_HOW_LABEL}</p>
+          <p className="ra-onejob">{t("seat.oneJob")}</p>
+          <p className="ra-howlb">{t("seat.howLabel")}</p>
           <ul className="ra-how">
-            {SEAT_HOW.map((row) => <li key={row}>{row}</li>)}
+            {SEAT_HOW.map((_r, i) => t(`seat.how.${i + 1}`)).map((row) => <li key={row}>{row}</li>)}
           </ul>
           <p className="ra-vs">{SEAT_VS_TOOLS}</p>
-          <p className="ra-constraint">{SEAT_CONSTRAINT}</p>
+          <p className="ra-constraint">{t("seat.constraint")}</p>
 
           {seats && (
             <div className="ra-rack">
@@ -314,8 +313,8 @@ export default function RequestAccess() {
                 )}
 
                 <div className="ra-price">
-                  <span className="ra-price-n">{SEAT_PRICE}</span>
-                  <span className="ra-price-s">{SEAT_PRICE_SUBLINE}</span>
+                  <span className="ra-price-n">{t("seat.price")}</span>
+                  <span className="ra-price-s">{t("seat.priceSub")}</span>
                 </div>
 
                 <button

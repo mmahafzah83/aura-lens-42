@@ -9,15 +9,11 @@
  */
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ButtonPrimary } from "@/components/systemb/Button";
 import { usePlan } from "@/hooks/usePlan";
 import {
-  SEAT_HEADING,
   SEAT_ROWS,
-  SEAT_PRICE,
-  SEAT_PRICE_SUBLINE,
-  SEAT_ONE_JOB,
-  SEAT_CTA,
   SEAT_PATH,
 } from "@/lib/seatCopy";
 
@@ -37,6 +33,7 @@ const NIGHT: React.CSSProperties = {
 
 const ReadShape: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { locked } = usePlan();
 
   if (!locked) return null;
@@ -53,13 +50,13 @@ const ReadShape: React.FC = () => {
             color: "var(--text-inverse)",
           }}
         >
-          {SEAT_HEADING}
+          {t("seat.heading")}
         </h2>
         <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.6, color: "var(--text-inverse)" }}>
-          {SEAT_ONE_JOB}
+          {t("seat.oneJob")}
         </p>
         <div style={{ display: "grid", gap: 6, margin: "14px 0 16px" }}>
-          {SEAT_ROWS.map((row) => (
+          {SEAT_ROWS.map((_r, i) => t(`seat.how.${i + 1}`)).map((row) => (
             <p
               key={row}
               style={{
@@ -73,7 +70,7 @@ const ReadShape: React.FC = () => {
             </p>
           ))}
         </div>
-        <div style={{ ...MONO, fontSize: 24, color: "var(--text-inverse)" }}>{SEAT_PRICE}</div>
+        <div style={{ ...MONO, fontSize: 24, color: "var(--text-inverse)" }}>{t("seat.price")}</div>
         <p
           style={{
             margin: "6px 0 16px",
@@ -82,9 +79,9 @@ const ReadShape: React.FC = () => {
             color: "var(--v23-on-night, rgba(255,255,255,.72))",
           }}
         >
-          {SEAT_PRICE_SUBLINE}
+          {t("seat.priceSub")}
         </p>
-        <ButtonPrimary onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</ButtonPrimary>
+        <ButtonPrimary onClick={() => navigate(SEAT_PATH)}>{t("auth.request.reserve")}</ButtonPrimary>
       </section>
     </div>
   );

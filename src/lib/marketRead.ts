@@ -3,7 +3,7 @@
  * Collection journey. Everything that talks to the brand-* backend lives here
  * so the journey page itself stays free of back-office words.
  */
-import { readStoredLang } from "@/i18n";
+import i18n, { readStoredLang, type UiLang } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { derivePillars } from "@/lib/brandPillars";
@@ -87,6 +87,32 @@ function postsLine(s: ReadSources): string | undefined {
   return `From ${parts.join(", ")}, and ${last}.`;
 }
 
+/* Arabic provenance: counts after a colon, one form for every count. English
+   keeps the functions above, so its output is unchanged. */
+const arT = (k: string, o?: Record<string, unknown>) => String(i18n.t(k, { lng: "ar", ...(o ?? {}) }));
+
+function postsLineAr(s: ReadSources): string {
+  let out = arT("reveal.prov.read.base");
+  if (s.posts) out += arT("reveal.prov.read.posts", { count: s.posts });
+  if (s.saved) out += arT("reveal.prov.read.saved", { count: s.saved });
+  if (s.answers || s.sliders) out += arT("reveal.prov.read.answers");
+  return out + arT("reveal.prov.end");
+}
+
+function evidenceLineAr(s: ReadSources): string | undefined {
+  const parts: string[] = [];
+  if (s.saved) parts.push(arT("reveal.prov.saved", { count: s.saved }));
+  if (s.posts) parts.push(arT("reveal.prov.posts", { count: s.posts }));
+  return parts.length ? parts.join(arT("reveal.prov.sep")) : undefined;
+}
+
+function ownWordsLineAr(s: ReadSources): string | undefined {
+  const parts: string[] = [];
+  if (s.answers) parts.push(arT("reveal.prov.answers", { count: s.answers }));
+  if (s.sliders) parts.push(arT("reveal.prov.sliders", { count: s.sliders }));
+  return parts.length ? parts.join(arT("reveal.prov.sep")) : undefined;
+}
+
 export function toRevealData(
   results: Record<string, any> | null | undefined,
   extras: {
@@ -95,9 +121,12 @@ export function toRevealData(
     excludeSoft?: string[];
     /** Real counts, so every section can name what produced it. */
     sources?: ReadSources;
+    /** The language the screen renders in (effective language). */
+    lang?: UiLang;
   } = {},
 ): RevealData | null {
   if (!results) return null;
+  const ar = extras.lang === "ar";
   const archetype = stripMd(results.primary_archetype);
   // Strip the archetype echo from the FULL text first — the echo is often the
   // whole first sentence, so taking firstSentence before stripping empties it.
@@ -123,7 +152,7 @@ export function toRevealData(
   const src = extras.sources ?? {};
   if (!archetype && subjects.length === 0) return null;
   return {
-    archetype: archetype || "Your read",
+    archetype: archetype || (ar ? arT("reveal.fallbackArchetype") : "Your read"),
     marketRead,
     secondaryRead: stripMd(results.secondary_archetype) || undefined,
     theGap: stripMd(results.the_gap) || undefined,
@@ -132,7 +161,11 @@ export function toRevealData(
     subjects: subjects.filter(Boolean).slice(0, 3),
     softGround: soft.slice(0, 2),
     figures: extras.figures ?? [],
-    provenance: {
+    provenance: ar ? {
+      read: postsLineAr(src),
+      subjects: evidenceLineAr(src),
+      softGround: ownWordsLineAr(src),
+    } : {
       read: postsLine(src),
       subjects: evidenceLine(src),
       softGround: ownWordsLine(src),

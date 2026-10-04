@@ -16,20 +16,21 @@ test.describe("landing", () => {
       const text = document.body.textContent || "";
       const hits = text.match(/\$\d[\d,]*/g) || [];
       return {
-        thirtyFive: hits.filter((h) => h === "$35").length,
+        /* The seat price shows the XX placeholder until it is defined (founder ruling, 4 Oct 2026). */
+        placeholder: (text.match(/\bXX\b/g) || []).length,
         // Market comparison figures may appear alongside; only one paid headline price.
         distinct: Array.from(new Set(hits)),
       };
     });
-    expect(prices.thirtyFive, "the $35 seat price must be stated").toBeGreaterThan(0);
+    expect(prices.placeholder, "the seat price placeholder must be stated").toBeGreaterThan(0);
 
     // The headline price node says it once, and says $35.
     // The headline price nodes: the free read, and exactly one paid figure.
     const headline = await page.locator(".prc .p").allTextContents();
     expect(headline.length, "the landing states a headline price").toBeGreaterThan(0);
-    const paid = headline.filter((t) => /\$/.test(t));
+    const paid = headline.filter((t) => /\$|\bXX\b/.test(t));
     expect(paid.length, "exactly one paid headline price").toBe(1);
-    expect(paid[0]).toContain("$35");
+    expect(paid[0]).toContain("XX");
 
     // D100 — no strikethrough price anywhere.
     const struck = await page.evaluate(() => {

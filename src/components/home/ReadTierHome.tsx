@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb/Button";
 import { MONO } from "./homeAtoms";
@@ -18,12 +19,7 @@ import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboa
 import { toRevealData } from "@/lib/marketRead";
 import { brandPaperHasContent } from "@/lib/buildBrandPaper";
 import {
-  SEAT_HEADING,
   SEAT_ROWS,
-  SEAT_PRICE,
-  SEAT_PRICE_SUBLINE,
-  SEAT_ONE_JOB,
-  SEAT_CTA,
   SEAT_PATH,
 } from "@/lib/seatCopy";
 
@@ -56,6 +52,7 @@ function greetingFor(hour: number): string {
 
 const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [firstName, setFirstName] = useState<string>("");
   const [readAt, setReadAt] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, any> | null>(null);
@@ -94,7 +91,7 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
   })();
 
   const archetype = String(results?.primary_archetype || "").replace(/[*_`#]/g, "").trim();
-  const revealData: RevealData | null = results ? toRevealData(results, { figures: [] }) : null;
+  const revealData: RevealData | null = results ? toRevealData(results, { figures: [], lang: i18n.language === "ar" ? "ar" : "en" }) : null;
 
   const goIdentity = () => onSwitchTab?.("identity");
 
@@ -201,23 +198,23 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
           margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 18,
           color: "var(--text-inverse)",
         }}>
-          {SEAT_HEADING}
+          {t("seat.heading")}
         </h2>
         <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.6, color: "var(--text-inverse)" }}>
-          {SEAT_ONE_JOB}
+          {t("seat.oneJob")}
         </p>
         <div style={{ display: "grid", gap: 6, margin: "14px 0 16px" }}>
-          {SEAT_ROWS.map((row) => (
+          {SEAT_ROWS.map((_r, i) => t(`seat.how.${i + 1}`)).map((row) => (
             <p key={row} style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--v23-on-night, rgba(255,255,255,.78))" }}>
               {row}
             </p>
           ))}
         </div>
-        <div style={{ ...MONO, fontSize: 24, color: "var(--text-inverse)" }}>{SEAT_PRICE}</div>
+        <div style={{ ...MONO, fontSize: 24, color: "var(--text-inverse)" }}>{t("seat.price")}</div>
         <p style={{ margin: "6px 0 16px", fontSize: 12.5, lineHeight: 1.55, color: "var(--v23-on-night, rgba(255,255,255,.72))" }}>
-          {SEAT_PRICE_SUBLINE}
+          {t("seat.priceSub")}
         </p>
-        <ButtonPrimary onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</ButtonPrimary>
+        <ButtonPrimary onClick={() => navigate(SEAT_PATH)}>{t("auth.request.reserve")}</ButtonPrimary>
       </section>
 
       {/* offscreen mounts — the same documents the identity surfaces export */}

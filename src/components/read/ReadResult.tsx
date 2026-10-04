@@ -117,7 +117,7 @@ export default function ReadResult({
     ownWordsRead: read.own_words_read,
   };
 
-  const fileName = `aura-read-${slugOf(name)}-${(generatedAt ? new Date(generatedAt) : new Date())
+  const fileName = `knownby-read-${slugOf(name)}-${(generatedAt ? new Date(generatedAt) : new Date())
     .toISOString().slice(0, 10)}.png`;
 
   /** Give before you ask: the file is his before we ask him to pass it on. */
@@ -172,7 +172,7 @@ export default function ReadResult({
                   <>
                     <p dir="auto" style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.65,
                       color: INK, fontStyle: arabic ? "normal" : "italic", ...script }}>
-                      {`“${read.own_words_quote}”`}
+                      {arabic ? `«${read.own_words_quote}»` : `“${read.own_words_quote}”`}
                     </p>
                     {read.own_words_read ? (
                       <p dir="auto" style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.65, color: INK2, ...script }}>

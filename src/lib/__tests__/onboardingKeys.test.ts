@@ -61,14 +61,37 @@ describe("slider level tags", () => {
 });
 
 describe("?items=ar preview", () => {
-  it("makes /onboarding Arabic only when on", () => {
+  it("/onboarding follows the stored choice; the preview still forces Arabic", () => {
     expect(effectiveLang("en", "/onboarding", true)).toBe("ar");
     expect(effectiveLang("en", "/onboarding", false)).toBe("en");
-    expect(effectiveLang("ar", "/onboarding", false)).toBe("en");
+    expect(effectiveLang("ar", "/onboarding", false)).toBe("ar");
   });
   it("covers /onboarding only", () => {
     expect(arabicPreviewOn("/", true)).toBe(false);
     expect(effectiveLang("en", "/admin", true)).toBe("en");
     expect(effectiveLang("en", "/auth", true)).toBe("en");
+  });
+});
+
+describe("reveal provenance", () => {
+  it("English is unchanged; Arabic uses counts after a colon", async () => {
+    const { toRevealData } = await import("@/lib/marketRead");
+    const r = { primary_archetype: "X", content_pillars: ["a"] };
+    const sources = { posts: 3, saved: 1, answers: 9, sliders: 8 };
+    const en = toRevealData(r, { sources })!;
+    expect(en.provenance).toEqual({
+      read: "From your profile, 3 of your posts, 1 thing you saved, and your own answers.",
+      subjects: "From 1 thing you saved and 3 of your posts.",
+      softGround: "From your own 9 answers and 8 sliders you moved.",
+    });
+    const ar = toRevealData(r, { sources, lang: "ar" })!;
+    expect(ar.provenance).toEqual({
+      read: "من صفحتك، ومن منشوراتك: 3، ومما حفظته: 1، ومن إجاباتك.",
+      subjects: "مما حفظته: 1 · من منشوراتك: 3",
+      softGround: "من إجاباتك: 9 · من تقييمك لنفسك: 8",
+    });
+    expect(toRevealData(r, { lang: "ar" })!.provenance.read).toBe("من صفحتك.");
+    expect(toRevealData({ content_pillars: ["a"] }, { lang: "ar" })!.archetype).toBe("ملفك");
+    expect(toRevealData({ content_pillars: ["a"] })!.archetype).toBe("Your read");
   });
 });
