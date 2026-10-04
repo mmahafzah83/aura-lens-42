@@ -101,3 +101,12 @@ describe("gate after repair", () => {
     expect(d.fragment!.length).toBeLessThanOrEqual(60);
   });
 });
+
+describe("kaf_as widened", () => {
+  it("fails on «كملف»", () => {
+    expect(arabicGate({ own_words_read: "لا تنظر إلى المشروع كملف تقني بل كقرار." })).toBe("kaf_as");
+  });
+  it("does not match common كـ words", () => {
+    expect(arabicGate({ own_words_read: "كما كان كل شيء كذلك، كيف كتب كثير من الناس عن عمل كبير." })).toBeNull();
+  });
+});

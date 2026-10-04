@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairArabic } from "../_shared/arabicVoice.ts";
+import { spanIsWrong, SENTENCE_SPLIT } from "./spans.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
@@ -85,6 +87,35 @@ function parseJsonLoose(raw: string): any | null {
   }
 }
 
+const ARABIC_CV_ADDITION = `FIELDS IN ARABIC: headline_finding, every finding's what / why_it_matters / do_this / what_you_lose, defensibility, cv_is_behind, profile_vs_voice, reading_the_shape, the_hard_truth, every recommendation's action / why_now, and peer_comparison.
+FIELDS THAT STAY AS THEY ARE: weight and aura_can keep their English enum values. evidence.cv_line and evidence.profile_line are verbatim quotes in the language of the source; write the single English word Absent when that side has nothing. rewrite and headline_suggestion are text the person will paste into their CV or LinkedIn profile: write each in the language of the document it replaces (an English CV line gets an English rewrite; an Arabic one gets Arabic).
+The three evidence rungs in defensibility are written in Arabic: «قابل للدفاع الآن», «قابل للدفاع بتفصيل واحد إضافي», «غير قابل للدفاع».
+The reader named in what_you_lose is named in Arabic (لجنة الترشيحات، شريك البحث التنفيذي، العميل المحتمل…).
+Years of experience: compute every span from the two dates you cite, exactly as in English. Write spans as «N سنة» / «N سنوات» with Western digits.
+Never use these Arabic CV-coaching platitudes: «أبرز إنجازاتك», «استخدم أفعالًا قوية», «خصّص سيرتك», «أظهر نقاط قوتك», «قِس إنجازاتك بالأرقام» as generic advice.`;
+
+const ARABIC_CV_SYSTEM = SYSTEM_PROMPT + "\n\n" + ARABIC_VOICE_BLOCK + "\n" + ARABIC_CV_ADDITION;
+
+/** The model-written prose fields only — quotes, paste-ready text and enums stay out. */
+function arabicProse(r: any): Record<string, unknown> {
+  const pick = (o: any, keys: string[]) => Object.fromEntries(keys.filter((k) => typeof o?.[k] === "string").map((k) => [k, o[k]]));
+  return {
+    ...pick(r, ["headline_finding", "defensibility", "cv_is_behind", "profile_vs_voice", "reading_the_shape", "the_hard_truth", "peer_comparison"]),
+    findings: (Array.isArray(r?.findings) ? r.findings : []).map((f: any) => pick(f, ["what", "why_it_matters", "do_this", "what_you_lose"])),
+    recommendations: (Array.isArray(r?.recommendations) ? r.recommendations : []).map((x: any) => pick(x, ["action", "why_now"])),
+  };
+}
+
+/** repairArabic on the same prose fields, in place. */
+function repairCvArabic(r: any): any {
+  if (!r || typeof r !== "object") return r;
+  const fix = (o: any, keys: string[]) => { for (const k of keys) if (typeof o?.[k] === "string") o[k] = repairArabic(o[k]); };
+  fix(r, ["headline_finding", "defensibility", "cv_is_behind", "profile_vs_voice", "reading_the_shape", "the_hard_truth", "peer_comparison"]);
+  for (const f of Array.isArray(r.findings) ? r.findings : []) fix(f, ["what", "why_it_matters", "do_this", "what_you_lose"]);
+  for (const x of Array.isArray(r.recommendations) ? r.recommendations : []) fix(x, ["action", "why_now"]);
+  return r;
+}
+
 serve(withObserve("cv-crosscheck", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -99,6 +130,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
      away. No storage object, no `documents` row, no `document_chunks` row,
      no write to `diagnostic_profiles`. The result is returned to the browser
      and held on the anonymous session by the caller. */
+  const lang: "ar" | "en" = body?.ui_lang === "ar" ? "ar" : "en";
   const anonToken: string = typeof body?.anon_token === "string" ? body.anon_token.trim() : "";
   /* `cvText` is the documented parameter name; `cv_text` is accepted as an
      alias so either spelling works. When present the `documents` lookup is
@@ -185,7 +217,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
       operation: "cv_crosscheck",
       user_id: callerId || null,
       anon_token: anonToken || null,
-      meta: { purpose, anonymous: !!anonToken },
+      meta: { purpose, anonymous: !!anonToken, lang },
     });
   } catch (e) { console.error("[cv-crosscheck] run start failed:", (e as Error)?.message); }
   /* Stage one opens: reading the file and the profile snapshot. */
@@ -452,7 +484,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     },
   } as const;
 
-  const callAnthropic = (prompt: string) => fetch("https://api.anthropic.com/v1/messages", {
+  const callAnthropic = (prompt: string, system: string) => fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": ANTHROPIC_API_KEY,
@@ -462,7 +494,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     body: JSON.stringify({
       model: "claude-sonnet-4-5-20250929",
       max_tokens: 3000,
-      system: SYSTEM_PROMPT,
+      system,
       messages: [{ role: "user", content: prompt }],
       tools: [CROSSCHECK_TOOL],
       tool_choice: { type: "tool", name: CROSSCHECK_TOOL.name },
@@ -471,8 +503,8 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
 
   /* Stage two opens: the model comparing the CV against the profile. */
   run?.mark(OPERATION_STAGES.cv_crosscheck[1]);
-  const runOnce = async (prompt: string) => {
-    const resp = await callAnthropic(prompt);
+  const runOnce = async (prompt: string, l: "ar" | "en" = lang) => {
+    const resp = await callAnthropic(prompt, l === "ar" ? ARABIC_CV_SYSTEM : SYSTEM_PROMPT);
     const rawBody = await resp.text();
     if (!resp.ok) {
       await logEfError(admin, {
@@ -492,6 +524,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
           model: "claude-sonnet-4-5-20250929",
           success: false,
           error_code: `http_${resp.status}`,
+          metadata: { lang: l },
         }));
       } catch (_) { /* non-blocking */ }
       return { data: null as any, text: "" };
@@ -509,6 +542,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
         model: data.model,
         input_tokens: data.usage?.input_tokens,
         output_tokens: data.usage?.output_tokens,
+        metadata: { lang: l },
       }));
     } catch (_) { /* non-blocking */ }
     /* Raw text is kept so a future parse failure is recoverable, not lost. */
@@ -532,28 +566,10 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     "ats", "highlight your strengths", "showcase",
   ];
 
-  const WORD_NUMBERS: Record<string, number> = {
-    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
-    ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
-    sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
-  };
-
-  /** A stated span is only allowed to stand when the years it cites produce it. */
-  function spanIsWrong(sentence: string): boolean {
-    const span = sentence.match(/\b(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)[-\s]year\b/i);
-    if (!span) return false;
-    const claimed = /^\d+$/.test(span[1]) ? Number(span[1]) : WORD_NUMBERS[span[1].toLowerCase()];
-    if (!claimed && claimed !== 0) return false;
-    const years = (sentence.match(/\b(19|20)\d{2}\b/g) ?? []).map(Number);
-    if (years.length < 2) return false;
-    const actual = Math.max(...years) - Math.min(...years);
-    return actual !== claimed;
-  }
-
   /** Strip only the offending clause; the rest of the sentence survives. */
   function repairSpans(value: unknown): unknown {
     if (typeof value === "string") {
-      const parts = value.split(/(?<=[.!?])\s+/);
+      const parts = value.split(SENTENCE_SPLIT);
       const kept = parts.filter((s) => !spanIsWrong(s));
       return kept.join(" ").trim();
     }
@@ -576,7 +592,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
   const bannedWords = await loadBannedWords(admin);
 
   /** Returns the name of the first failing assertion, or null when the result stands. */
-  function gate(result: any): string | null {
+  function gate(result: any, l: "ar" | "en" = lang): string | null {
     const findings: any[] = Array.isArray(result?.findings) ? result.findings : [];
     if (!findings.length) return "findings_empty";
 
@@ -590,7 +606,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     }
 
     for (const f of findings) {
-      if (allText(f).split(/(?<=[.!?])\s+/).some(spanIsWrong)) return "numbers_recompute";
+      if (allText(f).split(SENTENCE_SPLIT).some(spanIsWrong)) return "numbers_recompute";
       if (!String(f?.what ?? "").trim()) return "finding_empty_after_repair";
       if (!String(f?.what_you_lose ?? "").trim()) return "what_you_lose_missing";
       const ev = f?.evidence;
@@ -608,8 +624,24 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
       if (!String(r?.action ?? "").trim() || !String(r?.why_now ?? "").trim()) return "recommendation_incomplete";
       if (r?.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) return "aura_can_outside_enum";
     }
+    if (l === "ar") {
+      const d = arabicGateDetail(arabicProse(result));
+      if (d) return `arabic_${d.check}: ${arabicCorrectionText(d)}`;
+    }
     return null;
   }
+
+  /** The same clean-up the main path applies to every parsed answer. */
+  const tidy = (p: any, l: "ar" | "en"): any => {
+    if (!p) return p;
+    p = repairSpans(p);
+    if (Array.isArray(p?.findings)) p.findings = p.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
+    for (const k of ["peer_comparison", "profile_vs_voice", "reading_the_shape", "headline_suggestion"]) {
+      if (k in p) p[k] = nullify(p[k]);
+    }
+    return l === "ar" ? repairCvArabic(p) : p;
+  };
+  let outLang: "ar" | "en" = lang;
 
   let { data, text, toolInput, rawBody } = await runOnce(userPrompt);
   let parsed: any = toolInput ?? parseJsonLoose(text);
@@ -650,6 +682,7 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
     if (parsed && k in parsed) parsed[k] = nullify(parsed[k]);
   }
 
+  if (lang === "ar") parsed = repairCvArabic(parsed);
   let failure = gate(parsed);
   if (failure) {
     const correction = `${userPrompt}
@@ -657,17 +690,30 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
 CORRECTION — your previous answer failed the assertion "${failure}". Answer again in full, obeying every rule. Do not restate the failing content; fix it.`;
     const retry = await runOnce(correction);
     let retryParsed: any = retry.toolInput ?? parseJsonLoose(retry.text);
-    if (retryParsed) {
-      retryParsed = repairSpans(retryParsed);
-      if (Array.isArray(retryParsed?.findings)) {
-        retryParsed.findings = retryParsed.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
-      }
-      for (const k of ["peer_comparison", "profile_vs_voice", "reading_the_shape", "headline_suggestion"]) {
-        if (k in retryParsed) retryParsed[k] = nullify(retryParsed[k]);
+    if (retryParsed) retryParsed = tidy(retryParsed, lang);
+    const retryFailure = retryParsed ? gate(retryParsed) : "unparseable_on_retry";
+    let english: { parsed: any; data: any; text: string; rawBody?: string } | null = null;
+    if (retryFailure && lang === "ar" && retryFailure.startsWith("arabic_")) {
+      /* Arabic unusable after the one correction: record it, write English once. */
+      await logEfError(admin, {
+        function_name: "cv-crosscheck",
+        error: `Arabic crosscheck unusable after one correction (${retryFailure.split(":")[0]})`,
+        severity: "high",
+        user_id: targetId ?? undefined,
+        context: { path: "arabic_gate", first_assertion: failure.split(":")[0], retry_assertion: retryFailure.split(":")[0], purpose },
+      });
+      const en = await runOnce(userPrompt, "en");
+      const enParsed = tidy(en.toolInput ?? parseJsonLoose(en.text), "en");
+      if (enParsed && !hasPlaceholderInValues(enParsed) && !gate(enParsed, "en")) {
+        english = { parsed: enParsed, data: en.data, text: en.text, rawBody: en.rawBody };
       }
     }
-    const retryFailure = retryParsed ? gate(retryParsed) : "unparseable_on_retry";
-    if (!retryFailure) {
+    if (english) {
+      parsed = english.parsed;
+      data = english.data; text = english.text; rawBody = english.rawBody;
+      outLang = "en";
+      failure = null;
+    } else if (!retryFailure) {
       parsed = retryParsed;
       if (retry.data) { data = retry.data; text = retry.text; rawBody = retry.rawBody; }
       failure = null;
@@ -687,6 +733,7 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
   const crosscheck = {
     ...parsed,
     purpose,
+    lang: outLang,
     cv_count: docCount,
     model: data?.model ?? null,
     /* The model's own text alongside the parsed object, so nothing is lost. */
@@ -704,5 +751,5 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
   }
 
   await finish("ok");
-  return json({ ok: true, cv_count: docCount, crosscheck });
+  return json({ ok: true, cv_count: docCount, crosscheck, lang: outLang, lang_fallback: lang === "ar" && outLang === "en" });
 }));
