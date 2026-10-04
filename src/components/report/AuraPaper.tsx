@@ -11,6 +11,21 @@ import { AuraLogo } from "@/components/brand/AuraLogo";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
 import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
+import { pt, arStyle, AR_FONT, type PaperLang } from "@/components/report/paperText";
+
+/** Keeps a Latin run (KnownBy, a domain) in its own direction inside Arabic. */
+export function LatinIsolate({ children }: { children: React.ReactNode }) {
+  return <span dir="ltr" style={{ unicodeBidi: "isolate" }}>{children}</span>;
+}
+
+/** Renders a fixed string, isolating every "KnownBy" so bidi cannot flip it. */
+export function withLatin(text: string, lang: PaperLang): React.ReactNode {
+  if (lang !== "ar" || !text.includes("KnownBy")) return text;
+  const parts = text.split("KnownBy");
+  return parts.map((p, i) => (
+    <React.Fragment key={i}>{p}{i < parts.length - 1 ? <LatinIsolate>KnownBy</LatinIsolate> : null}</React.Fragment>
+  ));
+}
 
 // ── Tokens (System-A) ──────────────────────────────────────────────────
 export const T = {
@@ -44,7 +59,7 @@ function todayLabel(iso: string): string {
 }
 
 // ── PaperHeader ────────────────────────────────────────────────────────
-export function PaperHeader({ label }: { label: string }) {
+export function PaperHeader({ label, lang = "en" }: { label: string; lang?: PaperLang }) {
   return (
     <div
       style={{
@@ -58,27 +73,29 @@ export function PaperHeader({ label }: { label: string }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, color: T.ink }}>
         <AuraLogo size={34} variant="light" />
         <span
+          dir={lang === "ar" ? "ltr" : undefined}
           style={{
             fontFamily: FONT.serif,
             fontSize: 20,
             fontWeight: 500,
-            letterSpacing: "0.06em",
+            letterSpacing: lang === "ar" ? 0 : "0.06em",
             color: T.ink,
             lineHeight: 1,
+            ...(lang === "ar" ? { unicodeBidi: "isolate" as const } : {}),
           }}
         >
           KnownBy
         </span>
       </div>
       <span
-        style={{
+        style={arStyle(lang, {
           fontFamily: FONT.mono,
           fontSize: 10.5,
           fontWeight: 700,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
           color: T.ink2,
-        }}
+        })}
       >
         {label}
       </span>
@@ -88,8 +105,12 @@ export function PaperHeader({ label }: { label: string }) {
 
 // ── PaperFooter ────────────────────────────────────────────────────────
 export function PaperFooter({
-  n, total, paperTitle = "The KnownBy Paper № 01",
-}: { n: number; total: number; paperTitle?: string }) {
+  n, total, paperTitle = "The KnownBy Paper № 01", lang = "en", showDescriptor = true,
+}: {
+  n: number; total: number; paperTitle?: string; lang?: PaperLang;
+  /** false drops the product descriptor line (the downloadable brand paper). */
+  showDescriptor?: boolean;
+}) {
   const ticks = Array.from({ length: total }, (_, i) => (
     <span
       key={i}
@@ -99,7 +120,7 @@ export function PaperFooter({
         width: 22,
         height: 5,
         background: i === n - 1 ? T.spot : T.paper3,
-        marginRight: i === total - 1 ? 0 : 4,
+        marginInlineEnd: i === total - 1 ? 0 : 4,
       }}
     />
   ));
@@ -115,16 +136,16 @@ export function PaperFooter({
         }}
       >
         <span
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.mono,
             fontSize: 10.5,
             fontWeight: 600,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             color: T.ink,
-          }}
+          })}
         >
-          {paperTitle}
+          {withLatin(paperTitle, lang)}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center" }}>{ticks}</span>
         <span
@@ -137,12 +158,23 @@ export function PaperFooter({
             fontFamily: FONT.mono,
             fontSize: 11.5,
             fontWeight: 700,
-            letterSpacing: "0.12em",
+            letterSpacing: lang === "ar" ? 0 : "0.12em",
             padding: "4px 10px",
           }}
         >
-          <span style={{ color: T.action }}>PAGE {pad2(n)}</span>
-          <span style={{ color: T.paper }}> / {pad2(total)}</span>
+          {lang === "ar" ? (
+            <span dir="rtl" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+              <span style={{ color: T.action, fontFamily: AR_FONT, lineHeight: 1.7 }}>{pt(lang, "paper.page")}</span>
+              <span dir="ltr" style={{ unicodeBidi: "isolate", color: T.paper }}>
+                <span style={{ color: T.action }}>{pad2(n)}</span> / {pad2(total)}
+              </span>
+            </span>
+          ) : (
+            <>
+              <span style={{ color: T.action }}>PAGE {pad2(n)}</span>
+              <span style={{ color: T.paper }}> / {pad2(total)}</span>
+            </>
+          )}
         </span>
       </div>
       <div
@@ -153,17 +185,21 @@ export function PaperFooter({
           alignItems: "center",
           fontFamily: FONT.mono,
           fontSize: 10.5,
-          letterSpacing: "0.10em",
-          textTransform: "uppercase",
+          letterSpacing: lang === "ar" ? 0 : "0.10em",
+          textTransform: lang === "ar" ? "none" : "uppercase",
           color: T.ink2,
         }}
       >
-        <span>aura-intel.org</span>
+        <span dir={lang === "ar" ? "ltr" : undefined}>aura-intel.org</span>
         <span>
-          {PRODUCT_DESCRIPTOR}
-          <span style={{ margin: "0 8px", color: T.spot }}>·</span>
+          {showDescriptor ? (
+            <>
+              {PRODUCT_DESCRIPTOR}
+              <span style={{ margin: "0 8px", color: T.spot }}>·</span>
+            </>
+          ) : null}
           <span
-            style={{ fontFamily: FONT.arabic, textTransform: "none", letterSpacing: "normal" }}
+            style={{ fontFamily: FONT.arabic, textTransform: "none", letterSpacing: lang === "ar" ? 0 : "normal", lineHeight: lang === "ar" ? 1.7 : undefined }}
             dir="rtl"
             lang="ar"
           >
@@ -452,8 +488,9 @@ function MetaCell({ label, value, sub }: { label: string; value: string; sub?: s
 
 // ── PaperFigure ────────────────────────────────────────────────────────
 export function PaperFigure({
-  index, label, meta, findingBold, findingRest, children,
+  index, label, meta, findingBold, findingRest, children, lang = "en",
 }: {
+  lang?: PaperLang;
   index: number;
   label: string;         // e.g. "THE IMPRINT INSTRUMENT"
   meta?: string;
@@ -473,26 +510,26 @@ export function PaperFigure({
         }}
       >
         <span
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.mono,
             fontSize: 10.5,
             fontWeight: 700,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: T.spot,
-          }}
+          })}
         >
-          Figure {index} · {label}
+          {lang === "ar" ? pt(lang, "paper.figure") : "Figure"} {index} · {label}
         </span>
         {meta ? (
           <span
-            style={{
+            style={arStyle(lang, {
               fontFamily: FONT.mono,
               fontSize: 10.5,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
               color: T.ink2,
-            }}
+            })}
           >
             {meta}
           </span>
@@ -500,9 +537,9 @@ export function PaperFigure({
       </div>
       <div style={{ padding: "18px 18px" }}>{children}</div>
       <div style={{ borderTop: `1px solid ${T.rule}`, background: T.paper, padding: "10px 14px" }}>
-        <span style={{ fontFamily: FONT.mono, fontSize: 12, color: T.ink, fontWeight: 700 }}>{findingBold}</span>
+        <span style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 12, color: T.ink, fontWeight: 700 })}>{findingBold}</span>
         {findingRest ? (
-          <span style={{ fontFamily: FONT.mono, fontSize: 12, color: T.ink2, fontWeight: 400 }}>
+          <span style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 12, color: T.ink2, fontWeight: 400 })}>
             {" "}{findingRest}
           </span>
         ) : null}
@@ -737,7 +774,8 @@ export function ImprintSparkline({ userId }: { userId: string }) {
 }
 
 // ── CapabilityDotPlot ──────────────────────────────────────────────────
-export function CapabilityDotPlot({ data }: { data: CapabilitiesSection }) {
+export function CapabilityDotPlot({ data, lang = "en" }: { data: CapabilitiesSection; lang?: PaperLang }) {
+  const ar = lang === "ar";
   const rowH = 30;
   const height = data.length * rowH + 24;
   const leftLabel = 190;
@@ -747,12 +785,14 @@ export function CapabilityDotPlot({ data }: { data: CapabilitiesSection }) {
   const railW = railEnd - railStart;
   const bandStart = railStart + (railW * 0.70);
   const bandEnd = railStart + railW;
+  // Arabic mirrors the plot: names on the right, 0 on the right, 100 on the left.
+  const mx = (x: number) => (ar ? W - x : x);
 
   return (
     <svg viewBox={`0 0 ${W} ${height}`} width="100%">
       {/* Axis header */}
       {[0, 25, 50, 75, 100].map((v) => {
-        const x = railStart + (railW * v) / 100;
+        const x = mx(railStart + (railW * v) / 100);
         return (
           <text
             key={v}
@@ -769,43 +809,45 @@ export function CapabilityDotPlot({ data }: { data: CapabilitiesSection }) {
       })}
       {/* Elite band 70-100 */}
       <rect
-        x={bandStart}
+        x={ar ? W - bandEnd : bandStart}
         y={20}
         width={bandEnd - bandStart}
         height={height - 24}
         fill={T.live}
         fillOpacity={0.12}
       />
-      <line x1={bandStart} y1={20} x2={bandStart} y2={height - 4} stroke={T.live} strokeWidth={0.75} strokeDasharray="3 3" />
-      <line x1={bandEnd} y1={20} x2={bandEnd} y2={height - 4} stroke={T.live} strokeWidth={0.75} strokeDasharray="3 3" />
+      <line x1={mx(bandStart)} y1={20} x2={mx(bandStart)} y2={height - 4} stroke={T.live} strokeWidth={0.75} strokeDasharray="3 3" />
+      <line x1={mx(bandEnd)} y1={20} x2={mx(bandEnd)} y2={height - 4} stroke={T.live} strokeWidth={0.75} strokeDasharray="3 3" />
 
       {data.map((d, i) => {
         const y = 24 + i * rowH + rowH / 2;
         const pct = Math.max(0, Math.min(100, d.score));
-        const x = railStart + (railW * pct) / 100;
+        const x = mx(railStart + (railW * pct) / 100);
         const low = d.score < 50;
         return (
           <g key={d.name}>
             <text
-              x={leftLabel - 4}
+              x={mx(leftLabel - 4)}
               y={y + 4}
               textAnchor="end"
-              fontFamily={FONT.mono}
+              direction={ar ? "rtl" : undefined}
+              fontFamily={ar && /[\u0600-\u06FF]/.test(d.name) ? AR_FONT : FONT.mono}
               fontSize={11}
               fontWeight={low ? 700 : 500}
               fill={low ? T.spot : T.ink}
             >
               {d.name}
             </text>
-            <line x1={railStart} y1={y} x2={railEnd} y2={y} stroke={T.rule} strokeWidth={3} />
+            <line x1={mx(railStart)} y1={y} x2={mx(railEnd)} y2={y} stroke={T.rule} strokeWidth={3} />
             {low ? (
               <circle cx={x} cy={y} r={7} fill={T.paper2} stroke={T.spot} strokeWidth={2.5} />
             ) : (
               <circle cx={x} cy={y} r={7} fill={T.ink} />
             )}
             <text
-              x={x + 14}
+              x={ar ? x - 14 : x + 14}
               y={y + 4}
+              textAnchor={ar ? "end" : undefined}
               fontFamily={FONT.mono}
               fontSize={11}
               fontWeight={700}
@@ -860,8 +902,9 @@ export function PaperPersonaCard({ p }: { p: { who: string; sees: string; gap: s
 export function ClosingPlate({
   data, activeSignals = null, evidenceCount = null, sparkDelta = null,
   headline, body, ctaLabel = "Built from my own record ↗",
-  moves, paperTitle, pageLine, personName,
+  moves, paperTitle, pageLine, personName, lang = "en",
 }: {
+  lang?: PaperLang;
   data?: ReportData | null;
   activeSignals?: number | null;
   evidenceCount?: number | null;
@@ -907,32 +950,34 @@ export function ClosingPlate({
           <div style={{ display: "flex", alignItems: "center", gap: 12, color: T.paper }}>
             <AuraLogo size={40} variant="dark" />
             <span
+              dir={lang === "ar" ? "ltr" : undefined}
               style={{
                 fontFamily: FONT.serif,
                 fontSize: 22,
-                letterSpacing: "0.06em",
+                letterSpacing: lang === "ar" ? 0 : "0.06em",
                 color: T.paper,
+                ...(lang === "ar" ? { unicodeBidi: "isolate" as const } : {}),
               }}
             >
               KnownBy
             </span>
           </div>
           <span
-            style={{
+            style={arStyle(lang, {
               fontFamily: FONT.mono,
               fontSize: 10.5,
               fontWeight: 700,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
               color: T.action,
-            }}
+            })}
           >
-            Closing plate · 90-day pointer
+            {lang === "ar" ? pt(lang, "paper.closingKicker") : "Closing plate · 90-day pointer"}
           </span>
         </div>
 
         <h2
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.serif,
             fontSize: 44,
             fontWeight: 400,
@@ -940,7 +985,7 @@ export function ClosingPlate({
             color: T.paper,
             margin: 0,
             maxWidth: 560,
-          }}
+          })}
         >
           {headline ?? (
             <>
@@ -952,14 +997,14 @@ export function ClosingPlate({
         </h2>
         {body ? (
           <p
-            style={{
+            style={arStyle(lang, {
               fontFamily: FONT.serif,
               fontSize: 18,
               lineHeight: 1.5,
               color: "rgba(242,245,249,0.86)",
               margin: "18px 0 0",
               maxWidth: 560,
-            }}
+            })}
           >
             {body}
           </p>
@@ -967,23 +1012,23 @@ export function ClosingPlate({
 
         {moves && moves.length > 0 ? (
           <div style={{ marginTop: 34, maxWidth: 600 }}>
-            <div style={{
+            <div style={arStyle(lang, {
               fontFamily: FONT.mono, fontSize: 10.5, fontWeight: 700,
               letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--a-500)",
-            }}>Three moves, in order</div>
+            })}>{lang === "ar" ? pt(lang, "paper.threeMoves") : "Three moves, in order"}</div>
             {moves.map((m, i) => (
               <div key={i} style={{
-                display: "grid", gridTemplateColumns: "62px 1fr", gap: 14,
+                display: "grid", gridTemplateColumns: lang === "ar" ? "78px 1fr" : "62px 1fr", gap: 14,
                 marginTop: 14, alignItems: "baseline",
               }}>
-                <span style={{
+                <span style={arStyle(lang, {
                   fontFamily: FONT.mono, fontSize: 12, fontWeight: 700,
                   letterSpacing: "0.10em", color: T.live,
-                }}>{m.horizon}</span>
-                <span style={{
+                })}>{m.horizon}</span>
+                <span style={arStyle(lang, {
                   fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.5,
                   color: "rgba(242,245,249,0.9)",
-                }}>{m.text}</span>
+                })}>{m.text}</span>
               </div>
             ))}
           </div>
@@ -1003,36 +1048,43 @@ export function ClosingPlate({
           }}
         >
           {scoreVal !== null ? (
-            <ClosingStat label="Imprint" value={String(scoreVal)} deltaTeal={sparkDelta && sparkDelta > 0 ? `▲ +${sparkDelta}` : null} />
+            <ClosingStat lang={lang} label={lang === "ar" ? pt(lang, "paper.statImprint") : "Imprint"} value={String(scoreVal)} deltaTeal={sparkDelta && sparkDelta > 0 ? `▲ +${sparkDelta}` : null} />
           ) : null}
           {activeSignals !== null ? (
-            <ClosingStat label="Active signals" value={String(activeSignals)} />
+            <ClosingStat lang={lang} label={lang === "ar" ? pt(lang, "paper.statSignals") : "Active signals"} value={String(activeSignals)} />
           ) : null}
           {evidenceCount !== null ? (
-            <ClosingStat label="Evidence fragments" value={String(evidenceCount)} />
+            <ClosingStat lang={lang} label={lang === "ar" ? pt(lang, "paper.statEvidence") : "Evidence fragments"} value={String(evidenceCount)} />
           ) : null}
-          <ClosingStat label="90 days to close the gap" value="" />
+          <ClosingStat lang={lang} label={lang === "ar" ? pt(lang, "paper.stat90") : "90 days to close the gap"} value="" />
         </div>
         ) : null}
 
         <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div
-            style={{
+            style={arStyle(lang, {
               fontFamily: FONT.mono,
               fontSize: 10.5,
               fontWeight: 600,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               color: T.paper,
-            }}
+            })}
           >
             {fullName ? <div>{fullName}</div> : null}
             <div style={{ color: "rgba(242,245,249,0.6)", marginTop: 3 }}>
-              {paperTitle || "The KnownBy Paper № 01"} · aura-intel.org{pageLine ? ` · ${pageLine}` : ""}
+              {lang === "ar" ? (
+                <>
+                  {withLatin(paperTitle || "The KnownBy Paper № 01", lang)} · <LatinIsolate>aura-intel.org</LatinIsolate>
+                  {pageLine ? <> · {pageLine}</> : null}
+                </>
+              ) : (
+                <>{paperTitle || "The KnownBy Paper № 01"} · aura-intel.org{pageLine ? ` · ${pageLine}` : ""}</>
+              )}
             </div>
           </div>
           <span
-            style={{
+            style={arStyle(lang, {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
@@ -1044,7 +1096,7 @@ export function ClosingPlate({
               fontWeight: 700,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-            }}
+            })}
           >
             {ctaLabel}
           </span>
@@ -1054,18 +1106,18 @@ export function ClosingPlate({
   );
 }
 
-function ClosingStat({ label, value, deltaTeal }: { label: string; value: string; deltaTeal?: string | null }) {
+function ClosingStat({ label, value, deltaTeal, lang = "en" }: { label: string; value: string; deltaTeal?: string | null; lang?: PaperLang }) {
   return (
     <div>
       <div
-        style={{
+        style={arStyle(lang, {
           fontFamily: FONT.mono,
           fontSize: 10.5,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           color: "rgba(242,245,249,0.65)",
           marginBottom: 8,
-        }}
+        })}
       >
         {label}
       </div>

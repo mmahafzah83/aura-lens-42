@@ -78,6 +78,8 @@ export interface BrandPaper {
   capabilities: BrandPaperPlacement[];
   profile: BrandPaperProfile;
   generated_at: string;
+  /** The language the report was written in, when the saved report says so. */
+  lang?: "en" | "ar";
 }
 
 const SECTION_KEYS = [
@@ -189,10 +191,15 @@ function parseInvestFromProse(prose: string): BrandPaperInvest[] {
  * Sheets are fixed 794×1123 boxes with overflow hidden — content is budgeted,
  * not reflowed. Trim to the last full sentence inside the cap.
  */
-function capAtSentence(s: string | null, max: number): string | null {
+/** Index of the last sentence end (". " or the Arabic "؟ ") in `s`, or -1. */
+export function lastSentenceEnd(s: string): number {
+  return Math.max(s.lastIndexOf(". "), s.lastIndexOf("؟ "));
+}
+
+export function capAtSentence(s: string | null, max: number): string | null {
   if (!s || s.length <= max) return s;
   const slice = s.slice(0, max);
-  const cut = slice.lastIndexOf(". ");
+  const cut = lastSentenceEnd(slice);
   if (cut > max * 0.4) return slice.slice(0, cut + 1);
   const word = slice.lastIndexOf(" ");
   const base = (word > max * 0.4 ? slice.slice(0, word) : slice).trim();
@@ -342,6 +349,7 @@ export function buildBrandPaper(
       sector_focus: profile?.sector_focus ?? null,
     },
     generated_at: new Date().toISOString(),
+    ...(r.lang === "ar" || r.lang === "en" ? { lang: r.lang as "en" | "ar" } : {}),
   };
 }
 
