@@ -3941,7 +3941,7 @@ export type Database = {
           hit_count: number
           name: string | null
           posts_read: number | null
-          read: Json
+          read: Json | null
           read_ar: Json | null
           read_version: number
           read_version_ar: number | null
@@ -3960,7 +3960,7 @@ export type Database = {
           hit_count?: number
           name?: string | null
           posts_read?: number | null
-          read: Json
+          read?: Json | null
           read_ar?: Json | null
           read_version?: number
           read_version_ar?: number | null
@@ -3979,7 +3979,7 @@ export type Database = {
           hit_count?: number
           name?: string | null
           posts_read?: number | null
-          read?: Json
+          read?: Json | null
           read_ar?: Json | null
           read_version?: number
           read_version_ar?: number | null
