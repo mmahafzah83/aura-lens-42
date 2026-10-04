@@ -413,6 +413,8 @@ const LANDING_V2_CSS = `
 .aura-v2[dir=rtl] .cmp th:first-child,.aura-v2[dir=rtl] .cmp td:first-child{text-align:right}
 .aura-v2[dir=rtl] .road .stop::after{left:auto;right:7px}
 .aura-v2[dir=rtl] .ledger .row .status,.aura-v2[dir=rtl] .ledger .total .a{text-align:left}
+.lv2-lt{position:fixed;top:8px;inset-inline-end:8px;z-index:70}
+@media(max-width:1100px){.lv2-lt{top:auto;bottom:84px;background:#FFFFFF;border:1px solid #E2E7EE;border-radius:999px;box-shadow:0 6px 18px -10px rgba(15,21,25,.35)}}
 .aura-v2[dir=rtl] .wide .mi{text-align:left!important}
 .aura-v2[dir=rtl] .wide .mi{direction:ltr;unicode-bidi:isolate}
 .aura-v2[dir=rtl] .undr,.aura-v2[dir=rtl] .pcta .btn,.aura-v2[dir=rtl] [data-wave]{unicode-bidi:plaintext}
@@ -1932,7 +1934,7 @@ const LandingV2 = () => {
   return (
     <>
       <style>{LANDING_V2_CSS}</style>
-      <div style={{ position: "fixed", top: 8, insetInlineEnd: 8, zIndex: 70 }}><LanguageToggle /></div>
+      <div className="lv2-lt"><LanguageToggle /></div>
       <div
         ref={rootRef}
         className="aura-v2"
