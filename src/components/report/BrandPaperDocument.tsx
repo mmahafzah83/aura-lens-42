@@ -72,14 +72,16 @@ function Footer({ n, total, lang }: { n: number; total: number; lang: PaperLang 
       total={total}
       lang={lang}
       showDescriptor={false}
+      showTagline={false}
       paperTitle={lang === "ar" ? pt(lang, "paper.title") : PAPER_TITLE}
     />
   );
 }
 
-function Sheet({ n, children, bleed, lang = "en" }: { n: number; children: React.ReactNode; bleed?: boolean; lang?: PaperLang }) {
+function Sheet({ n, children, bleed, lang = "en", sheetKey }: { n: number; children: React.ReactNode; bleed?: boolean; lang?: PaperLang; sheetKey?: string }) {
   return (
     <div
+      data-sheet-key={sheetKey}
       dir={lang === "ar" ? "rtl" : undefined}
       lang={lang === "ar" ? "ar" : undefined}
       className="aura-report-sheet"
@@ -454,7 +456,13 @@ function spaceSheetHasContent(bp: BrandPaper): boolean {
   );
 }
 
-function SpaceSheet({ bp, n, total, lang }: { bp: BrandPaper; n: number; total: number; lang: PaperLang }) {
+function SpaceSheet({ bp, n, total, lang, part = "all" }: {
+  bp: BrandPaper; n: number; total: number; lang: PaperLang;
+  /** "top" = gap + uncontested ground; "bottom" = topics + invest. */
+  part?: "all" | "top" | "bottom";
+}) {
+  const showTop = part !== "bottom";
+  const showBottom = part !== "top";
   const hasInvest = bp.invest_next.length > 0;
   // Older rows carry pillars but no structured topics — fall back so the
   // topics block is never silently empty.
@@ -464,11 +472,11 @@ function SpaceSheet({ bp, n, total, lang }: { bp: BrandPaper; n: number; total: 
   // A sheet with nothing on it is never printed.
   if (!spaceSheetHasContent(bp)) return null;
   return (
-    <Sheet n={n} lang={lang}>
+    <Sheet n={n} lang={lang} sheetKey={part === "all" ? "space" : `space-${part}`}>
       <PaperHeader lang={lang} label={L(lang, "paper.groundTopics", "Ground & Topics")} />
       <div style={{ marginTop: 30, flex: 1 }}>
-        <GapPanel bp={bp} style={{ marginBottom: 24 }} lang={lang} />
-        {bp.uncontested_space ? (
+        {showTop ? <GapPanel bp={bp} style={{ marginBottom: 24 }} lang={lang} /> : null}
+        {showTop && bp.uncontested_space ? (
           <PaperFigure
             lang={lang}
             index={1}
@@ -483,8 +491,8 @@ function SpaceSheet({ bp, n, total, lang }: { bp: BrandPaper; n: number; total: 
           </PaperFigure>
         ) : null}
 
-        {topics.length > 0 ? (
-          <div style={{ marginTop: 28 }}>
+        {showBottom && topics.length > 0 ? (
+          <div style={{ marginTop: part === "bottom" ? 0 : 28 }}>
             <MonoLabel color={T.spot} size={11} lang={lang}>
               {L(lang, "paper.writeAbout", "What you write about")}
             </MonoLabel>
@@ -502,7 +510,7 @@ function SpaceSheet({ bp, n, total, lang }: { bp: BrandPaper; n: number; total: 
           </div>
         ) : null}
 
-        {hasInvest ? (
+        {showBottom && hasInvest ? (
           <div style={{ marginTop: 24, background: T.paper2, border: `1.5px solid ${T.ink}` }}>
             <div style={arStyle(lang, {
               padding: "10px 14px", borderBottom: `1px solid ${T.rule}`,
@@ -723,12 +731,28 @@ function ClosingSheet({ bp, n, total, stats, lang }: {
         moves={moves.length ? moves : undefined}
         paperTitle={ar ? pt(lang, "paper.title") : PAPER_TITLE}
         pageLine={ar
-          ? pt(lang, "paper.pageLine", { n: String(n).padStart(2, "0"), total: String(total).padStart(2, "0") })
+          ? <>{pt(lang, "paper.page")} <span dir="ltr" style={{ display: "inline-flex", direction: "ltr", unicodeBidi: "isolate", gap: 4 }}><span>{String(n).padStart(2, "0")}</span><span>/</span><span>{String(total).padStart(2, "0")}</span></span></>
           : `Page ${String(n).padStart(2, "0")} / ${String(total).padStart(2, "0")}`}
         ctaLabel={ar ? pt(lang, "paper.cta") : "Find your position ↗"}
       />
     </Sheet>
   );
+}
+
+/** True when a sheet's content is taller than the fixed sheet (it would clip). */
+export function sheetOverflows(sheet: HTMLElement): boolean {
+  return sheet.scrollHeight > sheet.clientHeight + 1;
+}
+
+/** Marks and logs every sheet that still overflows, so a clip never goes unseen. */
+export function reportOverflowingSheets(root: HTMLElement): number {
+  let bad = 0;
+  root.querySelectorAll<HTMLElement>("[data-report-page]").forEach((el) => {
+    const over = sheetOverflows(el);
+    if (over) { el.setAttribute("data-overflow", "true"); bad++; console.error("[paper] sheet overflows", el.dataset.page); }
+    else el.removeAttribute("data-overflow");
+  });
+  return bad;
 }
 
 // ── Root ───────────────────────────────────────────────────────────────
@@ -754,17 +778,39 @@ export default function BrandPaperDocument({
   const hasSpace = spaceSheetHasContent(paper);
   const hasPlacements = paper.capabilities.length > 0;
   // Pages are numbered by what actually prints — no header over an empty page.
+  // Arabic runs longer than English: when the ground sheet does not fit, its
+  // topics and invest block flow onto a following sheet (measured, never cut).
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [splitSpace, setSplitSpace] = useState(false);
+  const spaceSplit = lang === "ar" && hasSpace && splitSpace;
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || lang !== "ar") return;
+    let off = false;
+    const check = () => {
+      if (off) return;
+      const space = root.querySelector('[data-sheet-key="space"]') as HTMLElement | null;
+      if (space && sheetOverflows(space)) { setSplitSpace(true); return; }
+      reportOverflowingSheets(root);
+    };
+    check();
+    (document as any).fonts?.ready?.then(check);
+    return () => { off = true; };
+  }, [lang, splitSpace, rawPaper]);
   let next = 2;
   const findingsN = hasFindings ? next++ : 0;
   const spaceN = hasSpace ? next++ : 0;
+  const spaceN2 = spaceSplit ? next++ : 0;
   const placementsN = hasPlacements ? next++ : 0;
   const voiceN = hasVoice ? next++ : 0;
   const total = next - 1 + (showClosing ? 1 : 0);
   return (
-    <div style={{ background: T.paper2, padding: "24px 0" }}>
+    <div ref={rootRef} style={{ background: T.paper2, padding: "24px 0" }}>
       <CoverSheet bp={paper} total={total} lang={lang} />
       {hasFindings ? <FindingsSheet bp={paper} n={findingsN} total={total} lang={lang} /> : null}
-      {hasSpace ? <SpaceSheet bp={paper} n={spaceN} total={total} lang={lang} /> : null}
+      {hasSpace && !spaceSplit ? <SpaceSheet bp={paper} n={spaceN} total={total} lang={lang} /> : null}
+      {spaceSplit ? <SpaceSheet bp={paper} n={spaceN} total={total} lang={lang} part="top" /> : null}
+      {spaceSplit ? <SpaceSheet bp={paper} n={spaceN2} total={total} lang={lang} part="bottom" /> : null}
       {hasPlacements ? <PlacementsSheet bp={paper} n={placementsN} total={total} lang={lang} /> : null}
       {hasVoice ? <VoiceSheet bp={paper} n={voiceN} total={total} lang={lang} /> : null}
       {showClosing ? <ClosingSheet bp={paper} n={total} total={total} stats={stats} lang={lang} /> : null}

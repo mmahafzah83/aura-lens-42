@@ -105,11 +105,13 @@ export function PaperHeader({ label, lang = "en" }: { label: string; lang?: Pape
 
 // ── PaperFooter ────────────────────────────────────────────────────────
 export function PaperFooter({
-  n, total, paperTitle = "The KnownBy Paper № 01", lang = "en", showDescriptor = true,
+  n, total, paperTitle = "The KnownBy Paper № 01", lang = "en", showDescriptor = true, showTagline = true,
 }: {
   n: number; total: number; paperTitle?: string; lang?: PaperLang;
   /** false drops the product descriptor line (the downloadable brand paper). */
   showDescriptor?: boolean;
+  /** false on the brand paper: the Arabic tagline is the other half of the descriptor. */
+  showTagline?: boolean;
 }) {
   const ticks = Array.from({ length: total }, (_, i) => (
     <span
@@ -165,8 +167,8 @@ export function PaperFooter({
           {lang === "ar" ? (
             <span dir="rtl" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
               <span style={{ color: T.action, fontFamily: AR_FONT, lineHeight: 1.7 }}>{pt(lang, "paper.page")}</span>
-              <span dir="ltr" style={{ unicodeBidi: "isolate", color: T.paper }}>
-                <span style={{ color: T.action }}>{pad2(n)}</span> / {pad2(total)}
+              <span dir="ltr" style={{ display: "inline-flex", flexDirection: "row", direction: "ltr", unicodeBidi: "isolate", gap: 4, color: T.paper }}>
+                <span style={{ color: T.action }}>{pad2(n)}</span><span>/</span><span>{pad2(total)}</span>
               </span>
             </span>
           ) : (
@@ -198,6 +200,7 @@ export function PaperFooter({
               <span style={{ margin: "0 8px", color: T.spot }}>·</span>
             </>
           ) : null}
+          {showTagline ? (
           <span
             style={{ fontFamily: FONT.arabic, textTransform: "none", letterSpacing: lang === "ar" ? 0 : "normal", lineHeight: lang === "ar" ? 1.7 : undefined }}
             dir="rtl"
@@ -205,6 +208,7 @@ export function PaperFooter({
           >
             نظام ذكاء شخصي
           </span>
+          ) : null}
         </span>
       </div>
     </div>
@@ -849,6 +853,8 @@ export function CapabilityDotPlot({ data, lang = "en" }: { data: CapabilitiesSec
               x={ar ? x - 14 : x + 14}
               y={y + 4}
               textAnchor={ar ? "end" : undefined}
+              direction={ar ? "ltr" : undefined}
+              style={ar ? { direction: "ltr", unicodeBidi: "isolate" } : undefined}
               fontFamily={FONT.mono}
               fontSize={11}
               fontWeight={700}
@@ -920,7 +926,7 @@ export function ClosingPlate({
   /** Overrides the plate's own footer title. Absent = the Identity Report № 01. */
   paperTitle?: string;
   /** e.g. "Page 05 / 05" — appended to the footer line when present. */
-  pageLine?: string;
+  pageLine?: React.ReactNode;
 }) {
   const p = data?.profile;
   const fullName =
@@ -1080,7 +1086,7 @@ export function ClosingPlate({
                   {pageLine ? <> · {pageLine}</> : null}
                 </>
               ) : (
-                <>{paperTitle || "The KnownBy Paper № 01"} · aura-intel.org{pageLine ? ` · ${pageLine}` : ""}</>
+                <>{paperTitle || "The KnownBy Paper № 01"} · aura-intel.org{pageLine ? ` · ${String(pageLine)}` : ""}</>
               )}
             </div>
           </div>
