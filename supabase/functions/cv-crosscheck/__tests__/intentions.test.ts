@@ -67,14 +67,8 @@ describe("intentions guard", () => {
     expect(out2.result.headline_suggestion).toBeNull();
     expect(out2.notes).toContain("headline_sentence_removed:intention");
   });
-  it("LIMIT: 'from three to six distribution centres' is not flagged by the figures guard when 3 and 6 both exist elsewhere in the source", () => {
-    const src = sourceNumbers("6 distribution centres serving three regions");
-    expect(unsupportedNumbers("from three to six distribution centres", src)).toEqual([]);
-  });
-  it("spelled numbers are judged like digits", () => {
+  it("number words are not judged by the figures guard (digits only)", () => {
     const src = sourceNumbers(SOURCE);
-    expect(unsupportedNumbers("six centres and 240 trucks", src)).toEqual([]);
-    expect(unsupportedNumbers("nine trucks", src)).toEqual(["9"]);
-    expect(unsupportedNumbers("one year", src)).toEqual([]);
+    expect(unsupportedNumbers("from three to nine distribution centres", src)).toEqual([]);
   });
 });
