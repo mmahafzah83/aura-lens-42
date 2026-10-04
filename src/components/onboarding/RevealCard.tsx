@@ -16,6 +16,11 @@ export const LABEL_SIGNALS = "The signals in your read";
 export const LABEL_SOFT = "Where you're thinnest";
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
+/** Model-written values: direction from the text, Arabic font when Arabic. */
+const modelText = (v?: string): React.CSSProperties =>
+  ARABIC_RE.test(v ?? "")
+    ? { fontFamily: "Cairo, 'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9, letterSpacing: 0 }
+    : {};
 
 export interface RevealData {
   archetype: string;
@@ -302,10 +307,11 @@ const RevealCard = forwardRef<
 
     <h2 style={{
       margin: "34px 0 0", fontSize: 54, fontWeight: 900, lineHeight: 1.04, letterSpacing: "-0.03em",
-    }}>{data.archetype}</h2>
+      ...modelText(data.archetype),
+    }} dir="auto">{data.archetype}</h2>
 
     {data.marketRead ? (
-      <p style={{ margin: "26px 0 0", fontSize: 22, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
+      <p dir="auto" style={{ margin: "26px 0 0", fontSize: 22, lineHeight: 1.6, opacity: 0.95, ...modelText(data.marketRead) }}>{data.marketRead}</p>
     ) : null}
 
     {data.secondaryRead ? (
@@ -442,14 +448,14 @@ const RevealCard = forwardRef<
 
       <h2 className="rvc-arch" style={{
         margin: "12px 0 0", fontSize: "clamp(34px, 9vw, 40px)", fontWeight: 900,
-        lineHeight: 1.02, letterSpacing: "-0.03em",
-      }}>{data.archetype}</h2>
+        lineHeight: 1.02, letterSpacing: "-0.03em", ...modelText(data.archetype),
+      }} dir="auto">{data.archetype}</h2>
     </div>
 
     <div className="rvc-seq" style={{ animationDelay: "0.42s" }}>
       {data.marketRead ? (
         <p className="rvc-read"
-          style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
+          dir="auto" style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.6, opacity: 0.95, ...modelText(data.marketRead) }}>{data.marketRead}</p>
       ) : null}
       {source(data.provenance?.read)}
     </div>
@@ -462,7 +468,7 @@ const RevealCard = forwardRef<
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
           {data.subjects.slice(0, 3).map((s, i) => (
             <span key={s} className="rvc-seq"
-              style={{ ...chip("rgba(255,255,255,0.18)", "#FFFFFF"), animationDelay: `${0.72 + i * 0.12}s` }}>{s}</span>
+              dir="auto" style={{ ...chip("rgba(255,255,255,0.18)", "#FFFFFF"), animationDelay: `${0.72 + i * 0.12}s`, ...modelText(s) }}>{s}</span>
           ))}
         </div>
         {source(data.provenance?.subjects)}
@@ -475,7 +481,8 @@ const RevealCard = forwardRef<
         <h3 style={privateHeading}>{t("reveal.theGap")}</h3>
         <p style={{
           margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, color: "rgba(255,255,255,0.95)",
-        }}>{data.theGap}</p>
+          ...modelText(data.theGap),
+        }} dir="auto">{data.theGap}</p>
       </div>
     ) : null}
 

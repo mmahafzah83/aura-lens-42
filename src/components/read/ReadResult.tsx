@@ -55,6 +55,14 @@ export const Body = ({ children, style }: { children: React.ReactNode; style?: R
   <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, color: INK, ...style }}>{children}</p>
 );
 
+/** Model-written text: direction from the text, Arabic font when Arabic. */
+const ModelBody = ({ text }: { text: string }) => (
+  <Body style={ARABIC_RE.test(text)
+    ? { fontFamily: "Cairo, 'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9 } : undefined}>
+    <span dir="auto" style={{ display: "block" }}>{text}</span>
+  </Body>
+);
+
 /** "18 AUG 2026" — the stamp printed on the card's own signature line. */
 const longDate = (iso?: string | null): string | undefined => {
   if (!iso) return undefined;
@@ -180,14 +188,14 @@ export default function ReadResult({
           {read.uncontested_space ? (
             <Card>
               <Heading dot={CYAN}>{t("reveal.uncontested")}</Heading>
-              <Body>{read.uncontested_space}</Body>
+              <ModelBody text={read.uncontested_space} />
             </Card>
           ) : null}
 
           {read.honest_gap ? (
             <Card>
               <Heading dot={AMBER}>{t("reveal.honestGap")}</Heading>
-              <Body>{read.honest_gap}</Body>
+              <ModelBody text={read.honest_gap} />
             </Card>
           ) : null}
         </>
