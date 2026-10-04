@@ -21,7 +21,7 @@ import { saveLinkedInAddress, canonicalHandle, loadLinkedInAddress } from "@/lib
 import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
-import { SECTORS } from "@/constants/sectors";
+import { SECTORS, sectorLabel } from "@/constants/sectors";
 import { POST_NOUN, countNoun, nEvidence, nPosts, nPostsParts } from "@/constants/vocabulary";
 import { initThemeFromStorage } from "@/lib/applyTheme";
 import {
@@ -53,7 +53,7 @@ import { useRunStages, newRunId } from "@/lib/useRunStages";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
 import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
 import { loadPostProof, type PostProof } from "@/lib/postProof";
-import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
+import { useSeniorityTitles, titleLabel, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
@@ -825,7 +825,7 @@ const Onboarding = () => {
     const title = String(f?.what || r?.action || "").trim();
     const content = String(f?.rewrite || f?.why_it_matters || r?.why_now || f?.what_you_lose || title).trim();
     if (!title || !content) {
-      toast.error("That didn't save. Nothing else is lost — try again.");
+      toast.error(tr("ob.toast.saveFailed"));
       return false;
     }
     try {
@@ -877,11 +877,11 @@ const Onboarding = () => {
       } else {
         throw new Error("nowhere to keep this");
       }
-      toast.success("Kept. KnownBy will use this when it writes for you.");
+      toast.success(tr("ob.toast.kept"));
       return true;
     } catch (e) {
       console.error("[journey] keep cv evidence failed", e);
-      toast.error("That didn't save. Nothing else is lost — try again.");
+      toast.error(tr("ob.toast.saveFailed"));
       return false;
     }
   }, [userId, anonToken]);
@@ -1550,7 +1550,7 @@ const Onboarding = () => {
         await writeProfile({ brand_assessment_answers_coded: {} }, "subject change reset", undefined, [
           "brand_assessment_answers", "answered_band", "skill_ratings", "audit_results",
         ]);
-        if (hadWork) toast("That's a different profile — KnownBy has cleared the strengths and answers from the last one.");
+        if (hadWork) toast(tr("ob.toast.differentProfile"));
       }
       subjectRef.current = profile_url;
 
@@ -2193,7 +2193,7 @@ const Onboarding = () => {
        down so the next attempt — the button, or the 14.5 assertion — retries. */
     if (!saved) {
       console.error("[journey] finish did not save — the member can retry");
-      toast.error("That didn't save. Tap once more.");
+      toast.error(tr("ob.toast.tapAgain"));
       return false;
     }
     finishedRef.current = true;
@@ -2399,7 +2399,7 @@ const Onboarding = () => {
     }}>
       <span style={{ flex: "1 1 220px", lineHeight: 1.45 }}>
         {resumeAsking
-          ? "This clears your answers so far."
+          ? tr("ob.resume.clears")
           : resumedAt.readDone
             ? tr("ob.resume.bannerDone", { stage: stageLabel(resumedAt.stage) })
             : tr("ob.resume.banner", { stage: stageLabel(resumedAt.stage) })}
@@ -2408,11 +2408,11 @@ const Onboarding = () => {
         <>
           <button type="button" onClick={() => { void startOver(); }}
             style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: OB.ink, textDecoration: "underline" }}>
-            Start fresh
+            {tr("ob.resume.startFresh")}
           </button>
           <button type="button" onClick={() => setResumeAsking(false)}
             style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 13, color: OB.muted }}>
-            Keep going
+            {tr("ob.resume.keepGoing")}
           </button>
         </>
       ) : (
@@ -2421,7 +2421,7 @@ const Onboarding = () => {
             style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 13, color: OB.muted, textDecoration: "underline" }}>
             {tr("ob.resume.startOver")}
           </button>
-          <button type="button" aria-label="Dismiss" onClick={() => setResumedAt(null)}
+          <button type="button" aria-label={tr("ob.resume.dismiss")} onClick={() => setResumedAt(null)}
             style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 16, lineHeight: 1, color: OB.muted, minInlineSize: 44, minBlockSize: 44 }}>
             ×
           </button>
@@ -2537,7 +2537,7 @@ const Onboarding = () => {
         <button key={t.title} type="button"
           onClick={() => (t.title === "Other" ? setOtherPicker(true) : onPick(t.title, t.band as Band))}
           style={titleRowStyle(levelTitle === t.title)}>
-          <span>{t.title}</span>
+          <span>{titleLabel(t, uiLang)}</span>
           <span style={{ fontSize: 11.5, color: OB.muted }}>{TITLE_BAND_LABEL[t.band as TitleBand] ? tr(`ob.band.${t.band}`) : null}</span>
         </button>
       ))}
@@ -3101,7 +3101,7 @@ const Onboarding = () => {
                 }
               }} style={{ ...fieldStyle, marginBlockStart: 8 }}>
                 <option value="">{tr("ob.s1.sectorChoose")}</option>
-                {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {SECTORS.map((s) => <option key={s} value={s}>{sectorLabel(s, tr)}</option>)}
               </select>
               <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>
                 {tr("ob.s1.sectorOptional")}
@@ -3225,7 +3225,7 @@ const Onboarding = () => {
           <input value={firm} onChange={(e) => setFirm(e.target.value)} placeholder={tr("ob.manual.firm")} aria-label={tr("ob.manual.firm")} style={fieldStyle} />
           <select value={sector} onChange={(e) => setSector(e.target.value)} aria-label={tr("ob.manual.sector")} style={fieldStyle}>
             <option value="">{tr("ob.manual.sector")}</option>
-            {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
+            {SECTORS.map((s) => <option key={s} value={s}>{sectorLabel(s, tr)}</option>)}
           </select>
         </div>
         <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>{tr("ob.manual.level")}</p>

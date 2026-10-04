@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readStoredLang } from "@/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
 import { useRunStages, newRunId } from "@/lib/useRunStages";
@@ -65,11 +66,11 @@ type Failure =
   | { kind: "unparseable" }
   | { kind: "server" };
 
-const FAILURE_TEXT: Record<Failure["kind"], string> = {
-  no_cv: "KnownBy hasn't got a CV to read yet.",
-  no_snapshot: "KnownBy needs to read your profile first. Nothing you've added is lost.",
-  unparseable: "KnownBy couldn't finish the comparison this time. Your CV is saved — try again.",
-  server: "Something went wrong on our side. Your CV is saved.",
+const FAILURE_KEY: Record<Failure["kind"], string> = {
+  no_cv: "cv.fail.noCv",
+  no_snapshot: "cv.fail.noSnapshot",
+  unparseable: "cv.fail.unparseable",
+  server: "cv.fail.server",
 };
 
 interface Props {
@@ -87,6 +88,7 @@ interface Props {
 export default function CvUploadControl({
   userId, anonToken, onUploaded, onCrosscheck, onCvContact, showPurpose = true,
 }: Props) {
+  const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
   const [purpose, setPurpose] = useState<string>(readCvPurpose);
   const [busy, setBusy] = useState(false);
@@ -162,7 +164,7 @@ export default function CvUploadControl({
   };
 
   const transientCompare = async (file: File) => {
-    if (!anonToken) { setUploadError("KnownBy needs to read your profile first."); return; }
+    if (!anonToken) { setUploadError(t("cv.needProfile")); return; }
     setUploadError(null);
     setFailure(null);
     const id = newRunId();
@@ -216,8 +218,8 @@ export default function CvUploadControl({
 
   const upload = async (file: File) => {
     const fileType = ACCEPTED[file.type] || (/\.docx?$/i.test(file.name) ? "docx" : /\.pdf$/i.test(file.name) ? "pdf" : null);
-    if (!fileType) { setUploadError("That file type isn't supported. Add a PDF or a Word document."); return; }
-    if (file.size > 50 * 1024 * 1024) { setUploadError("That file is over 50MB. Try a smaller one."); return; }
+    if (!fileType) { setUploadError(t("cv.err.type")); return; }
+    if (file.size > 50 * 1024 * 1024) { setUploadError(t("cv.err.size")); return; }
     /* No session: read it, compare it, throw it away. Never a login gate. */
     if (!userId) { await transientCompare(file); return; }
     setUploadError(null);
@@ -226,7 +228,7 @@ export default function CvUploadControl({
     try {
       const path = `${userId}/${Date.now()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
-      if (upErr) { setUploadError("The upload didn't finish. Nothing is lost — try again."); return; }
+      if (upErr) { setUploadError(t("cv.err.upload")); return; }
 
       const { data: doc, error: docErr } = await (supabase.from("documents") as any)
         .insert({
@@ -241,7 +243,7 @@ export default function CvUploadControl({
         })
         .select("id")
         .single();
-      if (docErr || !doc) { setUploadError("The upload didn't finish. Nothing is lost — try again."); return; }
+      if (docErr || !doc) { setUploadError(t("cv.err.upload")); return; }
 
       setFileName(file.name);
       onUploaded?.(doc.id as string);
@@ -276,14 +278,14 @@ export default function CvUploadControl({
             <div style={{ fontSize: 14, color: INK, overflowWrap: "anywhere" }}>{fileName}</div>
             <div style={{ fontSize: 12.5, color: MUTED, marginBlockStart: 2 }}>
               {comparing
-                ? "KnownBy is reading it against your profile."
+                ? t("cv.comparing")
                 : userId
-                  ? "On file. Only you can see it."
-                  : "Read and discarded. KnownBy kept the comparison, not the file."}
+                  ? t("cv.onFile")
+                  : t("cv.discarded")}
             </div>
           </div>
           {!busy && !comparing ? (
-            <button type="button" onClick={pick} style={{ ...ghostStyle, minInlineSize: 44 }}>Replace</button>
+            <button type="button" onClick={pick} style={{ ...ghostStyle, minInlineSize: 44 }}>{t("cv.replace")}</button>
           ) : null}
         </div>
         {comparing ? (
@@ -291,7 +293,7 @@ export default function CvUploadControl({
             <WorkingPanel
               operation="cv_crosscheck"
               runId={runId}
-              title="Reading it against your profile"
+              title={t("cv.panelTitle")}
               stages={run.stages}
             />
           </div>
@@ -300,12 +302,12 @@ export default function CvUploadControl({
       ) : (
         <>
           <button type="button" onClick={pick} disabled={busy} style={{ ...primaryStyle, opacity: busy ? 0.7 : 1 }}>
-            {busy ? (userId ? "Adding your CV…" : "Reading your CV…") : "Add your CV"}
+            {busy ? (userId ? t("cv.adding") : t("cv.reading")) : t("cv.add")}
           </button>
           <p style={helpStyle}>
             {userId
-              ? "PDF or Word. Only you can see it."
-              : "KnownBy reads your CV and discards it. It is never stored unless you save your report."}
+              ? t("cv.help.signedIn")
+              : t("cv.help.anon")}
           </p>
         </>
       )}
@@ -316,14 +318,14 @@ export default function CvUploadControl({
 
       {failure ? (
         <div style={{ marginBlockStart: 12 }}>
-          <p style={{ fontSize: 14, color: INK, margin: 0, lineHeight: 1.55 }}>{FAILURE_TEXT[failure.kind]}</p>
+          <p style={{ fontSize: 14, color: INK, margin: 0, lineHeight: 1.55 }}>{t(FAILURE_KEY[failure.kind])}</p>
           {failure.kind === "unparseable" || failure.kind === "server" ? (
             <button type="button" onClick={() => void runCrosscheck()} disabled={comparing} style={{ ...ghostStyle, marginBlockStart: 6 }}>
-              {comparing ? "Trying again…" : "Try again"}
+              {comparing ? t("cv.tryingAgain") : t("cv.tryAgain")}
             </button>
           ) : null}
           {failure.kind === "no_cv" && fileName ? (
-            <button type="button" onClick={pick} style={{ ...ghostStyle, marginBlockStart: 6 }}>Add your CV</button>
+            <button type="button" onClick={pick} style={{ ...ghostStyle, marginBlockStart: 6 }}>{t("cv.add")}</button>
           ) : null}
         </div>
       ) : null}
@@ -331,7 +333,7 @@ export default function CvUploadControl({
       {showPurpose ? (
         <div style={{ marginBlockStart: 18 }}>
           <label htmlFor="cv-purpose" style={{ display: "block", fontSize: 14, fontWeight: 600, color: INK, marginBlockEnd: 6 }}>
-            What is this CV for right now?
+            {t("cv.purpose.label")}
           </label>
           <select
             id="cv-purpose"
@@ -343,9 +345,9 @@ export default function CvUploadControl({
               fontFamily: "var(--font-body)",
             }}
           >
-            {CV_PURPOSES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+            {CV_PURPOSES.map((p) => <option key={p.value} value={p.value}>{t(`cv.purpose.${p.value}`)}</option>)}
           </select>
-          <p style={helpStyle}>Optional. It changes what KnownBy looks for.</p>
+          <p style={helpStyle}>{t("cv.purpose.help")}</p>
         </div>
       ) : null}
     </div>
