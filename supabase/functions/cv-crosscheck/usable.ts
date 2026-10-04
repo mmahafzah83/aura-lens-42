@@ -1,7 +1,6 @@
 /** One model call, then code repairs or drops. Pure: no network, no model. */
 import { normaliseCrosscheck } from "./normalise.ts";
 import { spanIsWrong, SENTENCE_SPLIT } from "./spans.ts";
-import { vocabText } from "./vocabText.ts";
 import { sourceNumbers, unsupportedNumbers } from "./figures.ts";
 import { stripIntentions } from "./intentions.ts";
 

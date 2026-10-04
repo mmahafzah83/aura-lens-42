@@ -48,7 +48,7 @@ describe("makeUsable", () => {
   it("banned word in why_it_matters drops that finding", () => {
     const out = makeUsable(base({ findings: [F(), F({ why_it_matters: "It builds authority." })] }), opts());
     expect(out.result.findings).toHaveLength(1);
-    expect(out.notes).toContain("dropped_finding:banned_or_platitude");
+    expect(out.notes).toContain("dropped_finding:banned:authority@why_it_matters");
   });
   it("all findings dropped gives no_usable_findings", () => {
     const out = makeUsable(base({ findings: [F({ what: "" }), F({ what_you_lose: "" })] }), opts());
