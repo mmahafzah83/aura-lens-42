@@ -619,6 +619,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     findings_dropped: usable.dropped,
     rewrites_removed: usable.rewritesRemoved,
     defensibility_dropped: usable.defensibilityDropped,
+    intention_sentences_removed: usable.intentionSentencesRemoved,
     ...(lang === "ar" ? { style_notes_count: styleNotes.length } : {}),
   });
 

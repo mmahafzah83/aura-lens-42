@@ -3,6 +3,7 @@ import { normaliseCrosscheck } from "./normalise.ts";
 import { spanIsWrong, SENTENCE_SPLIT } from "./spans.ts";
 import { vocabText } from "./vocabText.ts";
 import { sourceNumbers, unsupportedNumbers } from "./figures.ts";
+import { stripIntentions } from "./intentions.ts";
 
 export const AURA_CAN = ["capture_evidence", "draft_post", "suggest_headline", "track_signal"];
 export const PLATITUDES = [
@@ -62,6 +63,7 @@ export type UsableOut = {
   failure: null | "no_usable_findings" | "not_arabic";
   rewritesRemoved: number;
   defensibilityDropped: number;
+  intentionSentencesRemoved: number;
 };
 
 const s = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -79,7 +81,14 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   /* Figures guard: paste-ready lines may only carry numbers found in the source. */
   const src = typeof opts.source === "string" ? sourceNumbers(opts.source) : null;
   const bad = (t: unknown) => (src && typeof t === "string" ? unsupportedNumbers(t, src) : []);
-  let rewritesRemoved = 0, defensibilityDropped = 0;
+  let rewritesRemoved = 0, defensibilityDropped = 0, intentionSentencesRemoved = 0;
+  /* Intentions guard (after figures): "what I want next / why I am leaving" must come from the source. */
+  const intent = (t: unknown, note: string): string | null => {
+    if (typeof opts.source !== "string" || typeof t !== "string") return t as any;
+    const r = stripIntentions(t, opts.source);
+    for (const _ of r.removed) { intentionSentencesRemoved++; notes.push(note); }
+    return r.text;
+  };
 
   const offends = (text: string): boolean =>
     PLATITUDES.some((x) => text.toLowerCase().includes(x)) || opts.hasBanned(text, opts.bannedWords);
@@ -101,6 +110,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     if (isBlankValue(f.rewrite)) f.rewrite = null;
     const badRw = bad(f.rewrite);
     if (badRw.length) { f.rewrite = null; rewritesRemoved++; notes.push(`rewrite_removed:unsupported_figure:${badRw.join(",")}`); }
+    if (typeof f.rewrite === "string") f.rewrite = intent(f.rewrite, "rewrite_sentence_removed:intention");
     if (f.aura_can != null && !AURA_CAN.includes(String(f.aura_can))) { delete f.aura_can; notes.push("removed:finding_aura_can"); }
     if (f.weight === "high" && !s(f.rewrite)) { f.weight = "medium"; notes.push("downgraded:rewrite_missing"); }
     kept.push(f);
@@ -138,6 +148,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   if (typeof p.headline_suggestion === "string" && offends(p.headline_suggestion)) { p.headline_suggestion = null; notes.push("nulled:headline_suggestion"); }
   const badHl = bad(p.headline_suggestion);
   if (badHl.length) { p.headline_suggestion = null; notes.push(`headline_removed:unsupported_figure:${badHl.join(",")}`); }
+  if (typeof p.headline_suggestion === "string") p.headline_suggestion = intent(p.headline_suggestion, "headline_sentence_removed:intention");
   if (Array.isArray(p.defensibility)) {
     p.defensibility = p.defensibility.filter((x: unknown) => {
       const b = bad(x);
@@ -146,7 +157,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     });
   }
 
-  if (!kept.length) return { result: p, notes, kept: 0, dropped: before.length, failure: "no_usable_findings", rewritesRemoved, defensibilityDropped };
+  if (!kept.length) return { result: p, notes, kept: 0, dropped: before.length, failure: "no_usable_findings", rewritesRemoved, defensibilityDropped, intentionSentencesRemoved };
 
   /* Exactly one do_first among what remains. */
   const { result, changes } = normaliseCrosscheck(p);
@@ -159,7 +170,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   }
 
   if (opts.lang === "ar" && wholeArabicShare(result) < 0.5) {
-    return { result, notes, kept: kept.length, dropped: before.length - kept.length, failure: "not_arabic", rewritesRemoved, defensibilityDropped };
+    return { result, notes, kept: kept.length, dropped: before.length - kept.length, failure: "not_arabic", rewritesRemoved, defensibilityDropped, intentionSentencesRemoved };
   }
-  return { result, notes, kept: kept.length, dropped: before.length - kept.length, failure: null, rewritesRemoved, defensibilityDropped };
+  return { result, notes, kept: kept.length, dropped: before.length - kept.length, failure: null, rewritesRemoved, defensibilityDropped, intentionSentencesRemoved };
 }

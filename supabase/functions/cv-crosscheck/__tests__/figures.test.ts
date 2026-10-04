@@ -39,15 +39,16 @@ describe("figures guard", () => {
     expect(out.result.findings).toHaveLength(2);
     const f1 = out.result.findings.find((f: any) => f.rewrite === null);
     expect(f1.weight).toBe("medium");
-    expect(out.notes).toContain("rewrite_removed:unsupported_figure:1200,18000");
+    expect(out.notes).toContain("rewrite_removed:unsupported_figure:1200,3,18000");
     expect(out.result.findings.some((f: any) => f.rewrite === RW2)).toBe(true);
     expect(out.rewritesRemoved).toBe(1);
   });
-  it("drops defensibility item 2 only, keeps the headline", () => {
+  it("drops defensibility items 1 (spelled 'two' interventions) and 2, keeps the headline", () => {
     const out = run({ findings: [F({ rewrite: RW2 })], defensibility: [D1, D2, D3], headline_suggestion: HL });
-    expect(out.result.defensibility).toEqual([D1, D3]);
-    expect(out.notes).toContain("dropped_defensibility:unsupported_figure:4,180");
-    expect(out.defensibilityDropped).toBe(1);
+    expect(out.result.defensibility).toEqual([D3]);
+    expect(out.notes).toContain("dropped_defensibility:unsupported_figure:2");
+    expect(out.notes).toContain("dropped_defensibility:unsupported_figure:2,100,40,4,180");
+    expect(out.defensibilityDropped).toBe(2);
     expect(out.result.headline_suggestion).toBe(HL);
   });
   it("years exception and Arabic text", () => {
