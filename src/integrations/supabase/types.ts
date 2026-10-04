@@ -8431,18 +8431,21 @@ export type Database = {
           band: Database["public"]["Enums"]["seniority_band"]
           position: number
           title: string
+          title_ar: string | null
         }
         Insert: {
           active?: boolean
           band: Database["public"]["Enums"]["seniority_band"]
           position: number
           title: string
+          title_ar?: string | null
         }
         Update: {
           active?: boolean
           band?: Database["public"]["Enums"]["seniority_band"]
           position?: number
           title?: string
+          title_ar?: string | null
         }
         Relationships: []
       }

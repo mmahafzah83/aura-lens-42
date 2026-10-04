@@ -4,6 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { OB, EASE, RADIUS } from "./tokens";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const CSS = `
 @keyframes wp-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -11,7 +12,9 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){.wp-line{animation:none !important;}}
 `;
 
-const WaitProof = ({ lines, howLong = "About a minute.", startAt = 0 }: { lines: string[]; howLong?: string; startAt?: number }) => {
+const WaitProof = ({ lines, howLong: howLongProp, startAt = 0 }: { lines: string[]; howLong?: string; startAt?: number }) => {
+  const { t } = useLanguage();
+  const howLong = howLongProp ?? t("wait.aboutMinute");
   /* Each wait shows a different slice, so the member never reads the same
      figure twice unless there genuinely are not enough of them. */
   const window = (() => {

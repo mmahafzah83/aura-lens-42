@@ -103,3 +103,9 @@ export function normalizeSector(raw: string | null | undefined): string {
   const match = (SECTORS as readonly string[]).find((s) => s.toLowerCase() === lower);
   return match || "Other";
 }
+/** Display label for a stored sector. The stored value stays the English name. */
+export function sectorLabel(name: string, t: (key: string) => string): string {
+  const key = `sector.${name}`;
+  const out = t(key);
+  return out && out !== key ? out : name;
+}

@@ -7,6 +7,8 @@ export type Band = "work" | "table" | "room";
 
 export interface SeniorityTitle {
   title: string;
+  /** Display-only Arabic; selection and matching stay on `title`. */
+  title_ar?: string | null;
   band: Band;
   position: number;
 }
@@ -19,11 +21,12 @@ export const BAND_LABEL: Record<Band, string> = {
 
 export async function fetchSeniorityTitles(): Promise<SeniorityTitle[]> {
   const { data } = await (supabase.from("seniority_titles" as any) as any)
-    .select("title, band, position")
+    .select("title, title_ar, band, position")
     .eq("active", true)
     .order("position");
   return ((data as any[]) || []).map((r) => ({
     title: String(r.title),
+    title_ar: typeof r.title_ar === "string" ? r.title_ar : null,
     band: r.band as Band,
     position: Number(r.position) || 0,
   }));
@@ -53,6 +56,10 @@ export function useSeniorityTitles() {
 
   return { titles, loading, failed, reload: load };
 }
+
+/** The label shown for a level: Arabic when the page is Arabic and a value exists, else English. */
+export const titleLabel = (t: Pick<SeniorityTitle, "title" | "title_ar">, lang: string): string =>
+  lang === "ar" && t.title_ar && t.title_ar.trim() ? t.title_ar : t.title;
 
 export const bandOfTitle = (titles: SeniorityTitle[], title: string): Band | null =>
   titles.find((t) => t.title === title)?.band ?? null;

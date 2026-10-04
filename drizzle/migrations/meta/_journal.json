@@ -29,6 +29,13 @@
       "when": 1790986236294,
       "tag": "0003_assessment_items_arabic_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791089712958,
+      "tag": "0004_seniority_titles_arabic",
+      "breakpoints": true
     }
   ]
 }

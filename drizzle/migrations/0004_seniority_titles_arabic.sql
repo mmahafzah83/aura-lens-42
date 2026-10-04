@@ -1,0 +1,5 @@
+ALTER TABLE public.seniority_titles ADD COLUMN IF NOT EXISTS title_ar text;
+COMMENT ON COLUMN public.seniority_titles.title_ar IS 'Display-only Arabic title; stored/selected value stays title.';
+UPDATE public.seniority_titles s SET title_ar = v.ar FROM (VALUES
+('Founder','مؤسس'),('C-Suite','الإدارة التنفيذية العليا'),('Board Member','عضو مجلس إدارة'),('SVP / EVP','نائب رئيس أول / تنفيذي'),('VP','نائب رئيس'),('Dean','عميد'),('Professor','أستاذ'),('Partner','شريك'),('Senior Director','مدير إدارة أول'),('Director','مدير إدارة'),('Senior Manager','مدير أول'),('Principal / Fellow','خبير رئيسي / زميل'),('Advisor','مستشار'),('Head of Department','رئيس قسم'),('Associate Professor','أستاذ مشارك'),('Assistant Professor','أستاذ مساعد'),('Manager','مدير'),('Senior Consultant','استشاري أول'),('Consultant','استشاري'),('Analyst / Associate','محلل / مشارك'),('Specialist / Engineer','أخصائي / مهندس'),('Lecturer / Researcher','محاضر / باحث'),('Other','غير ذلك')
+) AS v(en, ar) WHERE s.title = v.en;

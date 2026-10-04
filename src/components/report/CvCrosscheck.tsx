@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { OB } from "@/components/onboarding/tokens";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export type AuraCan = "capture_evidence" | "draft_post" | "suggest_headline" | "track_signal";
 
@@ -161,6 +162,7 @@ const filledBtn: React.CSSProperties = {
 
 /** Visible label, contextual accessible name, `role="status"` confirmation. */
 function CopyButton({ value, label }: { value: string; label: string }) {
+  const { t } = useLanguage();
   const [done, setDone] = useState(false);
   const timer = useRef<number | null>(null);
 
@@ -180,11 +182,11 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
       <button type="button" onClick={() => void copy()} aria-label={label} style={outlineBtn}>
-        Copy
+        {t("cvx.copy")}
       </button>
       {/* focus never moves; the confirmation is announced, not focused */}
       <span role="status" style={{ ...body, fontSize: 13.5, color: OB.muted }}>
-        {done ? "Copied" : ""}
+        {done ? t("cvx.copied") : ""}
       </span>
     </span>
   );
@@ -216,9 +218,10 @@ function PlainList({ items }: { items: string[] }) {
 
 /** Stacked, never side-by-side: two columns are unreadable at 375px. */
 function EvidencePair({ cv, profile }: { cv: string; profile: string }) {
-  const row = (label: string, quote: string) => (
+  const { t } = useLanguage();
+  const row = (label: string, quote: string, isCv: boolean) => (
     <div>
-      <p style={mono}>{label}</p>
+      <p className="cvx-mono" style={mono}>{label}</p>
       <p
         style={{
           ...body,
@@ -229,36 +232,37 @@ function EvidencePair({ cv, profile }: { cv: string; profile: string }) {
           marginBlockStart: 6,
         }}
       >
-        {quote ? `“${quote}”` : label === "YOUR CV" ? "Not on your CV" : "Not on your profile"}
+        {quote ? `“${quote}”` : isCv ? t("cvx.notOnCv") : t("cvx.notOnProfile")}
       </p>
     </div>
   );
   return (
     <div style={{ display: "grid", gap: 14, marginBlockStart: 12 }}>
-      {row("YOUR CV", cv)}
-      {row("YOUR PROFILE", profile)}
+      {row(t("cvx.yourCv"), cv, true)}
+      {row(t("cvx.yourProfile"), profile, false)}
     </div>
   );
 }
 
 function EvidenceToggle({ cv, profile }: { cv: string; profile: string }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   if (!cv && !profile) return null;
   return (
     <div>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} style={linkBtn}>
-        {open ? "Hide the two lines" : "Show the two lines"}
+        {open ? t("cvx.hideLines") : t("cvx.showLines")}
       </button>
       {open ? <EvidencePair cv={cv} profile={profile} /> : null}
     </div>
   );
 }
 
-const AURA_CAN_LABEL: Record<AuraCan, string> = {
-  capture_evidence: "Keep this for me",
-  draft_post: "Draft a post about this",
-  suggest_headline: "See the suggested headline",
-  track_signal: "Track this as a signal",
+const AURA_CAN_KEY: Record<AuraCan, string> = {
+  capture_evidence: "cvx.keep",
+  draft_post: "cvx.draft",
+  suggest_headline: "cvx.seeHeadline",
+  track_signal: "cvx.track",
 };
 
 /* First sentence of the section's own content, cut at a word boundary. */
@@ -286,6 +290,7 @@ function Disclosure({
   openSignal?: number;
   children: React.ReactNode;
 }) {
+  const { lang } = useLanguage();
   const ref = useRef<HTMLDetailsElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -310,7 +315,7 @@ function Disclosure({
           <span style={{ ...body, fontWeight: 600, display: "block" }}>
             {label}
             {typeof count === "number" && count > 0 ? (
-              <span style={{ ...mono, display: "inline", marginInlineStart: 8, fontSize: 12 }}>{count}</span>
+              <span className="cvx-mono" style={{ ...mono, display: "inline", marginInlineStart: 8, fontSize: 12 }}>{count}</span>
             ) : null}
           </span>
           {!open && previewText ? (
@@ -323,7 +328,7 @@ function Disclosure({
           aria-hidden
           style={{
             flex: "0 0 auto", color: OB.muted, fontSize: 14,
-            transform: open ? "rotate(90deg)" : "none", transition: "transform 160ms ease",
+            transform: open ? "rotate(90deg)" : lang === "ar" ? "scaleX(-1)" : "none", transition: "transform 160ms ease",
           }}
         >
           ›
@@ -363,6 +368,7 @@ export default function CvCrosscheck({
     context: { finding?: CvFinding; recommendation?: CvRecommendation },
   ) => void | boolean | Promise<void | boolean>;
 }) {
+  const { t } = useLanguage();
   const [fetched, setFetched] = useState<unknown>(null);
   const [headlineOpen, setHeadlineOpen] = useState(0);
   /* One "Kept ✓" per thing kept — pressing twice cannot write twice. */
@@ -406,7 +412,7 @@ export default function CvCrosscheck({
   if (state === "no_cv") {
     return (
       <section style={{ ...card, ...style }}>
-        <p style={prose}>KnownBy hasn't got a CV to read yet.</p>
+        <p style={prose}>{t("cv.fail.noCv")}</p>
         {uploadSlot ? <div style={{ marginBlockStart: 16 }}>{uploadSlot}</div> : null}
       </section>
     );
@@ -415,10 +421,10 @@ export default function CvCrosscheck({
   if (state === "processing") {
     return (
       <section style={{ ...card, ...style }} aria-live="polite">
-        <p style={mono}>Working</p>
+        <p className="cvx-mono" style={mono}>{t("cvx.working")}</p>
         <ol style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "grid", gap: 8 }}>
-          <li style={prose}>Reading your CV</li>
-          <li style={{ ...prose, color: OB.muted }}>Comparing against your profile</li>
+          <li style={prose}>{t("cvx.reading")}</li>
+          <li style={{ ...prose, color: OB.muted }}>{t("cvx.comparing")}</li>
         </ol>
       </section>
     );
@@ -427,9 +433,9 @@ export default function CvCrosscheck({
   if (state === "error") {
     return (
       <section style={{ ...card, ...style }}>
-        <p style={prose}>KnownBy couldn't finish the comparison this time. Your CV is saved — try again.</p>
+        <p style={prose}>{t("cv.fail.unparseable")}</p>
         {onRetry ? (
-          <button type="button" onClick={onRetry} style={{ ...filledBtn, marginBlockStart: 14 }}>Try again</button>
+          <button type="button" onClick={onRetry} style={{ ...filledBtn, marginBlockStart: 14 }}>{t("cv.tryAgain")}</button>
         ) : null}
       </section>
     );
@@ -468,7 +474,7 @@ export default function CvCrosscheck({
     const key = `${kind}:${text(ctx.finding?.what) || text(ctx.recommendation?.action)}`;
     if (kept[key]) {
       return (
-        <p style={{ ...body, fontSize: 14, fontWeight: 600, color: "#12805C", marginBlockStart: 10 }}>Kept ✓</p>
+        <p style={{ ...body, fontSize: 14, fontWeight: 600, color: "#12805C", marginBlockStart: 10 }}>{t("cvx.kept")}</p>
       );
     }
     return (
@@ -488,7 +494,7 @@ export default function CvCrosscheck({
           }
         }}
       >
-        {saving === key ? "Keeping…" : AURA_CAN_LABEL[kind]}
+        {saving === key ? t("cvx.keeping") : t(AURA_CAN_KEY[kind])}
       </button>
     );
   };
@@ -500,15 +506,15 @@ export default function CvCrosscheck({
     const profileLine = text(ev.profile_line) === "Absent" ? "" : text(ev.profile_line);
     return (
       <article style={{ display: "grid", gap: 10 }}>
-        {first && f.do_first === true ? <p style={{ ...mono, color: OB.cyanText }}>Do this first</p> : null}
+        {first && f.do_first === true ? <p className="cvx-mono" style={{ ...mono, color: OB.cyanText }}>{t("cvx.doFirst")}</p> : null}
         {text(f.what) ? <h3 style={h3}>{f.what}</h3> : null}
         {text(f.what_you_lose) ? <p style={prose}>{f.what_you_lose}</p> : null}
         {rewrite ? (
           <div style={boxed}>
-            <p style={mono}>Use this line</p>
+            <p className="cvx-mono" style={mono}>{t("cvx.useLine")}</p>
             <p style={{ ...prose, marginBlockStart: 8 }}>{rewrite}</p>
             <div style={{ marginBlockStart: 12 }}>
-              <CopyButton value={rewrite} label="Copy rewrite" />
+              <CopyButton value={rewrite} label={t("cvx.copyRewrite")} />
             </div>
           </div>
         ) : null}
@@ -524,6 +530,7 @@ export default function CvCrosscheck({
 
   return (
     <div style={{ display: "grid", gap: 16, ...style }}>
+      <style>{`html[lang="ar"] .cvx-mono{letter-spacing:0 !important;text-transform:none !important;}`}</style>
       {/* 1 · Verdict — the only night surface here. */}
       <section
         style={{
@@ -533,7 +540,7 @@ export default function CvCrosscheck({
           scrollMarginTop: SCROLL_MARGIN,
         }}
       >
-        <p style={{ ...mono, color: OB.cyan }}>Your CV against your profile</p>
+        <p className="cvx-mono" style={{ ...mono, color: OB.cyan }}>{t("cvx.title")}</p>
         {text(d.headline_finding) ? (
           <p
             style={{
@@ -554,14 +561,14 @@ export default function CvCrosscheck({
       {/* stale */}
       {state === "stale" ? (
         <div style={{ ...card, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <p style={{ ...prose, flex: "1 1 240px" }}>Your CV changed since this ran</p>
-          {onRunAgain ? <button type="button" onClick={onRunAgain} style={filledBtn}>Run it again</button> : null}
+          <p style={{ ...prose, flex: "1 1 240px" }}>{t("cvx.stale")}</p>
+          {onRunAgain ? <button type="button" onClick={onRunAgain} style={filledBtn}>{t("cvx.runAgain")}</button> : null}
         </div>
       ) : null}
 
       {/* 2 · The one thing to fix first — always open, in full */}
       {lead ? (
-        <Section id="cvx-findings" title="Where the two disagree">
+        <Section id="cvx-findings" title={t("cvx.disagree")}>
           <Finding f={lead} first />
         </Section>
       ) : null}
@@ -570,7 +577,7 @@ export default function CvCrosscheck({
       {rest.length > 0 ? (
         <Disclosure
           id="cvx-findings-rest"
-          label="The other disagreements"
+          label={t("cvx.otherDisagree")}
           count={rest.length}
           previewText={preview(text(rest[0].what) || text(rest[0].what_you_lose))}
         >
@@ -581,13 +588,13 @@ export default function CvCrosscheck({
       ) : null}
 
       {behind.length > 0 ? (
-        <Disclosure id="cvx-missing" label="What your CV is missing" count={behind.length} previewText={preview(behind[0])}>
+        <Disclosure id="cvx-missing" label={t("cvx.missing")} count={behind.length} previewText={preview(behind[0])}>
           <PlainList items={behind} />
         </Disclosure>
       ) : null}
 
       {proof.length > 0 ? (
-        <Disclosure id="cvx-defensibility" label="What a CFO will ask" count={proof.length} previewText={preview(proof[0])}>
+        <Disclosure id="cvx-defensibility" label={t("cvx.cfo")} count={proof.length} previewText={preview(proof[0])}>
           <div style={{ display: "grid", gap: 12 }}>
             {proof.map((s, i) => (
               <div key={i} style={boxed}><p style={prose}>{s}</p></div>
@@ -599,39 +606,39 @@ export default function CvCrosscheck({
       {headlineSuggestion ? (
         <Disclosure
           id="cvx-headline"
-          label="A headline built from this"
+          label={t("cvx.headline")}
           previewText={preview(headlineSuggestion)}
           openSignal={headlineOpen}
         >
           <div style={boxed}>
             <p style={prose}>{headlineSuggestion}</p>
             <div style={{ marginBlockStart: 12 }}>
-              <CopyButton value={headlineSuggestion} label="Copy suggested headline" />
+              <CopyButton value={headlineSuggestion} label={t("cvx.copyHeadline")} />
             </div>
           </div>
         </Disclosure>
       ) : null}
 
       {shape ? (
-        <Disclosure id="cvx-shape" label="The shape of your career" previewText={preview(shape)}>
+        <Disclosure id="cvx-shape" label={t("cvx.shape")} previewText={preview(shape)}>
           <p style={prose}>{shape}</p>
         </Disclosure>
       ) : null}
 
       {voice ? (
-        <Disclosure id="cvx-voice" label="What you sound like next to what you claim" previewText={preview(voice)}>
+        <Disclosure id="cvx-voice" label={t("cvx.voice")} previewText={preview(voice)}>
           <p style={prose}>{voice}</p>
         </Disclosure>
       ) : null}
 
       {hardTruth ? (
-        <Disclosure id="cvx-truth" label="The hard truth" previewText={preview(hardTruth)}>
+        <Disclosure id="cvx-truth" label={t("cvx.hardTruth")} previewText={preview(hardTruth)}>
           <p style={{ ...prose, fontSize: 20, fontWeight: 700, lineHeight: 1.45 }}>{hardTruth}</p>
         </Disclosure>
       ) : null}
 
       {recs.length > 0 ? (
-        <Disclosure id="cvx-now" label="What now" count={recs.length} previewText={preview(text(recs[0].action))}>
+        <Disclosure id="cvx-now" label={t("cvx.now")} count={recs.length} previewText={preview(text(recs[0].action))}>
           <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 18 }}>
             {recs.map((r, i) => (
               <li key={i}>
@@ -645,7 +652,7 @@ export default function CvCrosscheck({
       ) : null}
 
       {peer ? (
-        <Disclosure id="cvx-peers" label="How others in your field describe this work" previewText={preview(peer)}>
+        <Disclosure id="cvx-peers" label={t("cvx.peers")} previewText={preview(peer)}>
           <p style={prose}>{peer}</p>
         </Disclosure>
       ) : null}
