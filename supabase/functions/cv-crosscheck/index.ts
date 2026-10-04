@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
-import { ARABIC_VOICE_BLOCK, arabicHardFail, arabicStyleNotes, arabicCorrectionText, repairArabic } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicStyleNotes, repairArabic } from "../_shared/arabicVoice.ts";
 import { normaliseCrosscheck } from "./normalise.ts";
 import { spanIsWrong, SENTENCE_SPLIT } from "./spans.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
@@ -11,7 +11,7 @@ import { isAdmin } from "../_shared/adminRole.ts";
 import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
 import { CORPUS_COLUMNS, isOwnWriting } from "../_shared/voiceCorpus.ts";
 import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
-import { vocabText } from "./vocabText.ts";
+import { makeUsable, arabicProse } from "./usable.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,16 +97,6 @@ Years of experience: compute every span from the two dates you cite, exactly as 
 Never use these Arabic CV-coaching platitudes: «أبرز إنجازاتك», «استخدم أفعالًا قوية», «خصّص سيرتك», «أظهر نقاط قوتك», «قِس إنجازاتك بالأرقام» as generic advice.`;
 
 const ARABIC_CV_SYSTEM = SYSTEM_PROMPT + "\n\n" + ARABIC_VOICE_BLOCK + "\n" + ARABIC_CV_ADDITION;
-
-/** The model-written prose fields only — quotes, paste-ready text and enums stay out. */
-function arabicProse(r: any): Record<string, unknown> {
-  const pick = (o: any, keys: string[]) => Object.fromEntries(keys.filter((k) => typeof o?.[k] === "string").map((k) => [k, o[k]]));
-  return {
-    ...pick(r, ["headline_finding", "defensibility", "cv_is_behind", "profile_vs_voice", "reading_the_shape", "the_hard_truth", "peer_comparison"]),
-    findings: (Array.isArray(r?.findings) ? r.findings : []).map((f: any) => pick(f, ["what", "why_it_matters", "do_this", "what_you_lose"])),
-    recommendations: (Array.isArray(r?.recommendations) ? r.recommendations : []).map((x: any) => pick(x, ["action", "why_now"])),
-  };
-}
 
 /** repairArabic on the same prose fields, in place. */
 function repairCvArabic(r: any): any {
@@ -506,41 +496,43 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
 
   /* Stage two opens: the model comparing the CV against the profile. */
   run?.mark(OPERATION_STAGES.cv_crosscheck[1]);
-  const runOnce = async (prompt: string, l: "ar" | "en" = lang, attempt: "first" | "retry" | "english" = "first") => {
-    const resp = await callAnthropic(prompt, l === "ar" ? ARABIC_CV_SYSTEM : SYSTEM_PROMPT, l);
-    const rawBody = await resp.text();
-    if (!resp.ok) {
-      await logEfError(admin, {
-        function_name: "cv-crosscheck",
-        error: `Anthropic HTTP ${resp.status}: ${rawBody.slice(0, 800)}`,
-        severity: "high",
+
+  /* ONE model call per request, in both languages (founder ruling 4 Oct):
+     runs average ~106 s and the connection closes at 150 s, so any second
+     call loses the whole result. Code repairs or drops; nothing retries. */
+  const resp = await callAnthropic(userPrompt, lang === "ar" ? ARABIC_CV_SYSTEM : SYSTEM_PROMPT, lang);
+  const rawBody = await resp.text();
+  if (!resp.ok) {
+    await logEfError(admin, {
+      function_name: "cv-crosscheck",
+      error: `Anthropic HTTP ${resp.status}: ${rawBody.slice(0, 800)}`,
+      severity: "high",
+      user_id: targetId ?? undefined,
+      context: { anthropic_status: resp.status },
+    });
+    try {
+      EdgeRuntime.waitUntil(logAIUsage({
         user_id: targetId ?? undefined,
-        context: { anthropic_status: resp.status },
-      });
-      /* A failed provider call is still a call: record it, or the usage log
-         reports a perfect success rate by construction. */
-      try {
-        EdgeRuntime.waitUntil(logAIUsage({
-          user_id: targetId ?? undefined,
-          function_name: "cv-crosscheck",
-          provider: "anthropic",
-          model: "claude-sonnet-4-5-20250929",
-          success: false,
-          error_code: `http_${resp.status}`,
-          metadata: { lang: l, attempt, stop_reason: null },
-        }));
-      } catch (_) { /* non-blocking */ }
-      return { data: null as any, text: "", truncated: false };
-    }
-    const data = JSON.parse(rawBody);
-    const blocks: any[] = Array.isArray(data.content) ? data.content : [];
-    const text = blocks.map((c: any) => c.text || "").join("") || "";
-    const toolUse = blocks.find((c: any) => c?.type === "tool_use" && c?.name === CROSSCHECK_TOOL.name);
-    const toolInput = toolUse && typeof toolUse.input === "object" ? toolUse.input : null;
-    let styleCount: number | null = null;
-    if (l === "ar" && toolInput) {
-      try { styleCount = arabicStyleNotes(arabicProse(repairCvArabic(JSON.parse(JSON.stringify(toolInput))))).length; } catch (_) { styleCount = null; }
-    }
+        function_name: "cv-crosscheck",
+        provider: "anthropic",
+        model: "claude-sonnet-4-5-20250929",
+        success: false,
+        error_code: `http_${resp.status}`,
+        metadata: { lang, attempt: "first", stop_reason: null },
+      }));
+    } catch (_) { /* non-blocking */ }
+    await finish("failed", "unparseable");
+    return json({ ok: false, pending: true, reason: "unparseable" });
+  }
+  const data = JSON.parse(rawBody);
+  const blocks: any[] = Array.isArray(data.content) ? data.content : [];
+  const text = blocks.map((c: any) => c.text || "").join("") || "";
+  const toolUse = blocks.find((c: any) => c?.type === "tool_use" && c?.name === CROSSCHECK_TOOL.name);
+  const toolInput = toolUse && typeof toolUse.input === "object" ? toolUse.input : null;
+  const truncated = data.stop_reason === "max_tokens";
+  console.log("[cv-crosscheck] call", lang, "out_tokens", data.usage?.output_tokens, "stop", data.stop_reason);
+
+  const logUsage = (extra: Record<string, unknown>) => {
     try {
       EdgeRuntime.waitUntil(logAIUsage({
         user_id: targetId ?? undefined,
@@ -549,12 +541,9 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
         model: data.model,
         input_tokens: data.usage?.input_tokens,
         output_tokens: data.usage?.output_tokens,
-        metadata: { lang: l, attempt, stop_reason: data.stop_reason ?? null, ...(styleCount !== null ? { style_notes_count: styleCount } : {}) },
+        metadata: { lang, attempt: "first", stop_reason: data.stop_reason ?? null, ...extra },
       }));
     } catch (_) { /* non-blocking */ }
-    /* Raw text is kept so a future parse failure is recoverable, not lost. */
-    console.log("[cv-crosscheck] call", attempt, l, "out_tokens", data.usage?.output_tokens, "stop", data.stop_reason);
-    return { data, text, toolInput, rawBody, truncated: data.stop_reason === "max_tokens" };
   };
 
   /** Placeholders are only meaningful inside the model's own sentences. */
@@ -565,14 +554,6 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     if (v && typeof v === "object") return Object.values(v as Record<string, unknown>).some(hasPlaceholderInValues);
     return false;
   }
-
-  /* ---------------- server-side gates ---------------------------------- */
-
-  const AURA_CAN = ["capture_evidence", "draft_post", "suggest_headline", "track_signal"];
-  const PLATITUDES = [
-    "quantify your achievements", "action verbs", "tailor your cv",
-    "ats", "highlight your strengths", "showcase",
-  ];
 
   /** Strip only the offending clause; the rest of the sentence survives. */
   function repairSpans(value: unknown): unknown {
@@ -590,129 +571,22 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     return value;
   }
 
-  function allText(v: unknown): string {
-    if (typeof v === "string") return ` ${v} `;
-    if (Array.isArray(v)) return v.map(allText).join(" ");
-    if (v && typeof v === "object") return Object.values(v as Record<string, unknown>).map(allText).join(" ");
-    return "";
-  }
-
-  const bannedWords = await loadBannedWords(admin);
-
-  /** The paste-ready English fields only: every finding's rewrite and the headline suggestion. */
-  function pasteText(result: any): string {
-    const parts: string[] = [];
-    if (typeof result?.headline_suggestion === "string") parts.push(result.headline_suggestion);
-    for (const f of Array.isArray(result?.findings) ? result.findings : []) if (typeof f?.rewrite === "string") parts.push(f.rewrite);
-    return parts.map((x) => ` ${x} `).join(" ");
-  }
-
-  /** Every failing assertion found in one pass, in gate order (used for the correction text). */
-  function gateAll(result: any, l: "ar" | "en" = lang): string[] {
-    const out: string[] = [];
-    const add = (a: string) => { if (!out.includes(a)) out.push(a); };
-    const findings: any[] = Array.isArray(result?.findings) ? result.findings : [];
-    if (!findings.length) add("findings_empty");
-
-    /* Verbatim quotes (evidence lines) are the member's own words, not ours.
-       Arabic: the English brand list only reads the text written for pasting
-       in English (rewrite, headline_suggestion); Arabic prose is judged by the
-       Arabic checks, and Latin proper nouns inside it are not our wording. */
-    const whole = l === "ar" ? pasteText(result) : vocabText(result);
-    const text = whole.toLowerCase();
-    if (PLATITUDES.some((p) => text.includes(p))) add("no_cv_platitudes");
-    if (hasBanned(whole, bannedWords)) {
-      /* Name the offending word so the single retry can actually fix it. */
-      const offender = bannedWords.find((w) => hasBanned(whole, [w])) ?? "unknown";
-      add(`no_banned_vocabulary: "${offender}"`);
-    }
-
-    for (const f of findings) {
-      if (allText(f).split(SENTENCE_SPLIT).some(spanIsWrong)) add("numbers_recompute");
-      if (!String(f?.what ?? "").trim()) add("finding_empty_after_repair");
-      if (!String(f?.what_you_lose ?? "").trim()) add("what_you_lose_missing");
-      const ev = f?.evidence;
-      if (!ev || !String(ev.cv_line ?? "").trim() || !String(ev.profile_line ?? "").trim()) add("evidence_missing");
-      if (f?.weight === "high" && !String(f?.rewrite ?? "").trim()) add("rewrite_missing_on_high");
-      if (f?.aura_can != null && !AURA_CAN.includes(String(f.aura_can))) add("aura_can_outside_enum");
-    }
-
-    if (findings.length && findings.filter((f) => f?.do_first === true).length !== 1) add("exactly_one_do_first");
-
-    if (!String(result?.the_hard_truth ?? "").trim()) add("the_hard_truth_missing");
-    const recs: any[] = Array.isArray(result?.recommendations) ? result.recommendations : [];
-    if (recs.length < 3 || recs.length > 5) add("recommendations_count");
-    for (const r of recs) {
-      if (!String(r?.action ?? "").trim() || !String(r?.why_now ?? "").trim()) add("recommendation_incomplete");
-      if (r?.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) add("aura_can_outside_enum");
-    }
-    if (l === "ar") {
-      const d = arabicHardFail(arabicProse(result));
-      if (d) add(`arabic_${d.check}: ${arabicCorrectionText(d)}`);
-    }
-    return out;
-  }
-
-  /** Returns the name of the first failing assertion, or null when the result stands. */
-  function gate(result: any, l: "ar" | "en" = lang, truncated = false): string | null {
-    return truncated ? "truncated_output" : (gateAll(result, l)[0] ?? null);
-  }
-
-  /** Code-repairable shape fixes (do_first, recommendation count) before judging. */
-  const normaliseLog: string[] = [];
-  const normalise = (p: any, stage: string): any => {
-    if (!p) return p;
-    const { result, changes } = normaliseCrosscheck(p);
-    if (changes.length) {
-      normaliseLog.push(...changes.map((c) => `${stage}:${c}`));
-      console.log("[cv-crosscheck] normalised", stage, changes.join(","));
-    }
-    return result;
-  };
-
-  /** The same clean-up the main path applies to every parsed answer. */
-  const tidy = (p: any, l: "ar" | "en"): any => {
-    if (!p) return p;
-    p = repairSpans(p);
-    if (Array.isArray(p?.findings)) p.findings = p.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
-    for (const k of ["peer_comparison", "profile_vs_voice", "reading_the_shape", "headline_suggestion"]) {
-      if (k in p) p[k] = nullify(p[k]);
-    }
-    return l === "ar" ? repairCvArabic(p) : p;
-  };
-  let outLang: "ar" | "en" = lang;
-
-  let { data, text, toolInput, rawBody, truncated } = await runOnce(userPrompt, lang, "first");
   let parsed: any = toolInput ?? parseJsonLoose(text);
-
   if (!parsed || hasPlaceholderInValues(parsed)) {
-    const correction = `${userPrompt}
-
-CORRECTION — your previous attempt was not a single valid JSON object, or contained a bracketed placeholder. Output the JSON object only, with real values drawn from the material above. No code fences, no commentary, no square-bracket placeholders.`;
-    const retry = await runOnce(correction, lang, "retry");
-    truncated = retry.truncated;
-    if (retry.data) { data = retry.data; text = retry.text; rawBody = retry.rawBody; }
-    parsed = retry.toolInput ?? parseJsonLoose(retry.text);
-    if (!parsed || hasPlaceholderInValues(parsed)) {
-      await logEfError(admin, {
-        function_name: "cv-crosscheck",
-        error: "Unparseable crosscheck after retry — nothing saved",
-        severity: "high",
-        user_id: targetId ?? undefined,
-        context: { path: "unparseable", raw: String(retry.text || retry.rawBody || "").slice(0, 2000) },
-      });
-      await finish("failed", "unparseable");
-      return json({ ok: false, pending: true, reason: "unparseable" });
-    }
+    logUsage({ findings_kept: 0, findings_dropped: 0 });
+    await logEfError(admin, {
+      function_name: "cv-crosscheck",
+      error: "Unparseable crosscheck — nothing saved",
+      severity: "high",
+      user_id: targetId ?? undefined,
+      context: { path: "unparseable", stop_reason: data.stop_reason ?? null, raw: String(text || rawBody || "").slice(0, 2000) },
+    });
+    await finish("failed", "unparseable", { truncated });
+    return json({ ok: false, pending: true, reason: "unparseable" });
   }
 
-  /* Arithmetic is repaired before judging: a stripped clause is acceptable,
-     a surviving wrong span is not. */
+  /* Clean-up: arithmetic, "null" words, Arabic repair, do_first shape. */
   parsed = repairSpans(parsed);
-  if (Array.isArray(parsed?.findings)) {
-    parsed.findings = parsed.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
-  }
-
   /* A forced tool cannot emit a JSON null for a string field, so the model
      writes the word "null" instead. Nullable prose fields must be truly null
      or the panel prints the word to the member. */
@@ -721,70 +595,43 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
   for (const k of ["peer_comparison", "profile_vs_voice", "reading_the_shape", "headline_suggestion"]) {
     if (parsed && k in parsed) parsed[k] = nullify(parsed[k]);
   }
-
   if (lang === "ar") parsed = repairCvArabic(parsed);
-  parsed = normalise(parsed, "first");
-  let failure = gate(parsed, lang, truncated);
-  if (failure) {
-    const failingAll = gateAll(parsed);
-    if (truncated) failingAll.unshift("truncated_output");
-    console.log("[cv-crosscheck] first gate failures", JSON.stringify(failingAll));
-    const correction = `${userPrompt}
+  const first = normaliseCrosscheck(parsed);
+  parsed = first.result;
 
-CORRECTION — your previous answer failed these assertions: ${failingAll.map((a) => `"${a}"`).join("; ")}. Answer again in full, obeying every rule and fixing all of them together. Do not restate the failing content; fix it.${failingAll.some((a) => a.startsWith("no_banned_vocabulary")) ? " Replace the word; do not quote it back." : ""}`;
-    const retry = await runOnce(correction, lang, "retry");
-    let retryParsed: any = retry.toolInput ?? parseJsonLoose(retry.text);
-    if (retryParsed) retryParsed = normalise(tidy(retryParsed, lang), "retry");
-    const retryFailure = retryParsed ? gate(retryParsed, lang, retry.truncated) : "unparseable_on_retry";
-    let english: { parsed: any; data: any; text: string; rawBody?: string } | null = null;
-    if (retryFailure && lang === "ar" && retryFailure.startsWith("arabic_")) {
-      /* Arabic unusable after the one correction: record it, write English once. */
-      await logEfError(admin, {
-        function_name: "cv-crosscheck",
-        error: `Arabic crosscheck unusable after one correction (${retryFailure.split(":")[0]})`,
-        severity: "high",
-        user_id: targetId ?? undefined,
-        context: { path: "arabic_gate", first_assertion: failure.split(":")[0], retry_assertion: retryFailure.split(":")[0], purpose },
-      });
-      const en = await runOnce(userPrompt, "en", "english");
-      const enParsed = normalise(tidy(en.toolInput ?? parseJsonLoose(en.text), "en"), "english");
-      if (enParsed && !hasPlaceholderInValues(enParsed) && !gate(enParsed, "en", en.truncated)) {
-        english = { parsed: enParsed, data: en.data, text: en.text, rawBody: en.rawBody };
-      }
-    }
-    if (english) {
-      parsed = english.parsed;
-      data = english.data; text = english.text; rawBody = english.rawBody;
-      outLang = "en";
-      failure = null;
-    } else if (!retryFailure) {
-      parsed = retryParsed;
-      if (retry.data) { data = retry.data; text = retry.text; rawBody = retry.rawBody; }
-      failure = null;
-    } else {
-      await logEfError(admin, {
-        function_name: "cv-crosscheck",
-        error: `Crosscheck failed the gate twice — nothing saved (${failure} then ${retryFailure})`,
-        severity: "high",
-        user_id: targetId ?? undefined,
-        context: { path: "gate_failed", first_assertion: failure, retry_assertion: retryFailure, purpose },
-      });
-      await finish("failed", "gate_failed");
-      return json({ ok: false, pending: true, reason: "gate_failed", assertion: retryFailure });
-    }
-  }
+  const bannedWords = await loadBannedWords(admin);
+  const usable = makeUsable(parsed, { lang, bannedWords, hasBanned, truncated });
+  const qualityNotes = [...first.changes, ...usable.notes];
+  console.log("[cv-crosscheck] quality_notes", JSON.stringify(qualityNotes));
 
-  /* Arabic style findings advise only: recorded with the result, never a retry. */
-  const styleNotes = outLang === "ar" ? arabicStyleNotes(arabicProse(parsed)) : [];
-  if (outLang === "ar") {
-    console.log("[cv-crosscheck] arabic_style_notes", styleNotes.length, JSON.stringify(styleNotes));
+  /* Arabic style findings advise only: recorded with the result. */
+  const styleNotes = lang === "ar" ? arabicStyleNotes(arabicProse(usable.result)) : [];
+  if (lang === "ar") console.log("[cv-crosscheck] arabic_style_notes", styleNotes.length, JSON.stringify(styleNotes));
+
+  logUsage({
+    findings_kept: usable.kept,
+    findings_dropped: usable.dropped,
+    ...(lang === "ar" ? { style_notes_count: styleNotes.length } : {}),
+  });
+
+  if (usable.failure) {
+    await logEfError(admin, {
+      function_name: "cv-crosscheck",
+      error: `Crosscheck not usable — nothing saved (${usable.failure})`,
+      severity: "high",
+      user_id: targetId ?? undefined,
+      context: { path: usable.failure, quality_notes: qualityNotes, purpose },
+    });
+    await finish("failed", usable.failure, { quality_notes: qualityNotes });
+    return json({ ok: false, pending: true, reason: usable.failure });
   }
 
   const crosscheck = {
-    ...parsed,
-    ...(outLang === "ar" ? { arabic_style_notes: styleNotes } : {}),
+    ...usable.result,
+    quality_notes: qualityNotes,
+    ...(lang === "ar" ? { arabic_style_notes: styleNotes } : {}),
     purpose,
-    lang: outLang,
+    lang,
     cv_count: docCount,
     model: data?.model ?? null,
     /* The model's own text alongside the parsed object, so nothing is lost. */
@@ -801,6 +648,11 @@ CORRECTION — your previous answer failed these assertions: ${failingAll.map((a
     if (writeErr) { await finish("failed", "write_failed"); return json({ error: writeErr.message }, 500); }
   }
 
-  await finish("ok", undefined, outLang === "ar" ? { style_notes_count: styleNotes.length, out_lang: outLang } : undefined);
-  return json({ ok: true, cv_count: docCount, crosscheck, lang: outLang, lang_fallback: lang === "ar" && outLang === "en" });
+  await finish("ok", undefined, {
+    quality_notes: qualityNotes,
+    findings_kept: usable.kept,
+    findings_dropped: usable.dropped,
+    ...(lang === "ar" ? { style_notes_count: styleNotes.length } : {}),
+  });
+  return json({ ok: true, cv_count: docCount, crosscheck, lang, lang_fallback: false });
 }));
