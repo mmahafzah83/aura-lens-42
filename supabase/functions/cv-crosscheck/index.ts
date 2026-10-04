@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairArabic } from "../_shared/arabicVoice.ts";
+import { normaliseCrosscheck } from "./normalise.ts";
 import { spanIsWrong, SENTENCE_SPLIT } from "./spans.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
@@ -591,45 +592,64 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
 
   const bannedWords = await loadBannedWords(admin);
 
-  /** Returns the name of the first failing assertion, or null when the result stands. */
-  function gate(result: any, l: "ar" | "en" = lang): string | null {
+  /** Every failing assertion found in one pass, in gate order (used for the correction text). */
+  function gateAll(result: any, l: "ar" | "en" = lang): string[] {
+    const out: string[] = [];
+    const add = (a: string) => { if (!out.includes(a)) out.push(a); };
     const findings: any[] = Array.isArray(result?.findings) ? result.findings : [];
-    if (!findings.length) return "findings_empty";
+    if (!findings.length) add("findings_empty");
 
     const text = allText(result).toLowerCase();
-    if (PLATITUDES.some((p) => text.includes(p))) return "no_cv_platitudes";
+    if (PLATITUDES.some((p) => text.includes(p))) add("no_cv_platitudes");
     const whole = allText(result);
     if (hasBanned(whole, bannedWords)) {
       /* Name the offending word so the single retry can actually fix it. */
       const offender = bannedWords.find((w) => hasBanned(whole, [w])) ?? "unknown";
-      return `no_banned_vocabulary: "${offender}"`;
+      add(`no_banned_vocabulary: "${offender}"`);
     }
 
     for (const f of findings) {
-      if (allText(f).split(SENTENCE_SPLIT).some(spanIsWrong)) return "numbers_recompute";
-      if (!String(f?.what ?? "").trim()) return "finding_empty_after_repair";
-      if (!String(f?.what_you_lose ?? "").trim()) return "what_you_lose_missing";
+      if (allText(f).split(SENTENCE_SPLIT).some(spanIsWrong)) add("numbers_recompute");
+      if (!String(f?.what ?? "").trim()) add("finding_empty_after_repair");
+      if (!String(f?.what_you_lose ?? "").trim()) add("what_you_lose_missing");
       const ev = f?.evidence;
-      if (!ev || !String(ev.cv_line ?? "").trim() || !String(ev.profile_line ?? "").trim()) return "evidence_missing";
-      if (f?.weight === "high" && !String(f?.rewrite ?? "").trim()) return "rewrite_missing_on_high";
-      if (f?.aura_can != null && !AURA_CAN.includes(String(f.aura_can))) return "aura_can_outside_enum";
+      if (!ev || !String(ev.cv_line ?? "").trim() || !String(ev.profile_line ?? "").trim()) add("evidence_missing");
+      if (f?.weight === "high" && !String(f?.rewrite ?? "").trim()) add("rewrite_missing_on_high");
+      if (f?.aura_can != null && !AURA_CAN.includes(String(f.aura_can))) add("aura_can_outside_enum");
     }
 
-    if (findings.filter((f) => f?.do_first === true).length !== 1) return "exactly_one_do_first";
+    if (findings.length && findings.filter((f) => f?.do_first === true).length !== 1) add("exactly_one_do_first");
 
-    if (!String(result?.the_hard_truth ?? "").trim()) return "the_hard_truth_missing";
+    if (!String(result?.the_hard_truth ?? "").trim()) add("the_hard_truth_missing");
     const recs: any[] = Array.isArray(result?.recommendations) ? result.recommendations : [];
-    if (recs.length < 3 || recs.length > 5) return "recommendations_count";
+    if (recs.length < 3 || recs.length > 5) add("recommendations_count");
     for (const r of recs) {
-      if (!String(r?.action ?? "").trim() || !String(r?.why_now ?? "").trim()) return "recommendation_incomplete";
-      if (r?.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) return "aura_can_outside_enum";
+      if (!String(r?.action ?? "").trim() || !String(r?.why_now ?? "").trim()) add("recommendation_incomplete");
+      if (r?.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) add("aura_can_outside_enum");
     }
     if (l === "ar") {
       const d = arabicGateDetail(arabicProse(result));
-      if (d) return `arabic_${d.check}: ${arabicCorrectionText(d)}`;
+      if (d) add(`arabic_${d.check}: ${arabicCorrectionText(d)}`);
     }
-    return null;
+    return out;
   }
+
+  /** Returns the name of the first failing assertion, or null when the result stands. */
+  function gate(result: any, l: "ar" | "en" = lang): string | null {
+    return gateAll(result, l)[0] ?? null;
+  }
+
+  /** Code-repairable shape fixes (do_first, recommendation count) before judging. */
+  const normaliseLog: string[] = [];
+  const normalise = (p: any, stage: string): any => {
+    if (!p) return p;
+    const { result, changes } = normaliseCrosscheck(p);
+    if (changes.length) {
+      normaliseLog.push(...changes.map((c) => `${stage}:${c}`));
+      console.log("[cv-crosscheck] normalised", stage, changes.join(","));
+    }
+    return result;
+  };
 
   /** The same clean-up the main path applies to every parsed answer. */
   const tidy = (p: any, l: "ar" | "en"): any => {
@@ -683,14 +703,17 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
   }
 
   if (lang === "ar") parsed = repairCvArabic(parsed);
+  parsed = normalise(parsed, "first");
   let failure = gate(parsed);
   if (failure) {
+    const failingAll = gateAll(parsed);
+    console.log("[cv-crosscheck] first gate failures", JSON.stringify(failingAll));
     const correction = `${userPrompt}
 
-CORRECTION — your previous answer failed the assertion "${failure}". Answer again in full, obeying every rule. Do not restate the failing content; fix it.`;
+CORRECTION — your previous answer failed these assertions: ${failingAll.map((a) => `"${a}"`).join("; ")}. Answer again in full, obeying every rule and fixing all of them together. Do not restate the failing content; fix it.`;
     const retry = await runOnce(correction);
     let retryParsed: any = retry.toolInput ?? parseJsonLoose(retry.text);
-    if (retryParsed) retryParsed = tidy(retryParsed, lang);
+    if (retryParsed) retryParsed = normalise(tidy(retryParsed, lang), "retry");
     const retryFailure = retryParsed ? gate(retryParsed) : "unparseable_on_retry";
     let english: { parsed: any; data: any; text: string; rawBody?: string } | null = null;
     if (retryFailure && lang === "ar" && retryFailure.startsWith("arabic_")) {
@@ -703,7 +726,7 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
         context: { path: "arabic_gate", first_assertion: failure.split(":")[0], retry_assertion: retryFailure.split(":")[0], purpose },
       });
       const en = await runOnce(userPrompt, "en");
-      const enParsed = tidy(en.toolInput ?? parseJsonLoose(en.text), "en");
+      const enParsed = normalise(tidy(en.toolInput ?? parseJsonLoose(en.text), "en"), "english");
       if (enParsed && !hasPlaceholderInValues(enParsed) && !gate(enParsed, "en")) {
         english = { parsed: enParsed, data: en.data, text: en.text, rawBody: en.rawBody };
       }
