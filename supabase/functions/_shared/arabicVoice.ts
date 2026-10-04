@@ -179,3 +179,67 @@ export function arabicCorrectionText(d: ArabicGateDetail): string {
   const quote = d.fragment ? ` Offending text: «${d.fragment.slice(0, 60)}».` : "";
   return `That was not usable. Failed check: ${d.check}. ${where}${word} ${WHAT[d.check]}.${quote} Apply every rule of the LANGUAGE block again.`;
 }
+
+/* ── Two classes for the long results (cv-crosscheck, brand-assessment) ──
+   HARD checks reject (the result is not Arabic at all). STYLE checks advise:
+   they are recorded with the result, never trigger a retry. mirror-read keeps
+   arabicGate / arabicGateDetail above, unchanged. */
+export const ARABIC_HARD_CHECKS: ArabicCheck[] = ["arabic_ratio", "archetype_english"];
+export const ARABIC_STYLE_CHECKS: ArabicCheck[] = [
+  "banned_word", "kaf_as", "glued_latin", "glued_digit", "anta_openers", "archetype_banned", "arabic_indic_digits",
+];
+
+const ARCHETYPE_KEYS = ["archetype", "primary_archetype", "secondary_archetype"];
+
+/** The first hard failure, or null. */
+export function arabicHardFail(
+  values: Record<string, unknown>,
+  opts: { skipKeys?: string[] } = {},
+): ArabicGateDetail | null {
+  const skip = new Set(opts.skipKeys ?? []);
+  for (const k of ARCHETYPE_KEYS) {
+    if (!skip.has(k) && typeof values[k] === "string" && /^\s*The\s/.test(values[k] as string)) {
+      return { check: "archetype_english", field: k };
+    }
+  }
+  for (const [k, v] of flatten(values, skip)) {
+    const letters = (v.match(/[\u0600-\u06FFA-Za-z]/g) ?? []).length;
+    if (letters >= PROSE_MIN_LETTERS && arabicShare(v) < 0.6) return { check: "arabic_ratio", field: k };
+  }
+  return null;
+}
+
+/** Every style finding, not just the first. */
+export function arabicStyleNotes(
+  values: Record<string, unknown>,
+  opts: { skipKeys?: string[] } = {},
+): ArabicGateDetail[] {
+  const skip = new Set(opts.skipKeys ?? []);
+  const out: ArabicGateDetail[] = [];
+  for (const k of ARCHETYPE_KEYS) {
+    if (skip.has(k) || typeof values[k] !== "string") continue;
+    const name = bare(values[k] as string);
+    const words = name.split(/\s+/);
+    for (const b of [...ARCHETYPE_BANNED_NOUNS, ...ARCHETYPE_BANNED_ADJECTIVES]) {
+      const bb = bare(b);
+      if (bb.includes(" ") ? name.includes(bb) : words.includes(bb)) out.push({ check: "archetype_banned", field: k, word: b });
+    }
+  }
+  const all = flatten(values, skip);
+  let openers = 0;
+  for (const [k, v] of all) {
+    const m = /[\u0660-\u0669]/.exec(v);
+    if (m) out.push({ check: "arabic_indic_digits", field: k, fragment: frag(v, m.index) });
+    for (const w of ARABIC_BANNED) if (wholeWord(v, w)) out.push({ check: "banned_word", field: k, word: w, fragment: frag(v, Math.max(0, v.indexOf(w))) });
+    if (new RegExp(`(^|[^${AR}])بشكل\\s+[${AR}]`, "u").test(v)) out.push({ check: "banned_word", field: k, word: "بشكل" });
+    if (new RegExp(`(^|[^${AR}])قام\\s+ب`, "u").test(v)) out.push({ check: "banned_word", field: k, word: "قام بـ" });
+    for (const w of KAF_AS) if (wholeWord(v, w)) out.push({ check: "kaf_as", field: k, word: w, fragment: frag(v, Math.max(0, v.indexOf(w))) });
+    const gl = /[\u0600-\u063F\u0641-\u06FF][A-Za-z]/.exec(v);
+    if (gl) out.push({ check: "glued_latin", field: k, fragment: frag(v, gl.index) });
+    const gd = new RegExp(`(^|[^${AR}])(و|الـ|ال)[0-9]`, "u").exec(v);
+    if (gd) out.push({ check: "glued_digit", field: k, fragment: frag(v, gd.index) });
+    for (const s of v.split(/[.؟!?\n]/)) if (/^\s*أنت\s/.test(s)) openers++;
+  }
+  if (openers > 2) out.push({ check: "anta_openers", field: "*" });
+  return out;
+}

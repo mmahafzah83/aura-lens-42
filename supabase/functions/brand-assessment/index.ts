@@ -5,7 +5,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
-import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairArabic, repairValues } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicHardFail, arabicStyleNotes, type ArabicGateDetail, arabicCorrectionText, repairArabic, repairValues } from "../_shared/arabicVoice.ts";
 
 /** Appended after the shared Arabic voice when the report is written in Arabic. */
 const ARABIC_REPORT_ADDITION = "The UPPERCASE section header lines (HOW THE MARKET SEES YOU, HOW YOU BUILD TRUST, YOUR NATURAL TONE, YOUR ONE-LINER, WHAT ONLY YOU CAN DO, THE GAP, THE SPACE NOBODY ELSE OWNS, YOUR 3 TOPICS, WHERE TO INVEST NEXT, THE HONEST TRUTH, IN YOUR OWN WORDS) and the line ---JSON--- stay exactly as written, in English: they are markers the system reads, the member never sees them. Everything under each header is Arabic. Every JSON value is Arabic; JSON keys stay English. primary_archetype and secondary_archetype follow the Arabic archetype rule, not 'The [Adjective] [Noun]'. YOUR ONE-LINER is written in the first person in Arabic. Topic titles are what a decision-maker in the member's field would type in Arabic. The member's answers and capability names below are supplied in English; read them, do not copy the English wording.";
@@ -53,8 +53,21 @@ function arabicReportCheck(text: string): { check: string; message: string } | n
   if (!obj || typeof obj !== "object") {
     return { check: "json_unreadable", message: "That was not usable. Failed check: json_unreadable. End with the line ---JSON--- followed by one valid JSON object with the exact keys given." };
   }
-  const d = arabicGateDetail(obj, { skipKeys: ["own_words_quote"] });
+  // Only hard checks reject; style findings advise (reportStyleNotes).
+  const d = arabicHardFail(obj, { skipKeys: ["own_words_quote"] });
   return d ? { check: d.check, message: arabicCorrectionText(d) } : null;
+}
+
+/** Every Arabic style finding in the JSON values; recorded, never a retry. */
+function reportStyleNotes(text: string): ArabicGateDetail[] {
+  const i = text.indexOf("---JSON---");
+  if (i < 0) return [];
+  const tail = text.slice(i + 10);
+  const a = tail.indexOf("{"), b = tail.lastIndexOf("}");
+  try {
+    const obj = a >= 0 && b > a ? JSON.parse(tail.slice(a, b + 1)) : null;
+    return obj && typeof obj === "object" ? arabicStyleNotes(obj, { skipKeys: ["own_words_quote"] }) : [];
+  } catch { return []; }
 }
 import { LIMITS, QUEUE_MESSAGE } from "../_shared/limits.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
@@ -103,8 +116,9 @@ serve(withObserve("brand-assessment", async (req) => {
     });
     const [GATHER, WRITE] = OPERATION_STAGES.market_read;
     run.mark(GATHER);
-    const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string) => {
-      try { await run.finish({ outcome, reason_code: reason_code ?? null }); }
+    const runMeta: Record<string, unknown> = { sector: sector ?? null, band: band ?? null, lang };
+    const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string, extraMeta?: Record<string, unknown>) => {
+      try { await run.finish({ outcome, reason_code: reason_code ?? null, ...(extraMeta ? { meta: { ...runMeta, ...extraMeta } } : {}) }); }
       catch (e) { console.error("[brand-assessment] run finish failed:", (e as Error)?.message); }
     };
 
@@ -384,8 +398,19 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
       return pendingResponse();
     }
 
-    await finish("ok", outLang !== lang ? "arabic_fallback" : undefined);
-    return new Response(JSON.stringify({ interpretation, pending: false, lang: outLang, lang_fallback: outLang !== lang }), {
+    const styleNotes = outLang === "ar" ? reportStyleNotes(interpretation) : [];
+    if (outLang === "ar") {
+      console.log("[brand-assessment] arabic_style_notes", styleNotes.length, JSON.stringify(styleNotes));
+      try {
+        EdgeRuntime.waitUntil(logAIUsage({
+          user_id: uid, function_name: "brand-assessment", provider: "anthropic",
+          model: data?.model ?? "claude-sonnet-4-5-20250929", input_tokens: 0, output_tokens: 0,
+          metadata: { lang: outLang, kind: "style_notes", style_notes_count: styleNotes.length },
+        }));
+      } catch (_) { /* non-blocking */ }
+    }
+    await finish("ok", outLang !== lang ? "arabic_fallback" : undefined, lang === "ar" ? { out_lang: outLang, style_notes_count: styleNotes.length } : undefined);
+    return new Response(JSON.stringify({ interpretation, pending: false, lang: outLang, lang_fallback: outLang !== lang, ...(outLang === "ar" ? { arabic_style_notes: styleNotes } : {}) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
