@@ -26,6 +26,26 @@ export interface BrandPaperProfile {
 export interface BrandPaperPlacement {
   name: string;
   score: number;
+  /** Display-only Arabic name from capability_dimensions.name_ar. */
+  name_ar?: string | null;
+}
+
+/** One capability_dimensions row: canonical English name and its Arabic. */
+export interface CapabilityNameRow { name: string; name_ar?: string | null }
+
+/**
+ * Adds the stored Arabic name to each placement. Ratings are keyed by the
+ * capability's canonical English name, so that is the join key. Display only.
+ */
+export function attachCapabilityNamesAr<T extends { name: string; name_ar?: string | null }>(
+  rows: T[], names: CapabilityNameRow[] | null | undefined,
+): T[] {
+  if (!names?.length) return rows;
+  const map = new Map(names.map((r) => [r.name.trim().toLowerCase(), (r.name_ar || "").trim()]));
+  return rows.map((r) => {
+    const ar = map.get(r.name.trim().toLowerCase());
+    return ar ? { ...r, name_ar: ar } : r;
+  });
 }
 
 /**
@@ -49,6 +69,8 @@ export interface BrandPaperExtras {
   skillRatings?: Record<string, unknown> | null;
   /** `report_snapshots.data.territories` — the topics fallback. */
   territories?: string[] | null;
+  /** capability_dimensions rows — Arabic display names for placements. */
+  capabilityNames?: CapabilityNameRow[] | null;
 }
 
 export interface BrandPaper {
@@ -309,7 +331,7 @@ export function buildBrandPaper(
 
   // GENERIC pass — whatever keys the member actually placed, in their order.
   // No legacy dimension filter: that is what dropped all eight placements.
-  const capabilities: BrandPaperPlacement[] = Object.entries(extras?.skillRatings || {})
+  const capabilitiesRaw: BrandPaperPlacement[] = Object.entries(extras?.skillRatings || {})
     .map(([name, raw]) => {
       const n = typeof raw === "number" ? raw : Number(raw);
       if (!Number.isFinite(n)) return null;
@@ -319,6 +341,7 @@ export function buildBrandPaper(
       return { name: stripMd(pretty), score: Math.round(Math.max(0, Math.min(100, n))) };
     })
     .filter((x): x is BrandPaperPlacement => !!x && !!x.name);
+  const capabilities = attachCapabilityNamesAr(capabilitiesRaw, extras?.capabilityNames);
 
   return {
     primary_archetype,

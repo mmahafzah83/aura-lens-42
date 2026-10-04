@@ -429,7 +429,7 @@ function TopicBlock({ n, title, description, lang }: { n: string; title: string;
         background: T.ink, color: T.paper,
         fontFamily: FONT.mono, fontSize: 18, fontWeight: 700,
         display: "flex", alignItems: "center", justifyContent: "center",
-        height: 46, letterSpacing: "0.04em",
+        height: 46, letterSpacing: lang === "ar" ? 0 : "0.04em",
       }}>{n}</div>
       <div>
         <div style={{ ...arStyle(lang, {

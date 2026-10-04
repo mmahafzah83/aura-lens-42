@@ -824,6 +824,7 @@ export function CapabilityDotPlot({ data, lang = "en" }: { data: CapabilitiesSec
         const pct = Math.max(0, Math.min(100, d.score));
         const x = mx(railStart + (railW * pct) / 100);
         const low = d.score < 50;
+        const label = ar && d.name_ar ? d.name_ar : d.name;
         return (
           <g key={d.name}>
             <text
@@ -831,12 +832,12 @@ export function CapabilityDotPlot({ data, lang = "en" }: { data: CapabilitiesSec
               y={y + 4}
               textAnchor="end"
               direction={ar ? "rtl" : undefined}
-              fontFamily={ar && /[\u0600-\u06FF]/.test(d.name) ? AR_FONT : FONT.mono}
+              fontFamily={ar && /[\u0600-\u06FF]/.test(label) ? AR_FONT : FONT.mono}
               fontSize={11}
               fontWeight={low ? 700 : 500}
               fill={low ? T.spot : T.ink}
             >
-              {d.name}
+              {label}
             </text>
             <line x1={mx(railStart)} y1={y} x2={mx(railEnd)} y2={y} stroke={T.rule} strokeWidth={3} />
             {low ? (

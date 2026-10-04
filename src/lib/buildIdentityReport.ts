@@ -92,7 +92,7 @@ export interface BrandPositionSection {
   pillars: string[];
 }
 
-export type CapabilitiesSection = { name: string; score: number }[];
+export type CapabilitiesSection = { name: string; score: number; name_ar?: string | null }[];
 
 export interface MarketMirrorPerspective {
   who: string;
@@ -212,6 +212,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     frameworkRowsRes,
     voiceRes,
     connRes,
+    capNamesRes,
   ] = await Promise.all([
     (supabase.from("diagnostic_profiles" as any) as any)
       .select(
@@ -561,6 +562,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
               ? p.skill_ratings
               : null),
             territories: territoriesList,
+            capabilityNames: capabilityNameRows,
           },
         )
       : null,
