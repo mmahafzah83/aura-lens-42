@@ -912,6 +912,7 @@
   "assess.resume.startNew": "Start a new one",
   "assess.resume.trust": "This replaces the read above.",
   "assess.read.saved": "Your read is saved.",
+  "assess.read.langFallback": "This read is in English this time. The Arabic version isn't ready yet.",
   "assess.read.moment_one": "{{seconds}} seconds ago KnownBy had never heard of you.",
   "assess.read.moment_other": "{{seconds}} seconds ago KnownBy had never heard of you.",
   "assess.read.posts_one": "Here is what your last {{count}} posts say to the market.",
