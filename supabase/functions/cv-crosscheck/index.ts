@@ -11,6 +11,7 @@ import { isAdmin } from "../_shared/adminRole.ts";
 import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
 import { CORPUS_COLUMNS, isOwnWriting } from "../_shared/voiceCorpus.ts";
 import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
+import { vocabText } from "./vocabText.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -485,7 +486,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     },
   } as const;
 
-  const callAnthropic = (prompt: string, system: string) => fetch("https://api.anthropic.com/v1/messages", {
+  const callAnthropic = (prompt: string, system: string, l: "ar" | "en") => fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": ANTHROPIC_API_KEY,
@@ -494,7 +495,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-5-20250929",
-      max_tokens: 3000,
+      max_tokens: l === "ar" ? 6000 : 4000,
       system,
       messages: [{ role: "user", content: prompt }],
       tools: [CROSSCHECK_TOOL],
@@ -504,8 +505,8 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
 
   /* Stage two opens: the model comparing the CV against the profile. */
   run?.mark(OPERATION_STAGES.cv_crosscheck[1]);
-  const runOnce = async (prompt: string, l: "ar" | "en" = lang) => {
-    const resp = await callAnthropic(prompt, l === "ar" ? ARABIC_CV_SYSTEM : SYSTEM_PROMPT);
+  const runOnce = async (prompt: string, l: "ar" | "en" = lang, attempt: "first" | "retry" | "english" = "first") => {
+    const resp = await callAnthropic(prompt, l === "ar" ? ARABIC_CV_SYSTEM : SYSTEM_PROMPT, l);
     const rawBody = await resp.text();
     if (!resp.ok) {
       await logEfError(admin, {
@@ -525,10 +526,10 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
           model: "claude-sonnet-4-5-20250929",
           success: false,
           error_code: `http_${resp.status}`,
-          metadata: { lang: l },
+          metadata: { lang: l, attempt, stop_reason: null },
         }));
       } catch (_) { /* non-blocking */ }
-      return { data: null as any, text: "" };
+      return { data: null as any, text: "", truncated: false };
     }
     const data = JSON.parse(rawBody);
     const blocks: any[] = Array.isArray(data.content) ? data.content : [];
@@ -543,11 +544,12 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
         model: data.model,
         input_tokens: data.usage?.input_tokens,
         output_tokens: data.usage?.output_tokens,
-        metadata: { lang: l },
+        metadata: { lang: l, attempt, stop_reason: data.stop_reason ?? null },
       }));
     } catch (_) { /* non-blocking */ }
     /* Raw text is kept so a future parse failure is recoverable, not lost. */
-    return { data, text, toolInput, rawBody };
+    console.log("[cv-crosscheck] call", attempt, l, "out_tokens", data.usage?.output_tokens, "stop", data.stop_reason);
+    return { data, text, toolInput, rawBody, truncated: data.stop_reason === "max_tokens" };
   };
 
   /** Placeholders are only meaningful inside the model's own sentences. */
@@ -599,9 +601,10 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     const findings: any[] = Array.isArray(result?.findings) ? result.findings : [];
     if (!findings.length) add("findings_empty");
 
-    const text = allText(result).toLowerCase();
+    /* Verbatim quotes (evidence lines) are the member's own words, not ours. */
+    const whole = vocabText(result);
+    const text = whole.toLowerCase();
     if (PLATITUDES.some((p) => text.includes(p))) add("no_cv_platitudes");
-    const whole = allText(result);
     if (hasBanned(whole, bannedWords)) {
       /* Name the offending word so the single retry can actually fix it. */
       const offender = bannedWords.find((w) => hasBanned(whole, [w])) ?? "unknown";
@@ -635,8 +638,8 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
   }
 
   /** Returns the name of the first failing assertion, or null when the result stands. */
-  function gate(result: any, l: "ar" | "en" = lang): string | null {
-    return gateAll(result, l)[0] ?? null;
+  function gate(result: any, l: "ar" | "en" = lang, truncated = false): string | null {
+    return truncated ? "truncated_output" : (gateAll(result, l)[0] ?? null);
   }
 
   /** Code-repairable shape fixes (do_first, recommendation count) before judging. */
@@ -663,14 +666,15 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
   };
   let outLang: "ar" | "en" = lang;
 
-  let { data, text, toolInput, rawBody } = await runOnce(userPrompt);
+  let { data, text, toolInput, rawBody, truncated } = await runOnce(userPrompt, lang, "first");
   let parsed: any = toolInput ?? parseJsonLoose(text);
 
   if (!parsed || hasPlaceholderInValues(parsed)) {
     const correction = `${userPrompt}
 
 CORRECTION — your previous attempt was not a single valid JSON object, or contained a bracketed placeholder. Output the JSON object only, with real values drawn from the material above. No code fences, no commentary, no square-bracket placeholders.`;
-    const retry = await runOnce(correction);
+    const retry = await runOnce(correction, lang, "retry");
+    truncated = retry.truncated;
     if (retry.data) { data = retry.data; text = retry.text; rawBody = retry.rawBody; }
     parsed = retry.toolInput ?? parseJsonLoose(retry.text);
     if (!parsed || hasPlaceholderInValues(parsed)) {
@@ -704,17 +708,18 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
 
   if (lang === "ar") parsed = repairCvArabic(parsed);
   parsed = normalise(parsed, "first");
-  let failure = gate(parsed);
+  let failure = gate(parsed, lang, truncated);
   if (failure) {
     const failingAll = gateAll(parsed);
+    if (truncated) failingAll.unshift("truncated_output");
     console.log("[cv-crosscheck] first gate failures", JSON.stringify(failingAll));
     const correction = `${userPrompt}
 
-CORRECTION — your previous answer failed these assertions: ${failingAll.map((a) => `"${a}"`).join("; ")}. Answer again in full, obeying every rule and fixing all of them together. Do not restate the failing content; fix it.`;
-    const retry = await runOnce(correction);
+CORRECTION — your previous answer failed these assertions: ${failingAll.map((a) => `"${a}"`).join("; ")}. Answer again in full, obeying every rule and fixing all of them together. Do not restate the failing content; fix it.${failingAll.some((a) => a.startsWith("no_banned_vocabulary")) ? " Replace the word; do not quote it back." : ""}`;
+    const retry = await runOnce(correction, lang, "retry");
     let retryParsed: any = retry.toolInput ?? parseJsonLoose(retry.text);
     if (retryParsed) retryParsed = normalise(tidy(retryParsed, lang), "retry");
-    const retryFailure = retryParsed ? gate(retryParsed) : "unparseable_on_retry";
+    const retryFailure = retryParsed ? gate(retryParsed, lang, retry.truncated) : "unparseable_on_retry";
     let english: { parsed: any; data: any; text: string; rawBody?: string } | null = null;
     if (retryFailure && lang === "ar" && retryFailure.startsWith("arabic_")) {
       /* Arabic unusable after the one correction: record it, write English once. */
@@ -725,9 +730,9 @@ CORRECTION — your previous answer failed these assertions: ${failingAll.map((a
         user_id: targetId ?? undefined,
         context: { path: "arabic_gate", first_assertion: failure.split(":")[0], retry_assertion: retryFailure.split(":")[0], purpose },
       });
-      const en = await runOnce(userPrompt, "en");
+      const en = await runOnce(userPrompt, "en", "english");
       const enParsed = normalise(tidy(en.toolInput ?? parseJsonLoose(en.text), "en"), "english");
-      if (enParsed && !hasPlaceholderInValues(enParsed) && !gate(enParsed, "en")) {
+      if (enParsed && !hasPlaceholderInValues(enParsed) && !gate(enParsed, "en", en.truncated)) {
         english = { parsed: enParsed, data: en.data, text: en.text, rawBody: en.rawBody };
       }
     }
