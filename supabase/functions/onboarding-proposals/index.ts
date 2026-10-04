@@ -4,6 +4,7 @@
  * drop are recorded, because a rejection is a signal too.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { ARABIC_VOICE_BLOCK, repairArabic, arabicShare } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +33,7 @@ Deno.serve(async (req) => {
     const claims: string[] = Array.isArray(body?.claims) ? body.claims.slice(0, 8).map(String) : [];
     const sector = typeof body?.sector === "string" ? body.sector : "";
     const level = typeof body?.level === "string" ? body.level : "";
+    const lang: "ar" | "en" = body?.ui_lang === "ar" ? "ar" : "en";
 
     let excerpts: string[] = [];
 
@@ -90,7 +92,10 @@ Deno.serve(async (req) => {
       "Propose exactly 3 distinct spaces this person could credibly own in their market — each grounded in the evidence above, not generic.",
       "Each option: a short name (max 5 words) and one sentence of why it fits them, in plain English, second person.",
       'Return ONLY JSON: {"options":[{"label":"...","why":"..."},{"label":"...","why":"..."},{"label":"...","why":"..."}]}',
-    ].filter(Boolean).join("\n");
+    ].filter(Boolean).join("\n")
+      + (lang === "ar"
+        ? "\nWrite label and why in Arabic. label: 2 to 5 Arabic words, a space this person could be known for — not a job title. why: one Arabic sentence addressed to the reader through the verb (do not start with «أنت»).\n\n" + ARABIC_VOICE_BLOCK
+        : "");
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -117,6 +122,12 @@ Deno.serve(async (req) => {
           .filter((o: any) => o.label)
           .slice(0, 3);
       } catch { /* fall through to empty */ }
+    }
+    if (lang === "ar") {
+      options = options.map((o) => ({ label: repairArabic(o.label), why: repairArabic(o.why) }));
+      const first = options[0];
+      const arabic = !!first && arabicShare(first.label) > 0.5 && arabicShare(first.why) > 0.5;
+      return json({ options, lang: arabic ? "ar" : "en" });
     }
     return json({ options });
   } catch (e) {
