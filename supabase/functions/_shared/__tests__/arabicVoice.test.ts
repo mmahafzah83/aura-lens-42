@@ -26,13 +26,10 @@ describe("arabicGate", () => {
     expect(gate({ honest_gap: "قدت ٢٠ مشروعًا دون أن تكتب عنها." })).toBe("arabic_indic_digits");
   });
   it("banned_word", () => {
-    expect(gate({ honest_gap: "تمكنت من قيادة فرق كبيرة دون أن تذكرها." })).toBe("banned_word"); // «من خلال»-free, but «تمكنت» ≠ «تم»
-  });
-  it("banned_word — standalone «تم» fails, inside a word passes, «حيث» not gated", () => {
-    expect(gate({ honest_gap: "تمكنت من قيادة فرق كبيرة دون أن تذكرها." === "" ? "" : "قدت فرقًا كبيرة حيث لم يرك أحد." })).toBeNull();
+    expect(gate({ honest_gap: "تمكنت من قيادة فرق كبيرة حيث لم يرك أحد." })).toBeNull();
     expect(gate({ honest_gap: "تم ذكر خبرتك قليلًا." })).toBe("banned_word");
-    expect(gate({ honest_gap: "تعمل بشكل واضح." })).toBe("banned_word");
-    expect(gate({ honest_gap: "يُعدّ هذا مهمًا لك." })).toBe("banned_word");
+    expect(gate({ honest_gap: "تعمل بشكل واضح مع الفرق." })).toBe("banned_word");
+    expect(gate({ honest_gap: "يُعدّ هذا مهمًا لك في عملك." })).toBe("banned_word");
     expect(gate({ own_words_quote: "تم إنجاز المشروع." })).toBeNull();
   });
   it("kaf_as", () => {
