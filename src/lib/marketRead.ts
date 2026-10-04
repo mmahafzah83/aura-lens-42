@@ -245,6 +245,7 @@ export async function generateMarketRead(
     const rl = (data as any)?.lang;
     if (rl === "ar" || rl === "en") results.lang = rl;
     if ((data as any)?.lang_fallback === true) results.lang_fallback = true;
+    if (Array.isArray((data as any)?.arabic_style_notes)) results.arabic_style_notes = (data as any).arabic_style_notes;
     const pillars = derivePillars(results);
 
     await writeProfile(userId, {
