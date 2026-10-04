@@ -46,7 +46,7 @@ describe("figures guard", () => {
   it("drops defensibility item 2 only, keeps the headline", () => {
     const out = run({ findings: [F({ rewrite: RW2 })], defensibility: [D1, D2, D3], headline_suggestion: HL });
     expect(out.result.defensibility).toEqual([D1, D3]);
-    expect(out.notes).toContain("dropped_defensibility:unsupported_figure:180");
+    expect(out.notes).toContain("dropped_defensibility:unsupported_figure:4,180");
     expect(out.defensibilityDropped).toBe(1);
     expect(out.result.headline_suggestion).toBe(HL);
   });
