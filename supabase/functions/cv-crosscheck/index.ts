@@ -40,6 +40,8 @@ OWNERSHIP RULE — when a figure describes organisational, portfolio or firm-lev
 
 FIGURES RULE — every number in rewrite, in headline_suggestion and in any ready-to-use sentence you offer inside defensibility must already appear in the material supplied below. Never supply an example figure, an estimate or a plausible-looking number. If the reader needs a figure the material does not contain, do not write a rewrite for that finding: say in do_this exactly which figure the person should add, and leave rewrite out.
 
+FACTS RULE — a rewrite and a headline_suggestion may only restate facts that are already in the material supplied below, in better words. Never add a reason, a cause, a motive, a circumstance, a description of the employer, a future intention or a claim about what the person is looking for, unless the material states it. If the line needs a fact the material does not contain, do not write the rewrite: say in do_this exactly what the person should add, and leave rewrite out.
+
 THE EVIDENCE LADDER — every \`defensibility\` entry must resolve to exactly one of three rungs and must say which: "Defensible now" (cite the captured fragment that proves it), "Defensible with one more detail" (name the single detail needed), or "Not defensible" (give the softened line, written out). Attacking a claim is free; telling someone how to keep it is the work.
 
 READING THE SHAPE — in \`reading_the_shape\`, name what a board member will notice first about the career's shape. One sentence, or null if nothing stands out.

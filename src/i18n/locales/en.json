@@ -1230,6 +1230,7 @@
   "cvx.headline": "A headline built from this",
   "cvx.seeHeadline": "See the suggested headline",
   "cvx.copyHeadline": "Copy suggested headline",
+  "cvx.checkFacts": "Suggested wording. Check every fact before you use it.",
   "cvx.copyRewrite": "Copy rewrite",
   "cvx.useLine": "Use this line",
   "cvx.showLines": "Show the two lines",
