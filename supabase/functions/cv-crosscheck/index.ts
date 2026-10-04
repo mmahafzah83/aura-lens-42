@@ -38,6 +38,8 @@ ARITHMETIC — never assert a span of years you have not computed from the two d
 
 OWNERSHIP RULE — when a figure describes organisational, portfolio or firm-level scale, do not treat it as the person's personal result unless the material shows they owned it. Put every such claim in \`defensibility\` with the qualifier they should add before using it publicly. Never place an unqualified firm-level figure in headline_suggestion.
 
+FIGURES RULE — every number in rewrite, in headline_suggestion and in any ready-to-use sentence you offer inside defensibility must already appear in the material supplied below. Never supply an example figure, an estimate or a plausible-looking number. If the reader needs a figure the material does not contain, do not write a rewrite for that finding: say in do_this exactly which figure the person should add, and leave rewrite out.
+
 THE EVIDENCE LADDER — every \`defensibility\` entry must resolve to exactly one of three rungs and must say which: "Defensible now" (cite the captured fragment that proves it), "Defensible with one more detail" (name the single detail needed), or "Not defensible" (give the softened line, written out). Attacking a claim is free; telling someone how to keep it is the work.
 
 READING THE SHAPE — in \`reading_the_shape\`, name what a board member will notice first about the career's shape. One sentence, or null if nothing stands out.
@@ -600,7 +602,9 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
   parsed = first.result;
 
   const bannedWords = await loadBannedWords(admin);
-  const usable = makeUsable(parsed, { lang, bannedWords, hasBanned, truncated });
+  /* The member's own material, exactly as put into the user prompt. */
+  const figureSource = [cvText, profileText, postsText, fragmentsText, recsText].join("\n");
+  const usable = makeUsable(parsed, { lang, bannedWords, hasBanned, truncated, source: figureSource });
   const qualityNotes = [...first.changes, ...usable.notes];
   console.log("[cv-crosscheck] quality_notes", JSON.stringify(qualityNotes));
 
@@ -611,6 +615,8 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
   logUsage({
     findings_kept: usable.kept,
     findings_dropped: usable.dropped,
+    rewrites_removed: usable.rewritesRemoved,
+    defensibility_dropped: usable.defensibilityDropped,
     ...(lang === "ar" ? { style_notes_count: styleNotes.length } : {}),
   });
 
