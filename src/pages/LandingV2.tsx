@@ -1058,12 +1058,12 @@ const YEAR_AR = (t: LandingStrings) => `<svg viewBox="0 0 900 250" fill="none">
     </g>
       <text x="890" y="20" font-family="CairoAR, Cairo, sans-serif" font-size="10.1" fill="#9AA4B0" text-anchor="start" direction="rtl">${t.yrToday}</text>
       <text x="870" y="61" font-family="CairoAR, Cairo, sans-serif" font-size="17.9" font-weight="700" fill="#FFFFFF" id="dHours" text-anchor="start" direction="rtl">${t.yrHours}</text>
-      <text x="760" y="63" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="24" font-weight="600" fill="#C0392B" direction="ltr">0</text>
+      <text x="140" y="63" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="24" font-weight="600" fill="#C0392B" direction="ltr">0</text>
       <text x="98" y="59" font-family="CairoAR, Cairo, sans-serif" font-size="13.4" fill="#66707D" text-anchor="start" direction="rtl">${t.yrWritten}</text>
       <text x="890" y="100" font-family="CairoAR, Cairo, sans-serif" font-size="10.6" fill="#C0392B" id="dCost" text-anchor="start" direction="rtl">${t.yrCost}</text>
       <text x="890" y="152" font-family="CairoAR, Cairo, sans-serif" font-size="10.1" fill="#00807B" text-anchor="start" direction="rtl">${t.yrWith}</text>
       <text x="870" y="193" font-family="CairoAR, Cairo, sans-serif" font-size="17.9" font-weight="700" fill="#0F1519" id="dHours2" text-anchor="start" direction="rtl">${t.yrSame}</text>
-      <text x="760" y="195" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="20" font-weight="600" fill="#00CEC9" direction="ltr">50+</text>
+      <text x="140" y="195" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="20" font-weight="600" fill="#00CEC9" direction="ltr">50+</text>
       <text x="98" y="184" font-family="CairoAR, Cairo, sans-serif" font-size="13.4" fill="#66707D" text-anchor="start" direction="rtl">${t.yrP1}</text>
       <text x="98" y="200" font-family="CairoAR, Cairo, sans-serif" font-size="13.4" fill="#66707D" text-anchor="start" direction="rtl">${t.yrP2}</text>
     </svg>`;
