@@ -11,6 +11,21 @@ import { AuraLogo } from "@/components/brand/AuraLogo";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
 import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
+import { pt, arStyle, AR_FONT, type PaperLang } from "@/components/report/paperText";
+
+/** Keeps a Latin run (KnownBy, a domain) in its own direction inside Arabic. */
+export function LatinIsolate({ children }: { children: React.ReactNode }) {
+  return <span dir="ltr" style={{ unicodeBidi: "isolate" }}>{children}</span>;
+}
+
+/** Renders a fixed string, isolating every "KnownBy" so bidi cannot flip it. */
+export function withLatin(text: string, lang: PaperLang): React.ReactNode {
+  if (lang !== "ar" || !text.includes("KnownBy")) return text;
+  const parts = text.split("KnownBy");
+  return parts.map((p, i) => (
+    <React.Fragment key={i}>{p}{i < parts.length - 1 ? <LatinIsolate>KnownBy</LatinIsolate> : null}</React.Fragment>
+  ));
+}
 
 // ── Tokens (System-A) ──────────────────────────────────────────────────
 export const T = {
@@ -44,7 +59,7 @@ function todayLabel(iso: string): string {
 }
 
 // ── PaperHeader ────────────────────────────────────────────────────────
-export function PaperHeader({ label }: { label: string }) {
+export function PaperHeader({ label, lang = "en" }: { label: string; lang?: PaperLang }) {
   return (
     <div
       style={{
@@ -58,27 +73,29 @@ export function PaperHeader({ label }: { label: string }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, color: T.ink }}>
         <AuraLogo size={34} variant="light" />
         <span
+          dir={lang === "ar" ? "ltr" : undefined}
           style={{
             fontFamily: FONT.serif,
             fontSize: 20,
             fontWeight: 500,
-            letterSpacing: "0.06em",
+            letterSpacing: lang === "ar" ? 0 : "0.06em",
             color: T.ink,
             lineHeight: 1,
+            ...(lang === "ar" ? { unicodeBidi: "isolate" as const } : {}),
           }}
         >
           KnownBy
         </span>
       </div>
       <span
-        style={{
+        style={arStyle(lang, {
           fontFamily: FONT.mono,
           fontSize: 10.5,
           fontWeight: 700,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
           color: T.ink2,
-        }}
+        })}
       >
         {label}
       </span>
@@ -88,8 +105,12 @@ export function PaperHeader({ label }: { label: string }) {
 
 // ── PaperFooter ────────────────────────────────────────────────────────
 export function PaperFooter({
-  n, total, paperTitle = "The KnownBy Paper № 01",
-}: { n: number; total: number; paperTitle?: string }) {
+  n, total, paperTitle = "The KnownBy Paper № 01", lang = "en", showDescriptor = true,
+}: {
+  n: number; total: number; paperTitle?: string; lang?: PaperLang;
+  /** false drops the product descriptor line (the downloadable brand paper). */
+  showDescriptor?: boolean;
+}) {
   const ticks = Array.from({ length: total }, (_, i) => (
     <span
       key={i}
@@ -99,7 +120,7 @@ export function PaperFooter({
         width: 22,
         height: 5,
         background: i === n - 1 ? T.spot : T.paper3,
-        marginRight: i === total - 1 ? 0 : 4,
+        marginInlineEnd: i === total - 1 ? 0 : 4,
       }}
     />
   ));
@@ -115,16 +136,16 @@ export function PaperFooter({
         }}
       >
         <span
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.mono,
             fontSize: 10.5,
             fontWeight: 600,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             color: T.ink,
-          }}
+          })}
         >
-          {paperTitle}
+          {withLatin(paperTitle, lang)}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center" }}>{ticks}</span>
         <span
@@ -137,12 +158,23 @@ export function PaperFooter({
             fontFamily: FONT.mono,
             fontSize: 11.5,
             fontWeight: 700,
-            letterSpacing: "0.12em",
+            letterSpacing: lang === "ar" ? 0 : "0.12em",
             padding: "4px 10px",
           }}
         >
-          <span style={{ color: T.action }}>PAGE {pad2(n)}</span>
-          <span style={{ color: T.paper }}> / {pad2(total)}</span>
+          {lang === "ar" ? (
+            <span dir="rtl" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+              <span style={{ color: T.action, fontFamily: AR_FONT, lineHeight: 1.7 }}>{pt(lang, "paper.page")}</span>
+              <span dir="ltr" style={{ unicodeBidi: "isolate", color: T.paper }}>
+                <span style={{ color: T.action }}>{pad2(n)}</span> / {pad2(total)}
+              </span>
+            </span>
+          ) : (
+            <>
+              <span style={{ color: T.action }}>PAGE {pad2(n)}</span>
+              <span style={{ color: T.paper }}> / {pad2(total)}</span>
+            </>
+          )}
         </span>
       </div>
       <div
@@ -153,17 +185,21 @@ export function PaperFooter({
           alignItems: "center",
           fontFamily: FONT.mono,
           fontSize: 10.5,
-          letterSpacing: "0.10em",
-          textTransform: "uppercase",
+          letterSpacing: lang === "ar" ? 0 : "0.10em",
+          textTransform: lang === "ar" ? "none" : "uppercase",
           color: T.ink2,
         }}
       >
-        <span>aura-intel.org</span>
+        <span dir={lang === "ar" ? "ltr" : undefined}>aura-intel.org</span>
         <span>
-          {PRODUCT_DESCRIPTOR}
-          <span style={{ margin: "0 8px", color: T.spot }}>·</span>
+          {showDescriptor ? (
+            <>
+              {PRODUCT_DESCRIPTOR}
+              <span style={{ margin: "0 8px", color: T.spot }}>·</span>
+            </>
+          ) : null}
           <span
-            style={{ fontFamily: FONT.arabic, textTransform: "none", letterSpacing: "normal" }}
+            style={{ fontFamily: FONT.arabic, textTransform: "none", letterSpacing: lang === "ar" ? 0 : "normal", lineHeight: lang === "ar" ? 1.7 : undefined }}
             dir="rtl"
             lang="ar"
           >
@@ -452,8 +488,9 @@ function MetaCell({ label, value, sub }: { label: string; value: string; sub?: s
 
 // ── PaperFigure ────────────────────────────────────────────────────────
 export function PaperFigure({
-  index, label, meta, findingBold, findingRest, children,
+  index, label, meta, findingBold, findingRest, children, lang = "en",
 }: {
+  lang?: PaperLang;
   index: number;
   label: string;         // e.g. "THE IMPRINT INSTRUMENT"
   meta?: string;
@@ -473,26 +510,26 @@ export function PaperFigure({
         }}
       >
         <span
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.mono,
             fontSize: 10.5,
             fontWeight: 700,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: T.spot,
-          }}
+          })}
         >
-          Figure {index} · {label}
+          {lang === "ar" ? pt(lang, "paper.figure") : "Figure"} {index} · {label}
         </span>
         {meta ? (
           <span
-            style={{
+            style={arStyle(lang, {
               fontFamily: FONT.mono,
               fontSize: 10.5,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
               color: T.ink2,
-            }}
+            })}
           >
             {meta}
           </span>
@@ -500,9 +537,9 @@ export function PaperFigure({
       </div>
       <div style={{ padding: "18px 18px" }}>{children}</div>
       <div style={{ borderTop: `1px solid ${T.rule}`, background: T.paper, padding: "10px 14px" }}>
-        <span style={{ fontFamily: FONT.mono, fontSize: 12, color: T.ink, fontWeight: 700 }}>{findingBold}</span>
+        <span style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 12, color: T.ink, fontWeight: 700 })}>{findingBold}</span>
         {findingRest ? (
-          <span style={{ fontFamily: FONT.mono, fontSize: 12, color: T.ink2, fontWeight: 400 }}>
+          <span style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 12, color: T.ink2, fontWeight: 400 })}>
             {" "}{findingRest}
           </span>
         ) : null}
