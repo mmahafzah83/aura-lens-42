@@ -17,11 +17,27 @@ const recs = (n: number) => Array.from({ length: n }, (_, i) => ({ action: `Act 
 const base = (o: Record<string, unknown> = {}) => ({ headline_finding: "Lead.", the_hard_truth: "Truth.", recommendations: recs(3), ...o });
 
 describe("makeUsable", () => {
-  it("drops a finding without evidence", () => {
+  it("keeps a finding with one blank evidence side, no note", () => {
     const out = makeUsable(base({ findings: [F(), F({ evidence: { cv_line: "x", profile_line: "" } })] }), opts());
+    expect(out.result.findings).toHaveLength(2);
+    expect(out.notes).not.toContain("evidence_both_absent");
+  });
+  it("keeps a finding with both evidence sides Absent, with a note", () => {
+    const out = makeUsable(base({ findings: [F({ evidence: { cv_line: "Absent", profile_line: "Absent" } })] }), opts());
     expect(out.result.findings).toHaveLength(1);
-    expect(out.notes).toContain("dropped_finding:evidence_missing");
-    expect(out.dropped).toBe(1);
+    expect(out.notes).toContain("evidence_both_absent");
+  });
+  it("rewrite \"Absent\" on a high finding becomes null and medium", () => {
+    const out = makeUsable(base({ findings: [F({ weight: "high", rewrite: "Absent" })] }), opts("en"));
+    expect(out.result.findings[0].rewrite).toBeNull();
+    expect(out.result.findings[0].weight).toBe("medium");
+    expect(out.notes).toContain("downgraded:rewrite_missing");
+  });
+  it("drops an empty defensibility item and blank headline_suggestion", () => {
+    const out = makeUsable(base({ findings: [F()], defensibility: ["قابل للدفاع الآن", ""], headline_suggestion: "N/A" }), opts());
+    expect(out.result.defensibility).toEqual(["قابل للدفاع الآن"]);
+    expect(out.notes).toContain("dropped_blank:defensibility");
+    expect(out.result.headline_suggestion).toBeNull();
   });
   it("high-weight finding without rewrite becomes medium and stays", () => {
     const out = makeUsable(base({ findings: [F({ weight: "high" })] }), opts());

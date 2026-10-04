@@ -61,6 +61,12 @@ export type UsableOut = {
 
 const s = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
+/** Placeholder words a model writes instead of leaving a field empty. */
+const BLANK_WORDS = new Set(["", "absent", "null", "none", "n/a", "-"]);
+export function isBlankValue(v: unknown): boolean {
+  return v == null || (typeof v === "string" && BLANK_WORDS.has(v.trim().toLowerCase()));
+}
+
 export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   const notes: string[] = [];
   if (opts.truncated) notes.push("truncated_output");
@@ -78,10 +84,12 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     let why: string | null = null;
     if (!f || !s(f.what)) why = "what_empty";
     else if (!s(f.what_you_lose)) why = "what_you_lose_missing";
-    else if (!f.evidence || !s(f.evidence.cv_line) || !s(f.evidence.profile_line)) why = "evidence_missing";
     else if (offends(scan({ findings: [f] }))) why = "banned_or_platitude";
     else if (allText(f).split(SENTENCE_SPLIT).some(spanIsWrong)) why = "span_wrong";
     if (why) { notes.push(`dropped_finding:${why}`); continue; }
+    /* "Absent" on one side is a real reading; both sides blank happens when the finding comes from posts. */
+    if (isBlankValue(f.evidence?.cv_line) && isBlankValue(f.evidence?.profile_line)) notes.push("evidence_both_absent");
+    if (isBlankValue(f.rewrite)) f.rewrite = null;
     if (f.aura_can != null && !AURA_CAN.includes(String(f.aura_can))) { delete f.aura_can; notes.push("removed:finding_aura_can"); }
     if (f.weight === "high" && !s(f.rewrite)) { f.weight = "medium"; notes.push("downgraded:rewrite_missing"); }
     kept.push(f);
@@ -105,6 +113,9 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   if (!s(p.the_hard_truth)) { if (p.the_hard_truth !== null) notes.push("nulled:the_hard_truth"); p.the_hard_truth = null; }
   for (const k of ["defensibility", "cv_is_behind"]) {
     if (!Array.isArray(p[k])) continue;
+    const nAll = p[k].length;
+    p[k] = p[k].filter((x: unknown) => !isBlankValue(x));
+    if (p[k].length < nAll) notes.push(`dropped_blank:${k}`);
     const n = p[k].length;
     p[k] = p[k].filter((x: unknown) => !(proseScanned && typeof x === "string" && offends(x)));
     if (p[k].length < n) notes.push(`dropped_item:${k}:${n - p[k].length}`);
@@ -112,6 +123,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   for (const k of ["the_hard_truth", "profile_vs_voice", "reading_the_shape", "peer_comparison"]) {
     if (proseScanned && typeof p[k] === "string" && offends(p[k])) { p[k] = null; notes.push(`nulled:${k}`); }
   }
+  if (p.headline_suggestion !== undefined && isBlankValue(p.headline_suggestion)) p.headline_suggestion = null;
   if (typeof p.headline_suggestion === "string" && offends(p.headline_suggestion)) { p.headline_suggestion = null; notes.push("nulled:headline_suggestion"); }
 
   if (!kept.length) return { result: p, notes, kept: 0, dropped: before.length, failure: "no_usable_findings" };
