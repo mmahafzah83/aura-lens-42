@@ -3,14 +3,12 @@ import html2canvas from "html2canvas";
 import NewDoc from "@/components/report/BrandPaperDocument";
 import OldDoc from "./old/report/BrandPaperDocument";
 import { attachCapabilityNamesAr } from "@/lib/buildBrandPaper";
-import { supabase } from "@/integrations/supabase/client";
-(window as any).renderPaper = async (paper: any, which: "new" | "old") => {
+(window as any).renderPaper = async (paper: any, which: "new" | "old", names: any[]) => {
   const el = document.createElement("div");
   el.style.cssText = "position:absolute;left:0;top:0;width:794px;background:#fff";
   document.body.innerHTML = ""; document.body.appendChild(el);
   if (which === "new") {
-    const { data } = await (supabase.from("capability_dimensions" as any) as any).select("name, name_ar");
-    paper = { ...paper, capabilities: attachCapabilityNamesAr(paper.capabilities || [], data || []) };
+    paper = { ...paper, capabilities: attachCapabilityNamesAr(paper.capabilities || [], names) };
   }
   const D: any = which === "new" ? NewDoc : OldDoc;
   createRoot(el).render(<D paper={paper} showClosing={false} />);
