@@ -345,6 +345,8 @@ Deno.serve(async (req) => {
      * untouched, so a forced read costs exactly what any fresh read costs.
      */
     const force = body?.force === true;
+    /** The language the visitor was using. Anything but "ar" is English. */
+    const lang: "ar" | "en" = body?.ui_lang === "ar" ? "ar" : "en";
 
     const fwd = req.headers.get("x-forwarded-for") ?? "";
     const parts = fwd.split(",").map((s) => s.trim()).filter(Boolean);
@@ -355,45 +357,74 @@ Deno.serve(async (req) => {
     // produce, so it must not consume the visitor's hourly allowance.
     const { data: cached } = await admin
       .from("mirror_reads")
-      .select("handle, read, sparse, generated_at, hit_count, name, headline, avatar_url, posts_read, read_version")
+      .select("handle, read, sparse, generated_at, hit_count, name, headline, avatar_url, posts_read, read_version, read_ar, sparse_ar, generated_at_ar, read_version_ar")
       .eq("handle", handle)
       .maybeSingle();
+
+    /** One language's read out of the shared row. A null read is no read. */
+    type View = { read: any; sparse: boolean; generated_at: string; read_version: number };
+    const viewOf = (l: "ar" | "en"): View | null => {
+      if (!cached) return null;
+      const c = cached as any;
+      const v = l === "ar"
+        ? { read: c.read_ar, sparse: !!c.sparse_ar, generated_at: c.generated_at_ar, read_version: c.read_version_ar ?? 1 }
+        : { read: c.read, sparse: !!c.sparse, generated_at: c.generated_at, read_version: c.read_version ?? 1 };
+      return v.read && v.generated_at ? v : null;
+    };
+    const mine = viewOf(lang);
     const withinTtl =
-      !!cached &&
-      (cached.read_version ?? 1) >= READ_VERSION &&
-      Date.now() - new Date(cached.generated_at).getTime() < CACHE_TTL_MS;
+      !!mine &&
+      mine.read_version >= READ_VERSION &&
+      Date.now() - new Date(mine.generated_at).getTime() < CACHE_TTL_MS;
     const stale =
-      withinTtl && (await hasFresherEvidence(admin, handle, cached!.generated_at));
+      withinTtl && (await hasFresherEvidence(admin, handle, mine!.generated_at));
 
     if (withinTtl && !stale && !force) {
       await admin
         .from("mirror_reads")
-        .update({ hit_count: (cached.hit_count ?? 1) + 1 })
+        .update({ hit_count: (cached!.hit_count ?? 1) + 1 })
         .eq("handle", handle);
       return json({
-        ok: true, cached: true, sparse: cached.sparse, handle, read: cached.read,
-        name: cached.name ?? null, posts_read: cached.posts_read ?? 0,
-        headline: cached.headline ?? null, avatar_url: cached.avatar_url ?? null,
-        generated_at: cached.generated_at,
+        ok: true, cached: true, sparse: mine!.sparse, handle, read: mine!.read,
+        name: cached!.name ?? null, posts_read: cached!.posts_read ?? 0,
+        headline: cached!.headline ?? null, avatar_url: cached!.avatar_url ?? null,
+        generated_at: mine!.generated_at, lang, lang_fallback: false,
+      });
+    }
+
+    const noticeFor = (l: "ar" | "en", iso: string) => l === "ar"
+      ? `آخر قراءة بتاريخ ${new Date(iso).toLocaleDateString("ar-SA-u-nu-latn-ca-gregory", {
+          day: "numeric", month: "long", year: "numeric",
+        })}.`
+      : `Last read on ${new Date(iso).toLocaleDateString("en-GB", {
+          day: "numeric", month: "long", year: "numeric",
+        })}.`;
+
+    /** Serve one language's saved read, quietly dated. */
+    function serveView(v: View, l: "ar" | "en", withNotice: boolean): Response {
+      return json({
+        ok: true, cached: true, ...(withNotice ? { stale: true } : {}), sparse: v.sparse, handle,
+        read: v.read, name: cached?.name ?? null,
+        posts_read: cached?.posts_read ?? 0,
+        headline: cached?.headline ?? null, avatar_url: cached?.avatar_url ?? null,
+        generated_at: v.generated_at,
+        ...(withNotice ? { notice: noticeFor(l, v.generated_at) } : {}),
+        lang: l, lang_fallback: l !== lang,
       });
     }
 
     /**
      * A failed regeneration must not break a page we can still fill. Serve the
-     * stale row with a quiet note about its age.
+     * stale row with a quiet note about its age. An Arabic visitor with no
+     * Arabic read yet gets the English one, marked as such.
      */
     function serveStale(): Response | null {
-      if (!cached?.read) return null;
-      return json({
-        ok: true, cached: true, stale: true, sparse: cached.sparse, handle,
-        read: cached.read, name: cached.name ?? null,
-        posts_read: cached.posts_read ?? 0,
-        headline: cached.headline ?? null, avatar_url: cached.avatar_url ?? null,
-        generated_at: cached.generated_at,
-        notice: `Last read on ${new Date(cached.generated_at).toLocaleDateString("en-GB", {
-          day: "numeric", month: "long", year: "numeric",
-        })}.`,
-      });
+      if (mine) return serveView(mine, lang, true);
+      if (lang === "ar") {
+        const en = viewOf("en");
+        if (en) return serveView(en, "en", true);
+      }
+      return null;
     }
 
     if (!clientIp) return serveStale() ?? json({ error: "unreadable" }, 503);
@@ -415,7 +446,7 @@ Deno.serve(async (req) => {
          is what the tick channel reads by. */
       anon_token: typeof body?.anon_token === "string" ? body.anon_token : null,
       fingerprint_hash: ip_hash,
-      meta: { handle, force, regenerating: !!cached },
+      meta: { handle, force, regenerating: !!mine, lang },
     });
 
     const { data: metered } = await admin
