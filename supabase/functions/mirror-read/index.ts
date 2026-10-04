@@ -10,7 +10,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
-import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairValues, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -676,6 +676,7 @@ Deno.serve(async (req) => {
       let raw = await callModel(messages, l);
       let read = parseJsonLoose(raw);
       if (read && hasPlaceholderInValues(read)) read = null;
+      if (l === "ar" && read) read = repairValues(read, ["own_words_quote", "raw"]);
       let gateFail = l === "ar" && read ? arabicGateDetail(read, { skipKeys: ["own_words_quote", "raw"] }) : null;
 
       if (!read || gateFail) {
@@ -691,6 +692,7 @@ Deno.serve(async (req) => {
         raw = await callModel(correctionMessages, l);
         read = parseJsonLoose(raw);
         if (read && hasPlaceholderInValues(read)) read = null;
+        if (l === "ar" && read) read = repairValues(read, ["own_words_quote", "raw"]);
         gateFail = l === "ar" && read ? arabicGateDetail(read, { skipKeys: ["own_words_quote", "raw"] }) : null;
       }
       return { read: gateFail ? null : read, raw, gateFail };

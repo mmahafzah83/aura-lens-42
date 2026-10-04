@@ -5,7 +5,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
-import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairArabic, repairValues } from "../_shared/arabicVoice.ts";
 
 /** Appended after the shared Arabic voice when the report is written in Arabic. */
 const ARABIC_REPORT_ADDITION = "The UPPERCASE section header lines (HOW THE MARKET SEES YOU, HOW YOU BUILD TRUST, YOUR NATURAL TONE, YOUR ONE-LINER, WHAT ONLY YOU CAN DO, THE GAP, THE SPACE NOBODY ELSE OWNS, YOUR 3 TOPICS, WHERE TO INVEST NEXT, THE HONEST TRUTH, IN YOUR OWN WORDS) and the line ---JSON--- stay exactly as written, in English: they are markers the system reads, the member never sees them. Everything under each header is Arabic. Every JSON value is Arabic; JSON keys stay English. primary_archetype and secondary_archetype follow the Arabic archetype rule, not 'The [Adjective] [Noun]'. YOUR ONE-LINER is written in the first person in Arabic. Topic titles are what a decision-maker in the member's field would type in Arabic. The member's answers and capability names below are supplied in English; read them, do not copy the English wording.";
@@ -15,6 +15,25 @@ const REPORT_HEADERS = [
   "WHAT ONLY YOU CAN DO", "THE GAP", "THE SPACE NOBODY ELSE OWNS", "YOUR 3 TOPICS",
   "WHERE TO INVEST NEXT", "THE HONEST TRUTH", "IN YOUR OWN WORDS",
 ];
+
+/** Repair Arabic prose (not the IN YOUR OWN WORDS quotes) and JSON values (not own_words_quote). */
+function repairReport(text: string): string {
+  const i = text.indexOf("---JSON---");
+  const prose = i >= 0 ? text.slice(0, i) : text;
+  let section = "";
+  const fixed = prose.split("\n").map((l) => {
+    if (REPORT_HEADERS.includes(l.trim())) { section = l.trim(); return l; }
+    return section === "IN YOUR OWN WORDS" ? l : repairArabic(l);
+  }).join("\n");
+  if (i < 0) return fixed;
+  const tail = text.slice(i + 10);
+  const a = tail.indexOf("{"), b = tail.lastIndexOf("}");
+  if (a < 0 || b <= a) return fixed + text.slice(i);
+  try {
+    const obj = repairValues(JSON.parse(tail.slice(a, b + 1)), ["own_words_quote"]);
+    return fixed + "---JSON---" + tail.slice(0, a) + JSON.stringify(obj, null, 2) + tail.slice(b + 1);
+  } catch { return fixed + text.slice(i); }
+}
 
 /** null = usable Arabic report; otherwise the failed check and, for the gate, its detail. */
 function arabicReportCheck(text: string): { check: string; message: string } | null {
@@ -290,13 +309,14 @@ serve(withObserve("brand-assessment", async (req) => {
       const why = () => isBad(interpretation)
         ? { check: "placeholder", message: "That was not usable. Failed check: placeholder. Remove every square bracket, the words \"sector name\" and \"zone of genius\"; name the sector explicitly." }
         : arabicReportCheck(interpretation);
+      interpretation = repairReport(interpretation);
       let fail = why();
       let correctionCalls = 0;
       if (fail) {
         correctionCalls = 1;
         try {
           const retry = await callAnthropic(`${userPrompt}\n\nYOUR PREVIOUS ATTEMPT:\n${interpretation}\n\nCORRECTION — ${fail.message} Rewrite the whole output.`);
-          if (retry.ok) interpretation = await textOf(retry);
+          if (retry.ok) interpretation = repairReport(await textOf(retry));
         } catch (e) { console.error("brand-assessment: Arabic correction failed", e); }
         fail = interpretation ? why() : { check: "empty", message: "" };
       }
