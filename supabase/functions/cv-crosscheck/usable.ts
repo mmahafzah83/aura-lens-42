@@ -5,6 +5,12 @@ import { sourceNumbers, unsupportedNumbers } from "./figures.ts";
 import { stripIntentions } from "./intentions.ts";
 
 export const AURA_CAN = ["capture_evidence", "draft_post", "suggest_headline", "track_signal"];
+/** Whole word or phrase, case-insensitive; letters (Latin or Arabic) and digits on either side break the match. */
+export function phraseIn(text: string, phrase: string): boolean {
+  const esc = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${esc}(?![\\p{L}\\p{N}])`, "iu").test(text);
+}
+
 export const PLATITUDES = [
   "quantify your achievements", "action verbs", "tailor your cv",
   "ats", "highlight your strengths", "showcase",
@@ -92,17 +98,19 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     return r.text;
   };
 
-  /** The offending stock phrase or banned word, named. */
+  /** The offending stock phrase, named (whole word or phrase only). Drops or nulls. */
   const offender = (text: unknown): string | null => {
     if (typeof text !== "string" || !text.trim()) return null;
-    const low = text.toLowerCase();
-    const plat = PLATITUDES.find((x) => low.includes(x));
-    if (plat) return `platitude:${plat}`;
+    const plat = PLATITUDES.find((x) => phraseIn(text, x));
+    return plat ? `platitude:${plat}` : null;
+  };
+  /** A brand banned word: KnownBy's own marketing rule, so in the CV comparison it is a note only. */
+  const noteBanned = (text: unknown, field: string) => {
+    if (typeof text !== "string" || !text.trim()) return;
     const words = opts.bannedWords.length ? opts.bannedWords : [];
     const w = words.find((x) => opts.hasBanned(text, [x]));
-    if (w) return `banned:${w}`;
-    if (!words.length && opts.hasBanned(text, words)) return "banned:default_list";
-    return null;
+    if (w) notes.push(`noted:banned:${w}@${field}`);
+    else if (!words.length && opts.hasBanned(text, words)) notes.push(`noted:banned:default_list@${field}`);
   };
 
   /* Findings: drop, downgrade, or strip a field. */
@@ -117,6 +125,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
         const o = offender(f[k]);
         if (o) { why = `${o}@${k}`; break; }
       }
+      if (!why) for (const k of ["what", "why_it_matters", "do_this", "what_you_lose", "rewrite"]) noteBanned(f[k], k);
     }
     if (!why && allText(f).split(SENTENCE_SPLIT).some(spanIsWrong)) why = "span_wrong";
     if (why) { notes.push(`dropped_finding:${why}`); continue; }
@@ -143,6 +152,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
       let o: string | null = null;
       for (const [k, v] of Object.entries(r)) { o = offender(v); if (o) { o = `${o}@${k}`; break; } }
       if (o) { notes.push(`dropped_recommendation:${o}`); continue; }
+      for (const [k, v] of Object.entries(r)) noteBanned(v, k);
     }
     if (r.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) { delete r.aura_can; notes.push("removed:recommendation_aura_can"); }
     recs.push(r);
@@ -163,6 +173,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     p[k] = p[k].filter((x: unknown) => {
       const o = proseScanned ? offender(x) : null;
       if (o) notes.push(`dropped_item:${o}@${k}`);
+      else if (proseScanned) noteBanned(x, k);
       return !o;
     });
     void n;
@@ -170,11 +181,13 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   for (const k of ["the_hard_truth", "profile_vs_voice", "reading_the_shape", "peer_comparison"]) {
     const o = proseScanned ? offender(p[k]) : null;
     if (o) { p[k] = null; notes.push(`nulled:${o}@${k}`); }
+    else if (proseScanned) noteBanned(p[k], k);
   }
   if (p.headline_suggestion !== undefined && isBlankValue(p.headline_suggestion)) p.headline_suggestion = null;
   if (typeof p.headline_suggestion === "string" && BRACKET_GAP.test(p.headline_suggestion)) { p.headline_suggestion = null; notes.push("headline_removed:bracket_gap"); }
   const hlOff = offender(p.headline_suggestion);
   if (hlOff) { p.headline_suggestion = null; notes.push(`headline_removed:${hlOff}`); }
+  else if (opts.lang === "en") noteBanned(p.headline_suggestion, "headline_suggestion");
   const badHl = bad(p.headline_suggestion);
   if (badHl.length) { p.headline_suggestion = null; notes.push(`headline_removed:unsupported_figure:${badHl.join(",")}`); }
   if (typeof p.headline_suggestion === "string") p.headline_suggestion = intent(p.headline_suggestion, "headline_sentence_removed:intention");
@@ -193,6 +206,7 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
   notes.push(...changes);
 
   const hfOff = proseScanned ? offender(result.headline_finding) : null;
+  if (proseScanned && !hfOff) noteBanned(result.headline_finding, "headline_finding");
   if (!s(result.headline_finding) || hfOff) {
     const first = result.findings.find((f: any) => f?.do_first === true) ?? result.findings[0];
     result.headline_finding = first.what;
