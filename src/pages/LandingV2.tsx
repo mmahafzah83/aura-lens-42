@@ -414,6 +414,8 @@ const LANDING_V2_CSS = `
 .aura-v2[dir=rtl] .road .stop::after{left:auto;right:7px}
 .aura-v2[dir=rtl] .ledger .row .status,.aura-v2[dir=rtl] .ledger .total .a{text-align:left}
 .aura-v2[dir=rtl] .wide .mi{text-align:left!important}
+.aura-v2[dir=rtl] .wide .mi{direction:ltr;unicode-bidi:isolate}
+.aura-v2[dir=rtl] .undr,.aura-v2[dir=rtl] .pcta .btn,.aura-v2[dir=rtl] [data-wave]{unicode-bidi:plaintext}
 @media(max-width:700px){ .aura-v2[dir=rtl] .ledger .row .status{text-align:right} }
 `;
 
