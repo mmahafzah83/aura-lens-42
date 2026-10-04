@@ -36,6 +36,13 @@
       "when": 1791089712958,
       "tag": "0004_seniority_titles_arabic",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791092877437,
+      "tag": "0005_mirror_reads_arabic_columns",
+      "breakpoints": true
     }
   ]
 }
