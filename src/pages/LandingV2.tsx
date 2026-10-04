@@ -691,7 +691,7 @@ export const LANDING_COPY = {
   freeAria: [`${FREE_CTA_ARIA}`, "ابدأ تقييمك المجاني"],
   signOut: ["Sign out", "تسجيل الخروج"],
   openApp: ["Open KnownBy", "افتح KnownBy"],
-  metaTitle: [`${\`KnownBy — ${BRAND.headline.replace(/\\.$/, "")}\`}`, "KnownBy: خبرتك أكبر مما تُظهره صفحتك"],
+  metaTitle: [`KnownBy — ${BRAND.headline.replace(/\.$/, "")}`, "KnownBy: خبرتك أكبر مما تُظهره صفحتك"],
   metaDesc: ["KnownBy finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof. The assessment is free and yours to keep.", "KnownBy يجد ما يجعلك موثوقاً، ويرتّب الأدلة عليه، ويحوّله إلى تموضع ومحتوى وإثبات. التقييم مجاني ويبقى لك."],
   bx1a: ["SEE YOURSELF", "اعرف نفسك"],
   bx1b: ["Your understanding", "فهمك لنفسك"],
