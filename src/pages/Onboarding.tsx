@@ -82,7 +82,8 @@ import {
   SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_PATH,
   SEAT_ONE_JOB, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_CTA_SECONDARY, SEAT_RESERVE_NOTE,
 } from "@/lib/seatCopy";
-import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
+import { BRAND, ONBOARDING_INTRO } from "@/constants/language";
+import { Trans } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { itemText, optionLabel, type ItemLang } from "@/lib/assessmentItems";
 import { arabicPreviewOn } from "@/i18n";
@@ -125,13 +126,6 @@ const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "read", label: "Signals found", tone: "amber" },
 ];
 
-/** The quiet second line — shown only on the promise row and the payoff row. */
-const SHELF_SUB = [
-  "read from your LinkedIn",
-  "what you captured from your reading",
-  "rated in your own words",
-  "the ground your read gives you",
-];
 
 const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
 const SHELF_HINT = [
@@ -155,8 +149,6 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
   return domain ? `${domain} · ${age}` : age;
 };
 
-/** Shown wherever a post or word count would otherwise read zero. */
-const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. KnownBy will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
 const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
 /** What the free tier deliberately does not do — used on the final screen. */
