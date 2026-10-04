@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { makeUsable } from "../usable";
+import { makeUsable, phraseIn } from "../usable";
 import { hasBanned } from "../../_shared/bannedWords.ts";
 
 // Verbatim from the last live call (4 Oct).
@@ -21,22 +21,44 @@ describe("named drop causes", () => {
     expect(out.notes).toContain("dropped_finding:platitude:showcase@do_this");
     expect(out.kept).toBe(1);
   });
-  it("recommendation, defensibility item and single field name the cause", () => {
+  it("brand banned words in a recommendation, defensibility item and single field are notes only", () => {
     const out = makeUsable(base({
       findings: [F()],
       recommendations: [{ action: "Build authority now.", why_now: "x" }, ...[1, 2, 3].map((i) => ({ action: `Act ${i}`, why_now: "Now." }))],
       defensibility: ["You can leverage the record."], peer_comparison: "Peers have more authority.",
     }), opts);
-    expect(out.notes).toContain("dropped_recommendation:banned:authority@action");
-    expect(out.notes).toContain("dropped_item:banned:leverage@defensibility");
-    expect(out.notes).toContain("nulled:banned:authority@peer_comparison");
+    expect(out.result.recommendations).toHaveLength(4);
+    expect(out.result.defensibility).toHaveLength(1);
+    expect(out.result.peer_comparison).toBe("Peers have more authority.");
+    expect(out.notes).toContain("noted:banned:authority@action");
+    expect(out.notes).toContain("noted:banned:leverage@defensibility");
+    expect(out.notes).toContain("noted:banned:authority@peer_comparison");
   });
-  it("banned word only in the rewrite nulls the rewrite, keeps the finding as medium", () => {
+  it("brand banned word in the rewrite keeps the rewrite, with a note", () => {
     const out = makeUsable(base({ findings: [F({ rewrite: "Supply chain executive with real authority." })] }), opts);
+    expect(out.result.findings[0].rewrite).toBe("Supply chain executive with real authority.");
+    expect(out.notes).toContain("noted:banned:authority@rewrite");
+  });
+  it("do_this with 'commercial authority or transformation mandate' keeps the finding, with the note", () => {
+    const out = makeUsable(base({ findings: [F({ do_this: "Name the commercial authority or transformation mandate you want." })] }), opts);
     expect(out.kept).toBe(1);
-    expect(out.result.findings[0].rewrite).toBeNull();
-    expect(out.result.findings[0].weight).toBe("medium");
-    expect(out.notes).toContain("rewrite_removed:banned:authority");
+    expect(out.notes).toContain("noted:banned:authority@do_this");
+    expect(out.notes.some((n) => n.startsWith("dropped_finding"))).toBe(false);
+  });
+});
+
+describe("stock phrases match whole words only", () => {
+  it("'the float of receivables' and 'floats' do not trigger ats", () => {
+    for (const t of ["Watch the float of receivables.", "Cash floats were cut."]) {
+      const out = makeUsable(base({ findings: [F({ why_it_matters: t })] }), opts);
+      expect(out.kept).toBe(1);
+    }
+    expect(phraseIn("floats", "ats")).toBe(false);
+  });
+  it("'ATS-friendly' and 'an ATS' do trigger ats", () => {
+    expect(phraseIn("Make it ATS-friendly.", "ats")).toBe(true);
+    const out = makeUsable(base({ findings: [F(), F({ why_it_matters: "It must pass an ATS." })] }), opts);
+    expect(out.notes).toContain("dropped_finding:platitude:ats@why_it_matters");
   });
 });
 
