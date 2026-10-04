@@ -29,6 +29,8 @@ export type AssessmentState = {
   avatar_url?: string | null;
   generated_at?: string | null;
   read?: Record<string, unknown> | null;
+  /** The language the read was written in, as mirror-read returned it. */
+  read_lang?: "en" | "ar";
   answers?: Record<string, string>;
   /** Answers by question id and option value — see assessmentAnswers.ts. */
   answers_coded?: Record<string, any>;

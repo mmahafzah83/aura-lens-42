@@ -842,6 +842,7 @@
   "assess.resume.startNew": "ابدأ ملفًا جديدًا",
   "assess.resume.trust": "سيحلّ محلّ الملف أعلاه.",
   "assess.read.saved": "حُفظ ملفك.",
+  "assess.read.langFallback": "القراءة بالإنجليزية هذه المرة. النسخة العربية غير جاهزة بعد.",
   "assess.read.profile": "هذا ما تقوله صفحتك للسوق.",
   "assess.read.notMe": "هذا ليس أنا، اقرأ صفحة أخرى",
   "assess.read.continue": "متابعة",

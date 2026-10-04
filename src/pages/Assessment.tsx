@@ -96,7 +96,8 @@ const stampDate = (iso?: string | null): string | null => {
 };
 
 const Assessment = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const [langFallback, setLangFallback] = useState(false);
   const minutesVars = { count: ASSESSMENT_MINUTES, minutes: numberWord(ASSESSMENT_MINUTES) };
   usePageMeta({
     title: t("assess.meta.title"),
@@ -240,10 +241,12 @@ const Assessment = () => {
       setPostsRead(Number(data.posts_read ?? 0));
       setSparse(!!data.sparse);
       setAgeNote(data.stale && typeof data.notice === "string" ? data.notice : null);
+      setLangFallback(data.lang_fallback === true);
       await persist({
         ...state, step: "read", profile_url: target, name: data.name ?? null,
         headline: data.headline ?? null, avatar_url: data.avatar_url ?? null,
         generated_at: data.generated_at ?? null, read: data.read,
+        read_lang: data.lang === "ar" ? "ar" : "en",
         posts_read: Number(data.posts_read ?? 0),
       } as AssessmentState);
       setStage("read");
@@ -391,6 +394,9 @@ const Assessment = () => {
                 generatedAt={state.generated_at ?? null}
                 ageNote={ageNote}
               />
+              {langFallback && lang === "ar" ? (
+                <p className="asg-saved" dir="auto">{t("assess.read.langFallback")}</p>
+              ) : null}
               <button type="button" className="asg-textbtn" onClick={() => void startNewRead()}>
                 {t("assess.read.notMe")}
               </button>

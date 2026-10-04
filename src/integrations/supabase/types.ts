@@ -3935,14 +3935,18 @@ export type Database = {
           emailed_at: string | null
           emailed_to: string | null
           generated_at: string
+          generated_at_ar: string | null
           handle: string
           headline: string | null
           hit_count: number
           name: string | null
           posts_read: number | null
-          read: Json
+          read: Json | null
+          read_ar: Json | null
           read_version: number
+          read_version_ar: number | null
           sparse: boolean
+          sparse_ar: boolean | null
         }
         Insert: {
           avatar_url?: string | null
@@ -3950,14 +3954,18 @@ export type Database = {
           emailed_at?: string | null
           emailed_to?: string | null
           generated_at?: string
+          generated_at_ar?: string | null
           handle: string
           headline?: string | null
           hit_count?: number
           name?: string | null
           posts_read?: number | null
-          read: Json
+          read?: Json | null
+          read_ar?: Json | null
           read_version?: number
+          read_version_ar?: number | null
           sparse?: boolean
+          sparse_ar?: boolean | null
         }
         Update: {
           avatar_url?: string | null
@@ -3965,14 +3973,18 @@ export type Database = {
           emailed_at?: string | null
           emailed_to?: string | null
           generated_at?: string
+          generated_at_ar?: string | null
           handle?: string
           headline?: string | null
           hit_count?: number
           name?: string | null
           posts_read?: number | null
-          read?: Json
+          read?: Json | null
+          read_ar?: Json | null
           read_version?: number
+          read_version_ar?: number | null
           sparse?: boolean
+          sparse_ar?: boolean | null
         }
         Relationships: []
       }
