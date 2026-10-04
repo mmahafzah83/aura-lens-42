@@ -1378,5 +1378,16 @@
   "s14.finishing": "Finishing…",
   "s14.email": "I'll email your read from an inbox I read myself. If it got you wrong, just reply and tell me — that's how I learn you.",
   "s14.approve": "KnownBy publishes only when you approve it. Nothing goes out in your name on its own.",
-  "ob.exitNote": "Saved at \"{{stage}}\". Pick it up any time."
+  "ob.exitNote": "Saved at \"{{stage}}\". Pick it up any time.",
+  "report.h.marketSees": "How the market sees you",
+  "report.h.trust": "How you build trust",
+  "report.h.tone": "Your natural tone",
+  "report.h.oneLiner": "Your one-liner",
+  "report.h.onlyYou": "What only you can do",
+  "report.h.gap": "The gap",
+  "report.h.space": "The space nobody else owns",
+  "report.h.topics": "Your 3 topics",
+  "report.h.investNext": "Where to invest next",
+  "report.h.honestTruth": "The honest truth",
+  "report.h.ownWords": "In your own words"
 }

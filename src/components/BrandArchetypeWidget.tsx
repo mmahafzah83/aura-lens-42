@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { memberText } from "@/lib/memberText";
 import { supabase } from "@/integrations/supabase/client";
 import { Crown } from "lucide-react";
 
@@ -71,7 +72,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
         </button>
       </div>
       {positioningStatement ? (
-        <p className="text-base text-brand font-semibold leading-relaxed mb-2">{positioningStatement}</p>
+        <p className="text-base text-brand font-semibold leading-relaxed mb-2" {...memberText(positioningStatement)}>{positioningStatement}</p>
       ) : (
         <p className="text-base text-brand font-semibold mb-2">Complete your assessment to reveal your positioning</p>
       )}

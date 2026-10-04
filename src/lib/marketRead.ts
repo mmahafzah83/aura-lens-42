@@ -241,6 +241,10 @@ export async function generateMarketRead(
 
     const { prose, json } = splitTail(String(interpretation));
     const results: Record<string, any> = { ...(json && typeof json === "object" ? json : {}), interpretation: prose || interpretation };
+    /* The language the report was written in, fixed at writing. Additive. */
+    const rl = (data as any)?.lang;
+    if (rl === "ar" || rl === "en") results.lang = rl;
+    if ((data as any)?.lang_fallback === true) results.lang_fallback = true;
     const pillars = derivePillars(results);
 
     await writeProfile(userId, {

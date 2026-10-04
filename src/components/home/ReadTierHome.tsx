@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb/Button";
 import { MONO } from "./homeAtoms";
+import { memberText } from "@/lib/memberText";
 import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
@@ -150,8 +151,8 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
       <section style={CARD}>
         <h2 style={{
           margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 19,
-          color: "var(--text-primary)", lineHeight: 1.25,
-        }}>
+          color: "var(--text-primary)", lineHeight: 1.25, ...memberText(archetype).style,
+        }} dir="auto">
           {archetype || "Your read"}
         </h2>
         <p style={{ margin: "6px 0 14px", fontSize: 13, color: "var(--text-secondary)" }}>Yours permanently.</p>

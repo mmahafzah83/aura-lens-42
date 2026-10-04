@@ -1154,6 +1154,10 @@ function ResultsView({
         </button>
       </div>
 
+      {langFallback && uiLang === "ar" ? (
+        <p dir="auto" style={{ fontSize: 13, color: INK_FAINT, margin: "0 0 12px" }}>{tr("assess.read.langFallback")}</p>
+      ) : null}
+
       {/* === CARD 2 — The Full Picture === */}
       {showFull && (
         <div
