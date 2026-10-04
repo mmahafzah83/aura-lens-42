@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
-import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairArabic } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicHardFail, arabicStyleNotes, arabicCorrectionText, repairArabic } from "../_shared/arabicVoice.ts";
 import { normaliseCrosscheck } from "./normalise.ts";
 import { spanIsWrong, SENTENCE_SPLIT } from "./spans.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
@@ -224,8 +224,9 @@ serve(withObserve("cv-crosscheck", async (req) => {
   } catch (e) { console.error("[cv-crosscheck] run start failed:", (e as Error)?.message); }
   /* Stage one opens: reading the file and the profile snapshot. */
   run?.mark(OPERATION_STAGES.cv_crosscheck[0]);
-  const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string) => {
-    try { await run?.finish({ outcome, reason_code: reason_code ?? null }); }
+  const runMeta: Record<string, unknown> = { purpose, anonymous: !!anonToken, lang };
+  const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string, extraMeta?: Record<string, unknown>) => {
+    try { await run?.finish({ outcome, reason_code: reason_code ?? null, ...(extraMeta ? { meta: { ...runMeta, ...extraMeta } } : {}) }); }
     catch (e) { console.error("[cv-crosscheck] run finish failed:", (e as Error)?.message); }
   };
 
@@ -594,6 +595,14 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
 
   const bannedWords = await loadBannedWords(admin);
 
+  /** The paste-ready English fields only: every finding's rewrite and the headline suggestion. */
+  function pasteText(result: any): string {
+    const parts: string[] = [];
+    if (typeof result?.headline_suggestion === "string") parts.push(result.headline_suggestion);
+    for (const f of Array.isArray(result?.findings) ? result.findings : []) if (typeof f?.rewrite === "string") parts.push(f.rewrite);
+    return parts.map((x) => ` ${x} `).join(" ");
+  }
+
   /** Every failing assertion found in one pass, in gate order (used for the correction text). */
   function gateAll(result: any, l: "ar" | "en" = lang): string[] {
     const out: string[] = [];
@@ -601,8 +610,11 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     const findings: any[] = Array.isArray(result?.findings) ? result.findings : [];
     if (!findings.length) add("findings_empty");
 
-    /* Verbatim quotes (evidence lines) are the member's own words, not ours. */
-    const whole = vocabText(result);
+    /* Verbatim quotes (evidence lines) are the member's own words, not ours.
+       Arabic: the English brand list only reads the text written for pasting
+       in English (rewrite, headline_suggestion); Arabic prose is judged by the
+       Arabic checks, and Latin proper nouns inside it are not our wording. */
+    const whole = l === "ar" ? pasteText(result) : vocabText(result);
     const text = whole.toLowerCase();
     if (PLATITUDES.some((p) => text.includes(p))) add("no_cv_platitudes");
     if (hasBanned(whole, bannedWords)) {
@@ -631,7 +643,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
       if (r?.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) add("aura_can_outside_enum");
     }
     if (l === "ar") {
-      const d = arabicGateDetail(arabicProse(result));
+      const d = arabicHardFail(arabicProse(result));
       if (d) add(`arabic_${d.check}: ${arabicCorrectionText(d)}`);
     }
     return out;
@@ -758,8 +770,26 @@ CORRECTION — your previous answer failed these assertions: ${failingAll.map((a
     }
   }
 
+  /* Arabic style findings advise only: recorded with the result, never a retry. */
+  const styleNotes = outLang === "ar" ? arabicStyleNotes(arabicProse(parsed)) : [];
+  if (outLang === "ar") {
+    console.log("[cv-crosscheck] arabic_style_notes", styleNotes.length, JSON.stringify(styleNotes));
+    try {
+      EdgeRuntime.waitUntil(logAIUsage({
+        user_id: targetId ?? undefined,
+        function_name: "cv-crosscheck",
+        provider: "anthropic",
+        model: data?.model ?? "claude-sonnet-4-5-20250929",
+        input_tokens: 0,
+        output_tokens: 0,
+        metadata: { lang: outLang, attempt: "style_notes", style_notes_count: styleNotes.length },
+      }));
+    } catch (_) { /* non-blocking */ }
+  }
+
   const crosscheck = {
     ...parsed,
+    ...(outLang === "ar" ? { arabic_style_notes: styleNotes } : {}),
     purpose,
     lang: outLang,
     cv_count: docCount,
@@ -778,6 +808,6 @@ CORRECTION — your previous answer failed these assertions: ${failingAll.map((a
     if (writeErr) { await finish("failed", "write_failed"); return json({ error: writeErr.message }, 500); }
   }
 
-  await finish("ok");
+  await finish("ok", undefined, outLang === "ar" ? { style_notes_count: styleNotes.length, out_lang: outLang } : undefined);
   return json({ ok: true, cv_count: docCount, crosscheck, lang: outLang, lang_fallback: lang === "ar" && outLang === "en" });
 }));
