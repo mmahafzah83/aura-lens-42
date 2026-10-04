@@ -10,7 +10,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
-import { arabicGate, arabicCorrection, type ArabicGateFailure } from "./arabicGate.ts";
+import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +22,9 @@ const POSTS_ACTOR = "harvestapi~linkedin-profile-posts";
 const MAX_POSTS = 20;
 /** Bumped whenever the read prompt changes; older cached rows regenerate. */
 const READ_VERSION = 3;
+/** The Arabic read's own version: bumped with the shared Arabic voice. English rows are untouched. */
+const READ_VERSION_AR = 4;
+const versionFor = (l: "ar" | "en") => (l === "ar" ? READ_VERSION_AR : READ_VERSION);
 /** A read older than this is always regenerated. */
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -307,14 +310,6 @@ function hasPlaceholderInValues(v: unknown): boolean {
 const SYSTEM_PROMPT =
   "You read a senior professional's public LinkedIn profile and recent posts, and tell them how their market currently sees them. Address the reader directly as 'you' in every sentence. Never refer to them by name or in the third person — this is their mirror, not a report about them. You use only what is in the material. You never invent an achievement, a number, a date or an employer. Output plain text only — no markdown, no asterisks, no headers, no bracketed placeholders. The reader is a senior GCC executive: write plainly, in short sentences, as a trusted advisor would over coffee. Never use these words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate. ARCHETYPE RULE: the name is 'The [Adjective] [Noun]'. 'Strategic' is banned as the adjective and 'Architect' is banned as the noun. Before naming it, ask yourself whether the name would fit half of all senior professionals; if so it is too generic, choose again from what THIS person's material actually shows.";
 
-/** Appended verbatim to SYSTEM_PROMPT when the visitor reads in Arabic. */
-const ARABIC_BLOCK = `LANGUAGE — write every value in Arabic. Contemporary, simple Arabic for a senior Saudi and Gulf reader, clear to a Levantine or Egyptian reader. Not dialect, not bureaucratic. Write it natively; never translate English sentence structure. Address the reader directly as أنت (masculine singular) in every sentence. Short sentences. Western digits (0-9) only. Company names, product names, job titles written in Latin in the material and acronyms stay in Latin letters, and never take an attached Arabic prefix (write «في EY» not «بـEY»). No English words otherwise.
-ARCHETYPE in Arabic: a definite noun followed by a definite adjective, two words, for example «المُصلح الهادئ». The noun must not be «المهندس» or «المعماري» and the adjective must not be «الاستراتيجي». The same test applies: if the name would fit half of all senior professionals, choose again from what THIS person's material shows.
-THEMES: three short Arabic phrases, 2 to 5 words each.
-own_words_quote: one verbatim sentence from one of their own posts, in the language it was written in. Never translate a quote. own_words_read is in Arabic.
-Never use these Arabic words or phrases: «تم», «يتم», «رائد فكر», «قائد فكر», «العلامة الشخصية», «علامتك الشخصية», «رحلة», «رحلتك», «مشهد», «يُبحر», «تسخير», «تمكين», «الارتقاء», «سلس», «متين», «في عالم», «في ظل», «لا شك أن», «من الجدير بالذكر», «يلعب دورًا», «على حد سواء».
-The JSON keys stay exactly as specified, in English.`;
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -383,7 +378,7 @@ Deno.serve(async (req) => {
     const mine = viewOf(lang);
     const withinTtl =
       !!mine &&
-      mine.read_version >= READ_VERSION &&
+      mine.read_version >= versionFor(lang) &&
       Date.now() - new Date(mine.generated_at).getTime() < CACHE_TTL_MS;
     const stale =
       withinTtl && (await hasFresherEvidence(admin, handle, mine!.generated_at));
@@ -642,7 +637,7 @@ Deno.serve(async (req) => {
           /* The seven-key read runs long; 1500 cut it mid-sentence. */
           max_tokens: 4000,
           temperature: 0.3,
-          system: l === "ar" ? SYSTEM_PROMPT + "\n\n" + ARABIC_BLOCK : SYSTEM_PROMPT,
+          system: l === "ar" ? SYSTEM_PROMPT + "\n\n" + ARABIC_VOICE_BLOCK : SYSTEM_PROMPT,
           messages,
         }),
       });
@@ -675,13 +670,13 @@ Deno.serve(async (req) => {
      * between the shape check and (for Arabic) the Arabic gate.
      */
     async function generate(l: "ar" | "en"): Promise<
-      { read: Record<string, unknown> | null; raw: string; gateFail: ArabicGateFailure | null }
+      { read: Record<string, unknown> | null; raw: string; gateFail: ArabicGateDetail | null }
     > {
       const messages = [{ role: "user", content: stripLoneSurrogates(userPromptFor(l)) }];
       let raw = await callModel(messages, l);
       let read = parseJsonLoose(raw);
       if (read && hasPlaceholderInValues(read)) read = null;
-      let gateFail = l === "ar" && read ? arabicGate(read) : null;
+      let gateFail = l === "ar" && read ? arabicGateDetail(read, { skipKeys: ["own_words_quote", "raw"] }) : null;
 
       if (!read || gateFail) {
         // One correction pass: the shape was wrong, a placeholder survived, or the Arabic failed.
@@ -690,13 +685,13 @@ Deno.serve(async (req) => {
         correctionMessages.push({
           role: "user",
           content: gateFail
-            ? arabicCorrection(gateFail)
+            ? arabicCorrectionText(gateFail) + " Return ONLY the JSON object with the same seven keys (keys in English, values in Arabic, own_words_quote verbatim), no markdown fences, no commentary."
             : "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
         });
         raw = await callModel(correctionMessages, l);
         read = parseJsonLoose(raw);
         if (read && hasPlaceholderInValues(read)) read = null;
-        gateFail = l === "ar" && read ? arabicGate(read) : null;
+        gateFail = l === "ar" && read ? arabicGateDetail(read, { skipKeys: ["own_words_quote", "raw"] }) : null;
       }
       return { read: gateFail ? null : read, raw, gateFail };
     }
@@ -709,7 +704,7 @@ Deno.serve(async (req) => {
     if (lang === "ar" && !attempt.read) {
       await logError("mirror-read", new Error("Arabic read unusable after one correction"), {
         user_id: null, severity: "high",
-        context: { handle, path: "arabic_gate", failed_check: attempt.gateFail ?? "unreadable" },
+        context: { handle, path: "arabic_gate", failed_check: attempt.gateFail?.check ?? "unreadable", field: attempt.gateFail?.field ?? null },
       });
       /* Ruling 3: serve the English read instead, and say so. */
       const en = viewOf("en");
@@ -750,7 +745,7 @@ Deno.serve(async (req) => {
     };
     /* Each language writes only its own columns. */
     const langCols = outLang === "ar"
-      ? { read_ar: read, sparse_ar: sparse, read_version_ar: READ_VERSION, generated_at_ar: generated_at }
+      ? { read_ar: read, sparse_ar: sparse, read_version_ar: READ_VERSION_AR, generated_at_ar: generated_at }
       : { read, sparse, read_version: READ_VERSION, generated_at };
     const { error: upErr } = await admin
       .from("mirror_reads")
