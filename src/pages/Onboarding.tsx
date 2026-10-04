@@ -82,7 +82,8 @@ import {
   SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_PATH,
   SEAT_ONE_JOB, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_CTA_SECONDARY, SEAT_RESERVE_NOTE,
 } from "@/lib/seatCopy";
-import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
+import { BRAND, ONBOARDING_INTRO } from "@/constants/language";
+import { Trans } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { itemText, optionLabel, type ItemLang } from "@/lib/assessmentItems";
 import { arabicPreviewOn } from "@/i18n";
@@ -125,13 +126,6 @@ const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "read", label: "Signals found", tone: "amber" },
 ];
 
-/** The quiet second line — shown only on the promise row and the payoff row. */
-const SHELF_SUB = [
-  "read from your LinkedIn",
-  "what you captured from your reading",
-  "rated in your own words",
-  "the ground your read gives you",
-];
 
 const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
 const SHELF_HINT = [
@@ -155,8 +149,6 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
   return domain ? `${domain} · ${age}` : age;
 };
 
-/** Shown wherever a post or word count would otherwise read zero. */
-const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. KnownBy will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
 const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
 /** What the free tier deliberately does not do — used on the final screen. */
@@ -2289,7 +2281,7 @@ const Onboarding = () => {
       return;
     }
     const stage = stageOf(screen);
-    setExitNote(`Saved at "${stageName(stage)}". Pick it up any time.`);
+    setExitNote(tr("ob.exitNote", { stage: isAr ? stageLabel(stage) : stageName(stage) }));
     void (async () => {
       await persistScreen(screen);
       if (userId) {
@@ -3878,9 +3870,9 @@ const Onboarding = () => {
       setWallEmailError(null);
       setWallPasswordError(null);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(wallEmail.trim())) {
-        setWallEmailError("That doesn't look like an email address. Check it and try again."); return;
+        setWallEmailError(tr("wall.err.email")); return;
       }
-      if (wallPassword.length < 8) { setWallPasswordError("Use eight characters or more."); return; }
+      if (wallPassword.length < 8) { setWallPasswordError(tr("wall.err.passwordShort")); return; }
       if (!wallConsent) return;
       setWallBusy(true);
       try {
@@ -3898,15 +3890,15 @@ const Onboarding = () => {
           try { result = (await (error as any)?.context?.json?.()) as SignupResult; } catch { /* not JSON */ }
         }
         if (result?.existing) {
-          setWallError("You already have an account with that address. Sign in and your report is waiting.");
+          setWallError(tr("wall.err.existing"));
           return;
         }
         if (result?.code === "signup_limit") {
-          setWallError("That is as many accounts as can be opened from this network today. It lifts in 24 hours. Write to support@aura-intel.org and it is sorted by hand in the meantime.");
+          setWallError(tr("wall.err.limit", { email: "support@aura-intel.org" }));
           return;
         }
         if (result?.code === "temporarily_unavailable") {
-          setWallError("Our end didn't answer. That's ours, not yours. Nothing you entered is lost — press once more.");
+          setWallError(tr("wall.err.unavailable"));
           return;
         }
         const msg = result?.error || error?.message;
@@ -3931,15 +3923,15 @@ const Onboarding = () => {
             startedAt: sessionStartedAtRef.current,
           });
           if (!res.ok) {
-            setWallError("We could not attach your report to your account yet — nothing is lost. Try again.");
+            setWallError(tr("wall.err.attach"));
             return;
           }
           window.location.replace("/onboarding");
           return;
         }
-        setWallDone("Your account is open. Sign in and everything you just answered is waiting.");
+        setWallDone(tr("wall.done"));
       } catch {
-        setWallError("We couldn't reach KnownBy just now. Check your connection — nothing you entered is lost.");
+        setWallError(tr("wall.err.network"));
       } finally {
         setWallBusy(false);
       }
@@ -3950,30 +3942,30 @@ const Onboarding = () => {
       <JourneyNav.Provider value={{ onBack: undefined, banner: null, screen, name: firstName || null }}>
       <PaperShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink }}>
-          {WALL.heading}
+          {tr("wall.heading")}
         </h1>
         <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 10 }}>
-          {WALL.body}
+          {tr("wall.body")}
         </p>
         {wallDone ? (
           <>
             <p role="status" style={{ marginBlockStart: 18, color: OB.ink, fontFamily: OB.ui }}>{wallDone}</p>
             <Actions style={{ marginBlockStart: 18 }}>
-              <OBButton onClick={() => { window.location.assign("/auth"); }}>Sign in</OBButton>
+              <OBButton onClick={() => { window.location.assign("/auth"); }}>{tr("wall.signIn")}</OBButton>
             </Actions>
           </>
         ) : (
           <form onSubmit={openAccount} style={{ marginBlockStart: 18 }}>
-            <label htmlFor="ob-wall-email" style={{ display: "block", fontSize: 13, color: OB.muted, marginBlockEnd: 6 }}>Your email</label>
+            <label htmlFor="ob-wall-email" style={{ display: "block", fontSize: 13, color: OB.muted, marginBlockEnd: 6 }}>{tr("wall.email")}</label>
             <input id="ob-wall-email" type="email" autoComplete="email" value={wallEmail}
               onChange={(e) => setWallEmail(e.target.value)} style={fieldStyle} />
             <div aria-live="polite">
               {wallEmailError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 6 }}>{wallEmailError}</p>}
             </div>
-            <label htmlFor="ob-wall-pwd" style={{ display: "block", fontSize: 13, color: OB.muted, margin: "16px 0 6px" }}>A password</label>
+            <label htmlFor="ob-wall-pwd" style={{ display: "block", fontSize: 13, color: OB.muted, margin: "16px 0 6px" }}>{tr("wall.password")}</label>
             <input id="ob-wall-pwd" type="password" autoComplete="new-password" value={wallPassword}
               onChange={(e) => setWallPassword(e.target.value)} style={fieldStyle} />
-            <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>Eight characters or more.</p>
+            <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>{tr("wall.passwordHint")}</p>
             <div aria-live="polite">
               {wallPasswordError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 6 }}>{wallPasswordError}</p>}
             </div>
@@ -3985,21 +3977,20 @@ const Onboarding = () => {
                 onChange={(e) => setWallConsent(e.target.checked)}
                 style={{ width: 20, height: 20, flexShrink: 0, marginBlockStart: 1, accentColor: OB.blue, cursor: "pointer" }} />
               <span>
-                I agree to the{" "}
-                <a href="/terms" target="_blank" rel="noopener" style={{ color: OB.blue, textDecoration: "underline" }}>Terms</a>{" "}
-                and{" "}
-                <a href="/privacy" target="_blank" rel="noopener" style={{ color: OB.blue, textDecoration: "underline" }}>Privacy Policy</a>.
-                My data is processed under Saudi PDPL, and I can delete everything in one click.
+                <Trans i18nKey="wall.consent" components={{
+                  terms: <a href="/terms" target="_blank" rel="noopener" style={{ color: OB.blue, textDecoration: "underline" }} />,
+                  privacy: <a href="/privacy" target="_blank" rel="noopener" style={{ color: OB.blue, textDecoration: "underline" }} />,
+                }} />
               </span>
             </label>
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton disabled={wallBusy || !wallConsent} aria-describedby={!wallConsent ? "ob-wall-why" : undefined}
                 onClick={() => undefined} type="submit">
-                {wallBusy ? WALL.ctaBusy : WALL.cta}
+                {wallBusy ? tr("wall.ctaBusy") : tr("wall.cta")}
               </OBButton>
-              {!wallConsent && !wallBusy ? whyLine("ob-wall-why", "Tick the box above to enable this.", true) : null}
+              {!wallConsent && !wallBusy ? whyLine("ob-wall-why", tr("wall.why"), true) : null}
             </Actions>
-            <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{WALL.sub}</p>
+            <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{tr("wall.sub")}</p>
           </form>
         )}
       </PaperShell>
@@ -4021,11 +4012,11 @@ const Onboarding = () => {
       : 0;
     const ownGap = String(readRaw?.honest_gap || anonRead?.honest_gap || "").trim();
     const ownRows: Array<{ label: string; value: string }> = [];
-    if (ownArchetype) ownRows.push({ label: ENDING.rowArchetype, value: ownArchetype });
-    if (ownSubjects > 0) ownRows.push({ label: ENDING.rowSubjectsLabel, value: ENDING.rowSubjects(ownSubjects) });
-    if (ownCapabilities > 0) ownRows.push({ label: ENDING.rowCapabilitiesLabel, value: ENDING.rowCapabilities(ownCapabilities) });
-    if (ccFindings > 0) ownRows.push({ label: ENDING.rowCrosscheckLabel, value: ENDING.rowCrosscheck(ccFindings) });
-    if (ownGap) ownRows.push({ label: ENDING.rowGapLabel, value: ownGap });
+    if (ownArchetype) ownRows.push({ label: tr("end.rowArchetype"), value: ownArchetype });
+    if (ownSubjects > 0) ownRows.push({ label: tr("end.rowSubjectsLabel"), value: tc("end.rowSubjects", ownSubjects) });
+    if (ownCapabilities > 0) ownRows.push({ label: tr("end.rowCapabilitiesLabel"), value: tc("end.rowCapabilities", ownCapabilities) });
+    if (ccFindings > 0) ownRows.push({ label: tr("end.rowCrosscheckLabel"), value: tc("end.rowCrosscheck", ccFindings) });
+    if (ownGap) ownRows.push({ label: tr("end.rowGapLabel"), value: ownGap });
 
     /**
      * ONE ENDING, FOR EVERY MEMBER WHO GETS HERE.
@@ -4049,16 +4040,16 @@ const Onboarding = () => {
           <div style={{ marginBlockEnd: 22 }}>
             <WorkingPanel
               operation="market_read"
-              title="Writing your read"
+              title={tr("end.writingTitle")}
               stages={genStages}
               runId={revealRunId}
             />
           </div>
         ) : null}
 
-        <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>{ENDING.eyebrow}</p>
-        <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{ENDING.headline}</h1>
-        <p style={{ ...bodyLight }}>{ENDING.body}</p>
+        <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, ...arMono }}>{tr("end.eyebrow")}</p>
+        <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{tr("end.headline")}</h1>
+        <p style={{ ...bodyLight }}>{tr("end.body")}</p>
 
         {/* the shelf — what was actually collected, for everyone */}
         <div style={{
@@ -4066,7 +4057,7 @@ const Onboarding = () => {
           gap: 8, justifyItems: "center", maxWidth: 420, margin: "24px auto 6px",
         }}>
           {SHELF.map((s, i) => (
-            <ShelfBadge key={s.key} label={shelfLabel(s.key)} sublabel={SHELF_SUB[i]}
+            <ShelfBadge key={s.key} label={shelfLabel(s.key)} sublabel={tr(`end.shelfSub.${i}`)}
               tone={s.tone}
               icon={SHELF_ICON[i]} hint={shelfHint(s.key)}
               unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
@@ -4075,8 +4066,8 @@ const Onboarding = () => {
 
         {ownRows.length ? (
           <div style={{ marginBlockStart: 22 }}>
-            <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-              {ENDING.yoursHead}
+            <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase", ...arMono }}>
+              {tr("end.yoursHead")}
             </p>
             <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
               {ownRows.map((r) => (
@@ -4091,7 +4082,15 @@ const Onboarding = () => {
 
         {/* what Aura writes from — true of everyone who got here */}
         <p style={{ ...bodyLight, marginBlockStart: 20 }}>
-          {proof && proof.posts > 0 ? (
+          {isAr ? (
+            proof && proof.posts > 0
+              ? tr("end.proof.base", {
+                  posts: num(proof.posts), words: num(proof.words),
+                  pctPart: proof.pctWithNumber !== null ? tr("end.proof.pctPart", { pct: proof.pctWithNumber }) : "",
+                  evidencePart: evidenceShown ? tr("end.proof.evidencePart", { count: num(evidenceShown) }) : "",
+                })
+              : `${tr("end.emptyPosts")} ${evidenceShown ? tr("end.proof.withEvidence", { count: num(evidenceShown) }) : tr("end.proof.noEvidence")}`
+          ) : proof && proof.posts > 0 ? (
             <>
               I have {nPosts(proof.posts, "en")} of yours and {num(proof.words)} words in your own voice
               {proof.pctWithNumber !== null ? `, ${proof.pctWithNumber}% of them carrying a real number` : ""}
@@ -4100,15 +4099,15 @@ const Onboarding = () => {
             </>
           ) : (
             <>
-              {EMPTY_POSTS_LINE}
+              {tr("end.emptyPosts")}
               {evidenceShown ? ` I already have ${nEvidence(evidenceShown, "en")} you captured and your own answers on file.` : " I already have your own answers on file."}
             </>
           )}
         </p>
         <p style={{ ...bodyLight }}>
           {mayPromiseMorning
-            ? "Tonight I read for the signals in your read. Tomorrow morning there's something waiting."
-            : "I'll keep reading for the signals in your read. When something is worth your name on it, you'll hear — not before."}
+            ? tr("end.morning")
+            : tr("end.noMorning")}
         </p>
 
         {/* ANONYMOUS ONLY — the loss is only true while there is no account. */}
@@ -4116,15 +4115,15 @@ const Onboarding = () => {
           <p style={{
             margin: "22px 0 0", paddingInlineStart: 14, borderInlineStart: "3px solid #E0A82E",
             fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink,
-          }}>{ENDING.loss}</p>
+          }}>{tr("end.loss")}</p>
         ) : null}
 
         <div style={{ marginBlockStart: 26, opacity: 0.72 }}>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-            {ENDING.tenthHead}
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase", ...arMono }}>
+            {tr("end.tenthHead")}
           </p>
           <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 9 }}>
-            {ENDING.tenth.map((line) => (
+            {[0, 1, 2, 3].map((n) => tr(`end.tenth.${n}`)).map((line) => (
               <li key={line} style={{ position: "relative", paddingInlineStart: 18, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
                 <span aria-hidden style={{
                   position: "absolute", insetInlineStart: 0, insetBlockStart: 7,
@@ -4136,31 +4135,31 @@ const Onboarding = () => {
           </ul>
         </div>
 
-        <p style={{ ...bodyLight, marginBlockStart: 22 }}>{ENDING.closing}</p>
+        <p style={{ ...bodyLight, marginBlockStart: 22 }}>{tr("end.closing")}</p>
 
         {revealPending && proof && proof.lines.length > 0 ? (
-          <WaitProof lines={proof.lines} startAt={3} howLong="Writing your read. About a minute." />
+          <WaitProof lines={proof.lines} startAt={3} howLong={tr("end.writingWait")} />
         ) : null}
 
         {/* ONE primary. */}
         <Actions style={{ marginBlockStart: 22 }}>
           <OBButton
             loading={revealPending && !revealSlow}
-            loadingLabel="Writing your read…"
+            loadingLabel={tr("end.writingBusy")}
             onClick={() => {
               go(13);
             }}
           >
             {revealPending && revealSlow
-              ? "See what I have so far"
-              : userId ? ENDING.ctaSignedIn : ENDING.cta}
+              ? tr("end.soFar")
+              : userId ? tr("end.ctaSignedIn") : tr("end.cta")}
           </OBButton>
         </Actions>
         <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-          {ENDING.ctaSub}
+          {tr("end.ctaSub")}
         </p>
         <Actions style={{ marginBlockStart: 10 }}>
-          <OBButton variant="tertiary" onClick={saveAndExit}>{ENDING.finishLater}</OBButton>
+          <OBButton variant="tertiary" onClick={saveAndExit}>{tr("end.finishLater")}</OBButton>
         </Actions>
       </PaperShell>
     );
@@ -4181,11 +4180,11 @@ const Onboarding = () => {
       try {
         const how = await shareRevealCard(shareRef.current, { caption: liveCaption });
         toast.success(how === "shared"
-          ? "Sent to your share sheet."
-          : "Image saved — the caption is on your clipboard, ready to paste.");
+          ? tr("s13.toast.shared")
+          : tr("s13.toast.saved"));
       } catch (err) {
         console.error("[reveal] share failed", err);
-        toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
+        toast.error(tr("s13.toast.imageFailed"));
       } finally {
         setSharing(false);
       }
@@ -4211,10 +4210,10 @@ const Onboarding = () => {
           .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "profile";
         const date = new Date().toISOString().slice(0, 10);
         await exportReportPdf(paperMountRef.current, `aura-position-${slug}-${date}.pdf`);
-        toast.success("Report downloaded.");
+        toast.success(tr("s13.toast.reportDone"));
       } catch (err) {
         console.error("[reveal] report export failed", err);
-        toast.error("Couldn't build the report just now — it's waiting for you inside Aura.");
+        toast.error(tr("s13.toast.reportFailed"));
       } finally {
         setBuildingReport(false);
       }
@@ -4231,22 +4230,22 @@ const Onboarding = () => {
                we are still asking, we say nothing about where it is. */
             <WorkingPanel
               operation="market_read"
-              title="Opening your read"
+              title={tr("s13.opening")}
               onNight
               runId={revealOpenRunId}
-              stages={[{ key: "open", label: "Fetching the read KnownBy wrote for you", state: "active" }]}
-              onCarryOn={{ label: "Carry on without it", action: () => go(SHARE_SCREEN) }}
+              stages={[{ key: "open", label: tr("s13.fetching"), state: "active" }]}
+              onCarryOn={{ label: tr("s13.carryOn"), action: () => go(SHARE_SCREEN) }}
             />
           ) : (
             <div style={{ textAlign: "center", color: "var(--ob-white)" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
                 {readDone
-                  ? "Your read is saved. You'll find it on your Home."
-                  : "KnownBy is still writing your read. It'll be on your Home the moment it's done."}
+                  ? tr("s13.saved")
+                  : tr("s13.stillWriting")}
               </p>
               <Actions style={{ marginBlockStart: 20 }}>
                 <OBButton onClick={() => go(SHARE_SCREEN)}
-                  style={{ background: "var(--ob-white)", color: "var(--ob-blue)" }}>{ENDING.cta}</OBButton>
+                  style={{ background: "var(--ob-white)", color: "var(--ob-blue)" }}>{tr("end.cta")}</OBButton>
               </Actions>
             </div>
           )}
@@ -4279,13 +4278,13 @@ const Onboarding = () => {
              not start a ten-second file download by surprise: downloading is
              its own control, with its own busy state. */}
           <OBButton disabled={busy} onClick={() => go(SHARE_SCREEN)}
-            style={{ background: "#FFFFFF", color: OB.blue }}>Continue</OBButton>
+            style={{ background: "#FFFFFF", color: OB.blue }}>{tr("s13.continue")}</OBButton>
           {brandPaper ? (
             <OBButton variant="secondary" disabled={busy} loading={buildingReport}
-              loadingLabel="Building your report…"
+              loadingLabel={tr("s13.buildingReport")}
               onClick={() => void downloadFullReport()}
               style={{ borderColor: "rgba(255,255,255,.6)", color: "#FFFFFF", background: "transparent" }}>
-              Download my full report (PDF)
+              {tr("s13.downloadReport")}
             </OBButton>
           ) : null}
           {brandPaper ? (
@@ -4293,20 +4292,20 @@ const Onboarding = () => {
               <p style={{
                 margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
                 color: "rgba(255,255,255,.80)", textAlign: "center",
-              }}>The full read includes the gap. The card doesn't.</p>
+              }}>{tr("s13.gapNote")}</p>
             ) : null
           ) : (
             /* A promised deliverable never vanishes in silence. */
             <p style={{
               margin: 0, fontSize: 12.5, lineHeight: 1.55,
               color: "rgba(255,255,255,.85)", textAlign: "center",
-            }}>Your full read is still being written. It'll be in your inbox and on your Home page shortly.</p>
+            }}>{tr("s13.stillBeingWritten")}</p>
           )}
           {postedUrl ? (
             <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
               display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
               textDecoration: "underline", padding: "10px 0",
-            }}>View it on LinkedIn</a>
+            }}>{tr("s13.viewLinkedIn")}</a>
           ) : null}
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
@@ -4316,7 +4315,7 @@ const Onboarding = () => {
             margin: "12px 0 0", fontSize: 12, lineHeight: 1.7,
             color: "rgba(255,255,255,.80)", textAlign: "center",
           }}>
-            This is a read, not a verdict. <ReadCorrection userId={userId} onNight inline /> ·{" "}
+            {tr("s13.notVerdict")} <ReadCorrection userId={userId} onNight inline /> ·{" "}
             <MethodNote onNight inline />
           </p>
           </>
@@ -4339,11 +4338,11 @@ const Onboarding = () => {
       try {
         const how = await shareRevealCard(shareRef.current, { caption: liveCaption });
         toast.success(how === "shared"
-          ? "Sent to your share sheet."
-          : "Image saved — the caption is on your clipboard, ready to paste.");
+          ? tr("s13.toast.shared")
+          : tr("s13.toast.saved"));
       } catch (err) {
         console.error("[reveal] share failed", err);
-        toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
+        toast.error(tr("s13.toast.imageFailed"));
       } finally {
         setSharing(false);
       }
@@ -4370,7 +4369,7 @@ const Onboarding = () => {
         setShareUrl(`${window.location.origin}/r/${token}`);
       } catch (err) {
         console.error("[reveal] share link failed", err);
-        toast.error("Couldn't make the link just now. Try again in a moment.");
+        toast.error(tr("share.toast.linkFailed"));
       } finally {
         setMinting(false);
       }
@@ -4381,16 +4380,16 @@ const Onboarding = () => {
       if (!shareUrl) return;
       try {
         await navigator.clipboard.writeText(shareUrl);
-        toast.success("Link copied.");
+        toast.success(tr("share.toast.copied"));
       } catch {
-        toast.error("Couldn't copy that. Long-press the link to copy it.");
+        toast.error(tr("share.toast.copyFailed"));
       }
     };
 
     content = (
       <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Light }}>{AFTER_KEEP.heading}</h1>
-        <p style={{ ...bodyLight }}>{AFTER_KEEP.body}</p>
+        <h1 style={{ ...h1Light }}>{tr("share.heading")}</h1>
+        <p style={{ ...bodyLight }}>{tr("share.body")}</p>
 
         {reveal ? (
           <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
@@ -4402,7 +4401,7 @@ const Onboarding = () => {
 
         <div style={{ marginBlockStart: 18 }}>
           <label htmlFor="ob-caption" style={{ display: "block", fontSize: 12.5, color: OB.muted, marginBlockEnd: 6 }}>
-            {AFTER_KEEP.captionLabel}
+            {tr("share.captionLabel")}
           </label>
           <textarea
             id="ob-caption"
@@ -4416,11 +4415,11 @@ const Onboarding = () => {
 
         <Actions style={{ marginBlockStart: 18 }}>
           {!shareUrl ? (
-            <OBButton variant="secondary" disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
-              onClick={() => void mintShare()}>{AFTER_KEEP.share}</OBButton>
+            <OBButton variant="secondary" disabled={!reveal || minting} loading={minting} loadingLabel={tr("share.minting")}
+              onClick={() => void mintShare()}>{tr("share.share")}</OBButton>
           ) : null}
           <OBButton variant="tertiary" disabled={!reveal || busy} onClick={() => void downloadCard()}>
-            {sharing ? "Building…" : AFTER_KEEP.download}
+            {sharing ? tr("share.building") : tr("share.download")}
           </OBButton>
         </Actions>
 
@@ -4431,17 +4430,17 @@ const Onboarding = () => {
                 target="_blank" rel="noopener noreferrer" style={quietLink}>WhatsApp</a>
               <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
                 target="_blank" rel="noopener noreferrer" style={quietLink}>LinkedIn</a>
-              <button type="button" onClick={() => void copyShareLink()} style={quietLink}>Copy link</button>
+              <button type="button" onClick={() => void copyShareLink()} style={quietLink}>{tr("share.copyLink")}</button>
             </div>
             <p style={{ margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6, color: OB.muted }}>
-              Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
+              {tr("share.linkNote")}
             </p>
           </>
         ) : null}
 
         <Actions style={{ marginBlockStart: 18 }}>
           {/* ONE primary on this screen too — sharing is the option, continuing is the path. */}
-          <OBButton onClick={() => go(14)}>{AFTER_KEEP.continue}</OBButton>
+          <OBButton onClick={() => go(14)}>{tr("share.continue")}</OBButton>
         </Actions>
       </PaperShell>
     );
@@ -4461,9 +4460,9 @@ const Onboarding = () => {
   if (screen === 14) {
     content = (
       <PaperShell onExit={saveAndExit} face footer={escapeFooter}>
-        <h1 style={{ ...h1Light, textAlign: "center" }}>When should I bring it to you?</h1>
+        <h1 style={{ ...h1Light, textAlign: "center" }}>{tr("s14.heading")}</h1>
         <p style={{ ...bodyLight, textAlign: "center" }}>
-          I read overnight. Tell me when your day starts and that's when it's waiting.
+          {tr("s14.body")}
         </p>
         <div style={{ display: "flex", gap: 9, marginBlockStart: 20 }}>
           {(["Morning", "Midday", "Evening"] as const).map((slot) => (
@@ -4474,18 +4473,18 @@ const Onboarding = () => {
               border: `1px solid ${dailyTime === slot ? OB.blue : OB.line}`,
               color: dailyTime === slot ? "#FFFFFF" : OB.ink,
               minBlockSize: 44,
-            }}>{slot}</button>
+            }}>{tr(`s14.slot.${slot}`)}</button>
           ))}
         </div>
         <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.muted, textAlign: "center" }}>
-          Your time zone · {timeZone}
+          {tr("s14.tz", { tz: timeZone })}
         </p>
 
         {/* ONE primary. Finishing happens here; nothing is sold beside it. */}
         <Actions style={{ marginBlockStart: 26 }}>
           <OBButton
             loading={finishing}
-            loadingLabel="Finishing…"
+            loadingLabel={tr("s14.finishing")}
             onClick={async () => {
               if (finishing) return;
               setFinishing(true);
@@ -4504,14 +4503,14 @@ const Onboarding = () => {
               if (ok) navigate("/home", { replace: true });
             }}
           >
-            Take me in
+            {tr("s14.cta")}
           </OBButton>
         </Actions>
         <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-          I'll email your read from an inbox I read myself. If it got you wrong, just reply and tell me — that's how I learn you.
+          {tr("s14.email")}
         </p>
 
-        <p style={footnote}>KnownBy publishes only when you approve it. Nothing goes out in your name on its own.</p>
+        <p style={footnote}>{tr("s14.approve")}</p>
       </PaperShell>
     );
   }
