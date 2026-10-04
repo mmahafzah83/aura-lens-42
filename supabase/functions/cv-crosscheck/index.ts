@@ -537,6 +537,10 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     const text = blocks.map((c: any) => c.text || "").join("") || "";
     const toolUse = blocks.find((c: any) => c?.type === "tool_use" && c?.name === CROSSCHECK_TOOL.name);
     const toolInput = toolUse && typeof toolUse.input === "object" ? toolUse.input : null;
+    let styleCount: number | null = null;
+    if (l === "ar" && toolInput) {
+      try { styleCount = arabicStyleNotes(arabicProse(repairCvArabic(JSON.parse(JSON.stringify(toolInput))))).length; } catch (_) { styleCount = null; }
+    }
     try {
       EdgeRuntime.waitUntil(logAIUsage({
         user_id: targetId ?? undefined,
@@ -545,7 +549,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
         model: data.model,
         input_tokens: data.usage?.input_tokens,
         output_tokens: data.usage?.output_tokens,
-        metadata: { lang: l, attempt, stop_reason: data.stop_reason ?? null },
+        metadata: { lang: l, attempt, stop_reason: data.stop_reason ?? null, ...(styleCount !== null ? { style_notes_count: styleCount } : {}) },
       }));
     } catch (_) { /* non-blocking */ }
     /* Raw text is kept so a future parse failure is recoverable, not lost. */
@@ -774,17 +778,6 @@ CORRECTION — your previous answer failed these assertions: ${failingAll.map((a
   const styleNotes = outLang === "ar" ? arabicStyleNotes(arabicProse(parsed)) : [];
   if (outLang === "ar") {
     console.log("[cv-crosscheck] arabic_style_notes", styleNotes.length, JSON.stringify(styleNotes));
-    try {
-      EdgeRuntime.waitUntil(logAIUsage({
-        user_id: targetId ?? undefined,
-        function_name: "cv-crosscheck",
-        provider: "anthropic",
-        model: data?.model ?? "claude-sonnet-4-5-20250929",
-        input_tokens: 0,
-        output_tokens: 0,
-        metadata: { lang: outLang, attempt: "style_notes", style_notes_count: styleNotes.length },
-      }));
-    } catch (_) { /* non-blocking */ }
   }
 
   const crosscheck = {
