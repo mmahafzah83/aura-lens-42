@@ -10,6 +10,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
+import { arabicGate, arabicCorrection, type ArabicGateFailure } from "./arabicGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -306,6 +307,14 @@ function hasPlaceholderInValues(v: unknown): boolean {
 const SYSTEM_PROMPT =
   "You read a senior professional's public LinkedIn profile and recent posts, and tell them how their market currently sees them. Address the reader directly as 'you' in every sentence. Never refer to them by name or in the third person — this is their mirror, not a report about them. You use only what is in the material. You never invent an achievement, a number, a date or an employer. Output plain text only — no markdown, no asterisks, no headers, no bracketed placeholders. The reader is a senior GCC executive: write plainly, in short sentences, as a trusted advisor would over coffee. Never use these words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate. ARCHETYPE RULE: the name is 'The [Adjective] [Noun]'. 'Strategic' is banned as the adjective and 'Architect' is banned as the noun. Before naming it, ask yourself whether the name would fit half of all senior professionals; if so it is too generic, choose again from what THIS person's material actually shows.";
 
+/** Appended verbatim to SYSTEM_PROMPT when the visitor reads in Arabic. */
+const ARABIC_BLOCK = `LANGUAGE — write every value in Arabic. Contemporary, simple Arabic for a senior Saudi and Gulf reader, clear to a Levantine or Egyptian reader. Not dialect, not bureaucratic. Write it natively; never translate English sentence structure. Address the reader directly as أنت (masculine singular) in every sentence. Short sentences. Western digits (0-9) only. Company names, product names, job titles written in Latin in the material and acronyms stay in Latin letters, and never take an attached Arabic prefix (write «في EY» not «بـEY»). No English words otherwise.
+ARCHETYPE in Arabic: a definite noun followed by a definite adjective, two words, for example «المُصلح الهادئ». The noun must not be «المهندس» or «المعماري» and the adjective must not be «الاستراتيجي». The same test applies: if the name would fit half of all senior professionals, choose again from what THIS person's material shows.
+THEMES: three short Arabic phrases, 2 to 5 words each.
+own_words_quote: one verbatim sentence from one of their own posts, in the language it was written in. Never translate a quote. own_words_read is in Arabic.
+Never use these Arabic words or phrases: «تم», «يتم», «رائد فكر», «قائد فكر», «العلامة الشخصية», «علامتك الشخصية», «رحلة», «رحلتك», «مشهد», «يُبحر», «تسخير», «تمكين», «الارتقاء», «سلس», «متين», «في عالم», «في ظل», «لا شك أن», «من الجدير بالذكر», «يلعب دورًا», «على حد سواء».
+The JSON keys stay exactly as specified, in English.`;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -579,7 +588,7 @@ Deno.serve(async (req) => {
     const sparse = (!about && experience.length < 2) || postTexts.length === 0;
 
     const trunc = (v: unknown, n: number) => JSON.stringify(v ?? null).slice(0, n);
-    const userPrompt = [
+    const userPromptFor = (l: "ar" | "en") => [
       `NAME: ${full_name ?? "unknown"}`,
       `HEADLINE: ${(headline ?? "").slice(0, 400)}`,
       `LOCATION: ${(location ?? "").slice(0, 200)}`,
@@ -600,7 +609,7 @@ Deno.serve(async (req) => {
       "",
       "Every sentence you write must address the reader as 'you'. Return exactly this JSON and nothing else:",
       `{
-  "archetype": "The [Adjective] [Noun]",
+  "archetype": "${l === "ar" ? "اسم معرّف + صفة معرّفة" : "The [Adjective] [Noun]"}",
   "market_read": "two sentences on how your field currently sees you, from the evidence",
   "themes": ["three short career themes read from your own material"],
   "uncontested_space": "one sentence naming a space your material suggests you could own",
@@ -620,7 +629,7 @@ Deno.serve(async (req) => {
       return serveStale() ?? json({ error: "not_configured" }, 400);
     }
 
-    async function callModel(messages: { role: string; content: string }[]) {
+    async function callModel(messages: { role: string; content: string }[], l: "ar" | "en") {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -633,7 +642,7 @@ Deno.serve(async (req) => {
           /* The seven-key read runs long; 1500 cut it mid-sentence. */
           max_tokens: 4000,
           temperature: 0.3,
-          system: SYSTEM_PROMPT,
+          system: l === "ar" ? SYSTEM_PROMPT + "\n\n" + ARABIC_BLOCK : SYSTEM_PROMPT,
           messages,
         }),
       });
@@ -656,38 +665,70 @@ Deno.serve(async (req) => {
         input_tokens: data?.usage?.input_tokens ?? 0,
         output_tokens: data?.usage?.output_tokens ?? 0,
         success: !!text,
-        metadata: { handle, sparse },
+        metadata: { handle, sparse, lang: l },
       });
       return text;
     }
 
-    const messages = [{ role: "user", content: stripLoneSurrogates(userPrompt) }];
-    /* Stage four opens: the model writing the read. */
-    run?.mark(OPERATION_STAGES.linkedin_read[3]);
-    let raw = await callModel(messages);
-    let read = parseJsonLoose(raw);
-    if (read && hasPlaceholderInValues(read)) read = null;
-
-    if (!read) {
-      // One correction pass: the shape was wrong or a placeholder survived.
-      const correctionMessages = [...messages];
-      if (raw) correctionMessages.push({ role: "assistant", content: raw });
-      correctionMessages.push({
-        role: "user",
-        content:
-          "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
-      });
-      raw = await callModel(correctionMessages);
-      read = parseJsonLoose(raw);
+    /**
+     * One language attempt: a draft, and at most ONE correction pass, shared
+     * between the shape check and (for Arabic) the Arabic gate.
+     */
+    async function generate(l: "ar" | "en"): Promise<
+      { read: Record<string, unknown> | null; raw: string; gateFail: ArabicGateFailure | null }
+    > {
+      const messages = [{ role: "user", content: stripLoneSurrogates(userPromptFor(l)) }];
+      let raw = await callModel(messages, l);
+      let read = parseJsonLoose(raw);
       if (read && hasPlaceholderInValues(read)) read = null;
+      let gateFail = l === "ar" && read ? arabicGate(read) : null;
+
+      if (!read || gateFail) {
+        // One correction pass: the shape was wrong, a placeholder survived, or the Arabic failed.
+        const correctionMessages = [...messages];
+        if (raw) correctionMessages.push({ role: "assistant", content: raw });
+        correctionMessages.push({
+          role: "user",
+          content: gateFail
+            ? arabicCorrection(gateFail)
+            : "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
+        });
+        raw = await callModel(correctionMessages, l);
+        read = parseJsonLoose(raw);
+        if (read && hasPlaceholderInValues(read)) read = null;
+        gateFail = l === "ar" && read ? arabicGate(read) : null;
+      }
+      return { read: gateFail ? null : read, raw, gateFail };
     }
 
+    /* Stage four opens: the model writing the read. */
+    run?.mark(OPERATION_STAGES.linkedin_read[3]);
+    let outLang: "ar" | "en" = lang;
+    let attempt = await generate(lang);
+
+    if (lang === "ar" && !attempt.read) {
+      await logError("mirror-read", new Error("Arabic read unusable after one correction"), {
+        user_id: null, severity: "high",
+        context: { handle, path: "arabic_gate", failed_check: attempt.gateFail ?? "unreadable" },
+      });
+      /* Ruling 3: serve the English read instead, and say so. */
+      const en = viewOf("en");
+      if (en && en.read_version >= READ_VERSION) {
+        await finish("ok", "arabic_fallback_cached");
+        return serveView(en, "en", Date.now() - new Date(en.generated_at).getTime() >= CACHE_TTL_MS);
+      }
+      outLang = "en";
+      attempt = await generate("en");
+    }
+
+    let read = attempt.read;
+    const raw = attempt.raw;
 
     if (!read) {
       await logError("mirror-read", new Error("unreadable model output"), {
         user_id: null,
         severity: "high",
-        context: { handle, sparse, raw_head: (raw ?? "").slice(0, 500), raw_length: (raw ?? "").length },
+        context: { handle, sparse, lang: outLang, raw_head: (raw ?? "").slice(0, 500), raw_length: (raw ?? "").length },
       });
       await refund();
       await finish("failed", "unreadable");
@@ -698,24 +739,22 @@ Deno.serve(async (req) => {
     /* The read the client receives carries the record it was drawn from. */
     read = { ...read, raw: rawFacts };
     const generated_at = new Date().toISOString();
+    const shared = {
+      handle,
+      canonical_url,
+      name: full_name ?? null,
+      headline: headline ?? null,
+      avatar_url,
+      posts_read: postTexts.length,
+      hit_count: (cached?.hit_count ?? 0) + 1,
+    };
+    /* Each language writes only its own columns. */
+    const langCols = outLang === "ar"
+      ? { read_ar: read, sparse_ar: sparse, read_version_ar: READ_VERSION, generated_at_ar: generated_at }
+      : { read, sparse, read_version: READ_VERSION, generated_at };
     const { error: upErr } = await admin
       .from("mirror_reads")
-      .upsert(
-        {
-          handle,
-          canonical_url,
-          read,
-          sparse,
-          name: full_name ?? null,
-          headline: headline ?? null,
-          avatar_url,
-          posts_read: postTexts.length,
-          read_version: READ_VERSION,
-          generated_at,
-          hit_count: (cached?.hit_count ?? 0) + 1,
-        },
-        { onConflict: "handle" },
-      );
+      .upsert({ ...shared, ...langCols } as any, { onConflict: "handle" });
     if (upErr) console.error("[mirror-read] cache write failed:", upErr.message);
 
     await finish("ok");
@@ -723,6 +762,7 @@ Deno.serve(async (req) => {
       ok: true, cached: false, sparse, handle, read,
       name: full_name ?? null, headline: headline ?? null, avatar_url,
       posts_read: postTexts.length, generated_at,
+      lang: outLang, lang_fallback: outLang !== lang,
     });
   } catch (e) {
     await refund();
