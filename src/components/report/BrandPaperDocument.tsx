@@ -6,7 +6,7 @@
 // System-A tokens only. [data-report-page] + SHEET_W/SHEET_H mirror the
 // identity report so exportReportPdf can rasterise this the same way.
 
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import {
   PaperHeader,
   PaperFooter,
