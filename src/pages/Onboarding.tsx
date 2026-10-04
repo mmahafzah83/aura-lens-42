@@ -79,8 +79,7 @@ import {
   ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stageName,
 } from "@/lib/brand";
 import {
-  SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_PATH,
-  SEAT_ONE_JOB, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_CTA_SECONDARY, SEAT_RESERVE_NOTE,
+  SEAT_ROWS, SEAT_PATH,
 } from "@/lib/seatCopy";
 import { BRAND, ONBOARDING_INTRO } from "@/constants/language";
 import { Trans } from "react-i18next";
@@ -2037,11 +2036,12 @@ const Onboarding = () => {
         answers: Object.keys(finalAnswers).length,
         sliders: Object.keys(scores).length,
       },
+      lang: isAr ? "ar" : "en",
     });
     const figures = [
       ...(evidenceShown ? [{ value: num(evidenceShown), label: `${countNoun(evidenceShown, "evidence")} captured` }] : []),
       ...(Object.keys(scores).length
-        ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
+        ? [{ value: num(Object.keys(scores).length), label: tr("ob.fig.strengths") }] : []),
       ...(signalsTotal ? [{ value: num(signalsTotal), label: `${countNoun(signalsTotal, "signal")} found` }] : []),
     ];
     setReveal(built ? { ...built, figures } : built);
@@ -2083,12 +2083,13 @@ const Onboarding = () => {
           answers: Object.keys(answers).length,
           sliders: Object.keys(scores).length,
         },
+        lang: isAr ? "ar" : "en",
       });
       if (d) {
         const figures = [
           ...(evidenceShown ? [{ value: num(evidenceShown), label: `${countNoun(evidenceShown, "evidence")} captured` }] : []),
           ...(Object.keys(scores).length
-            ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
+            ? [{ value: num(Object.keys(scores).length), label: tr("ob.fig.strengths") }] : []),
           ...(signalsTotal ? [{ value: num(signalsTotal), label: `${countNoun(signalsTotal, "signal")} found` }] : []),
         ];
         setReveal({ ...d, figures });
@@ -4210,7 +4211,7 @@ const Onboarding = () => {
         const slug = (firstName.trim() || "profile").toLowerCase()
           .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "profile";
         const date = new Date().toISOString().slice(0, 10);
-        await exportReportPdf(paperMountRef.current, `aura-position-${slug}-${date}.pdf`);
+        await exportReportPdf(paperMountRef.current, `knownby-position-${slug}-${date}.pdf`);
         toast.success(tr("s13.toast.reportDone"));
       } catch (err) {
         console.error("[reveal] report export failed", err);
@@ -4523,16 +4524,16 @@ const Onboarding = () => {
       <PaperShell onExit={() => navigate("/home", { replace: true })} footer={null}>
         <div style={{ padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
           <p style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", fontWeight: 700, color: OB.ink }}>
-            {SEAT_HEADING}
+            {tr("seat.heading")}
           </p>
           <p style={{ margin: "10px 0 0", fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", fontWeight: 600, color: OB.ink }}>
-            {SEAT_ONE_JOB}
+            {tr("seat.oneJob")}
           </p>
           <p style={{ margin: "18px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
-            {SEAT_HOW_LABEL}
+            {tr("seat.howLabel")}
           </p>
           <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-            {SEAT_ROWS.map((row, i) => (
+            {SEAT_ROWS.map((_row, i) => tr(`seat.how.${i + 1}`)).map((row, i) => (
               <li key={i} style={{ fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted, paddingInlineStart: 18, position: "relative" }}>
                 <span style={{ position: "absolute", insetInlineStart: 0, color: OB.blue }}>—</span>
                 {row}
@@ -4540,47 +4541,47 @@ const Onboarding = () => {
             ))}
           </ul>
           <p style={{ margin: "18px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
-            What stays out of reach without one
+            {tr("seat.lossLabel")}
           </p>
           <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-            {LOSS_LINES.map((line, i) => (
+            {LOSS_LINES.map((_line, i) => tr(`seat.loss.${i + 1}`)).map((line, i) => (
               <li key={i} style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, paddingInlineStart: 18, position: "relative" }}>
                 <span style={{ position: "absolute", insetInlineStart: 0, color: OB.blue }}>—</span>
                 {line}
               </li>
             ))}
           </ul>
-          <p style={{ margin: "16px 0 0", fontSize: "var(--ob-body)", fontWeight: 600, color: OB.ink }}>{SEAT_PRICE}</p>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
-          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.ink }}>{SEAT_CONSTRAINT}</p>
+          <p style={{ margin: "16px 0 0", fontSize: "var(--ob-body)", fontWeight: 600, color: OB.ink }}>{tr("seat.price")}</p>
+          <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{tr("seat.priceSub")}</p>
+          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.ink }}>{tr("seat.constraint")}</p>
           <Actions style={{ marginBlockStart: 16 }}>
             {/* ONE primary — the seat, because the journey is already saved and
                 Home is one quiet control away. */}
-            <OBButton onClick={() => navigate(`${SEAT_PATH}?intent=reserve_69`)}>{SEAT_CTA}</OBButton>
+            <OBButton onClick={() => navigate(`${SEAT_PATH}?intent=reserve_69`)}>{tr("auth.request.reserve")}</OBButton>
             <OBButton variant="tertiary" onClick={() => navigate(`${SEAT_PATH}?intent=keep_posted`)}>
-              {SEAT_CTA_SECONDARY}
+              {tr("auth.request.keepPosted")}
             </OBButton>
             <OBButton variant="tertiary" onClick={() => navigate("/home", { replace: true })}>
-              Not now — take me in
+              {tr("seat.notNow")}
             </OBButton>
             {connected || !userId ? null : (
               /* A settings action, dressed as one: quiet, in the same row. */
               <OBButton variant="tertiary" onClick={() => void connectLinkedIn({ allowRedirect: true })}
-                loading={connecting} loadingLabel="Connecting…">
-                Connect LinkedIn
+                loading={connecting} loadingLabel={tr("ob.connecting")}>
+                {tr("ob.s1.connect")}
               </OBButton>
             )}
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-            {SEAT_RESERVE_NOTE}
+            {tr("seat.reserveNote")}
           </p>
           {connected || !userId ? null : (
             <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-              {connectNote || "Connect LinkedIn and you find out which of the signals in your read your audience already rewards."}
+              {connectNote || tr("seat.connectNote")}
             </p>
           )}
         </div>
-        <p style={footnote}>You're already in. Your read is saved and your morning is set.</p>
+        <p style={footnote}>{tr("seat.footnote")}</p>
       </PaperShell>
     );
   }

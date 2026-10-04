@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { OB } from "@/components/onboarding/tokens";
 
 /**
@@ -8,6 +9,7 @@ import { OB } from "@/components/onboarding/tokens";
  */
 const MethodNote = ({ onNight = false, inline = false }: { onNight?: boolean; inline?: boolean }) => {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
   const colour = onNight ? "rgba(255,255,255,0.86)" : OB.muted;
   if (inline) {
     return (
@@ -21,16 +23,10 @@ const MethodNote = ({ onNight = false, inline = false }: { onNight?: boolean; in
             fontFamily: "inherit", fontSize: "inherit", color: "inherit", textDecoration: "underline",
           }}
         >
-          How this was built
+          {t("method.toggle")}
         </button>
         {open ? (
-          <p style={{ margin: "8px 0 0", fontSize: 11.5, lineHeight: 1.6, color: colour }}>
-            Read from your LinkedIn profile, your recent posts, the claims you saved, and your own answers. Built on
-            established ways of reading capability and standing: describing behaviour by example, in plain sentences,
-            the leadership-pipeline view of seniority, archetype method from brand work, and uncontested-space
-            strategy. KnownBy is not affiliated with any of them. This is a professional read, not a clinical or
-            psychological test.
-          </p>
+          <p style={{ margin: "8px 0 0", fontSize: 11.5, lineHeight: 1.6, color: colour }}>{t("method.body")}</p>
         ) : null}
       </>
     );
@@ -46,16 +42,10 @@ const MethodNote = ({ onNight = false, inline = false }: { onNight?: boolean; in
           fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: colour, textDecoration: "underline",
         }}
       >
-        How this was built
+        {t("method.toggle")}
       </button>
       {open ? (
-        <p style={{ margin: "6px 0 0", fontSize: 11.5, lineHeight: 1.6, color: colour }}>
-          Read from your LinkedIn profile, your recent posts, the claims you saved, and your own answers. Built on
-          established ways of reading capability and standing: describing behaviour by example, in plain sentences,
-          the leadership-pipeline view of seniority, archetype method from brand work, and uncontested-space
-          strategy. KnownBy is not affiliated with any of them. This is a professional read, not a clinical or
-          psychological test.
-        </p>
+        <p style={{ margin: "6px 0 0", fontSize: 11.5, lineHeight: 1.6, color: colour }}>{t("method.body")}</p>
       ) : null}
     </div>
   );

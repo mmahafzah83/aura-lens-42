@@ -122,7 +122,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
         `}</style>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "16px 8px", gap: 14 }}>
           <span aria-hidden style={{ fontSize: 40, lineHeight: 1, color: "var(--act)" }}>✦</span>
-          <p style={{ ...proseStyle, fontSize: 20 }}>First Flight complete — Aura is now working for you.</p>
+          <p style={{ ...proseStyle, fontSize: 20 }}>First Flight complete — KnownBy is now working for you.</p>
           <button type="button" onClick={ff.retire} style={ctaStyle}>Continue</button>
         </div>
       </section>

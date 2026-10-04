@@ -94,7 +94,7 @@ export async function shareRevealCard(
 ): Promise<"shared" | "downloaded"> {
   const { dataUrl, format } = await rasteriseRevealCard(node, { format: opts.format });
   const blob = await (await fetch(dataUrl)).blob();
-  const fileName = opts.fileName ?? `my-read-from-aura.${format === "jpeg" ? "jpg" : "png"}`;
+  const fileName = opts.fileName ?? `my-read-from-knownby.${format === "jpeg" ? "jpg" : "png"}`;
   const file = new File([blob], fileName, { type: blob.type });
 
   const canShare = (navigator as Navigator & { canShare?: (d: any) => boolean }).canShare;
@@ -340,7 +340,7 @@ const RevealCard = forwardRef<
               <p dir="auto" style={{
                 margin: "16px 0 0", fontSize: 24, lineHeight: 1.55,
                 fontStyle: arabic ? "normal" : "italic", color: "#FFFFFF", ...script,
-              }}>{`“${data.ownWordsQuote}”`}</p>
+              }}>{arabic ? `«${data.ownWordsQuote}»` : `“${data.ownWordsQuote}”`}</p>
               {data.ownWordsRead ? (
                 <p dir="auto" style={{
                   margin: "14px 0 0", fontSize: 19, lineHeight: 1.6,
@@ -490,10 +490,10 @@ const RevealCard = forwardRef<
       <div style={{ ...privatePanel, marginBlockStart: 12 }}>
         <OnlyYou />
         <h3 style={privateHeading}>{t("reveal.inYourOwnWords")}</h3>
-        <p style={{
+        <p dir="auto" style={{
           margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, fontStyle: "italic",
           color: "rgba(255,255,255,0.95)",
-        }}>“{data.ownWordsQuote}”</p>
+        }}>{ARABIC_RE.test(data.ownWordsQuote) ? `«${data.ownWordsQuote}»` : `“${data.ownWordsQuote}”`}</p>
         {data.ownWordsRead ? (
           <p style={{
             margin: "9px 0 0", fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.88)",

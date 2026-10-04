@@ -503,7 +503,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginBlockStart: 20 }}>
           {[
             { value: snapshot.followers, label: "People following you" },
-            { value: postsWithText, label: "Posts Aura has read" },
+            { value: postsWithText, label: "Posts KnownBy has read" },
             { value: yearsVisible, label: "Years on record" },
           ].map((f) => (
             <div key={f.label} style={{ minWidth: 104 }}>
@@ -546,7 +546,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       <div style={halfStyle}>
         <div>
           <div style={ruleStyle} />
-          <SectionHeader label="WHAT AURA SEES" />
+          <SectionHeader label="WHAT KNOWNBY SEES" />
         </div>
         <p style={halfNoteStyle}>LinkedIn shows the facts. This is what they add up to.</p>
 
