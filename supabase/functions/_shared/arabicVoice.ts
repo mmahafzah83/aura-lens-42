@@ -37,7 +37,39 @@ export type ArabicCheck =
   | "arabic_ratio" | "arabic_indic_digits" | "banned_word" | "kaf_as" | "glued_latin"
   | "glued_digit" | "anta_openers" | "archetype_english" | "archetype_banned";
 
-export type ArabicGateDetail = { check: ArabicCheck; field: string; word?: string };
+export type ArabicGateDetail = { check: ArabicCheck; field: string; word?: string; fragment?: string };
+
+/** Up to 60 characters of the value around an offending position. */
+function frag(v: string, at: number): string {
+  const start = Math.max(0, at - 25);
+  return v.slice(start, start + 60).trim();
+}
+
+/**
+ * Mechanical repair of model-written Arabic, applied before the gate:
+ * «و» + Latin/digit → space after «و»; «بـ لـ كـ الـ» + Latin/digit → space
+ * after the tatweel; Arabic-Indic digits → Western. Nothing else changes.
+ */
+export function repairArabic(value: string): string {
+  return value
+    .replace(/(^|[^\u0600-\u06FF])و(?=[A-Za-z0-9])/gu, "$1و ")
+    .replace(/(^|[^\u0600-\u06FF])(بـ|لـ|كـ|الـ)(?=[A-Za-z0-9])/gu, "$1$2 ")
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+}
+
+/** repairArabic on every string inside an object, except skipped top-level keys. */
+export function repairValues<T>(values: T, skipKeys: string[] = []): T {
+  const skip = new Set(skipKeys);
+  const walk = (v: unknown): unknown =>
+    typeof v === "string" ? repairArabic(v)
+    : Array.isArray(v) ? v.map(walk)
+    : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]))
+    : v;
+  if (!values || typeof values !== "object") return values;
+  return Object.fromEntries(
+    Object.entries(values as Record<string, unknown>).map(([k, v]) => [k, skip.has(k) ? v : walk(v)]),
+  ) as T;
+}
 
 const AR = "\\u0600-\\u06FF";
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -92,22 +124,30 @@ export function arabicGateDetail(
     const letters = (v.match(/[\u0600-\u06FFA-Za-z]/g) ?? []).length;
     if (letters >= PROSE_MIN_LETTERS && arabicShare(v) < 0.6) return { check: "arabic_ratio", field: k };
   }
-  for (const [k, v] of all) if (/[\u0660-\u0669]/.test(v)) return { check: "arabic_indic_digits", field: k };
   for (const [k, v] of all) {
-    for (const w of ARABIC_BANNED) if (wholeWord(v, w)) return { check: "banned_word", field: k, word: w };
+    const m = /[\u0660-\u0669]/.exec(v);
+    if (m) return { check: "arabic_indic_digits", field: k, fragment: frag(v, m.index) };
+  }
+  for (const [k, v] of all) {
+    for (const w of ARABIC_BANNED) if (wholeWord(v, w)) return { check: "banned_word", field: k, word: w, fragment: frag(v, Math.max(0, v.indexOf(w))) };
     if (new RegExp(`(^|[^${AR}])بشكل\\s+[${AR}]`, "u").test(v)) return { check: "banned_word", field: k, word: "بشكل" };
     if (new RegExp(`(^|[^${AR}])قام\\s+ب`, "u").test(v)) return { check: "banned_word", field: k, word: "قام بـ" };
   }
-  for (const [k, v] of all) for (const w of KAF_AS) if (wholeWord(v, w)) return { check: "kaf_as", field: k, word: w };
-  for (const [k, v] of all) if (/[\u0600-\u06FF][A-Za-z]/.test(v)) return { check: "glued_latin", field: k };
+  for (const [k, v] of all) for (const w of KAF_AS) if (wholeWord(v, w)) return { check: "kaf_as", field: k, word: w, fragment: frag(v, Math.max(0, v.indexOf(w))) };
+  // After repair: only an Arabic letter (not the tatweel) fused to a Latin letter.
   for (const [k, v] of all) {
-    if (new RegExp(`(^|[^${AR}])(و|الـ|ال)[0-9]`, "u").test(v)) return { check: "glued_digit", field: k };
+    const m = /[\u0600-\u063F\u0641-\u06FF][A-Za-z]/.exec(v);
+    if (m) return { check: "glued_latin", field: k, fragment: frag(v, m.index) };
+  }
+  for (const [k, v] of all) {
+    const m = new RegExp(`(^|[^${AR}])(و|الـ|ال)[0-9]`, "u").exec(v);
+    if (m) return { check: "glued_digit", field: k, fragment: frag(v, m.index) };
   }
   let openers = 0;
   for (const [, v] of all) {
     for (const s of v.split(/[.؟!?\n]/)) if (/^\s*أنت\s/.test(s)) openers++;
   }
-  if (openers > 1) return { check: "anta_openers", field: "*" };
+  if (openers > 2) return { check: "anta_openers", field: "*" };
   return null;
 }
 
@@ -126,7 +166,7 @@ const WHAT: Record<ArabicCheck, string> = {
   kaf_as: "uses «كـ» to mean 'as' before a role. Restructure the sentence",
   glued_latin: "attaches an Arabic letter directly to a Latin name. Use a full preposition or a comma before the name",
   glued_digit: "attaches «و» or «الـ» directly to a digit. Write the number in words or restructure",
-  anta_openers: "opens more than one sentence with «أنت». Address the reader through the verb and attached pronoun",
+  anta_openers: "opens more than two sentences with «أنت». Address the reader through the verb and attached pronoun",
   archetype_english: "is in English. Write it in Arabic as a definite noun followed by a definite adjective",
   archetype_banned: "uses a banned archetype noun or adjective. Choose a name from what this person repeatedly does",
 };
@@ -135,5 +175,6 @@ const WHAT: Record<ArabicCheck, string> = {
 export function arabicCorrectionText(d: ArabicGateDetail): string {
   const where = d.field === "*" ? "The text" : `"${d.field}"`;
   const word = d.word ? ` («${d.word}»)` : "";
-  return `That was not usable. Failed check: ${d.check}. ${where}${word} ${WHAT[d.check]}. Apply every rule of the LANGUAGE block again.`;
+  const quote = d.fragment ? ` Offending text: «${d.fragment.slice(0, 60)}».` : "";
+  return `That was not usable. Failed check: ${d.check}. ${where}${word} ${WHAT[d.check]}.${quote} Apply every rule of the LANGUAGE block again.`;
 }
