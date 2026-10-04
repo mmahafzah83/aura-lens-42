@@ -290,6 +290,7 @@ function Disclosure({
   openSignal?: number;
   children: React.ReactNode;
 }) {
+  const { lang } = useLanguage();
   const ref = useRef<HTMLDetailsElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -327,7 +328,7 @@ function Disclosure({
           aria-hidden
           style={{
             flex: "0 0 auto", color: OB.muted, fontSize: 14,
-            transform: open ? "rotate(90deg)" : "none", transition: "transform 160ms ease",
+            transform: open ? "rotate(90deg)" : lang === "ar" ? "scaleX(-1)" : "none", transition: "transform 160ms ease",
           }}
         >
           ›
