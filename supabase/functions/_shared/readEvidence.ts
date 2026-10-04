@@ -7,7 +7,7 @@ import { getCapabilityProfile, BAND_LABEL } from "./capabilities.ts";
 export async function buildReadEvidence(
   admin: SupabaseClient,
   userId: string,
-  input: { answers: any; auditScores: any; sector?: string | null; band?: string | null },
+  input: { answers: any; auditScores: any; sector?: string | null; band?: string | null; lang?: "ar" | "en" },
 ): Promise<{ floorMet: boolean; userPrompt: string; counts: { frags: number; posts: number; snaps: number; mirror: number } }> {
   const { answers, auditScores, sector, band } = input;
   const uid = userId;
@@ -59,7 +59,7 @@ export async function buildReadEvidence(
     if (handle) {
       const { data: mr } = await admin
         .from("mirror_reads")
-        .select("read, sparse, name, headline, posts_read, generated_at")
+        .select("read, read_ar, sparse, name, headline, posts_read, generated_at")
         .eq("handle", handle)
         .maybeSingle();
       mirrorRead = mr ?? null;
@@ -251,7 +251,9 @@ where they have stayed put, what they stopped doing. That shape is standing, and
   // labelled as such so a hypothesis is never laundered into fact.
   let mirrorBlock = "AN EARLIER READ OF THEIR PUBLIC PROFILE\nNone on file.";
   if (mirrorRead) {
-    const r: any = (mirrorRead.read && typeof mirrorRead.read === "object") ? mirrorRead.read : {};
+    /* An Arabic report prefers the Arabic earlier read; default behaviour is unchanged. */
+    const src = input.lang === "ar" && mirrorRead.read_ar && typeof mirrorRead.read_ar === "object" ? mirrorRead.read_ar : mirrorRead.read;
+    const r: any = (src && typeof src === "object") ? src : {};
     const mLines: string[] = [];
     const put = (label: string, v: unknown) => {
       const s = typeof v === "string" ? v.trim() : "";
