@@ -66,7 +66,7 @@ describe("makeUsable", () => {
     expect(out.notes).toContain("nulled:the_hard_truth");
   });
   it("do_first is re-assigned after its finding is dropped", () => {
-    const out = makeUsable(base({ findings: [F({ do_first: true, evidence: null }), F({ what: "Second." })] }), opts());
+    const out = makeUsable(base({ findings: [F({ do_first: true, what_you_lose: "" }), F({ what: "Second." })] }), opts());
     expect(out.result.findings).toHaveLength(1);
     expect(out.result.findings[0].do_first).toBe(true);
   });
