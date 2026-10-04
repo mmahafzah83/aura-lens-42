@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { readStoredLang } from "@/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { memberText } from "@/lib/memberText";
 import { createPortal } from "react-dom";
 import { X, ArrowLeft, Compass, ChevronDown, Copy, Download, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -43,6 +45,21 @@ const pillBtn: React.CSSProperties = {
 const quietPill: React.CSSProperties = {
   background: SURFACE, border: `1px solid ${RULE}`, color: INK,
   borderRadius: 999, fontSize: 13, cursor: "pointer",
+};
+
+/** Report section markers → i18n label keys. The markers stay English in the model output. */
+const SECTION_LABEL_KEY: Record<string, string> = {
+  "HOW THE MARKET SEES YOU": "report.h.marketSees",
+  "HOW YOU BUILD TRUST": "report.h.trust",
+  "YOUR NATURAL TONE": "report.h.tone",
+  "YOUR ONE-LINER": "report.h.oneLiner",
+  "WHAT ONLY YOU CAN DO": "report.h.onlyYou",
+  "THE GAP": "report.h.gap",
+  "THE SPACE NOBODY ELSE OWNS": "report.h.space",
+  "YOUR 3 TOPICS": "report.h.topics",
+  "WHERE TO INVEST NEXT": "report.h.investNext",
+  "THE HONEST TRUTH": "report.h.honestTruth",
+  "IN YOUR OWN WORDS": "report.h.ownWords",
 };
 
 const SECTION_DEFS: { key: string; label: string; hint: string }[] = [
@@ -262,6 +279,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
   const [interlude, setInterlude] = useState<null | { dots: string; text: string }>(null);
   const [companionLine, setCompanionLine] = useState<string>("");
   const { toast } = useToast();
+  const { t: tr, lang: uiLang } = useLanguage();
+  /* The language the report was written in, and whether Arabic fell back to English. */
+  const [reportLang, setReportLang] = useState<"ar" | "en" | null>(null);
+  const [langFallback, setLangFallback] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -442,6 +463,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
         return;
       }
       setInterpretation((data as any).interpretation);
+      setReportLang((data as any).lang === "ar" ? "ar" : (data as any).lang === "en" ? "en" : null);
+      setLangFallback((data as any).lang_fallback === true);
     } catch (e: any) {
       if (timedOut) return;
       console.error("Brand assessment error:", e);
@@ -477,6 +500,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
         resultsObj.secondary_archetype = secMatch?.[1]?.trim() || "";
       }
 
+      if (reportLang) resultsObj.lang = reportLang;
+      if (langFallback) resultsObj.lang_fallback = true;
       const pillars = derivePillars(resultsObj);
       const updatePayload: Record<string, any> = {
         brand_assessment_answers: formattedAnswers,
@@ -1154,7 +1179,7 @@ function ResultsView({
                     <div
                       style={{ ...labelCaps, color: ACT, fontWeight: 600 }}
                     >
-                      {s.label}
+                      {uiLang === "ar" && SECTION_LABEL_KEY[s.key] ? tr(SECTION_LABEL_KEY[s.key]) : s.label}
                     </div>
                     <div style={{ fontSize: 12, fontStyle: "italic", color: INK_FAINT, marginTop: 2 }}>
                       {s.hint}
@@ -1177,7 +1202,9 @@ function ResultsView({
                     [&_p]:text-[14px] [&_p]:leading-relaxed [&_p]:mb-2
                     [&_li]:text-[14px]
                   "
+                    dir="auto"
                     style={{
+                      ...memberText(content).style,
                       ["--tw-prose-body" as any]: INK_SOFT,
                       ["--tw-prose-bold" as any]: INK,
                       ["--tw-prose-bullets" as any]: INK_FAINT,
