@@ -45,10 +45,10 @@ describe("makeUsable", () => {
     expect(out.notes).toContain("downgraded:rewrite_missing");
     expect(out.failure).toBeNull();
   });
-  it("banned word in why_it_matters drops that finding", () => {
+  it("brand banned word in why_it_matters is a note only; the finding stays", () => {
     const out = makeUsable(base({ findings: [F(), F({ why_it_matters: "It builds authority." })] }), opts());
-    expect(out.result.findings).toHaveLength(1);
-    expect(out.notes).toContain("dropped_finding:banned:authority@why_it_matters");
+    expect(out.result.findings).toHaveLength(2);
+    expect(out.notes).toContain("noted:banned:authority@why_it_matters");
   });
   it("all findings dropped gives no_usable_findings", () => {
     const out = makeUsable(base({ findings: [F({ what: "" }), F({ what_you_lose: "" })] }), opts());
