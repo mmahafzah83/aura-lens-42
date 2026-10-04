@@ -5,6 +5,38 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
+import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText } from "../_shared/arabicVoice.ts";
+
+/** Appended after the shared Arabic voice when the report is written in Arabic. */
+const ARABIC_REPORT_ADDITION = "The UPPERCASE section header lines (HOW THE MARKET SEES YOU, HOW YOU BUILD TRUST, YOUR NATURAL TONE, YOUR ONE-LINER, WHAT ONLY YOU CAN DO, THE GAP, THE SPACE NOBODY ELSE OWNS, YOUR 3 TOPICS, WHERE TO INVEST NEXT, THE HONEST TRUTH, IN YOUR OWN WORDS) and the line ---JSON--- stay exactly as written, in English: they are markers the system reads, the member never sees them. Everything under each header is Arabic. Every JSON value is Arabic; JSON keys stay English. primary_archetype and secondary_archetype follow the Arabic archetype rule, not 'The [Adjective] [Noun]'. YOUR ONE-LINER is written in the first person in Arabic. Topic titles are what a decision-maker in the member's field would type in Arabic. The member's answers and capability names below are supplied in English; read them, do not copy the English wording.";
+
+const REPORT_HEADERS = [
+  "HOW THE MARKET SEES YOU", "HOW YOU BUILD TRUST", "YOUR NATURAL TONE", "YOUR ONE-LINER",
+  "WHAT ONLY YOU CAN DO", "THE GAP", "THE SPACE NOBODY ELSE OWNS", "YOUR 3 TOPICS",
+  "WHERE TO INVEST NEXT", "THE HONEST TRUTH", "IN YOUR OWN WORDS",
+];
+
+/** null = usable Arabic report; otherwise the failed check and, for the gate, its detail. */
+function arabicReportCheck(text: string): { check: string; message: string } | null {
+  const lines = new Set(text.split("\n").map((l) => l.trim()));
+  // IN YOUR OWN WORDS may be omitted when no post text was supplied.
+  const missing = REPORT_HEADERS.filter((h) => h !== "IN YOUR OWN WORDS" && !lines.has(h));
+  if (missing.length) {
+    return { check: "missing_header", message: `That was not usable. Failed check: missing_header. These header lines are missing or changed: ${missing.join(", ")}. Write each one exactly as given, in English, on its own line.` };
+  }
+  const i = text.indexOf("---JSON---");
+  let obj: Record<string, unknown> | null = null;
+  if (i >= 0) {
+    const tail = text.slice(i + 10);
+    const a = tail.indexOf("{"), b = tail.lastIndexOf("}");
+    try { obj = a >= 0 && b > a ? JSON.parse(tail.slice(a, b + 1)) : null; } catch { obj = null; }
+  }
+  if (!obj || typeof obj !== "object") {
+    return { check: "json_unreadable", message: "That was not usable. Failed check: json_unreadable. End with the line ---JSON--- followed by one valid JSON object with the exact keys given." };
+  }
+  const d = arabicGateDetail(obj, { skipKeys: ["own_words_quote"] });
+  return d ? { check: d.check, message: arabicCorrectionText(d) } : null;
+}
 import { LIMITS, QUEUE_MESSAGE } from "../_shared/limits.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
@@ -36,6 +68,7 @@ serve(withObserve("brand-assessment", async (req) => {
 
     const body = await req.json();
     const { answers, auditScores, sector, band } = body;
+    const lang: "ar" | "en" = body?.ui_lang === "ar" ? "ar" : "en";
 
     // Read the member's own material so the report is written from it, not from answers alone.
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -47,7 +80,7 @@ serve(withObserve("brand-assessment", async (req) => {
       id: runIdFrom(body),
       operation: "market_read",
       user_id: uid,
-      meta: { sector: sector ?? null, band: band ?? null },
+      meta: { sector: sector ?? null, band: band ?? null, lang },
     });
     const [GATHER, WRITE] = OPERATION_STAGES.market_read;
     run.mark(GATHER);
@@ -90,7 +123,9 @@ serve(withObserve("brand-assessment", async (req) => {
       );
     }
 
-    const { floorMet, userPrompt } = await buildReadEvidence(admin, uid, { answers, auditScores, sector, band });
+    const { floorMet, userPrompt } = await buildReadEvidence(
+      admin, uid, lang === "ar" ? { answers, auditScores, sector, band, lang } : { answers, auditScores, sector, band },
+    );
 
     if (!floorMet) {
       console.error("brand-assessment: evidence floor not met — nothing written");
@@ -121,7 +156,8 @@ serve(withObserve("brand-assessment", async (req) => {
     // Claim the run now that the evidence floor is met and the spend is about to happen.
     await admin.from("instrument_runs").insert({ user_id: uid, kind: "assessment" });
 
-    const callAnthropic = async (promptOverride?: string) => {
+    const ARABIC_SYSTEM = BRAND_ASSESSMENT_SYSTEM_PROMPT + "\n\n" + ARABIC_VOICE_BLOCK + "\n" + ARABIC_REPORT_ADDITION;
+    const callAnthropic = async (promptOverride?: string, systemOverride?: string) => {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 110000);
       try {
@@ -135,7 +171,7 @@ serve(withObserve("brand-assessment", async (req) => {
           body: JSON.stringify({
             model: "claude-sonnet-4-5-20250929",
             max_tokens: 4096,
-            system: BRAND_ASSESSMENT_SYSTEM_PROMPT,
+            system: systemOverride ?? (lang === "ar" ? ARABIC_SYSTEM : BRAND_ASSESSMENT_SYSTEM_PROMPT),
             messages: [{ role: "user", content: promptOverride ?? userPrompt }],
           }),
           signal: ctrl.signal,
@@ -229,6 +265,7 @@ serve(withObserve("brand-assessment", async (req) => {
         model: data.model,
         input_tokens: data.usage?.input_tokens,
         output_tokens: data.usage?.output_tokens,
+        metadata: { lang },
       }));
     } catch (_) { /* non-blocking */ }
     let interpretation = (data.content || []).map((c: any) => c.text || "").join("") || "";
@@ -244,7 +281,53 @@ serve(withObserve("brand-assessment", async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-    if (interpretation && isBad(interpretation)) {
+    let outLang: "ar" | "en" = lang;
+    const textOf = async (r: Response) => ((await r.json()).content || []).map((c: any) => c.text || "").join("") || "";
+
+    /* ARABIC: one correction call shared with the placeholder guard; if still
+       unusable, record it and write the English report once instead. */
+    if (lang === "ar" && interpretation) {
+      const why = () => isBad(interpretation)
+        ? { check: "placeholder", message: "That was not usable. Failed check: placeholder. Remove every square bracket, the words \"sector name\" and \"zone of genius\"; name the sector explicitly." }
+        : arabicReportCheck(interpretation);
+      let fail = why();
+      let correctionCalls = 0;
+      if (fail) {
+        correctionCalls = 1;
+        try {
+          const retry = await callAnthropic(`${userPrompt}\n\nYOUR PREVIOUS ATTEMPT:\n${interpretation}\n\nCORRECTION — ${fail.message} Rewrite the whole output.`);
+          if (retry.ok) interpretation = await textOf(retry);
+        } catch (e) { console.error("brand-assessment: Arabic correction failed", e); }
+        fail = interpretation ? why() : { check: "empty", message: "" };
+      }
+      if (fail) {
+        EdgeRuntime.waitUntil(logError("brand-assessment", "Arabic report unusable after one correction", {
+          user_id: uid, severity: "high",
+          context: { path: "arabic_gate", failed_check: fail.check, correction_calls: correctionCalls },
+        }));
+        outLang = "en";
+        interpretation = "";
+        try {
+          const { userPrompt: enPrompt } = await buildReadEvidence(admin, uid, { answers, auditScores, sector, band });
+          const en = await callAnthropic(enPrompt, BRAND_ASSESSMENT_SYSTEM_PROMPT);
+          if (en.ok) interpretation = await textOf(en);
+        } catch (e) { console.error("brand-assessment: English fallback failed", e); }
+        EdgeRuntime.waitUntil(logAIUsage({
+          user_id: uid, function_name: "brand-assessment", provider: "anthropic",
+          model: "claude-sonnet-4-5-20250929", success: !!interpretation,
+          metadata: { lang: "en", fallback_from: "ar" },
+        }));
+      }
+      if (interpretation && isBad(interpretation)) {
+        EdgeRuntime.waitUntil(logError("brand-assessment", "Placeholder output after retry — nothing saved", {
+          user_id: uid, severity: "high", context: { path: "placeholder_guard", lang: outLang },
+        }));
+        await finish("failed", "placeholder_guard");
+        return pendingResponse();
+      }
+    }
+
+    if (lang === "en" && interpretation && isBad(interpretation)) {
       console.error("brand-assessment: placeholder detected, retrying once");
       const correction = `${userPrompt}
 
@@ -281,8 +364,8 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
       return pendingResponse();
     }
 
-    await finish("ok");
-    return new Response(JSON.stringify({ interpretation, pending: false }), {
+    await finish("ok", outLang !== lang ? "arabic_fallback" : undefined);
+    return new Response(JSON.stringify({ interpretation, pending: false, lang: outLang, lang_fallback: outLang !== lang }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
