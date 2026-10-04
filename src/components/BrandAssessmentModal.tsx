@@ -635,6 +635,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
               ) : (
                 <ResultsView
                   interpretation={interpretation}
+                  langFallback={langFallback}
                   onSaveAndContinue={handleSaveToIdentity}
                   onCopyToast={(msg) => toast({ title: msg })}
                 />
@@ -871,14 +872,17 @@ export default BrandAssessmentModal;
 // ============================================================
 function ResultsView({
   interpretation,
+  langFallback = false,
   onSaveAndContinue,
   onCopyToast,
 }: {
   interpretation: string;
+  langFallback?: boolean;
   onSaveAndContinue: () => void;
   onCopyToast: (msg: string) => void;
 }) {
   const { prose, json } = useMemo(() => splitInterpretation(interpretation), [interpretation]);
+  const { t: tr, lang: uiLang } = useLanguage();
   const [showFull, setShowFull] = useState(false);
   const [openSections, setOpenSections] = useState<Record<number, boolean>>({ 0: true });
   const prefersReduced = typeof window !== "undefined"
