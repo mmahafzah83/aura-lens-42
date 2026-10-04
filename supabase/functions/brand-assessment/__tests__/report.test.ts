@@ -102,3 +102,27 @@ describe("reportChecks", () => {
     expect(bad.checks).toContain("topics_count");
   });
 });
+
+describe("normaliseReport tolerates mislabelled fields", () => {
+  const live = {
+    primary_archetype: "المُصلح التشغيلي", market_read: "نص.", positioning_statement: "نص.",
+    topics: [{ name: "أ", insight: "وصف أ" }, { title: "ب", description: "وصف ب" }, { area: "ج", text: "وصف ج" }],
+    invest_next: [{ area: "قراءة الغرفة فوقك", insight: "رؤية" }, { area: "إلى أين يتجه مجالك", description: "النص الذي ضاع" }, { area: "", insight: "x" }],
+    growth_areas: ["أ", "", 3, "ب"],
+  };
+  it("keeps the {area, description} item's text under insight and drops empty areas", () => {
+    const r = normaliseReport(live);
+    expect(r.invest_next).toEqual([
+      { area: "قراءة الغرفة فوقك", insight: "رؤية" },
+      { area: "إلى أين يتجه مجالك", insight: "النص الذي ضاع" },
+    ]);
+    expect(r.topics.map((t: any) => t.title)).toEqual(["أ", "ب", "ج"]);
+    expect(r.topics[2]).toEqual({ title: "ج", description: "وصف ج" });
+    expect(r.growth_areas).toEqual(["أ", "ب"]);
+    expect(reportChecks(r, "tool_use").checks).not.toContain("invest_count");
+  });
+  it("flags invest_count when fewer than 2 usable items", () => {
+    const r = normaliseReport({ ...live, invest_next: [{ area: "أ", insight: "ب" }, { area: "ج" }] });
+    expect(reportChecks(r, "tool_use").checks).toContain("invest_count");
+  });
+});

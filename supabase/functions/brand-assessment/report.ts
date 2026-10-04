@@ -49,6 +49,22 @@ export function normaliseReport(input: Report): Report {
   const o: Report = { ...input };
   for (const k of ["own_words_quote", "own_words_read"]) if (isBlank(o[k])) o[k] = null;
   if (!o.own_words_quote) o.own_words_read = null;
+  const first = (x: any, keys: string[]) => {
+    for (const k of keys) if (typeof x?.[k] === "string" && x[k].trim()) return x[k].trim();
+    return "";
+  };
+  if (Array.isArray(o.invest_next)) {
+    o.invest_next = o.invest_next
+      .map((i: any) => ({ area: first(i, ["area"]), insight: first(i, ["insight", "description", "text", "detail", "why"]) }))
+      .filter((i: any) => i.area);
+  }
+  if (Array.isArray(o.topics)) {
+    o.topics = o.topics.map((t: any) => ({
+      title: first(t, ["title", "name", "area"]),
+      description: first(t, ["description", "insight", "text", "detail", "why"]),
+    }));
+  }
+  if (Array.isArray(o.growth_areas)) o.growth_areas = o.growth_areas.filter((g: unknown) => typeof g === "string" && g.trim());
   const r = repairValues(o, ["own_words_quote"]);
   r.content_pillars = Array.isArray(r.topics) ? r.topics.map((t: any) => String(t?.title ?? "")) : [];
   return r;
@@ -78,6 +94,8 @@ export function reportChecks(
   if (empty.length) { checks.push("empty_field"); lines.push(`Failed check: empty_field. Fill: ${empty.join(", ")}.`); }
   const nTopics = Array.isArray(report.topics) ? report.topics.filter((t: any) => t?.title).length : 0;
   if (nTopics < 3) { checks.push("topics_count"); lines.push("Failed check: topics_count. Give exactly 3 topics, each with a title and one sentence."); }
+  const nInvest = Array.isArray(report.invest_next) ? report.invest_next.filter((i: any) => i?.area && i?.insight).length : 0;
+  if (nInvest < 2) { checks.push("invest_count"); lines.push("Failed check: invest_count. Give exactly 2 invest_next items, each with an area and one insight sentence."); }
   return { checks, message: checks.length ? "That was not usable. " + lines.join(" ") : "" };
 }
 
