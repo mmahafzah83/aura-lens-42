@@ -39,10 +39,10 @@ describe("intentions guard", () => {
   it("removes sentence (2) and keeps the three before it", () => {
     expect(stripIntentions(`${LEAD} ${S2}`, SOURCE)).toEqual({ text: LEAD, removed: [S2] });
   });
-  it("in the full guard, sentence (2) already nulls the rewrite via spelled 'three' (not in this CV)", () => {
+  it("in the full guard, sentence (2) is removed by the intentions guard", () => {
     const out = run({ findings: [F({ rewrite: `${LEAD} ${S2}` })] });
-    expect(out.result.findings[0].rewrite).toBeNull();
-    expect(out.notes).toContain("rewrite_removed:unsupported_figure:3");
+    expect(out.result.findings[0].rewrite).toBe(LEAD);
+    expect(out.notes).toContain("rewrite_sentence_removed:intention");
   });
   it("a rewrite that is only an intention becomes null and high becomes medium", () => {
     const out = run({ findings: [F({ rewrite: S1 })] });
