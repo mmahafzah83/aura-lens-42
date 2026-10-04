@@ -68,6 +68,9 @@ export type UsableOut = {
 
 const s = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
+/** A square-bracket instruction left for the member to fill in: not paste-ready. */
+export const BRACKET_GAP = /\[[^\]]{3,}\]/;
+
 /** Placeholder words a model writes instead of leaving a field empty. */
 const BLANK_WORDS = new Set(["", "absent", "null", "none", "n/a", "-"]);
 export function isBlankValue(v: unknown): boolean {
@@ -90,10 +93,19 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     return r.text;
   };
 
-  const offends = (text: string): boolean =>
-    PLATITUDES.some((x) => text.toLowerCase().includes(x)) || opts.hasBanned(text, opts.bannedWords);
-  /* Same texts the checks scanned: English everything but quotes; Arabic only paste-ready English. */
-  const scan = (obj: any) => (opts.lang === "ar" ? pasteText(obj) : vocabText(obj));
+  /** The offending stock phrase or banned word, named. */
+  const offender = (text: unknown): string | null => {
+    if (typeof text !== "string" || !text.trim()) return null;
+    const low = text.toLowerCase();
+    const plat = PLATITUDES.find((x) => low.includes(x));
+    if (plat) return `platitude:${plat}`;
+    const words = opts.bannedWords.length ? opts.bannedWords : [];
+    const w = words.find((x) => opts.hasBanned(text, [x]));
+    if (w) return `banned:${w}`;
+    if (!words.length && opts.hasBanned(text, words)) return "banned:default_list";
+    return null;
+  };
+  const offends = (text: string): boolean => offender(text) !== null;
 
   /* Findings: drop, downgrade, or strip a field. */
   const before: any[] = Array.isArray(p.findings) ? p.findings : [];
@@ -102,14 +114,23 @@ export function makeUsable(parsed: any, opts: UsableOpts): UsableOut {
     let why: string | null = null;
     if (!f || !s(f.what)) why = "what_empty";
     else if (!s(f.what_you_lose)) why = "what_you_lose_missing";
-    else if (offends(scan({ findings: [f] }))) why = "banned_or_platitude";
-    else if (allText(f).split(SENTENCE_SPLIT).some(spanIsWrong)) why = "span_wrong";
+    else if (opts.lang === "en") {
+      for (const k of ["what", "why_it_matters", "do_this", "what_you_lose"]) {
+        const o = offender(f[k]);
+        if (o) { why = `${o}@${k}`; break; }
+      }
+    }
+    if (!why && allText({ ...f, rewrite: undefined }).split(SENTENCE_SPLIT).some(spanIsWrong)) why = "span_wrong";
     if (why) { notes.push(`dropped_finding:${why}`); continue; }
     /* "Absent" on one side is a real reading; both sides blank happens when the finding comes from posts. */
     if (isBlankValue(f.evidence?.cv_line) && isBlankValue(f.evidence?.profile_line)) notes.push("evidence_both_absent");
     if (isBlankValue(f.rewrite)) f.rewrite = null;
+    if (typeof f.rewrite === "string" && BRACKET_GAP.test(f.rewrite)) { f.rewrite = null; rewritesRemoved++; notes.push("rewrite_removed:bracket_gap"); }
     const badRw = bad(f.rewrite);
     if (badRw.length) { f.rewrite = null; rewritesRemoved++; notes.push(`rewrite_removed:unsupported_figure:${badRw.join(",")}`); }
+    const rwOff = offender(f.rewrite);
+    if (rwOff) { f.rewrite = null; rewritesRemoved++; notes.push(`rewrite_removed:${rwOff}`); }
+    if (typeof f.rewrite === "string" && f.rewrite.split(SENTENCE_SPLIT).some(spanIsWrong)) { f.rewrite = null; rewritesRemoved++; notes.push("rewrite_removed:span_wrong"); }
     if (typeof f.rewrite === "string") f.rewrite = intent(f.rewrite, "rewrite_sentence_removed:intention");
     if (f.aura_can != null && !AURA_CAN.includes(String(f.aura_can))) { delete f.aura_can; notes.push("removed:finding_aura_can"); }
     if (f.weight === "high" && !s(f.rewrite)) { f.weight = "medium"; notes.push("downgraded:rewrite_missing"); }
