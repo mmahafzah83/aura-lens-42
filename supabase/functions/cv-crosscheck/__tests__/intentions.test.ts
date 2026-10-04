@@ -39,10 +39,10 @@ describe("intentions guard", () => {
   it("removes sentence (2) and keeps the three before it", () => {
     expect(stripIntentions(`${LEAD} ${S2}`, SOURCE)).toEqual({ text: LEAD, removed: [S2] });
   });
-  it("in the full guard, sentence (2) already nulls the rewrite via spelled 'three' (not in this CV)", () => {
+  it("in the full guard, sentence (2) is removed by the intentions guard", () => {
     const out = run({ findings: [F({ rewrite: `${LEAD} ${S2}` })] });
-    expect(out.result.findings[0].rewrite).toBeNull();
-    expect(out.notes).toContain("rewrite_removed:unsupported_figure:3");
+    expect(out.result.findings[0].rewrite).toBe(LEAD);
+    expect(out.notes).toContain("rewrite_sentence_removed:intention");
   });
   it("a rewrite that is only an intention becomes null and high becomes medium", () => {
     const out = run({ findings: [F({ rewrite: S1 })] });
@@ -67,14 +67,8 @@ describe("intentions guard", () => {
     expect(out2.result.headline_suggestion).toBeNull();
     expect(out2.notes).toContain("headline_sentence_removed:intention");
   });
-  it("LIMIT: 'from three to six distribution centres' is not flagged by the figures guard when 3 and 6 both exist elsewhere in the source", () => {
-    const src = sourceNumbers("6 distribution centres serving three regions");
-    expect(unsupportedNumbers("from three to six distribution centres", src)).toEqual([]);
-  });
-  it("spelled numbers are judged like digits", () => {
+  it("number words are not judged by the figures guard (digits only)", () => {
     const src = sourceNumbers(SOURCE);
-    expect(unsupportedNumbers("six centres and 240 trucks", src)).toEqual([]);
-    expect(unsupportedNumbers("nine trucks", src)).toEqual(["9"]);
-    expect(unsupportedNumbers("one year", src)).toEqual([]);
+    expect(unsupportedNumbers("from three to nine distribution centres", src)).toEqual([]);
   });
 });

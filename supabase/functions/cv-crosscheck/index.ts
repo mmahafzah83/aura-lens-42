@@ -575,8 +575,16 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     return value;
   }
 
+  /** Paste-ready fields are checked for bracket gaps in makeUsable, which nulls only that field. */
+  function withoutPasteFields(p: any): unknown {
+    if (!p || typeof p !== "object") return p;
+    const { headline_suggestion: _h, ...rest } = p;
+    if (Array.isArray(p.findings)) rest.findings = p.findings.map((f: any) => (f && typeof f === "object" ? (({ rewrite: _r, ...o }) => o)(f) : f));
+    return rest;
+  }
+
   let parsed: any = toolInput ?? parseJsonLoose(text);
-  if (!parsed || hasPlaceholderInValues(parsed)) {
+  if (!parsed || hasPlaceholderInValues(withoutPasteFields(parsed))) {
     logUsage({ findings_kept: 0, findings_dropped: 0 });
     await logEfError(admin, {
       function_name: "cv-crosscheck",
