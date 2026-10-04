@@ -3775,7 +3775,8 @@ const Onboarding = () => {
                 <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
                   {proposals!.map((pr, i) => (
                     /* the two the member is not keeping visibly recede */
-                    <div key={i} style={{
+                    <div key={i} dir={memberText(pr.label).dir} style={{
+                      ...(memberText(pr.label).style || {}),
                       display: "flex", flexDirection: "column",
                       opacity: singlePicked && singlePicked !== String(i) ? 0.55 : 1,
                       transition: `opacity 220ms ${EASE}`,
