@@ -1307,6 +1307,7 @@
   "cvx.headline": "عنوان مبني على هذا",
   "cvx.seeHeadline": "اعرض العنوان المقترح",
   "cvx.copyHeadline": "انسخ العنوان المقترح",
+  "cvx.checkFacts": "صياغة مقترحة. راجع كل معلومة قبل استخدامها.",
   "cvx.copyRewrite": "انسخ الصياغة الجديدة",
   "cvx.useLine": "استخدم هذا السطر",
   "cvx.showLines": "اعرض السطرين",

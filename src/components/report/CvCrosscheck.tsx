@@ -520,6 +520,7 @@ export default function CvCrosscheck({
         {rewrite ? (
           <div style={boxed}>
             <p className="cvx-mono" style={mono}>{t("cvx.useLine")}</p>
+            <p style={{ ...prose, fontSize: 14, color: OB.muted, marginBlockStart: 8 }}>{t("cvx.checkFacts")}</p>
             <p dir="auto" style={{ ...prose, marginBlockStart: 8 }}>{rewrite}</p>
             <div style={{ marginBlockStart: 12 }}>
               <CopyButton value={rewrite} label={t("cvx.copyRewrite")} />
@@ -621,6 +622,7 @@ export default function CvCrosscheck({
           openSignal={headlineOpen}
         >
           <div style={boxed}>
+            <p style={{ ...prose, fontSize: 14, color: OB.muted, marginBlockEnd: 8 }}>{t("cvx.checkFacts")}</p>
             <p dir="auto" style={prose}>{headlineSuggestion}</p>
             <div style={{ marginBlockStart: 12 }}>
               <CopyButton value={headlineSuggestion} label={t("cvx.copyHeadline")} />
