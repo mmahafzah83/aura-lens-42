@@ -56,6 +56,9 @@ export function normaliseReport(input: Report): Report {
 
 const PLACEHOLDER = (t: string) => /\[[^\]]{2,40}\]/.test(t) || /sector name/i.test(t) || /zone of genius/i.test(t);
 
+const stringsOf = (v: unknown): string[] =>
+  typeof v === "string" ? [v] : Array.isArray(v) ? v.flatMap(stringsOf) : v && typeof v === "object" ? Object.values(v).flatMap(stringsOf) : [];
+
 /** Every failing check (names + correction lines). Empty = usable. */
 export function reportChecks(
   report: Report | null,
@@ -68,7 +71,7 @@ export function reportChecks(
     checks.push("no_tool_result"); lines.push("Failed check: no_tool_result. Record the report with the record_report tool.");
     return { checks, message: "That was not usable. " + lines.join(" ") };
   }
-  if (PLACEHOLDER(JSON.stringify(report))) { checks.push("placeholder"); lines.push("Failed check: placeholder. Remove every square bracket, the words \"sector name\" and \"zone of genius\"; name the sector explicitly."); }
+  if (stringsOf(report).some(PLACEHOLDER)) { checks.push("placeholder"); lines.push("Failed check: placeholder. Remove every square bracket, the words \"sector name\" and \"zone of genius\"; name the sector explicitly."); }
   const d = arabicHardFail(report, { skipKeys: ["own_words_quote", "content_pillars"] });
   if (d) { checks.push(d.check); lines.push(arabicCorrectionText(d)); }
   const empty = ["primary_archetype", "market_read", "positioning_statement"].filter((k) => isBlank(report[k]));
