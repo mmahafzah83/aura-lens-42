@@ -14,6 +14,7 @@ import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 import { brandPaperHasContent, attachCapabilityNamesAr, type CapabilityNameRow } from "@/lib/buildBrandPaper";
 import { supabase } from "@/integrations/supabase/client";
+import { reportLang } from "@/components/report/paperText";
 
 const SHEET_W = 794; // A4 @ 96dpi — fixed, must be scaled to fit on screen.
 
@@ -65,8 +66,10 @@ export default function ReportViewerSection({
       .then(({ data }: any) => { if (!off) setCapNames(data || null); });
     return () => { off = true; };
   }, []);
+  // One language for the whole export: the report's own language (never the screen's).
+  const paperLang = reportLang(report);
   const exportPaper = report?.brand_paper
-    ? { ...report.brand_paper, capabilities: attachCapabilityNamesAr(report.brand_paper.capabilities || [], capNames) }
+    ? { ...report.brand_paper, lang: paperLang, capabilities: attachCapabilityNamesAr(report.brand_paper.capabilities || [], capNames) }
     : null;
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -220,7 +223,7 @@ export default function ReportViewerSection({
               transformOrigin: "top left",
             }}
           >
-            <ReportDocument data={report} />
+            <ReportDocument data={report} lang={paperLang} />
           </div>
         </div>
       )}
@@ -239,7 +242,7 @@ export default function ReportViewerSection({
           {brandPaperHasContent(report.brand_paper) ? (
             <BrandPaperDocument paper={exportPaper} showClosing={false} />
           ) : null}
-          <ReportDocument data={report} />
+          <ReportDocument data={report} lang={paperLang} />
         </div>
       ) : null}
     </section>
