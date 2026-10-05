@@ -25,7 +25,7 @@ const AR_TEXT = `font-family:${ARABIC};letter-spacing:0;text-transform:none;text
 export function isoAr(text: string): string {
   return String(text).replace(
     /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|aura-intel\.org(?:\/[A-Za-z0-9_-]+)*|KnownBy|LinkedIn)/g,
-    '<span dir="ltr">$1</span>',
+    '<span dir="ltr" style="white-space:nowrap">$1</span>',
   );
 }
 
