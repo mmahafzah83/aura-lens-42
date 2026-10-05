@@ -1,4 +1,5 @@
 import React from "react";
+import i18n from "@/i18n";
 
 export interface SectionHeaderProps {
   label: string;
@@ -13,7 +14,7 @@ export function SectionHeader({ label, subtitle, className }: SectionHeaderProps
         style={{
           fontSize: 12,
           fontWeight: 600,
-          letterSpacing: "0.12em",
+          letterSpacing: i18n.language === "ar" ? 0 : "0.12em",
           color: "var(--ink)",
           display: "flex",
           alignItems: "center",
