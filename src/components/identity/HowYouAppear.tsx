@@ -41,7 +41,8 @@ const NIGHT = "#0F1519";
 const NIGHT_TEXT = "#FFFFFF";
 const NIGHT_MUTED = "#8A97A6";
 const NIGHT_DIM = "#6F7C89";
-const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', ui-monospace, Menlo, monospace";
 const SANS = "Inter, system-ui, sans-serif";
 
 const cardStyle: React.CSSProperties = {

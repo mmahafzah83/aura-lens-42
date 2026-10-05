@@ -11,7 +11,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { displayDate, arStyle } from "@/lib/arDisplay";
 
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', ui-monospace, monospace";
 const INK = "#0F1519";
 const MUTED = "#5B6673";
 const ACTION = "#0670C4";

@@ -18,7 +18,8 @@ const SPOT = "#0670C4";
 const RULE = "#E2E7EE";
 const RULE_SOFT = "#E2E7EE";
 const BODY = "Inter, system-ui, sans-serif";
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', ui-monospace, monospace";
 const ARABIC = "'Cairo', Inter, sans-serif";
 
 /** Shared outer shell for every top-level card in "What you can show". */

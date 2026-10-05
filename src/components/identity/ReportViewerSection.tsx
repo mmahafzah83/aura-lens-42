@@ -17,7 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SHEET_W = 794; // A4 @ 96dpi — fixed, must be scaled to fit on screen.
 
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', ui-monospace, monospace";
 const ERROR_LINE: React.CSSProperties = { fontSize: 12.5, color: "#C0392B", marginTop: 8 };
 
 /** Shared outer shell for every top-level card in "What you can show". */
