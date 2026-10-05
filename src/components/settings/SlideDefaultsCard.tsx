@@ -20,7 +20,7 @@ import type { ThemeName } from "@/carousel/render/themes";
  * chosen here is exactly what appears there.
  */
 export default function SlideDefaultsCard({ userId }: { userId: string | null }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [template, setTemplate] = useState<string | null>(null);
   const [theme, setTheme] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
