@@ -230,7 +230,8 @@ export default function ReportViewerSection({
         <div
           ref={exportMountRef}
           aria-hidden
-          style={{ position: "absolute", left: -9999, top: 0, width: SHEET_W, pointerEvents: "none" }}
+          /* Inline-start, so the off-screen sheet never adds sideways scroll in Arabic. */
+          style={{ position: "absolute", insetInlineStart: -9999, top: 0, width: SHEET_W, pointerEvents: "none" }}
         >
           {brandPaperHasContent(report.brand_paper) ? (
             <BrandPaperDocument paper={exportPaper} showClosing={false} />
