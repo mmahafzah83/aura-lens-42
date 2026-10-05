@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isArabicText } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { displayDate, arStyle } from "@/lib/arDisplay";
 
 /** System-B "Signal" — module scope, literal, no retired press tokens. */
 const CARD = "#FFFFFF";
@@ -16,7 +18,8 @@ const SPOT = "#0670C4";
 const RULE = "#E2E7EE";
 const RULE_SOFT = "#E2E7EE";
 const BODY = "Inter, system-ui, sans-serif";
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', ui-monospace, monospace";
 const ARABIC = "'Cairo', Inter, sans-serif";
 
 /** Shared outer shell for every top-level card in "What you can show". */
@@ -96,6 +99,9 @@ interface Props {
 }
 
 export default function BrandReportSection({ results, hasAssessment, onCompleteAssessment, assessedAt }: Props) {
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
+  const ar = lang === "ar";
   const r = results && typeof results === "object" ? results : null;
 
   const headline = asString(r?.primary_archetype);
@@ -113,23 +119,23 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
   }, [r]);
 
   const madeOn = assessedAt
-    ? `From your brand assessment on ${new Date(assessedAt).toLocaleDateString()}.`
-    : "From your brand assessment. No date was recorded for it.";
+    ? tr("brandRep.madeOn", { date: displayDate(assessedAt, lang) })
+    : tr("brandRep.noDate");
 
   const blocks = useMemo<Block[]>(() => {
     if (!r) return [];
     const raw: Block[] = [
-      { id: "market-read", label: "How the market sees you", kind: "prose", parts: [asString(r.market_read)] },
-      { id: "honest-truth", label: "The honest truth", kind: "prose", parts: [asString(r.honest_truth)] },
-      { id: "only-you", label: "What only you can do", kind: "prose", parts: [asString(r.unique_capability), asString(r.zone_of_genius)] },
-      { id: "space", label: "The space nobody else owns", kind: "prose", parts: [asString(r.uncontested_space)] },
+      { id: "market-read", label: tr("brandRep.block.market"), kind: "prose", parts: [asString(r.market_read)] },
+      { id: "honest-truth", label: tr("brandRep.block.truth"), kind: "prose", parts: [asString(r.honest_truth)] },
+      { id: "only-you", label: tr("brandRep.block.onlyYou"), kind: "prose", parts: [asString(r.unique_capability), asString(r.zone_of_genius)] },
+      { id: "space", label: ar ? tr("paper.uncontested") : "The space nobody else owns", kind: "prose", parts: [asString(r.uncontested_space)] },
       // Stable id — anything deep-linking to #brand-report-topics still lands here.
-      { id: "topics", label: "What you write about", kind: "pairs", pairs: workPairs },
-      { id: "voice", label: "How you sound", kind: "prose", parts: [asString(r.voice_signature), asString(r.natural_tone)] },
-      { id: "trust", label: "How you build trust", kind: "prose", parts: [asString(r.trust_pattern), asString(r.authority_style)] },
-      { id: "grow", label: "Where to invest next", kind: "pairs", pairs: asPairs(r.invest_next, "area", "insight") },
-      { id: "growth-areas", label: "Areas to strengthen", kind: "chips", items: asStringList(r.growth_areas) },
-      { id: "barrier", label: "What is holding you back", kind: "prose", parts: [asString(r.key_barrier)] },
+      { id: "topics", label: ar ? tr("paper.writeAbout") : "What you write about", kind: "pairs", pairs: workPairs },
+      { id: "voice", label: ar ? tr("paper.howSound") : "How you sound", kind: "prose", parts: [asString(r.voice_signature), asString(r.natural_tone)] },
+      { id: "trust", label: ar ? tr("paper.howTrust") : "How you build trust", kind: "prose", parts: [asString(r.trust_pattern), asString(r.authority_style)] },
+      { id: "grow", label: ar ? tr("paper.investNext") : "Where to invest next", kind: "pairs", pairs: asPairs(r.invest_next, "area", "insight") },
+      { id: "growth-areas", label: ar ? tr("paper.strengthen") : "Areas to strengthen", kind: "chips", items: asStringList(r.growth_areas) },
+      { id: "barrier", label: ar ? tr("paper.holdingBack") : "What is holding you back", kind: "prose", parts: [asString(r.key_barrier)] },
     ];
     // Never render an empty block.
     return raw.filter((b) => {
@@ -137,7 +143,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
       if (b.kind === "chips") return b.items.length > 0;
       return b.pairs.length > 0;
     });
-  }, [r, workPairs]);
+  }, [r, workPairs, tr, ar]);
 
   /** Every block starts closed. A closed row still says what it holds. */
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -149,8 +155,8 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
     const raw = b.kind === "prose"
       ? b.parts.filter(Boolean).join(" ")
       : b.kind === "chips"
-        ? b.items.join(", ")
-        : b.pairs.map((p) => p.heading || p.body).filter(Boolean).join(", ");
+        ? b.items.join(ar ? "، " : ", ")
+        : b.pairs.map((p) => p.heading || p.body).filter(Boolean).join(ar ? "، " : ", ");
     const flat = raw.replace(/\s+/g, " ").trim();
     return flat.length > 90 ? `${flat.slice(0, 90).trimEnd()}…` : flat;
   };
@@ -162,11 +168,11 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
     return (
       <section style={cardStyle}>
         <p className="text-sm" style={{ color: INK3, margin: 0, fontFamily: BODY }}>
-          Complete your brand assessment to generate your reports.
+          {tr("brandRep.empty")}
         </p>
         <div style={{ marginTop: 12 }}>
           <Button variant="default" size="sm" onClick={onCompleteAssessment}>
-            Complete brand assessment
+            {tr("brandRep.completeCta")}
           </Button>
         </div>
       </section>
@@ -196,7 +202,9 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
               ...textStyle(headline),
             }}
           >
-            {/^you are\b/i.test(headline) ? headline : `You are ${headline}`}
+            {ar
+              ? (/^\s*أنت/.test(headline) ? headline : tr("brandRep.youAre", { archetype: headline }))
+              : (/^you are\b/i.test(headline) ? headline : `You are ${headline}`)}
           </h3>
         ) : null}
         {standfirst ? (
@@ -214,8 +222,8 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
           </p>
         ) : null}
         {secondary ? (
-          <p style={{ marginTop: 14, marginBottom: 0, fontFamily: MONO, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: SPOT, ...textStyle(secondary) }}>
-            Second nature: {secondary}
+          <p style={arStyle(lang, { marginTop: 14, marginBottom: 0, fontFamily: MONO, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: SPOT, ...textStyle(secondary) })}>
+            {tr("brandRep.second", { x: secondary })}
           </p>
         ) : null}
       </header>
@@ -223,7 +231,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
       {/* Jump index — one wrapping row of small links, at every width. */}
       {blocks.length > 1 ? (
         <nav
-          aria-label="Report sections"
+          aria-label={tr("brandRep.sectionsAria")}
           className="flex"
 
           style={{
@@ -239,7 +247,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
               key={b.id}
               type="button"
               onClick={() => jump(b.id)}
-              style={{
+              style={arStyle(lang, {
                 fontFamily: MONO,
                 fontSize: 11,
                 letterSpacing: "0.08em",
@@ -251,7 +259,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                 color: INK3,
                 cursor: "pointer",
                 transition: "color 140ms ease, border-color 140ms ease",
-              }}
+              })}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = SPOT;
                 e.currentTarget.style.borderColor = SPOT;
@@ -295,11 +303,11 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
-                  textAlign: "left",
+                  textAlign: "start",
                 }}
               >
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "block", fontFamily: MONO, fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: SPOT }}>
+                  <span style={arStyle(lang, { display: "block", fontFamily: MONO, fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: SPOT })}>
                     {b.label}
                   </span>
                   {!openNow && line ? (
@@ -387,7 +395,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                   ) : null}
 
                   {b.id === "topics" ? (
-                    <p style={{ margin: "12px 0 0", fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", color: INK3 }}>
+                    <p style={arStyle(lang, { margin: "12px 0 0", fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", color: INK3 })}>
                       {madeOn}
                     </p>
                   ) : null}

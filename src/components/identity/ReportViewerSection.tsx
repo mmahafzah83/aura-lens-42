@@ -5,6 +5,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { displayDate } from "@/lib/arDisplay";
 import { Button } from "@/components/ui/button";
 import ReportDocument from "@/components/ReportDocument";
 import { exportReportPdf } from "@/lib/exportReportPdf";
@@ -15,7 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SHEET_W = 794; // A4 @ 96dpi — fixed, must be scaled to fit on screen.
 
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', ui-monospace, monospace";
 const ERROR_LINE: React.CSSProperties = { fontSize: 12.5, color: "#C0392B", marginTop: 8 };
 
 /** Shared outer shell for every top-level card in "What you can show". */
@@ -45,6 +48,7 @@ export default function ReportViewerSection({
   overrideVersion,
   overrideSnapshotAt,
 }: Props) {
+  const { t: tr, i18n } = useTranslation();
   const live = useReportSnapshot();
   const usingOverride = !!overrideReport;
   const report = usingOverride ? overrideReport : live.report;
@@ -114,21 +118,21 @@ export default function ReportViewerSection({
         .replace(/^-|-$/g, "") || "Member";
     const date = (snapshotAt ? new Date(snapshotAt) : new Date()).toISOString().slice(0, 10);
     const v = version ?? 1;
-    return `Aura-Report-${person}-v${v}-${date}.pdf`;
+    return `KnownBy-Report-${person}-v${v}-${date}.pdf`;
   };
 
   const handleExport = async () => {
     if (!report || !exportMountRef.current) {
-      setExportError("Your report isn't ready yet. Try again in a moment.");
+      setExportError(tr("viewer.notReady"));
       return;
     }
     setExporting(true);
     setExportError(null);
     try {
       await exportReportPdf(exportMountRef.current, fileName());
-      toast.success("Report downloaded");
+      toast.success(tr("viewer.downloaded"));
     } catch (e: any) {
-      setExportError("We couldn't build your PDF. Please try again.");
+      setExportError(tr("viewer.pdfFail"));
     } finally {
       setExporting(false);
     }
@@ -138,11 +142,11 @@ export default function ReportViewerSection({
     return (
       <section style={SHELL}>
         <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
-          Complete your brand assessment to generate your identity report.
+          {tr("viewer.empty")}
         </p>
         <div style={{ marginTop: 12 }}>
           <Button variant="default" size="sm" onClick={onCompleteAssessment}>
-            Complete brand assessment
+            {tr("brandRep.completeCta")}
           </Button>
         </div>
       </section>
@@ -155,12 +159,11 @@ export default function ReportViewerSection({
     return (
       <section style={SHELL}>
         <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
-          Your read hasn't been written yet, so there is no paper to show. Run it
-          again and we'll build the report from your answers and your profile.
+          {tr("viewer.unwritten")}
         </p>
         <div style={{ marginTop: 12 }}>
           <Button variant="default" size="sm" onClick={onCompleteAssessment}>
-            Run my read again
+            {tr("viewer.runAgain")}
           </Button>
         </div>
       </section>
@@ -176,17 +179,15 @@ export default function ReportViewerSection({
           onClick={handleExport}
           disabled={exporting || loading || !report}
         >
-          {exporting ? "Preparing your PDF…" : "Download PDF"}
+          {exporting ? tr("viewer.preparingPdf") : tr("viewer.download")}
         </Button>
         {version && snapshotAt ? (
           <span style={MUTED}>
-            <span style={{ fontFamily: MONO }}>v{version}</span> ·{" "}
-            <span style={{ fontFamily: MONO }}>
-              {new Date(snapshotAt).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+            <span style={{ fontFamily: MONO, unicodeBidi: "isolate" }}>v{version}</span> ·{" "}
+            <span style={{ fontFamily: MONO, unicodeBidi: "isolate" }}>
+              {i18n.language === "ar"
+                ? displayDate(snapshotAt, "ar")
+                : new Date(snapshotAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
             </span>
           </span>
         ) : null}
@@ -195,11 +196,13 @@ export default function ReportViewerSection({
 
       {loading || !report ? (
         <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
-          Preparing your report…
+          {tr("viewer.preparing")}
         </p>
       ) : (
         <div
           ref={frameRef}
+          /* The scaled sheet is anchored top-left; keep the frame LTR so it stays in view in Arabic. */
+          dir="ltr"
           style={{
             border: "1px solid #E2E7EE",
             borderRadius: 12,
@@ -210,7 +213,7 @@ export default function ReportViewerSection({
         >
           <div
             ref={previewRef}
-            aria-label="Strategic Identity Report preview"
+            aria-label={tr("viewer.previewAria")}
             style={{
               width: SHEET_W,
               transform: `scale(${scale})`,
@@ -230,7 +233,8 @@ export default function ReportViewerSection({
         <div
           ref={exportMountRef}
           aria-hidden
-          style={{ position: "absolute", left: -9999, top: 0, width: SHEET_W, pointerEvents: "none" }}
+          /* Inline-start, so the off-screen sheet never adds sideways scroll in Arabic. */
+          style={{ position: "absolute", insetInlineStart: -9999, top: 0, width: SHEET_W, pointerEvents: "none" }}
         >
           {brandPaperHasContent(report.brand_paper) ? (
             <BrandPaperDocument paper={exportPaper} showClosing={false} />

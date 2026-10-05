@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Search, X } from "lucide-react";
 
@@ -97,10 +98,14 @@ interface Props {
 export default function CountryPicker({
   value,
   onChange,
-  label = "Country",
-  placeholder = "Search country…",
+  label: labelProp,
+  placeholder: placeholderProp,
   dir,
 }: Props) {
+  const { t: tr, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
+  const label = labelProp ?? tr("country.label");
+  const placeholder = placeholderProp ?? tr("country.search");
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -150,8 +155,9 @@ export default function CountryPicker({
             display: "block",
             fontFamily: mono,
             fontSize: 11,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
+            letterSpacing: ar ? 0 : "0.12em",
+            textTransform: ar ? "none" : "uppercase",
+            ...(ar ? { fontFamily: "var(--font-arabic)", lineHeight: 1.7 } : {}),
             color: ink3,
             marginBottom: 6,
           }}
@@ -190,14 +196,14 @@ export default function CountryPicker({
                 role="button"
                 tabIndex={-1}
                 onClick={(e) => { e.stopPropagation(); onChange(null, null); }}
-                aria-label="Clear country"
+                aria-label={tr("country.clear")}
                 style={{ marginInlineStart: 4, color: ink3, display: "inline-flex" }}
               >
                 <X size={14} />
               </span>
             </>
           ) : (
-            <span style={{ color: ink3 }}>Choose your country</span>
+            <span style={{ color: ink3 }}>{tr("country.choose")}</span>
           )}
         </span>
         <ChevronDown size={16} style={{ color: ink3 }} />

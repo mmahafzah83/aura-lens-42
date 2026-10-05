@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Check, Eye, Map as MapIcon, Camera, Mic } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { arStyle } from "@/lib/arDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -108,6 +110,9 @@ interface ProfileRow {
 }
 
 const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: IdentityTabProps) => {
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
+  const ar = lang === "ar";
   const { user: authUser, isReady: authReady } = useAuthReady();
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const journey = useJourneyState(authUser?.id ?? null);
@@ -242,11 +247,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     setAutoAssessing(true);
     (async () => {
       try {
-        setAssessmentStep("Analyzing your professional identity…");
+        setAssessmentStep(tr("idTab.step.analyzing"));
         await supabase.functions.invoke("brand-assessment", { body: { ui_lang: readStoredLang() } });
-        setAssessmentStep("Mapping your expertise territories…");
+        setAssessmentStep(tr("idTab.step.mapping"));
         await supabase.functions.invoke("generate-identity-intelligence", { body: {} });
-        setAssessmentStep("Generating how the market sees you…");
+        setAssessmentStep(tr("idTab.step.generating"));
         await supabase.functions.invoke("generate-market-mirror", { body: {} });
         await loadAll(authUser.id);
       } catch (err) {
@@ -564,13 +569,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   };
 
   const fullName = [profile?.first_name, (profile as any)?.last_name].filter(Boolean).join(" ").trim();
-  const userName = fullName || "You";
+  const userName = fullName || tr("idTab.you");
   const initials = (() => {
     const fn = (profile?.first_name || "").trim();
     const ln = ((profile as any)?.last_name || "").trim();
     if (fn && ln) return (fn[0] + ln[0]).toUpperCase();
     if (fn) return fn[0].toUpperCase();
-    return "Y";
+    return tr("idTab.initialFallback");
   })();
 
   // Extract positioning data from brand_assessment_results or identity_intelligence
@@ -690,30 +695,30 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   return (
     <div className="space-y-6 story-page">
       {loadError && (
-        <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
+        <SectionError onRetry={() => authUser && loadAll(authUser.id)} message={tr("idTab.loadError")} />
       )}
 
       {/* SECTION 1 — HEADER (centered editorial) */}
       <div className="text-center" style={{ paddingTop: 4 }}>
-        <div style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--ink-5)", fontWeight: 500, textTransform: "uppercase" }}>
-          Your professional identity
+        <div style={arStyle(lang, { fontSize: 11, letterSpacing: "0.08em", color: "var(--ink-5)", fontWeight: 500, textTransform: "uppercase" })}>
+          {tr("idTab.kicker")}
         </div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 500, color: "var(--ink)", margin: "8px 0 6px" }}>
-          Profile
+          {ar ? tr("frame.nav.tab.identity") : "Profile"}
         </h1>
         <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 auto", maxWidth: 560, lineHeight: 1.6 }}>
-          A living record of how the market sees you — and how you're changing that.
+          {tr("idTab.lede")}
         </p>
       </div>
       <FirstVisitHint page="story" />
       <FirstTimeHint hintKey="mystory-profile">
-        Your professional identity as the market sees it — generated from your assessment and captures, not a template.
+        {tr("idTab.hint")}
       </FirstTimeHint>
 
       {/* PANE SWITCHER — URL param `story` is the single source of truth */}
       <div
         role="tablist"
-        aria-label="Profile panes"
+        aria-label={tr("idTab.panesAria")}
         style={{
           display: "flex",
           gap: 8,
@@ -723,10 +728,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         }}
       >
         {([
-          { key: "appear", label: "How you appear" },
-          { key: "voice", label: "How you sound" },
-          { key: "standing", label: "Where you stand" },
-          { key: "show", label: "What you can show" },
+          { key: "appear", label: tr("idTab.pane.appear") },
+          { key: "voice", label: tr("idTab.pane.voice") },
+          { key: "standing", label: tr("idTab.pane.standing") },
+          { key: "show", label: tr("idTab.pane.show") },
         ] as const).map((t) => {
           const active = pane === t.key;
           return (
@@ -771,28 +776,28 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             }}
           />
           <div style={{ fontFamily: "var(--ff-ui)", fontWeight: 600, fontSize: 20, color: "var(--ink)" }}>
-            Building your professional identity
+            {tr("idTab.building")}
           </div>
           <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
-            {assessmentStep || "Getting started…"}
+            {assessmentStep || tr("idTab.gettingStarted")}
           </div>
           <style>{`@keyframes aura-spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
       {!assessmentCompleted && !autoAssessing && (
-        <div style={{ background: "var(--paper-2)", borderRadius: 16, padding: "28px 28px 24px", position: "relative", overflow: "hidden", border: "0.5px solid var(--rule)", borderLeft: "3px solid var(--spot)" }}>
+        <div style={{ background: "var(--paper-2)", borderRadius: 16, padding: "28px 28px 24px", position: "relative", overflow: "hidden", border: "0.5px solid var(--rule)", borderInlineStart: "3px solid var(--spot)" }}>
           <div className="relative">
           <div style={{ fontSize: 12, color: "var(--ink-5)", marginBottom: 8, fontWeight: 500 }}>
-              Your professional identity
+              {tr("idTab.kicker")}
             </div>
             <h2 style={{ fontFamily: "var(--ff-ui)", fontWeight: 600, fontSize: 22, color: "var(--ink)", margin: "0 0 12px", lineHeight: 1.375 }}>
-              Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
+              {tr("idTab.welcome", { n: 5 })}
             </h2>
             <button
               onClick={() => setBrandOpen(true)}
               style={{ background: "var(--action)", color: "var(--ink)", border: 0, borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
             >
-              Show me who I am in this market →
+              {tr("idTab.welcomeCta")}
             </button>
           </div>
         </div>
@@ -801,9 +806,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* SECTION 2 — PROFILE HERO CARD */}
       {assessmentCompleted && (
         <div>
-          <SectionHeader label="Your market position" />
+          <SectionHeader label={tr("idTab.position")} />
           <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
-            How you stand in the market — drawn from your assessment. Edit anything; your words always win.
+            {tr("idTab.positionBody")}
           </p>
         </div>
       )}
@@ -825,7 +830,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <button
                 type="button"
                 onClick={() => navigate("/settings?tab=account")}
-                title="Manage your photo in Account"
+                title={tr("idTab.photoAria")}
                 style={{
                   width: 60, height: 60, borderRadius: "50%",
                   border: "2px solid var(--brand, var(--warning))",
@@ -833,7 +838,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   display: "flex", alignItems: "center", justifyContent: "center",
                   overflow: "hidden", padding: 0, cursor: "pointer",
                 }}
-                aria-label="Manage your photo in Account"
+                aria-label={tr("idTab.photoAria")}
               >
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -845,7 +850,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 style={{
                   position: "absolute",
                   bottom: -2,
-                  right: -2,
+                  insetInlineEnd: -2,
                   width: 20,
                   height: 20,
                   borderRadius: "50%",
@@ -880,8 +885,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   }}>
                     {archetypeName}
                     <InfoTooltip
-                      label="Your archetype"
-                      text="Your primary professional archetype from your brand assessment. Shapes how Aura positions your content."
+                      label={tr("idTab.archetype")}
+                      text={tr("idTab.archetypeTip")}
                       side="bottom"
                       triggerSize={13}
                     />
@@ -906,17 +911,17 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <Eye className="w-3.5 h-3.5" style={{ color: "var(--error, #c0392b)" }} />
             <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              How the market sees you
+              {tr("idTab.marketSees")}
               <InfoTooltip
-                label="Market Mirror"
-                text="How three audiences would describe you today — based on your signals, content, and assessment. Refreshes as your intelligence grows."
+                label={tr("mirror.title")}
+                text={tr("idTab.mirrorTip")}
                 side="bottom"
                 triggerSize={13}
               />
             </span>
           </div>
           <p style={{ fontSize: 12, color: "var(--ink-5)", margin: "0 0 12px" }}>
-            Three perspectives on your digital footprint — refreshed from your latest intelligence.
+            {tr("mirror.intro")}
           </p>
           <MarketMirror userId={authUser?.id ?? null} hideHeader />
         </section>
@@ -930,7 +935,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Mic className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
-                Your voice
+                {tr("idTab.voice")}
               </span>
               <span
                 style={{
@@ -942,17 +947,17 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   color: radarInputs.voiceTrained ? "var(--success)" : "var(--text-muted)",
                 }}
               >
-                {radarInputs.voiceTrained ? "Trained" : "Not yet"}
+                {radarInputs.voiceTrained ? tr("idTab.trained") : tr("idTab.notYet")}
               </span>
             </div>
           </div>
           <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
-            How Aura writes as you. Learned from your posts — teach it, correct it, it updates instantly.
+            {tr("idTab.voiceBody")}
           </p>
           <div style={{ marginTop: 12 }}>
             <VoiceWorkspace
               userId={authUser?.id ?? null}
-              onWrite={() => handleGenerateContent("Write in my voice")}
+              onWrite={() => handleGenerateContent(tr("idTab.writeInVoice"))}
             />
           </div>
         </section>
@@ -965,21 +970,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <MapIcon className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                Your territory
+                {tr("idTab.territory")}
                 <InfoTooltip
-                  label="Your territories"
-                  text="Your strongest signals. Highlighted territories have the deepest evidence."
+                  label={tr("idTab.territories")}
+                  text={tr("idTab.territoryTip")}
                   side="bottom"
                   triggerSize={13}
                 />
               </span>
             </div>
             <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-              {themesForTerritory.length} {themesForTerritory.length === 1 ? "tag" : "tags"}
+              {tr("idTab.tags", { count: themesForTerritory.length })}
             </span>
           </div>
           <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 12px" }}>
-            The intellectual territory your intelligence is building around.
+            {tr("idTab.territoryBody")}
           </p>
           <div className="flex flex-wrap gap-2">
             {themesForTerritory.map((t, i) => {
@@ -1006,8 +1011,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div style={STANDING_STACK}>
       {/* SECTION 5 — CAPABILITY RADAR */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <SectionHeader label="What you can do" />
-        <InfoTooltip label="What you can do" slug="capability-radar" />
+        <SectionHeader label={tr("idTab.canDo")} />
+        <InfoTooltip label={tr("idTab.canDo")} slug="capability-radar" />
       </div>
       <CapabilityRadar
         userId={authUser?.id ?? null}
@@ -1018,7 +1023,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* SECTION 6 — CV AGAINST PROFILE */}
       {/* Every state is inside CvCrosscheck; this pane only supplies the truth. */}
       <div>
-        <SectionHeader label="Your CV against your profile" />
+        <SectionHeader label={ar ? tr("cvx.title") : "Your CV against your profile"} />
       </div>
       <CvCrosscheck
         userId={authUser?.id ?? null}
@@ -1030,9 +1035,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {assessmentCompleted && (
         <div>
-          <SectionHeader label="Profile intelligence" />
+          <SectionHeader label={tr("idTab.intel")} />
           <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
-            What Aura has noticed about you lately, and the work you keep returning to, ready when you are.
+            {tr("idTab.intelBody")}
           </p>
         </div>
       )}
@@ -1052,8 +1057,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div style={SHOW_STACK}>
         <CollapseStyles />
         <div>
-          <SectionHeader label="What you can show" />
-          <p style={PANE_SUBLINE}>Everything here is yours to download or send.</p>
+          <SectionHeader label={tr("idTab.pane.show")} />
+          <p style={PANE_SUBLINE}>{tr("idTab.showBody")}</p>
         </div>
 
 
