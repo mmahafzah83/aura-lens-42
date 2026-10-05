@@ -135,6 +135,7 @@ const App = () => (
             <Route path="/" element={<LandingV2 />} />
 
             <Route path="/v2" element={<LandingV2 />} />
+            <Route path="/__r5" element={<HarnessR5 />} />
             <Route path="/read" element={<ReadAlias />} />
             <Route path="/assessment" element={<Assessment />} />
             <Route path="/mirror" element={<ReadAlias />} />
