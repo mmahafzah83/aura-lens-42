@@ -11,7 +11,12 @@ import { rankFromLevel } from "@/lib/marketPersonas";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
 import CvCrosscheck, { hasCvCrosscheck } from "@/components/report/CvCrosscheck";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { fetchSeniorityTitles, titleLabel, type SeniorityTitle } from "@/lib/seniorityTitles";
+import { attachCapabilityNamesAr, type CapabilityNameRow } from "@/lib/buildBrandPaper";
+import { pt, arStyle, arabicDate, reportLang, type PaperLang } from "@/components/report/paperText";
+import { reportOverflowingSheets } from "@/components/report/BrandPaperDocument";
 import {
   PaperHeader,
   PaperFooter,
@@ -24,9 +29,18 @@ import {
   PaperPersonaCard,
   ClosingPlate,
   useImprintDelta,
+  valStyle,
+  valDir,
+  withLatin,
   T,
   FONT,
 } from "@/components/report/AuraPaper";
+
+/** Fixed text: Arabic from the locale file, English exactly as written. */
+const L = (lang: PaperLang, key: string, english: string, vars?: Record<string, string | number>) =>
+  lang === "ar" ? pt(lang, key, vars) : english;
+const shortDate = (iso: string, lang: PaperLang) =>
+  lang === "ar" ? arabicDate(iso) : new Date(iso).toLocaleDateString("en-GB");
 
 // ── Layout constants ───────────────────────────────────────────────────
 const SHEET_W = 794;   // A4 @ 96dpi
@@ -63,11 +77,14 @@ function todayLabel(iso: string): string {
 }
 
 // ── Sheet chassis ──────────────────────────────────────────────────────
-function Sheet({ children, bleed }: { children: React.ReactNode; bleed?: boolean }) {
+function Sheet({ children, bleed, lang = "en", page }: { children: React.ReactNode; bleed?: boolean; lang?: PaperLang; page?: number }) {
   return (
     <div
       className="aura-report-sheet"
       data-report-page
+      data-page={page}
+      dir={lang === "ar" ? "rtl" : undefined}
+      lang={lang === "ar" ? "ar" : undefined}
       data-theme="light"
       style={{
         width: SHEET_W,
@@ -82,7 +99,7 @@ function Sheet({ children, bleed }: { children: React.ReactNode; bleed?: boolean
         flexDirection: "column",
         boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.08)",
         margin: "0 auto 32px",
-        letterSpacing: "normal",
+        letterSpacing: lang === "ar" ? 0 : "normal",
       }}
     >
       {children}
@@ -90,10 +107,10 @@ function Sheet({ children, bleed }: { children: React.ReactNode; bleed?: boolean
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, lang = "en" }: { children: React.ReactNode; lang?: PaperLang }) {
   return (
     <div
-      style={{
+      style={arStyle(lang, {
         fontFamily: FONT.mono,
         fontSize: 10.5,
         fontWeight: 700,
@@ -101,7 +118,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         textTransform: "uppercase",
         color: T.spot,
         marginBottom: 12,
-      }}
+      })}
     >
       {children}
     </div>
@@ -109,44 +126,49 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ── Block sub-renderers ────────────────────────────────────────────────
-function SectionTitle({ title, kicker }: { title: string; kicker?: string }) {
+function SectionTitle({ title, kicker, lang = "en" }: { title: string; kicker?: string; lang?: PaperLang }) {
   return (
     <div>
       {kicker ? (
-        <div style={{ fontFamily: FONT.mono, fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: T.spot, fontWeight: 700, marginBottom: 8 }}>
-          {kicker}
+        <div style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: T.spot, fontWeight: 700, marginBottom: 8 }, lang === "ar" && !/[A-Za-z]/.test(kicker) ? kicker : null)}>
+          {lang === "ar" ? <span dir={valDir(lang, kicker)} style={{ unicodeBidi: "isolate" }}>{kicker}</span> : kicker}
         </div>
       ) : null}
-      <h2 style={{ fontFamily: FONT.serif, fontSize: 34, fontWeight: 500, margin: 0, color: T.ink, lineHeight: 1.15 }}>
-        {title}
+      <h2 style={arStyle(lang, { fontFamily: FONT.serif, fontSize: 34, fontWeight: 500, margin: 0, color: T.ink, lineHeight: 1.15 })}>
+        {withLatin(title, lang)}
       </h2>
     </div>
   );
 }
 
-function ImprintFigure({ score, userId, generatedAt }: {
+function ImprintFigure({ score, userId, generatedAt, lang = "en" }: {
   score: NonNullable<ReportData["score"]>;
   userId: string;
   generatedAt: string;
+  lang?: PaperLang;
 }) {
   const c = score.components;
+  const ar = lang === "ar";
   return (
     <PaperFigure
+      lang={lang}
       index={1}
-      label="The Imprint Instrument"
-      meta={new Date(score.snapshot_at || generatedAt).toLocaleDateString("en-GB")}
-      findingBold={`Your standing is at ${score.score} of 100${score.tier ? " · " + score.tier + " tier" : ""}.`}
-      findingRest="Weighting: Signal 40 · Content 40 · Consistency 20."
+      label={ar ? (withLatin(pt(lang, "report.doc.imprintInstrument"), lang) as unknown as string) : "The Imprint Instrument"}
+      meta={shortDate(score.snapshot_at || generatedAt, lang)}
+      findingBold={ar
+        ? pt(lang, score.tier ? "report.doc.standingTier" : "report.doc.standing", { score: score.score, tier: score.tier || "" })
+        : `Your standing is at ${score.score} of 100${score.tier ? " · " + score.tier + " tier" : ""}.`}
+      findingRest={L(lang, "report.doc.weighting", "Weighting: Signal 40 · Content 40 · Consistency 20.")}
     >
       <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 30, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-          <ImprintDial score={score.score} tier={score.tier} />
-          <ImprintSparkline userId={userId} />
+          <ImprintDial score={score.score} tier={score.tier} lang={lang} />
+          <ImprintSparkline userId={userId} lang={lang} />
         </div>
         <div>
-          <ComponentBar label="Signal"      weight={40} value={c.signal}  weighted={c.signal_weighted} />
-          <ComponentBar label="Content"     weight={40} value={c.content} weighted={c.content_weighted} />
-          <ComponentBar label="Consistency" weight={20} value={c.capture} weighted={c.capture_weighted} isConsistency />
+          <ComponentBar lang={lang} label={L(lang, "report.doc.signal", "Signal")}      weight={40} value={c.signal}  weighted={c.signal_weighted} />
+          <ComponentBar lang={lang} label={L(lang, "report.doc.content", "Content")}     weight={40} value={c.content} weighted={c.content_weighted} />
+          <ComponentBar lang={lang} label={L(lang, "report.doc.consistency", "Consistency")} weight={20} value={c.capture} weighted={c.capture_weighted} isConsistency />
         </div>
       </div>
     </PaperFigure>
