@@ -526,7 +526,7 @@ export function draftReadyEmail(opts: DraftReadyOpts, lang: EmailLang = "en"): B
     const nm = nameLead(firstName);
     const when = wk === "this" ? " هذا الأسبوع" : wk === "last" ? " الأسبوع الماضي" : "";
     const line1 = haveCounts
-      ? ar(`${nm}استخرج KnownBy مما حفظته عن {t}${when} أدلة عددها: {n}.`, { t: topicHtml, n: nReadings! })
+      ? ar(`${nm}استخرج KnownBy مما حفظته عن {t}{w} أدلة عددها: {n}.`, { t: topicHtml, w: when, n: nReadings! })
       : `${nm}حفظت ملاحظة عن ${topicHtml}.`;
     const B = (t: string, mb = 14) => paragraph(t, true, "ar").replace("margin:0 0 16px", `margin:0 0 ${mb}px`);
     const ps = velocityStatus === "accelerating"
