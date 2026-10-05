@@ -15,6 +15,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { OB, RADIUS } from "@/components/onboarding/tokens";
 import { FULL_PICTURE_LINE } from "@/lib/brand";
+import i18n from "@/i18n";
+
+const AR_FONT = "'Cairo','CairoAR',sans-serif";
 
 type SharedRead = {
   headline: string | null;
@@ -26,12 +29,15 @@ type SharedRead = {
   display_name: string | null;
 };
 
-const mono = (size: number): React.CSSProperties => ({
-  fontFamily: OB.mono,
-  fontSize: size,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-});
+const mono = (size: number, ar = false): React.CSSProperties =>
+  ar
+    ? { fontFamily: AR_FONT, fontSize: size + 2, letterSpacing: 0, lineHeight: 1.7 }
+    : {
+        fontFamily: OB.mono,
+        fontSize: size,
+        letterSpacing: "0.14em",
+        textTransform: "uppercase",
+      };
 
 function setMeta(selector: string, attr: "property" | "name", key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(selector);
@@ -43,13 +49,15 @@ function setMeta(selector: string, attr: "property" | "name", key: string, conte
   el.setAttribute("content", content);
 }
 
-const Shell = ({ children }: { children: React.ReactNode }) => (
+const Shell = ({ children, ar = false }: { children: React.ReactNode; ar?: boolean }) => (
   <div
+    dir={ar ? "rtl" : undefined}
     style={{
       minHeight: "100dvh",
       background: OB.night,
       color: OB.white,
-      fontFamily: OB.ui,
+      fontFamily: ar ? AR_FONT : OB.ui,
+      ...(ar ? { lineHeight: 1.7 } : {}),
       overflowX: "hidden",
       padding: "28px 20px 56px",
     }}
@@ -58,7 +66,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const PrimaryButton = ({ label, onClick }: { label: string; onClick: () => void }) => (
+const PrimaryButton = ({ label, onClick, ar = false }: { label: string; onClick: () => void; ar?: boolean }) => (
   <button
     type="button"
     onClick={onClick}
@@ -70,7 +78,7 @@ const PrimaryButton = ({ label, onClick }: { label: string; onClick: () => void 
       border: "none",
       background: OB.white,
       color: OB.night,
-      fontFamily: OB.ui,
+      fontFamily: ar ? AR_FONT : OB.ui,
       fontSize: 16,
       fontWeight: 600,
       cursor: "pointer",
@@ -102,8 +110,9 @@ export default function SharedRead() {
 
   useEffect(() => {
     if (state !== "ready" || !read) return;
-    const title = `${read.archetype ?? "A read"} — a read from KnownBy`;
-    const desc = read.market_read?.slice(0, 155) ?? "A read from Aura.";
+    const ft = i18n.getFixedT(read.lang === "ar" ? "ar" : "en");
+    const title = ft("sharedRead.pageTitle", { archetype: read.archetype ?? "A read" });
+    const desc = read.market_read?.slice(0, 155) ?? ft("sharedRead.metaFallback");
     document.title = title;
     setMeta('meta[property="og:title"]', "property", "og:title", title);
     setMeta('meta[property="og:description"]', "property", "og:description", desc);
@@ -118,6 +127,7 @@ export default function SharedRead() {
 
   const firstName = (read?.display_name ?? "").trim().split(/\s+/)[0] || "";
   const isArabic = read?.lang === "ar";
+  const t = i18n.getFixedT(isArabic ? "ar" : "en");
 
   if (state === "loading") {
     return (
@@ -146,23 +156,23 @@ export default function SharedRead() {
     return (
       <Shell>
         <div style={{ paddingTop: 96, display: "grid", gap: 24 }}>
-          <div style={{ ...mono(11), color: OB.mutedNight }}>A READ FROM KNOWNBY</div>
+          <div style={{ ...mono(11), color: OB.mutedNight }}>{t("sharedRead.kicker")}</div>
           <p style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.3, margin: 0 }}>
-            This read is no longer shared.
+            {t("sharedRead.gone")}
           </p>
-          <PrimaryButton label="Get your own read" onClick={() => navigate("/assessment")} />
+          <PrimaryButton label={t("sharedRead.getOwn")} onClick={() => navigate("/assessment")} />
         </div>
       </Shell>
     );
   }
 
   return (
-    <Shell>
-      <div style={{ ...mono(11), color: OB.mutedNight }}>A READ FROM KNOWNBY</div>
+    <Shell ar={isArabic}>
+      <div style={{ ...mono(11, isArabic), color: OB.mutedNight }}>{t("sharedRead.kicker")}</div>
 
       {firstName && (
         <div dir="auto" style={{ marginTop: 10, color: OB.mutedNight, fontSize: 15 }}>
-          {firstName}'s read
+          {t("sharedRead.whose", { firstName })}
         </div>
       )}
 
@@ -171,14 +181,14 @@ export default function SharedRead() {
         style={{
           marginTop: 18,
           marginBottom: 0,
-          fontFamily: OB.ui,
+          fontFamily: isArabic ? AR_FONT : OB.ui,
           fontWeight: 700,
           fontSize: "clamp(30px, 9vw, 46px)",
-          lineHeight: 1.05,
-          letterSpacing: "-0.02em",
+          lineHeight: isArabic ? 1.4 : 1.05,
+          letterSpacing: isArabic ? 0 : "-0.02em",
         }}
       >
-        {read?.archetype || read?.headline || "A read from KnownBy"}
+        {read?.archetype || read?.headline || t("sharedRead.fallbackHeading")}
       </h1>
 
       {read?.market_read && (
@@ -188,7 +198,7 @@ export default function SharedRead() {
             marginTop: 20,
             maxWidth: "60ch",
             fontSize: 17,
-            lineHeight: 1.75,
+            lineHeight: isArabic ? 1.9 : 1.75,
             color: OB.white,
           }}
         >
@@ -198,7 +208,7 @@ export default function SharedRead() {
 
       {subjects.length > 0 && (
         <section style={{ marginTop: 36 }}>
-          <div style={{ ...mono(10), color: OB.mutedNight }}>THE SUBJECTS THEY OWN</div>
+          <div style={{ ...mono(10, isArabic), color: OB.mutedNight }}>{t("sharedRead.subjects")}</div>
           <ul style={{ listStyle: "none", padding: 0, margin: "14px 0 0", display: "grid", gap: 8 }}>
             {subjects.map((s, i) => (
               <li
@@ -236,7 +246,7 @@ export default function SharedRead() {
 
       {read?.own_words && (
         <section style={{ marginTop: 36 }}>
-          <div style={{ ...mono(10), color: OB.mutedNight }}>IN THEIR OWN WORDS</div>
+          <div style={{ ...mono(10, isArabic), color: OB.mutedNight }}>{t("sharedRead.ownWords")}</div>
           <blockquote
             dir={isArabic ? "rtl" : "auto"}
             style={{
@@ -267,17 +277,16 @@ export default function SharedRead() {
           gap: 16,
         }}
       >
-        <p style={{ margin: 0, fontSize: 17, lineHeight: 1.7, maxWidth: "60ch" }}>
-          KnownBy reads what you have already published and tells you what the market can see. It
-          takes {FULL_PICTURE_LINE.toLowerCase()} and costs nothing.
+        <p style={{ margin: 0, fontSize: 17, lineHeight: isArabic ? 1.9 : 1.7, maxWidth: "60ch" }}>
+          {t("sharedRead.pitch", { line: FULL_PICTURE_LINE.toLowerCase() })}
         </p>
-        <PrimaryButton label="Read me too" onClick={() => navigate("/assessment")} />
+        <PrimaryButton ar={isArabic} label={t("sharedRead.readMe")} onClick={() => navigate("/assessment")} />
         <p style={{ margin: 0, fontSize: 14, color: OB.mutedNight }}>
-          No card. Your read is yours to keep.
+          {t("sharedRead.noCard")}
         </p>
       </section>
 
-      <footer style={{ marginTop: 48, ...mono(10), color: OB.mutedNight }}>aura-intel.org</footer>
+      <footer dir="ltr" style={{ marginTop: 48, ...mono(10), color: OB.mutedNight, textAlign: isArabic ? "right" : undefined }}>aura-intel.org</footer>
     </Shell>
   );
 }
