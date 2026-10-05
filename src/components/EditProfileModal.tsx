@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { writeProfile } from "@/lib/profileWrite";
 import { toast } from "sonner";
 import CountryPicker from "@/components/CountryPicker";
-import { useSeniorityTitles, bandOfTitle } from "@/lib/seniorityTitles";
+import { useSeniorityTitles, bandOfTitle, titleLabel } from "@/lib/seniorityTitles";
+import { useTranslation } from "react-i18next";
 
 const SECTOR_OPTIONS = [
   "Consulting", "Energy", "Finance", "Government", "Technology",
@@ -30,6 +31,14 @@ interface Props {
 }
 
 export default function EditProfileModal({ open, onClose, userId, focusField, onSaved }: Props) {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  /* Display only — the stored value is always the English option. */
+  const sectorText = (s: string) => {
+    if (!isAr) return s;
+    if (i18n.exists(`sector.${s}`)) return t(`sector.${s}`);
+    return i18n.exists(`editProfile.sectorOpt.${s}`) ? t(`editProfile.sectorOpt.${s}`) : s;
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -162,10 +171,10 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     const ok = await writeProfile(userId, patch, "EditProfileModal.handleSave");
     setSaving(false);
     if (!ok) {
-      toast.error("That didn't save — try once more.");
+      toast.error(t("editProfile.saveFailed"));
       return;
     }
-    toast.success("Profile updated");
+    toast.success(t("editProfile.saved"));
     onSaved?.();
     onClose();
   };
@@ -173,14 +182,15 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
   if (!open) return null;
 
   const label: React.CSSProperties = {
-    fontSize: 11,
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
+    fontSize: isAr ? 13 : 11,
+    letterSpacing: isAr ? 0 : "0.12em",
+    textTransform: isAr ? "none" : "uppercase",
     color: "var(--ink-3)",
     fontWeight: 600,
     marginBottom: 6,
     display: "block",
-    fontFamily: "var(--font-body)",
+    fontFamily: isAr ? "var(--font-arabic)" : "var(--font-body)",
+    ...(isAr ? { lineHeight: 1.7 } : {}),
   };
   const input: React.CSSProperties = {
     width: "100%",
@@ -191,7 +201,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     borderRadius: 8,
     color: "var(--ink)",
     outline: "none",
-    fontFamily: "var(--font-body)",
+    fontFamily: isAr ? "var(--font-arabic)" : "var(--font-body)",
   };
 
   return createPortal(
@@ -214,82 +224,84 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
           boxShadow: "0 24px 60px -20px rgba(0,0,0,0.35)",
           width: "100%", maxWidth: 460,
           padding: "22px 24px", position: "relative",
+          ...(isAr ? { fontFamily: "var(--font-arabic)", lineHeight: 1.7 } : {}),
         }}
+        dir={isAr ? "rtl" : undefined}
       >
         <button
-          type="button" onClick={onClose} aria-label="Close"
+          type="button" onClick={onClose} aria-label={t("editProfile.close")}
           style={{
-            position: "absolute", top: 12, right: 12,
+            position: "absolute", top: 12, insetInlineEnd: 12,
             background: "transparent", border: 0, cursor: "pointer",
             color: "var(--ink-3)", padding: 4,
           }}
         ><X size={18} /></button>
 
         <h2 style={{
-          fontFamily: "var(--font-display)",
+          fontFamily: isAr ? "var(--font-arabic)" : "var(--font-display)",
           fontSize: 22, fontWeight: 500, color: "var(--ink)",
-          margin: 0, lineHeight: 1.2,
-        }}>Edit profile</h2>
+          margin: 0, lineHeight: isAr ? 1.7 : 1.2,
+        }}>{t("editProfile.title")}</h2>
         <p style={{
           fontSize: 13, color: "var(--ink-3)",
           margin: "4px 0 18px",
           fontFamily: "var(--font-body)",
-        }}>Update how you appear across Aura.</p>
+        }}>{t("editProfile.subtitle")}</p>
 
         {loading ? (
-          <div style={{ padding: "20px 0", color: "var(--ink-3)", fontSize: 13 }}>Loading…</div>
+          <div style={{ padding: "20px 0", color: "var(--ink-3)", fontSize: 13 }}>{t("editProfile.loading")}</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div>
-                <label style={label}>First name</label>
+                <label style={label}>{t("editProfile.firstName")}</label>
                 <input ref={firstNameRef} value={firstName} onChange={(e) => setFirstName(e.target.value)} style={input} />
               </div>
               <div>
-                <label style={label}>Last name</label>
+                <label style={label}>{t("editProfile.lastName")}</label>
                 <input ref={lastNameRef} value={lastName} onChange={(e) => setLastName(e.target.value)} style={input} />
               </div>
             </div>
             <div>
-              <label style={label}>Firm</label>
+              <label style={label}>{t("editProfile.firm")}</label>
               <input ref={firmRef} value={firm} onChange={(e) => setFirm(e.target.value)} style={input} />
             </div>
             <div>
-              <label style={label}>Title</label>
+              <label style={label}>{t("editProfile.titleField")}</label>
               <select ref={levelRef} value={level} onChange={(e) => setLevel(e.target.value)} style={input}>
-                <option value="">Select your level…</option>
-                {level && !seniorityTitles.some((t) => t.title === level) ? (
+                <option value="">{t("editProfile.selectLevel")}</option>
+                {level && !seniorityTitles.some((st) => st.title === level) ? (
                   <option value={level}>{level}</option>
                 ) : null}
-                {seniorityTitles.map((t) => <option key={t.title} value={t.title}>{t.title}</option>)}
+                {seniorityTitles.map((st) => <option key={st.title} value={st.title}>{titleLabel(st, i18n.language)}</option>)}
               </select>
             </div>
             <div>
-              <label style={label}>Core practice</label>
+              <label style={label}>{t("editProfile.corePractice")}</label>
               <input ref={practiceRef} value={corePractice} onChange={(e) => setCorePractice(e.target.value)} style={input} />
             </div>
             <div>
-              <label style={label}>Sector</label>
+              <label style={label}>{t("editProfile.sector")}</label>
               <select
                 ref={sectorRef}
                 value={sectorFocus}
                 onChange={(e) => setSectorFocus(e.target.value)}
                 style={input}
               >
-                <option value="">Select sector…</option>
-                {SECTOR_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                <option value="">{t("editProfile.selectSector")}</option>
+                {SECTOR_OPTIONS.map((s) => <option key={s} value={s}>{sectorText(s)}</option>)}
               </select>
               {sectorFocus === "Other" && (
                 <input
                   value={sectorOther}
                   onChange={(e) => setSectorOther(e.target.value)}
-                  placeholder="Describe your sector"
+                  placeholder={t("editProfile.describeSector")}
                   style={{ ...input, marginTop: 8 }}
                 />
               )}
             </div>
             <div>
-              <label style={label}>North-star goal</label>
+              <label style={label}>{t("editProfile.northStar")}</label>
               <textarea
                 ref={northStarRef}
                 value={northStar}
@@ -315,7 +327,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
                   borderRadius: 8, cursor: "pointer", color: "var(--ink)",
                   fontFamily: "var(--font-body)",
                 }}
-              >Cancel</button>
+              >{t("editProfile.cancel")}</button>
               <button
                 type="button" onClick={handleSave} disabled={saving}
                 style={{
@@ -326,7 +338,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
                   opacity: saving ? 0.7 : 1,
                   fontFamily: "var(--font-body)",
                 }}
-              >{saving ? "Saving…" : "Save changes"}</button>
+              >{saving ? t("editProfile.saving") : t("editProfile.save")}</button>
             </div>
           </div>
         )}
