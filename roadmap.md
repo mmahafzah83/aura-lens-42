@@ -142,3 +142,12 @@
 - [ ] oe-harvest-apify: actor inputs as data (cfg.runs), body input/only/dry, store 400 text, flatten jobs/results arrays, deploy
 
 - [x] Landing page bilingual: checks, six-tab EN/AR screenshots at 375/1280, short report
+
+## Finish Arabic — batch 3c (Profile tab leftovers)
+- [ ] presenceHealth / presenceChange return keys; all surfaces resolve
+- [ ] PERSONA_LABELS Arabic; milestone names + tier names; CollapsibleList
+- [ ] AuraCard face Arabic + RTL export PNG
+- [ ] publishFailure keys on every surface
+- [ ] ProfileManagement Arabic
+- [ ] Extract complete voice-section English list
+- [ ] Checks + 375/1280 screenshots
