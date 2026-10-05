@@ -47,3 +47,13 @@ export const AR_TEXT: CSSProperties = {
   fontFamily: "var(--font-arabic)", lineHeight: 1.7, letterSpacing: 0, textTransform: "none", fontStyle: "normal",
 };
 export const arStyle = (lang: string, s: CSSProperties = {}): CSSProperties => (isAr(lang) ? { ...s, ...AR_TEXT } : s);
+
+/** Wraps each Latin run (KnownBy, LinkedIn, provider names, the email address) in
+ *  left-to-right isolate marks so it keeps its order inside an Arabic sentence.
+ *  A trailing full stop or comma stays outside the run. */
+export function isolateLatin(s: string): string {
+  return s.replace(/\([A-Za-z][\w\-]*\)|[A-Za-z][\w@.\-&/]*(?:[ ]+[A-Za-z0-9][\w@.\-&/]*)*(?: \([\w\- ]+\))?/g, (m) => {
+    const core = m.replace(/[.\-/]+$/, "");
+    return `\u2066${core}\u2069${m.slice(core.length)}`;
+  });
+}

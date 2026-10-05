@@ -202,6 +202,13 @@ const RETIRED_NAME_FILES = [
   "src/pages/Assessment.tsx",
   "src/pages/LandingV2.tsx",
   "src/pages/NotFound.tsx",
+  "src/pages/OurStory.tsx",
+  "src/pages/Contact.tsx",
+  "src/pages/Guide.tsx",
+  "src/pages/LegalPage.tsx",
+  "src/pages/Terms.tsx",
+  "src/pages/Privacy.tsx",
+  "src/pages/Trust.tsx",
   "src/pages/Onboarding.tsx",
   "src/pages/SharedRead.tsx"
 ];
