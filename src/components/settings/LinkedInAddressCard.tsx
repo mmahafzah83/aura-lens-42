@@ -31,7 +31,8 @@ const TONE: Record<LinkedInStatusView["tone"], { fg: string; bg: string; border:
 };
 
 export default function LinkedInAddressCard({ userId }: { userId: string | null }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [value, setValue] = useState("");
   const [state, setState] = useState<LinkedInState | null>(null);
   const [busy, setBusy] = useState(false);
@@ -62,8 +63,8 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
     const pd = (posts as any)?.data;
     if ((posts as any)?.error || !pd || pd.error) {
       /* A failed posts read is never reported as "no posts". */
-      toast.error(causeOf((posts as any)?.error ?? pd?.error, "Reading your posts"), {
-        action: { label: retryLabel("Reading your posts"), onClick: () => void save() },
+      toast.error(causeOf((posts as any)?.error ?? pd?.error, t("journey.stage.linkedin_read.posts")), {
+        action: { label: retryLabel(t("journey.stage.linkedin_read.posts")), onClick: () => void save() },
       });
       return;
     }
@@ -101,7 +102,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
         body: { profile_url },
       });
       if (invokeError || !data || (data as any).error) {
-        const why = causeOf(invokeError ?? (data as any)?.error, "Reading your profile");
+        const why = causeOf(invokeError ?? (data as any)?.error, t("ob.s1.postsFail.profile"));
         setError(t("settings.linkedin.addressSaved", { why }));
         toast.error(t("settings.linkedin.addressSaved", { why }));
         return;
@@ -133,12 +134,15 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
         <div style={{ fontSize: 15, fontWeight: 600, color: INK }}>{t("settings.linkedin.cardTitle")}</div>
         <span
           style={{
-            fontSize: 10, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
+            fontSize: 10, fontWeight: 600,
+            ...(isAr
+              ? { fontSize: 12, letterSpacing: 0, textTransform: "none" as const, fontFamily: "var(--font-arabic)", lineHeight: 1.7 }
+              : { letterSpacing: ".08em", textTransform: "uppercase" as const }),
             color: tone.fg, background: tone.bg, border: `1px solid ${tone.border}`,
             borderRadius: 4, padding: "2px 6px", whiteSpace: "nowrap",
           }}
         >
-          {view.label}
+          {t(view.labelKey)}
         </span>
       </div>
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, marginBlockStart: 6, marginBlockEnd: 8 }}>
@@ -152,7 +156,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
           : t("settings.linkedin.noAddress")}
       </p>
       <p style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.6, marginBlockStart: 0, marginBlockEnd: 12 }}>
-        {view.explanation}
+        {t(view.explanationKey, view.explanationParams)}
       </p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input

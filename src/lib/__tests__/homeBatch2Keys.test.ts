@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import en from "@/i18n/locales/en.json";
 import ar from "@/i18n/locales/ar.json";
 
-const PREFIXES = ["readHome.", "firstFlight.", "drift.", "liNudge."];
+const PREFIXES = ["readHome.", "firstFlight.", "drift.", "liNudge.", "liStatus.", "editProfile."];
 const E = en as Record<string, string>;
 const A = ar as Record<string, string>;
 

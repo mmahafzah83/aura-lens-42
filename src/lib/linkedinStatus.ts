@@ -29,6 +29,11 @@ export interface LinkedInStatusView {
   actionLabel: string | null;
   /** One plain sentence saying what is true. */
   explanation: string;
+  /** i18n keys for the same words; surfaces render these, not the English above. */
+  labelKey: string;
+  actionLabelKey: string | null;
+  explanationKey: string;
+  explanationParams?: Record<string, number>;
 }
 
 /** A sync older than this is a nudge. It is never an alarm. */
@@ -51,6 +56,9 @@ export function linkedinStatus(input: LinkedInStatusInput, now: number = Date.no
   if (!input.hasRow) {
     return {
       key: "not_connected",
+      labelKey: "liStatus.not_connected.label",
+      actionLabelKey: "liStatus.not_connected.action",
+      explanationKey: "liStatus.not_connected.explanation",
       label: "Not connected",
       tone: "neutral",
       action: "connect",
@@ -66,6 +74,9 @@ export function linkedinStatus(input: LinkedInStatusInput, now: number = Date.no
   if (expired || BROKEN.includes(status)) {
     return {
       key: "reconnect_needed",
+      labelKey: "liStatus.reconnect_needed.label",
+      actionLabelKey: "liStatus.reconnect_needed.action",
+      explanationKey: "liStatus.reconnect_needed.explanation",
       label: "Reconnect needed",
       tone: "amber",
       action: "reconnect",
@@ -81,6 +92,10 @@ export function linkedinStatus(input: LinkedInStatusInput, now: number = Date.no
   if (stale) {
     return {
       key: "not_read_recently",
+      labelKey: "liStatus.not_read_recently.label",
+      actionLabelKey: "liStatus.not_read_recently.action",
+      explanationKey: "liStatus.not_read_recently.explanation",
+      explanationParams: { n: STALE_AFTER_DAYS },
       label: "Not read recently",
       tone: "amber",
       action: "reread",
@@ -91,6 +106,9 @@ export function linkedinStatus(input: LinkedInStatusInput, now: number = Date.no
 
   return {
     key: "connected",
+    labelKey: "liStatus.connected.label",
+    actionLabelKey: null,
+    explanationKey: "liStatus.connected.explanation",
     label: "Connected",
     tone: "green",
     action: null,

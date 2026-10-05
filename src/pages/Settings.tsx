@@ -535,7 +535,7 @@ const handleDeleteAccount = async () => {
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
                       {/* The shared rule's sentence — never a locally invented one. */}
-                      {liStatus.explanation}
+                      {t(liStatus.explanationKey, liStatus.explanationParams)}
                     </div>
                   </>
                 ) : (
@@ -548,7 +548,7 @@ const handleDeleteAccount = async () => {
                           : t("settings.linkedin.notConnected")}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
-                      {liStatus.explanation}
+                      {t(liStatus.explanationKey, liStatus.explanationParams)}
                     </div>
                   </>
                 )}
