@@ -171,7 +171,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
 
       {/* Plain progress */}
       <div style={ar({ ...counterStyle, textTransform: "none", letterSpacing: "0.06em", marginTop: -10, marginBottom: 14, textAlign: "end" })}>
-        {t(remaining === 0 ? "firstFlight.progress.none" : remaining === 1 ? "firstFlight.progress.one" : "firstFlight.progress.other", { done: doneCount, r: remaining })}
+        {t(remaining === 0 ? "firstFlight.progressDone" : remaining === 1 ? "firstFlight.progressLast" : "firstFlight.progressMany", { done: doneCount, r: remaining })}
       </div>
 
       {/* Step rail */}
