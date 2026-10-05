@@ -1,3 +1,5 @@
+import { milestoneName } from "@/lib/milestoneNames";
+import i18n from "@/i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -522,7 +524,7 @@ export default function MomentumPage() {
                     borderTop: i === 0 ? "none" : "1px solid var(--rule-divider)",
                   }}
                 >
-                  <span style={{ fontSize: 13.5, color: "var(--text-primary)" }}>{m.milestone_name}</span>
+                  <span style={{ fontSize: 13.5, color: "var(--text-primary)" }}>{milestoneName(m.milestone_name, (k) => i18n.t(k))}</span>
                   <span style={{ ...MONO, marginInlineStart: "auto", fontSize: 11.5, color: "var(--text-muted)" }}>
                     {new Date(m.earned_at).toLocaleDateString("en-GB", {
                       day: "numeric",

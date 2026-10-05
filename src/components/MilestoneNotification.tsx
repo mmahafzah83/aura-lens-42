@@ -1,3 +1,5 @@
+import { milestoneName } from "@/lib/milestoneNames";
+import i18n from "@/i18n";
 import { useEffect, useState } from "react";
 import { Award, X } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -67,7 +69,7 @@ const MilestoneNotification = ({ userId, auraData }: Props) => {
     >
       <Award size={16} style={{ color: "hsl(var(--primary))", flexShrink: 0 }} />
       <span style={{ flex: 1 }}>
-        <Trans i18nKey="frame.milestone.earned" values={{ name: first.name }} components={{ 1: <strong style={{ fontWeight: 500 }} /> }} />
+        <Trans i18nKey="frame.milestone.earned" values={{ name: milestoneName(first.name, (k) => i18n.t(k)) }} components={{ 1: <strong style={{ fontWeight: 500 }} /> }} />
       </span>
       <Link
         to="/dashboard?tab=identity"

@@ -312,7 +312,9 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     if (top && previousHaystacks) {
       const before = matchTheme(previousHaystacks, top, aliases).state;
       const after = matchTheme(haystacks, top, aliases).state;
-      if (before !== after) themeMove = { theme: top, from: STATE_WORDS[before], to: STATE_WORDS[after] };
+      if (before !== after) themeMove = lang === "ar"
+        ? { theme: top, from: tr(`pc.state.${before}`), to: tr(`pc.state.${after}`) }
+        : { theme: top, from: STATE_WORDS[before], to: STATE_WORDS[after] };
     }
     return buildPresenceChange({
       currentRows: rows,
@@ -323,8 +325,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       previousWord: overallWord(prevSum),
       baselineDate,
       themeMove,
+      lang,
+      t: (k, p) => String(tr(k, p as never)),
     });
-  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum, baselineDate, aliases]);
+  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum, baselineDate, aliases, lang, tr]);
 
   const carriedOfShown = themeRows.filter((t) => t.match.state === "carried").length;
   const partialOfShown = themeRows.filter((t) => t.match.state === "partial").length;
@@ -545,9 +549,9 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
           ) : null}
         </div>
         {changeSegments.length > 0 ? (
-          <p style={{ fontSize: 12.5, color: MUTED, margin: "6px 0 0", lineHeight: 1.6 }}>
+          <p style={arStyle(lang, { fontSize: 12.5, color: MUTED, margin: "6px 0 0", lineHeight: 1.6 })}>
             {changeSegments.map((seg, i) => (
-              <span key={i} style={seg.mono ? dashStyle : undefined}>{seg.text}</span>
+              <span key={i} style={seg.mono ? arStyle(lang, dashStyle) : undefined}>{seg.text}</span>
             ))}
           </p>
         ) : null}
@@ -577,8 +581,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
           {rows.map((r) => (
             <div key={r.key} style={{ paddingBlock: 10, minHeight: 44 }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{r.label}</span>
-                <span style={{ ...dashStyle, fontSize: 13, color: MUTED, textAlign: "end" }}>{r.fact}</span>
+                <span style={arStyle(lang, { fontSize: 14, fontWeight: 600, color: INK })}>{tr(r.labelKey)}</span>
+                <span style={arStyle(lang, { ...dashStyle, fontSize: 13, color: MUTED, textAlign: "end" })}>{tr(r.factKey, r.factParams)}</span>
               </div>
               <div style={{ height: 6, borderRadius: 999, background: LINE, marginBlockStart: 8, overflow: "hidden" }}>
                 <div style={{ width: `${r.score * 10}%`, height: "100%", borderRadius: 999, background: barColour(r.score) }} />
@@ -599,8 +603,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                         appliedAt={appliedTargets[r.key]}
                       />
                     ) : null}
-                    {r.weak && r.rule ? (
-                      <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginBlockStart: hasApplied ? 6 : 0 }}>{r.rule}</div>
+                    {r.weak && r.ruleKey ? (
+                      <div style={arStyle(lang, { fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginBlockStart: hasApplied ? 6 : 0 })}>{tr(r.ruleKey, r.ruleParams)}</div>
                     ) : null}
                     {r.weak && !hasApplied ? (
                       <FixAction

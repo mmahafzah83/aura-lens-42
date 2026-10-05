@@ -1,4 +1,6 @@
 import React, { useState, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { arStyle } from "@/lib/arDisplay";
 
 export interface CollapsibleListProps<T> {
   items: T[];
@@ -14,6 +16,8 @@ export function CollapsibleList<T>({
   label,
 }: CollapsibleListProps<T>) {
   const [expanded, setExpanded] = useState(false);
+  const { t, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
   const hasMore = items.length > visibleCount;
   const shown = expanded || !hasMore ? items : items.slice(0, visibleCount);
 
@@ -40,7 +44,7 @@ export function CollapsibleList<T>({
           onClick={() => setExpanded((v) => !v)}
           onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
           onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
-          style={{
+          style={arStyle(i18n.language, {
             background: "none",
             border: 0,
             padding: "8px 0",
@@ -51,11 +55,13 @@ export function CollapsibleList<T>({
             display: "flex",
             alignItems: "center",
             gap: 4,
-          }}
+          })}
         >
-          {expanded
-            ? "Show less"
-            : `Show all ${items.length}${label ? ` ${label}` : ""} →`}
+          {ar
+            ? (expanded ? t("cl.less") : t("cl.all", { n: items.length }))
+            : expanded
+              ? "Show less"
+              : `Show all ${items.length}${label ? ` ${label}` : ""} →`}
         </button>
       )}
     </div>
