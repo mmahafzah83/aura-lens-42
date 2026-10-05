@@ -7,6 +7,8 @@ import InfoTooltip from "@/components/ui/InfoTooltip";
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
+import { useTranslation } from "react-i18next";
+import { displayDate, arStyle } from "@/lib/arDisplay";
 
 interface Milestone {
   id: string;
@@ -36,41 +38,35 @@ const MILESTONE_ICONS: Record<string, string> = {
   weekly_rhythm_4: "◷",
 };
 
-const buildShareContext = (id: string, name: string, ctx: any, sectorFocus: string | null): string => {
-  const sector = sectorFocus || "your sector";
-  if (id === "profile_complete") return `Professional identity configured for ${sector}`;
-  if (id === "first_signal") return `First strategic signal: ${ctx?.signal_title || name}`;
-  if (id === "voice_trained") return "AI voice model trained on my writing style";
-  if (id === "brand_assessment") return "Market positioning assessed and strategic identity defined.";
-  if (id === "five_signals") return `${ctx?.count ?? 5} active signals across ${sector}`;
+type Tr = (k: string, o?: Record<string, unknown>) => string;
+
+const buildShareContext = (tr: Tr, id: string, name: string, ctx: any, sectorFocus: string | null): string => {
+  const sector = sectorFocus || tr("ms.sc.yourSector");
+  if (id === "profile_complete") return tr("ms.sc.profile", { sector });
+  if (id === "first_signal") return tr("ms.sc.signal", { title: ctx?.signal_title || name });
+  if (id === "voice_trained") return tr("ms.sc.voice");
+  if (id === "brand_assessment") return tr("ms.sc.brand");
+  if (id === "five_signals") return tr("ms.sc.five", { n: ctx?.count ?? 5, sector });
   if (id === "sector_depth") {
     const t = Array.isArray(ctx?.themes) ? ctx.themes.length : (ctx?.theme_count ?? 5);
-    return `${t} intelligence themes tracked`;
+    return tr("ms.sc.themes", { n: t });
   }
-  if (id === "first_publish") return "First AI-assisted post published";
-  if (id === "weekly_rhythm_4") return "4+ active capture weeks in the last 6 weeks";
-  return `Achieved: ${name}`;
+  if (id === "first_publish") return tr("ms.sc.publish");
+  if (id === "weekly_rhythm_4") return tr("ms.sc.rhythm");
+  return tr("ms.sc.achieved", { name });
 };
 
-const NEXT_DESCRIPTIONS: Record<string, string> = {
-  profile_complete: "Earned when your profile and sector focus are set.",
-  first_signal: "Earned when Aura detects your first strategic signal.",
-  voice_trained: "Earned when your voice profile has been distilled.",
-  first_publish: "Earned when you publish a post Aura wrote.",
-  brand_assessment: "Earned when you complete the brand assessment.",
-  five_signals: "Earned when you have 5+ active signals.",
-  sector_depth: "Earned when 5+ themes appear across your captures.",
-  weekly_rhythm_4: "Earned when you capture in 4+ of the last 6 weeks.",
-};
+const NEXT_IDS = new Set(["profile_complete", "first_signal", "voice_trained", "first_publish", "brand_assessment", "five_signals", "sector_depth", "weekly_rhythm_4"]);
 
-const formatDate = (iso: string | null) => {
+const formatDate = (iso: string | null, lang: string) => {
   if (!iso) return "";
   try {
+    if (lang === "ar") return displayDate(iso, lang);
     return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   } catch { return ""; }
 };
 
-const summarizeContext = (id: string, ctx: any): string | null => {
+const summarizeContext = (tr: Tr, id: string, ctx: any): string | null => {
   if (!ctx) return null;
   if (id === "sector_depth" && Array.isArray(ctx.themes) && ctx.themes.length) {
     const humanize = (t: string) =>
@@ -80,16 +76,18 @@ const summarizeContext = (id: string, ctx: any): string | null => {
       (t: string) => typeof t === "string" && !/^[a-z]+(_[a-z]+)+$/.test(t)
     );
     const named = meaningful.slice(0, 2).map(humanize);
-    if (!named.length) return `${ctx.themes.length} themes detected`;
-    const joined = named.length === 2 ? `${named[0]} and ${named[1]}` : named[0];
-    return `${ctx.themes.length} themes detected including ${joined}`;
+    const n = ctx.themes.length;
+    if (!named.length) return tr("ms.themes", { n });
+    return named.length === 2
+      ? tr("ms.themesTwo", { n, a: named[0], b: named[1] })
+      : tr("ms.themesOne", { n, a: named[0] });
   }
   if (id === "first_signal" && ctx.signal_title) return ctx.signal_title;
-  if (id === "five_signals" && ctx.count) return `${ctx.count} active signals`;
-  if (id === "weekly_rhythm_4" && ctx.active_in_last_6 != null) return `${ctx.active_in_last_6} of last 6 weeks active`;
-  if (id === "first_publish" && ctx.post_count) return `${ctx.post_count} posts published`;
+  if (id === "five_signals" && ctx.count) return tr("ms.activeSignals", { n: ctx.count });
+  if (id === "weekly_rhythm_4" && ctx.active_in_last_6 != null) return tr("ms.weeks", { n: ctx.active_in_last_6 });
+  if (id === "first_publish" && ctx.post_count) return tr("ms.posts", { n: ctx.post_count });
   if (id === "profile_complete" && ctx.sector_focus) return ctx.sector_focus;
-  if (id === "voice_trained" && ctx.tone) return `Tone: ${ctx.tone}`;
+  if (id === "voice_trained" && ctx.tone) return tr("ms.tone", { tone: ctx.tone });
   return null;
 };
 
@@ -99,6 +97,9 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
   const [profile, setProfile] = useState<{ first_name: string | null; level: string | null; sector_focus: string | null } | null>(null);
   const [shareData, setShareData] = useState<MilestoneShareData | null>(null);
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
+  const ar = lang === "ar";
 
   useEffect(() => {
     if (provided) { setData(provided); setLoading(false); }
@@ -161,15 +162,15 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
   };
 
   return (
-    <section aria-label="Milestones" className="space-y-4">
+    <section aria-label={tr("ms.aria")} className="space-y-4">
       <div>
-        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", marginBottom: 3, textTransform: "uppercase" }}>
-          ACHIEVEMENTS
+        <div style={arStyle(lang, { fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", marginBottom: 3, textTransform: "uppercase" })}>
+          {tr("ms.kicker")}
         </div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginBottom: 6, lineHeight: 1.5 }}>
-          Professional credentials earned through consistent intelligence work
+        <div style={arStyle(lang, { fontFamily: "var(--font-display)", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginBottom: 6, lineHeight: 1.5 })}>
+          {tr("ms.sub")}
         </div>
-        <h2 style={{
+        <h2 style={arStyle(lang, {
           fontFamily: "var(--font-display)",
           fontSize: 24,
           fontWeight: 500,
@@ -178,20 +179,20 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
           margin: 0,
           display: "inline-flex",
           alignItems: "center",
-        }}>
-          Your milestones
+        })}>
+          {tr("ms.title")}
           <InfoTooltip
-            label="Milestones"
-            text="Professional credentials earned as your authority grows."
+            label={tr("ms.aria")}
+            text={tr("ms.tip")}
           />
         </h2>
-        <p style={{
+        <p style={arStyle(lang, {
           fontFamily: "var(--font-body)",
           fontSize: 14,
           color: "hsl(var(--muted-foreground))",
           marginTop: 4,
-        }}>
-          {earned.length} of {milestones.length} earned
+        })}>
+          {tr("ms.count", { earned: earned.length, total: milestones.length })}
         </p>
       </div>
 
@@ -201,7 +202,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
           visibleCount={3}
           label="milestones"
           renderItem={(m) => {
-            const summary = summarizeContext(m.id, m.context);
+            const summary = summarizeContext(tr, m.id, m.context);
             const isNew = isNewlyEarned(m.earned_at);
             return (
               <div
@@ -209,7 +210,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                 style={{
                   background: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border) / 0.5)",
-                  borderLeft: "3px solid hsl(var(--primary))",
+                  borderInlineStart: "3px solid hsl(var(--primary))",
                   borderRadius: 8,
                   padding: "12px 14px",
                   display: "flex",
@@ -224,12 +225,12 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                     {m.name}
                   </div>
                   {m.earned_at && (
-                    <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                      Earned {formatDate(m.earned_at)}
+                    <div style={arStyle(lang, { fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 })}>
+                      {tr("ms.earnedOn", { date: formatDate(m.earned_at, lang) })}
                     </div>
                   )}
                   {summary && (
-                    <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
+                    <div style={arStyle(lang, { fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 })}>
                       {summary}
                     </div>
                   )}
@@ -237,10 +238,10 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                 {celebrationsEnabled && (
                   <button
                     type="button"
-                    aria-label={`Share ${m.name} on LinkedIn`}
+                    aria-label={tr("ms.shareAria", { name: m.name })}
                     onClick={() => setShareData({
                       name: m.name,
-                      context: buildShareContext(m.id, m.name, m.context, profile?.sector_focus || null),
+                      context: buildShareContext(tr, m.id, m.name, m.context, profile?.sector_focus || null),
                       earnedAt: m.earned_at,
                       icon: MILESTONE_ICONS[m.id] || "✦",
                       firstName: profile?.first_name || null,
@@ -260,10 +261,10 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                       fontSize: 12,
                       flexShrink: 0,
                     }}
-                    title="Share on LinkedIn"
+                    title={tr("ms.shareTitle")}
                   >
                     <Share2 size={12} />
-                    Share
+                    <span style={arStyle(lang)}>{tr("ms.share")}</span>
                   </button>
                 )}
               </div>
@@ -274,8 +275,8 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
 
       {unearned.length > 0 && (
         <div className="space-y-2">
-          <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--ink-3)", textTransform: "uppercase", marginTop: 8 }}>
-            Next
+          <div style={arStyle(lang, { fontSize: 12, letterSpacing: 2, color: "var(--ink-3)", textTransform: "uppercase", marginTop: 8 })}>
+            {tr("ms.next")}
           </div>
           <ul className="space-y-2" style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {unearned.map((m, idx) => {
@@ -296,11 +297,11 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                   }}
                 >
                   <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: isNext ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontWeight: isNext ? 500 : 400 }}>
-                    {isNext && <span style={{ color: "hsl(var(--primary))", marginRight: 6 }}>›</span>}
+                    {isNext && !ar && <span style={{ color: "hsl(var(--primary))", marginInlineEnd: 6 }}>›</span>}
                     {m.name}
                   </div>
-                  <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                    {NEXT_DESCRIPTIONS[m.id] || "Keep going to unlock this milestone."}
+                  <div style={arStyle(lang, { fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 })}>
+                    {NEXT_IDS.has(m.id) ? tr(`ms.desc.${m.id}`) : tr("ms.keepGoing")}
                   </div>
                 </li>
               );

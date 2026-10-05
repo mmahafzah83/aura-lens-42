@@ -9,6 +9,8 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { WorkingInline } from "@/components/ui/WorkingPanel";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+import { displayDate, AR_TEXT } from "@/lib/arDisplay";
 
 const INK = "#0F1519";
 const MUTED = "#5B6673";
@@ -17,7 +19,8 @@ const CARD = "#FFFFFF";
 const CANVAS = "#F2F5F9";
 const ACT = "#0670C4";
 const ERROR = "#C0392B";
-const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', ui-monospace, Menlo, monospace";
 const SANS = "Inter, system-ui, sans-serif";
 const ARABIC = "'Cairo', Inter, sans-serif";
 
@@ -103,12 +106,17 @@ interface Props {
 
 const isArabic = (s: string) => /[\u0600-\u06FF]/.test(s);
 const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
-const formatDate = (iso: string) => {
+const formatDate = (iso: string, lang: string) => {
   const d = new Date(iso);
+  if (lang === "ar") return Number.isNaN(d.getTime()) ? "—" : displayDate(iso, lang);
   return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
 export default function DraftProfileCopy({ target, open, onClose, handle, onReadAgain }: Props) {
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
+  const uiAr = lang === "ar";
+  const A = (s: React.CSSProperties): React.CSSProperties => (uiAr ? { ...s, ...AR_TEXT } : s);
   const [phase, setPhase] = useState<"reading" | "writing" | "done">("reading");
   const [options, setOptions] = useState<Option[]>([]);
   const [thin, setThin] = useState<number | null>(null);
@@ -141,7 +149,7 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
       const { data, error: err } = await supabase.functions.invoke("draft-profile-copy", {
         body: { target, mode, ...(mode === "fresh" && lang ? { language: lang } : {}) },
       });
-      if (err) throw new Error("Aura couldn't write just now. Try again.");
+      if (err) throw new Error(tr("dpc.err.write"));
       const res = data as {
         ok?: boolean; reason?: string; posts_found?: number;
         options?: Option[]; error?: string; dropped?: number;
@@ -162,23 +170,23 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
       } else if (res?.reason === "not_enough_writing") {
         setThin(typeof res.posts_found === "number" ? res.posts_found : 0);
       } else if (res?.reason === "unreadable_response") {
-        setError("Aura's answer came back garbled. Try again.");
+        setError(tr("dpc.err.garbled"));
       } else if (res?.reason === "busy") {
-        setError("Aura is busy right now. Try again in a minute.");
+        setError(tr("dpc.err.busy"));
       } else if (res?.reason === "no_credits") {
-        setError("You're out of Aura credits. What's already written is still free to re-read.");
+        setError(tr("dpc.err.credits"));
       } else if (res?.reason === "model_failed") {
-        setError("Aura couldn't write just now. Try again.");
+        setError(tr("dpc.err.write"));
       } else {
-        setError(res?.error || "Aura couldn't write just now. Try again.");
+        setError(res?.error || tr("dpc.err.write"));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message.split("\n")[0] : "Aura couldn't write just now. Try again.");
+      setError(e instanceof Error ? e.message.split("\n")[0] : tr("dpc.err.write"));
     } finally {
       window.clearTimeout(toWriting);
       setPhase("done");
     }
-  }, [target]);
+  }, [target, tr]);
 
   useEffect(() => {
     if (!open) return;
@@ -237,7 +245,7 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
       const t = window.setTimeout(() => setCopied(null), 2000);
       timers.current.push(t);
     } catch {
-      setError("Couldn't reach your clipboard. Select the text and copy it by hand.");
+      setError(tr("dpc.err.clipboard"));
     }
   };
 
@@ -254,35 +262,35 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
       style={SCRIM}
       role="dialog"
       aria-modal="true"
-      aria-label={target === "headline" ? "Draft a headline" : "Draft an About section"}
+      aria-label={target === "headline" ? tr("dpc.ariaHeadline") : tr("dpc.ariaAbout")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
         <div style={HEAD}>
-          <h2 style={TITLE}>
+          <h2 style={A(TITLE)}>
             {target === "headline"
-              ? "A sharper headline, from your own posts"
-              : "An About section, from your own posts"}
+              ? tr("dpc.titleHeadline")
+              : tr("dpc.titleAbout")}
           </h2>
-          <button type="button" style={CLOSE_BTN} aria-label="Close" onClick={onClose}>
+          <button type="button" style={CLOSE_BTN} aria-label={tr("dpc.close")} onClick={onClose}>
             <X size={18} />
           </button>
         </div>
-        <p style={SUBLINE}>
-          Aura reads what you've published and writes in that voice. Nothing here is invented.
+        <p style={A(SUBLINE)}>
+          {tr("dpc.sub")}
         </p>
-        <p style={ANGLE_HINT}>
-          Three angles on the same person. Pick the one that sounds like you.
+        <p style={A(ANGLE_HINT)}>
+          {tr("dpc.angles")}
         </p>
 
         <div style={BODY}>
           {busy && (
             <div style={NOTE_CARD}>
-              <p style={NOTE_HEAD}>{phase === "reading" ? "Reading your posts" : "Writing three options"}</p>
-              <p style={NOTE_BODY}>You can close this and come back — the counter below is real.</p>
+              <p style={A(NOTE_HEAD)}>{phase === "reading" ? tr("dpc.reading") : tr("dpc.writing")}</p>
+              <p style={A(NOTE_BODY)}>{tr("dpc.closeBack")}</p>
               <div style={{ marginBlockStart: 10 }}>
                 <WorkingInline
-                  verb={phase === "reading" ? "Reading your posts" : "Writing three options"}
+                  verb={phase === "reading" ? tr("dpc.reading") : tr("dpc.writing")}
                 />
               </div>
             </div>
@@ -290,18 +298,22 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
 
           {!busy && thin !== null && (
             <div style={NOTE_CARD}>
-              <p style={NOTE_HEAD}>Aura hasn't read enough of your writing yet.</p>
+              <p style={A(NOTE_HEAD)}>{tr("dpc.thinHead")}</p>
+              {uiAr ? (
+                <p style={A(NOTE_BODY)}>{tr("dpc.thinBody", { n: thin })}</p>
+              ) : (
               <p style={NOTE_BODY}>
                 It found <span style={{ fontFamily: MONO }}>{thin}</span> of your posts. It needs at least{" "}
                 <span style={{ fontFamily: MONO }}>3</span> before it can sound like you.
               </p>
+              )}
               {onReadAgain && (
                 <button
                   type="button"
-                  style={QUIET_ACTION}
+                  style={A(QUIET_ACTION)}
                   onClick={() => { onClose(); onReadAgain(); }}
                 >
-                  Read my posts again →
+                  {tr("dpc.readAgain")}
                 </button>
               )}
             </div>
@@ -309,22 +321,22 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
 
           {!busy && error && (
             <div style={NOTE_CARD}>
-              <div style={ERROR_LINE}>{error}</div>
-              <button type="button" style={QUIET_ACTION} onClick={() => void run("cached")}>Try again</button>
+              <div style={A(ERROR_LINE)}>{error}</div>
+              <button type="button" style={A(QUIET_ACTION)} onClick={() => void run("cached")}>{tr("dpc.tryAgain")}</button>
             </div>
           )}
 
           {!busy && fromCache && writtenAt && options.length > 0 && (
-            <div style={CACHE_LINE}>
-              Written on <span style={{ fontFamily: MONO }}>{formatDate(writtenAt)}</span>.
-              {stale && " Your profile has changed since then."}
+            <div style={A(CACHE_LINE)}>
+              {uiAr ? tr("dpc.writtenOn", { date: formatDate(writtenAt, lang) }) : <>Written on <span style={{ fontFamily: MONO }}>{formatDate(writtenAt, lang)}</span>.</>}
+              {stale && tr("dpc.stale")}
             </div>
           )}
 
           {!busy && appliedAt && options.length > 0 && (
-            <div style={CACHE_LINE}>
-              Aura found one of these on your profile on{" "}
-              <span style={{ fontFamily: MONO }}>{formatDate(appliedAt)}</span>.
+            <div style={A(CACHE_LINE)}>
+              {uiAr ? tr("dpc.applied", { date: formatDate(appliedAt, lang) }) : <>KnownBy found one of these on your profile on{" "}
+              <span style={{ fontFamily: MONO }}>{formatDate(appliedAt, lang)}</span>.</>}
             </div>
           )}
 
@@ -332,7 +344,7 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
             const ar = isArabic(o.text);
             return (
               <div key={`${i}-${o.text.slice(0, 24)}`} style={OPTION_CARD}>
-                {o.angle && <span style={ANGLE_CHIP}>{o.angle}</span>}
+                {o.angle && <span style={A(ANGLE_CHIP)}>{o.angle}</span>}
                 <div
                   dir="auto"
                   style={{
@@ -347,12 +359,12 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
                 </div>
                 <div style={COUNT_LINE}>
                   {target === "headline"
-                    ? `${o.text.length} characters`
-                    : `${wordCount(o.text)} words`}
+                    ? tr("dpc.chars", { n: o.text.length })
+                    : tr("dpc.words", { n: wordCount(o.text) })}
                 </div>
                 {o.why && <div dir="auto" style={WHY_LINE}>{o.why}</div>}
-                <button type="button" style={QUIET_ACTION} onClick={() => void copy(o.text, i, o.angle)}>
-                  {copied === i ? "Copied" : "Copy"}
+                <button type="button" style={A(QUIET_ACTION)} onClick={() => void copy(o.text, i, o.angle)}>
+                  {copied === i ? tr("dpc.copied") : tr("dpc.copy")}
                 </button>
               </div>
             );
@@ -361,37 +373,37 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
           {!busy && options.length > 0 && (
             <>
               {dropped > 0 && (
-                <div style={DROPPED_LINE}>
-                  <span style={{ fontFamily: MONO }}>{dropped}</span> more didn't meet the bar and weren't shown.
+                <div style={A(DROPPED_LINE)}>
+                  {uiAr ? tr("dpc.dropped", { n: dropped }) : <><span style={{ fontFamily: MONO }}>{dropped}</span> more didn't meet the bar and weren't shown.</>}
                 </div>
               )}
-              <div style={HONEST_LINE}>
-                Aura can't edit LinkedIn for you. Copy the one you want and paste it in.
+              <div style={A(HONEST_LINE)}>
+                {tr("dpc.cantEdit")}
               </div>
               {handle && (
                 <a
                   href={`https://www.linkedin.com/in/${handle}`}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ ...QUIET_ACTION, textDecoration: "none" }}
+                  style={A({ ...QUIET_ACTION, textDecoration: "none" })}
                 >
-                  Open my LinkedIn profile →
+                  {tr("dpc.openLi")}
                 </a>
               )}
               <div style={LANG_ROW}>
-                <span style={LANG_LABEL}>Write in</span>
-                <div style={SEGMENT} role="group" aria-label="Write in">
+                <span style={A(LANG_LABEL)}>{tr("dpc.writeIn")}</span>
+                <div style={SEGMENT} role="group" aria-label={tr("dpc.writeIn")}>
                   <button type="button" style={SEG_BTN(language === "en")} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>English</button>
                   <button type="button" style={SEG_BTN(language === "ar")} aria-pressed={language === "ar"} onClick={() => setLanguage("ar")}>العربية</button>
                 </div>
               </div>
-              {mixed && <div style={CREDIT_LINE}>You write in both. Pick one.</div>}
+              {mixed && <div style={A(CREDIT_LINE)}>{tr("dpc.mixed")}</div>}
               <div>
-                <button type="button" style={PRIMARY_BTN} onClick={() => void run("fresh", language)}>
-                  Write three new ones
+                <button type="button" style={A(PRIMARY_BTN)} onClick={() => void run("fresh", language)}>
+                  {tr("dpc.writeNew")}
                 </button>
-                <div style={{ ...CREDIT_LINE, marginBlockStart: 8 }}>
-                  Writing new ones uses your Aura credits. What's here is free to re-read.
+                <div style={A({ ...CREDIT_LINE, marginBlockStart: 8 })}>
+                  {tr("dpc.credit")}
                 </div>
               </div>
             </>

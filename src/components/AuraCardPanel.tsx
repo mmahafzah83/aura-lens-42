@@ -6,6 +6,8 @@ import AuraCard, { type AuraCardVariant } from "@/components/AuraCard";
 import { downloadBlob } from "@/lib/download";
 import { generationMetadata } from "@/lib/generationMetadata";
 import { classifyPublishError } from "@/lib/publishFailure";
+import { useTranslation } from "react-i18next";
+import { AR_TEXT } from "@/lib/arDisplay";
 
 // System-B "Signal" — module scope, literal. No hardcoded names/scores anywhere.
 const RULE = "#E2E7EE";
@@ -15,7 +17,8 @@ const INK_3 = "#5B6673";
 const PAPER = "#FFFFFF";
 const SPOT = "#0670C4";
 const SERIF = "Inter, system-ui, sans-serif";
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', ui-monospace, monospace";
 
 /** Shared outer shell for every top-level card in "What you can show". */
 const SHELL: React.CSSProperties = {
@@ -59,6 +62,10 @@ export default function AuraCardPanel({
 }: Props) {
   // The card has one variant. The skills variant and its radar were removed.
   const variant: AuraCardVariant = "voice";
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
+  const ar = lang === "ar";
+  const A = (s: React.CSSProperties): React.CSSProperties => (ar ? { ...s, ...AR_TEXT } : s);
   const [readiness, setReadiness] = useState<Readiness>({
     assessment: false, photo: false, country: false, loaded: false,
   });
@@ -139,9 +146,9 @@ export default function AuraCardPanel({
       const c = await renderCanvas();
       const blob: Blob | null = await new Promise((res) => c.toBlob((b) => res(b), "image/png", 1));
       if (!blob) throw new Error("Could not render image");
-      downloadBlob(blob, `aura-card-${variant}.png`);
+      downloadBlob(blob, `knownby-card-${variant}.png`);
     } catch (e: any) {
-      toast.error(e?.message || "PNG export failed");
+      toast.error(e?.message || tr("acp.pngFailed"));
     } finally { setBusy(null); }
   };
 
@@ -159,7 +166,7 @@ export default function AuraCardPanel({
     let attempted = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) throw new Error("Sign in first");
+      if (!session?.user?.id) throw new Error(tr("acp.signIn"));
       const uid = session.user.id;
       uidForLog = uid;
 
@@ -178,7 +185,7 @@ export default function AuraCardPanel({
 
       const caption =
         variant === "voice"
-          ? "My Aura card — the topic I'm building a voice in. Measured by Aura."
+          ? tr("acp.caption")
           : "My Aura card — the capabilities I'm strongest in. Measured by Aura.";
 
       const { data: ins, error: insErr } = await supabase
@@ -213,13 +220,13 @@ export default function AuraCardPanel({
       attempted = true;
       if (error) throw error;
       if (!(data as any)?.success) {
-        const msg = (data as any)?.error || "Publish failed";
-        throw new Error(/not connected/i.test(msg) ? "Connect LinkedIn in Settings first." : msg);
+        const msg = (data as any)?.error || tr("acp.publishFailed");
+        throw new Error(/not connected/i.test(msg) ? tr("acp.connectFirst") : msg);
       }
       const url = (data as any).postUrl;
       toast.success(
-        "Shared to LinkedIn",
-        url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined,
+        tr("acp.shared"),
+        url ? { action: { label: tr("acp.viewPost"), onClick: () => window.open(url, "_blank") } } : undefined,
       );
     } catch (e: any) {
       const failure = classifyPublishError(e, attempted);
@@ -264,51 +271,51 @@ export default function AuraCardPanel({
   const items = useMemo(() => [
     {
       key: "assessment",
-      label: "Brand assessment",
+      label: tr("acp.item.assessment"),
       done: readiness.assessment,
       hint: "Take the Brand Assessment in My Story.",
       action: onNavigateAssessment,
-      actionLabel: "Take the assessment",
+      actionLabel: tr("acp.act.assessment"),
     },
     {
       key: "photo",
-      label: "Profile photo",
+      label: tr("acp.item.photo"),
       done: readiness.photo,
       hint: "Add a profile photo.",
       action: onNavigatePhoto,
-      actionLabel: "Add photo",
+      actionLabel: tr("acp.act.photo"),
     },
     {
       key: "country",
-      label: "Country",
+      label: tr("acp.item.country"),
       done: readiness.country,
       hint: "Set your country in Settings.",
       action: onNavigateSettings,
-      actionLabel: "Open Settings",
+      actionLabel: tr("acp.act.country"),
     },
-  ], [readiness, onNavigateAssessment, onNavigatePhoto, onNavigateSettings]);
+  ], [readiness, onNavigateAssessment, onNavigatePhoto, onNavigateSettings, tr]);
 
   return (
     <section
       dir={dir}
       style={SHELL}
-      aria-label="Your Aura Card"
+      aria-label={tr("acp.title")}
     >
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: INK_3, textTransform: "uppercase" }}>
-            Your Aura Card
+          <div style={A({ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: INK_3, textTransform: "uppercase" })}>
+            {tr("acp.title")}
           </div>
-          <div style={{ fontFamily: SERIF, fontSize: 20, color: INK, marginTop: 4 }}>
-            A shareable read of who you are, in one card
+          <div style={A({ fontFamily: SERIF, fontSize: 20, color: INK, marginTop: 4 })}>
+            {tr("acp.sub")}
           </div>
         </div>
 
       </header>
 
       {!readiness.loaded ? (
-        <div style={{ fontFamily: SERIF, fontStyle: "italic", color: INK_3, padding: "16px 0" }}>
-          Loading your card…
+        <div style={A({ fontFamily: SERIF, fontStyle: "italic", color: INK_3, padding: "16px 0" })}>
+          {tr("acp.loading")}
         </div>
       ) : allReady ? (
         <>
@@ -326,19 +333,19 @@ export default function AuraCardPanel({
                 gap: 12,
               }}
             >
-              <div style={{ fontFamily: SERIF, fontSize: 16, color: INK }}>
-                🎉 Your Aura Card is ready
+              <div style={A({ fontFamily: SERIF, fontSize: 16, color: INK })}>
+                {tr("acp.ready")}
               </div>
               <button
                 onClick={() => setCelebrate(false)}
-                aria-label="Dismiss"
-                style={{
+                aria-label={tr("acp.dismiss")}
+                style={A({
                   fontFamily: MONO, fontSize: 10, letterSpacing: "0.12em",
                   textTransform: "uppercase", color: INK_2,
                   background: "transparent", border: 0, cursor: "pointer",
-                }}
+                })}
               >
-                Dismiss
+                {tr("acp.dismiss")}
               </button>
             </div>
           )}
@@ -356,25 +363,25 @@ export default function AuraCardPanel({
               }}
             >
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: SPOT, textTransform: "uppercase" }}>
-                  Not posted to LinkedIn
+                <div style={A({ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: SPOT, textTransform: "uppercase" })}>
+                  {tr("acp.notPosted")}
                 </div>
                 <button
                   onClick={() => setShareError(null)}
-                  aria-label="Dismiss"
-                  style={{
+                  aria-label={tr("acp.dismiss")}
+                  style={A({
                     fontFamily: MONO, fontSize: 10, letterSpacing: "0.12em",
                     textTransform: "uppercase", color: INK_2,
                     background: "transparent", border: 0, cursor: "pointer",
-                  }}
+                  })}
                 >
-                  Dismiss
+                  {tr("acp.dismiss")}
                 </button>
               </div>
-              <p style={{ margin: 0, fontFamily: SERIF, fontSize: 15, color: INK }}>
+              <p style={A({ margin: 0, fontFamily: SERIF, fontSize: 15, color: INK })}>
                 {/not connected/i.test(shareError)
-                  ? "Your card wasn't posted. Connect LinkedIn in Settings, then try again."
-                  : `Your card wasn't posted. ${shareError}`}
+                  ? tr("acp.notPostedConnect")
+                  : tr("acp.notPostedErr", { error: shareError })}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <ActionButton
@@ -382,14 +389,14 @@ export default function AuraCardPanel({
                   disabled={!!busy}
                   icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />}
                 >
-                  Try again
+                  {tr("acp.tryAgain")}
                 </ActionButton>
                 <ActionButton
                   onClick={downloadPng}
                   disabled={!!busy}
                   icon={busy === "png" ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
                 >
-                  Download PNG
+                  {tr("acp.download")}
                 </ActionButton>
               </div>
             </div>
@@ -402,17 +409,17 @@ export default function AuraCardPanel({
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "flex-end", borderTop: `1px solid ${RULE}`, paddingTop: 14 }}>
             <ActionButton onClick={downloadPng} disabled={!!busy} icon={busy === "png" ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}>
-              Download PNG
+              {tr("acp.download")}
             </ActionButton>
             <ActionButton onClick={shareToLinkedIn} disabled={!!busy} icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />}>
-              Share to LinkedIn
+              {tr("acp.share")}
             </ActionButton>
           </div>
         </>
       ) : (
         <div>
-          <div style={{ fontFamily: SERIF, fontStyle: "italic", color: INK_2, marginBottom: 12 }}>
-            Four steps until your card is ready.
+          <div style={A({ fontFamily: SERIF, fontStyle: "italic", color: INK_2, marginBottom: 12 })}>
+            {tr("acp.steps")}
           </div>
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {items.map((it) => (
@@ -420,22 +427,22 @@ export default function AuraCardPanel({
                 <span aria-hidden style={{ color: it.done ? SPOT : INK_3, display: "inline-flex" }}>
                   {it.done ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                 </span>
-                <span style={{ fontFamily: SERIF, fontSize: 15, color: INK, flex: 1 }}>{it.label}</span>
+                <span style={A({ fontFamily: SERIF, fontSize: 15, color: INK, flex: 1 })}>{it.label}</span>
                 {!it.done && it.action && (
                   <button
                     onClick={it.action}
-                    style={{
+                    style={A({
                       fontFamily: MONO, fontSize: 11, letterSpacing: "0.1em",
                       textTransform: "uppercase", color: SPOT, background: "transparent",
                       border: 0, cursor: "pointer", padding: "6px 8px",
-                    }}
+                    })}
                   >
-                    {it.actionLabel} →
+                    {it.actionLabel}
                   </button>
                 )}
                 {it.done && (
-                  <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.12em", color: INK_3, textTransform: "uppercase" }}>
-                    Done
+                  <span style={A({ fontFamily: MONO, fontSize: 10, letterSpacing: "0.12em", color: INK_3, textTransform: "uppercase" })}>
+                    {tr("acp.done")}
                   </span>
                 )}
               </li>
@@ -450,6 +457,8 @@ export default function AuraCardPanel({
 function ActionButton({
   children, onClick, disabled, icon,
 }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; icon?: React.ReactNode }) {
+  const { i18n } = useTranslation();
+  const ar = i18n.language === "ar";
   return (
     <button
       type="button"
@@ -459,6 +468,7 @@ function ActionButton({
         ...SECONDARY_BTN,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.6 : 1,
+        ...(ar ? AR_TEXT : {}),
       }}
     >
       {icon}<span>{children}</span>

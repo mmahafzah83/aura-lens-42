@@ -4,6 +4,9 @@ import { Brain, RefreshCw, Loader2, Sparkles, Target, Globe, Lightbulb, Users, S
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import { displayDate, arStyle } from "@/lib/arDisplay";
+import { fetchSeniorityTitles, titleLabel } from "@/lib/seniorityTitles";
 
 interface AuthorityTheme {
   theme: string;
@@ -42,14 +45,14 @@ const EMPTY_IDENTITY: IdentityModel = {
 };
 
 const SECTION_CONFIG = [
-  { key: "expertise_areas", label: "Expertise areas", icon: Layers, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where your captured intelligence shows real depth" },
-  { key: "industries", label: "Industries", icon: Globe, color: "text-emerald-400", dot: "var(--aura-positive)", subtitle: "The sectors your signals consistently track" },
-  { key: "knowledge_domains", label: "Your deep expertise", icon: Lightbulb, color: "text-amber-400", dot: "var(--aura-accent)", subtitle: "The fields where your captured intelligence runs deepest" },
-  { key: "capabilities", label: "What sets you apart", icon: Star, color: "text-violet-400", dot: "var(--aura-purple)", subtitle: "The things you do that most people in your space can't. These show up in everything you write." },
-  { key: "clients", label: "Target clients", icon: Users, color: "text-sky-400", dot: "var(--aura-accent3)", subtitle: "The decision-makers your expertise serves" },
-  { key: "values", label: "Core values", icon: Compass, color: "text-rose-400", dot: "var(--aura-pink)", subtitle: "What drives your approach — these shape your voice and content tone" },
-  { key: "authority_ambitions", label: "Presence ambitions", icon: Target, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where you are heading — Aura measures every action against these targets" },
-  { key: "strategic_goals", label: "Strategic goals", icon: Target, color: "text-emerald-400", dot: "var(--aura-positive)", subtitle: "The outcomes that define success for you — your score reflects progress toward these" },
+  { key: "expertise_areas", icon: Layers, color: "text-primary", dot: "var(--aura-accent)" },
+  { key: "industries", icon: Globe, color: "text-emerald-400", dot: "var(--aura-positive)" },
+  { key: "knowledge_domains", icon: Lightbulb, color: "text-amber-400", dot: "var(--aura-accent)" },
+  { key: "capabilities", icon: Star, color: "text-violet-400", dot: "var(--aura-purple)" },
+  { key: "clients", icon: Users, color: "text-sky-400", dot: "var(--aura-accent3)" },
+  { key: "values", icon: Compass, color: "text-rose-400", dot: "var(--aura-pink)" },
+  { key: "authority_ambitions", icon: Target, color: "text-primary", dot: "var(--aura-accent)" },
+  { key: "strategic_goals", icon: Target, color: "text-emerald-400", dot: "var(--aura-positive)" },
 ] as const;
 
 type EditableArrayKey = typeof SECTION_CONFIG[number]["key"];
@@ -70,6 +73,20 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
   const [saving, setSaving] = useState(false);
   const [level, setLevel] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
+  const ar = lang === "ar";
+  const [levelAr, setLevelAr] = useState<string | null>(null);
+  useEffect(() => {
+    if (!ar || !level) { setLevelAr(null); return; }
+    let off = false;
+    fetchSeniorityTitles().then((rows) => {
+      const row = rows.find((r) => r.title === level);
+      if (!off) setLevelAr(row ? titleLabel(row, lang) : null);
+    }).catch(() => {});
+    return () => { off = true; };
+  }, [ar, level, lang]);
+  const A = (st: React.CSSProperties = {}) => arStyle(lang, st);
 
   useEffect(() => {
     loadIdentity();
@@ -93,7 +110,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
     setGenerating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!session) throw new Error(tr("pi.notAuth"));
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-identity-intelligence`, {
         method: "POST",
         headers: {
@@ -103,14 +120,14 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
         },
         body: JSON.stringify({}),
       });
-      if (!resp.ok) throw new Error("Couldn't generate");
+      if (!resp.ok) throw new Error(tr("pi.couldntGenerate"));
       const data = await resp.json();
       if (data.identity) {
         setIdentity({ ...EMPTY_IDENTITY, ...data.identity });
-        toast({ title: "Identity Model Generated", description: "Your strategic identity has been analyzed." });
+        toast({ title: tr("pi.toastGenerated"), description: tr("pi.toastGeneratedBody") });
       }
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: tr("pi.error"), description: e.message, variant: "destructive" });
     } finally {
       setGenerating(false);
     }
@@ -129,7 +146,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setSaving(false);
-      toast({ title: "Couldn't save", description: "Please sign in again.", variant: "destructive" });
+      toast({ title: tr("pi.couldntSave"), description: tr("pi.signInAgain"), variant: "destructive" });
       return;
     }
     const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
@@ -137,11 +154,11 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
       .eq("user_id", user.id);
     setSaving(false);
     if (error) {
-      toast({ title: "Couldn't save", description: "Please try again.", variant: "destructive" });
+      toast({ title: tr("pi.couldntSave"), description: tr("pi.tryAgain"), variant: "destructive" });
       return;
     }
     setEditing(null);
-    toast({ title: "Saved" });
+    toast({ title: tr("pi.saved") });
   };
 
   const addItem = () => {
@@ -171,8 +188,8 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
             <Brain className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Profile Intelligence</h3>
-            <p className="text-xs text-muted-foreground">Executive positioning model</p>
+            <h3 className="text-lg font-semibold text-foreground" style={A()}>{tr("pi.title")}</h3>
+            <p className="text-xs text-muted-foreground" style={A()}>{tr("pi.sub")}</p>
           </div>
         </div>
         <Button
@@ -183,7 +200,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
           className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
         >
           {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-          {hasIdentity ? "Refresh" : "Analyze"}
+          <span style={A()}>{hasIdentity ? tr("pi.refresh") : tr("pi.analyze")}</span>
         </Button>
       </div>
 
@@ -193,29 +210,29 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
             <Sparkles className="w-7 h-7 text-primary" />
           </div>
           <div>
-            <h4 className="text-base font-semibold text-foreground">Discover Your Strategic Identity</h4>
-            <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-              Aura will analyze your captures, frameworks, and signals to build your strategic identity model.
+            <h4 className="text-base font-semibold text-foreground" style={A()}>{tr("pi.emptyTitle")}</h4>
+            <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto" style={A()}>
+              {tr("pi.emptyBody")}
             </p>
           </div>
           <Button onClick={generateIdentity} disabled={generating} className="gap-2">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-            Generate Identity Model
+            <span style={A()}>{tr("pi.generate")}</span>
           </Button>
         </div>
       ) : (
         <div className="space-y-6">
           {/* Provenance, guidance, and personalization */}
-          <div className="space-y-1">
+          <div className="space-y-1" style={A()}>
             <p className="text-xs text-muted-foreground">
-              Built by Aura from your captures, assessments, and signals.
+              {tr("pi.builtBy")}
             </p>
             <p className="text-xs text-muted-foreground">
-              These shape your content and voice. Publish on the work you keep returning to using the suggestions below.
+              {tr("pi.shape")}
             </p>
             {level && (
               <p className="text-xs text-muted-foreground">
-                Built for your level: {level}
+                {tr("pi.level", { level: levelAr || level })}
               </p>
             )}
           </div>
@@ -238,20 +255,20 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
 
           {/* Sections Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {SECTION_CONFIG.map(({ key, label, icon: Icon, color, subtitle, dot }) => (
+            {SECTION_CONFIG.map(({ key, icon: Icon, color, dot }) => { const label = tr(`pi.sec.${key}.label`); const subtitle = tr(`pi.sec.${key}.sub`); return (
               <div key={key} className="p-4 rounded-xl bg-secondary/30 border border-border/10">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Icon className={`w-4 h-4 ${color}`} />
-                      <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{label}</span>
+                      <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase" style={A()}>{label}</span>
                     </div>
                     {subtitle && (
-                      <p className="text-xs text-muted-foreground/70 mt-1 leading-snug">{subtitle}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-1 leading-snug" style={A()}>{subtitle}</p>
                     )}
                   </div>
                   {editing !== key && (
-                    <button aria-label={`Edit ${label}`} onClick={() => startEdit(key)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 ml-2">
+                    <button aria-label={tr("pi.editAria", { label })} onClick={() => startEdit(key)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 ms-2">
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -263,13 +280,13 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
                       {editItems.map((item, i) => (
                         <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-secondary text-foreground border border-border/20 flex items-center gap-1.5">
                           {item}
-                          <button aria-label={`Remove ${item}`} onClick={() => removeItem(i)} className="hover:text-destructive"><X className="w-3 h-3" /></button>
+                          <button aria-label={tr("pi.removeAria", { item })} onClick={() => removeItem(i)} className="hover:text-destructive"><X className="w-3 h-3" /></button>
                         </span>
                       ))}
                     </div>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="Add…"
+                        placeholder={tr("pi.add")}
                         value={newItem}
                         onChange={(e) => setNewItem(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && addItem()}
@@ -279,9 +296,9 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" onClick={() => saveEdit(key)} disabled={saving} className="h-7 text-xs gap-1">
-                        <Save className="w-3 h-3" /> Save
+                        <Save className="w-3 h-3" /> <span style={A()}>{tr("pi.save")}</span>
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(null)} className="h-7 text-xs">Cancel</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditing(null)} className="h-7 text-xs" style={A()}>{tr("pi.cancel")}</Button>
                     </div>
                   </div>
                 ) : (
@@ -294,29 +311,29 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
                         </span>
                       ))
                     ) : (
-                      <span className="text-xs text-muted-foreground italic">Not yet analyzed</span>
+                      <span className="text-xs text-muted-foreground italic" style={A()}>{tr("pi.notYet")}</span>
                     )}
                   </div>
                 )}
               </div>
-            ))}
+            ); })}
           </div>
 
           {/* Authority Theme Suggestions */}
           {!hideSuggestedTopics && identity.authority_themes.length > 0 && (
             <div className="space-y-3">
               {intelligenceStage && (
-                <div className="text-xs uppercase tracking-wider text-muted-foreground" style={{ letterSpacing: "0.08em" }}>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground" style={A({ letterSpacing: "0.08em" })}>
                   {intelligenceStage === 3
-                    ? "Your proven expertise territories"
+                    ? tr("pi.stage3")
                     : intelligenceStage === 2
-                    ? "Emerging from your signals"
-                    : "Suggested from your assessment"}
+                    ? tr("pi.stage2")
+                    : tr("pi.stage1")}
                 </div>
               )}
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
-                <h4 className="text-sm font-semibold text-foreground">Where to build presence next</h4>
+                <h4 className="text-sm font-semibold text-foreground" style={A()}>{tr("pi.whereNext")}</h4>
               </div>
               <div className="space-y-2">
                 {identity.authority_themes.map((at, i) => (
@@ -330,9 +347,9 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
                         <button
                           onClick={() => onGenerateContent(at.theme, at.rationale)}
                           className="text-xs font-medium flex items-center gap-1 shrink-0 mt-0.5 hover:underline"
-                          style={{ color: "var(--brand)" }}
+                          style={A({ color: "var(--brand)" })}
                         >
-                          Create post on this <ArrowRight className="w-3 h-3" />
+                          {tr("pi.createPost")} {!ar && <ArrowRight className="w-3 h-3" />}
                         </button>
                       )}
                     </div>
@@ -343,10 +360,10 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
           )}
 
           {/* Generated timestamp — never undated: if no date was stored, say so. */}
-          <p className="text-xs text-muted-foreground text-right">
+          <p className="text-xs text-muted-foreground text-end" style={A()}>
             {identity.generated_at
-              ? `Last analyzed: ${new Date(identity.generated_at).toLocaleDateString()}`
-              : "Last analyzed: no date was recorded for this reading."}
+              ? tr("pi.lastAnalyzed", { date: ar ? displayDate(identity.generated_at, lang) : new Date(identity.generated_at).toLocaleDateString() })
+              : tr("pi.lastAnalyzedNone")}
           </p>
         </div>
       )}
