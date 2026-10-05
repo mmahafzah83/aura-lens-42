@@ -143,4 +143,7 @@ void i18n.use(initReactI18next).init({
   returnNull: false,
 });
 
+/** The language the screen is showing now — sent as `lang` to email senders. */
+export const emailLang = (): UiLang => (i18n.language === "ar" ? "ar" : "en");
+
 export default i18n;

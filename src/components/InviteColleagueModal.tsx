@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { toast } from "sonner";
 import { track } from "@/lib/track";
+import { emailLang } from "@/i18n";
 
 interface Props {
   open: boolean;
@@ -58,7 +59,7 @@ export function InviteColleagueModal({ open, onClose }: Props) {
     try {
       await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke("colleague-invite", {
-        body: { action: "invite", email: email.trim(), note: note.trim() },
+        body: { action: "invite", email: email.trim(), note: note.trim(), lang: emailLang() },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

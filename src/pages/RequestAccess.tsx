@@ -9,6 +9,7 @@ import { SENIORITY_LEVELS } from "@/constants/seniority";
 import { fetchSeniorityTitles } from "@/lib/seniorityTitles";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
+import { emailLang } from "@/i18n";
   SEAT_LEAD, SEAT_HOW, SEAT_VS_TOOLS, SEAT_RACK_LABEL,
   INTENT_RESERVE, INTENT_KEEP_POSTED, RESERVED_TITLE, RESERVED_BODY, POSTED_TITLE,
   WORTH_QUESTION, WORTH_PLACEHOLDER, WORTH_SEND, WORTH_SKIP, WORTH_THANKS,
@@ -141,7 +142,7 @@ export default function RequestAccess() {
     setStatus("loading");
     try {
       const { data, error } = await supabase.functions.invoke("submit-waitlist", {
-        body: { name: name.trim(), email: email.trim(), seniority, sector, intent: chosen },
+        body: { name: name.trim(), email: email.trim(), seniority, sector, intent: chosen, lang: emailLang() },
       });
       if (error) {
         // FunctionsHttpError exposes the EF response body via error.context;
@@ -186,7 +187,7 @@ export default function RequestAccess() {
       await supabase.functions.invoke("submit-waitlist", {
         body: {
           name: name.trim(), email: email.trim(), seniority, sector,
-          intent: INTENT_RESERVE, answer,
+          intent: INTENT_RESERVE, answer, lang: emailLang(),
         },
       });
     } catch (err) {

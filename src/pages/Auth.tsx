@@ -12,6 +12,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { isOnboarded } from "@/lib/onboarding";
 import { setPendingDestination } from "@/lib/pendingDestination";
 import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES, ASSESSMENT_MINUTES_LINE, ASSESSMENT_MINUTES_WORD } from "@/lib/brand";
+import { emailLang } from "@/i18n";
 
 /** The consent text version recorded against every new account. */
 export const CONSENT_VERSION = "2026-08-16";
@@ -231,6 +232,7 @@ const Auth = () => {
           password,
           origin: window.location.origin,
           consent_version: CONSENT_VERSION,
+          lang: emailLang(),
         },
       });
       const result = data as { ok?: boolean; existing?: boolean; code?: string; error?: string } | null;
@@ -264,7 +266,7 @@ const Auth = () => {
 
   const sendReset = async (target: string) => {
     const { data, error } = await supabase.functions.invoke("send-password-reset", {
-      body: { email: target.trim().toLowerCase(), origin: window.location.origin },
+      body: { email: target.trim().toLowerCase(), origin: window.location.origin, lang: emailLang() },
     });
     if (error) throw error;
     if ((data as any)?.error) throw new Error((data as any).error);
@@ -347,7 +349,7 @@ const Auth = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.email) {
           await supabase.functions.invoke("send-account-notification", {
-            body: { type: "password_changed", email: user.email, first_name: null },
+            body: { type: "password_changed", email: user.email, first_name: null, lang: emailLang() },
           });
         }
       } catch (e) {
