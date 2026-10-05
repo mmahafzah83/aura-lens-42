@@ -9,10 +9,21 @@
  * their loss and their replacement line, then the long tail. A member reads
  * roughly 425 words of the ~1,750 we generate — these are the 425.
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import i18n from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { OB } from "@/components/onboarding/tokens";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+/* When the caller fixes a language (the report PDF), labels, the mono reset and
+   the chevron follow it; otherwise everything follows the screen language. */
+type CvLang = { t: (k: string, o?: Record<string, unknown>) => string; lang: "ar" | "en" };
+const CvLangCtx = createContext<CvLang | null>(null);
+function useCvLang(): CvLang {
+  const screen = useLanguage();
+  const fixed = useContext(CvLangCtx);
+  return fixed ?? { t: screen.t as CvLang["t"], lang: screen.lang };
+}
 
 export type AuraCan = "capture_evidence" | "draft_post" | "suggest_headline" | "track_signal";
 
@@ -164,7 +175,7 @@ const filledBtn: React.CSSProperties = {
 
 /** Visible label, contextual accessible name, `role="status"` confirmation. */
 function CopyButton({ value, label }: { value: string; label: string }) {
-  const { t } = useLanguage();
+  const { t } = useCvLang();
   const [done, setDone] = useState(false);
   const timer = useRef<number | null>(null);
 
@@ -220,7 +231,7 @@ function PlainList({ items, extra }: { items: string[]; extra?: CSSProperties })
 
 /** Stacked, never side-by-side: two columns are unreadable at 375px. */
 function EvidencePair({ cv, profile }: { cv: string; profile: string }) {
-  const { t } = useLanguage();
+  const { t } = useCvLang();
   const row = (label: string, quote: string, isCv: boolean) => (
     <div>
       <p className="cvx-mono" style={mono}>{label}</p>
@@ -247,7 +258,7 @@ function EvidencePair({ cv, profile }: { cv: string; profile: string }) {
 }
 
 function EvidenceToggle({ cv, profile }: { cv: string; profile: string }) {
-  const { t } = useLanguage();
+  const { t } = useCvLang();
   const [open, setOpen] = useState(false);
   if (!cv && !profile) return null;
   return (
@@ -292,7 +303,7 @@ function Disclosure({
   openSignal?: number;
   children: React.ReactNode;
 }) {
-  const { lang } = useLanguage();
+  const { lang } = useCvLang();
   const ref = useRef<HTMLDetailsElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -354,7 +365,10 @@ export default function CvCrosscheck({
   onRunAgain,
   uploadSlot,
   onAuraAction,
+  lang: fixedLang,
 }: {
+  /** Fixes the label language (the report passes its own); defaults to the screen language. */
+  lang?: "ar" | "en";
   /** Pass the stored object directly when the caller already has it. */
   data?: unknown;
   /** Or let the component read it for this member. */
@@ -370,7 +384,13 @@ export default function CvCrosscheck({
     context: { finding?: CvFinding; recommendation?: CvRecommendation },
   ) => void | boolean | Promise<void | boolean>;
 }) {
-  const { t, lang: uiLang } = useLanguage();
+  const screen = useLanguage();
+  const cvLang = useMemo<CvLang | null>(
+    () => (fixedLang ? { t: i18n.getFixedT(fixedLang) as unknown as CvLang["t"], lang: fixedLang } : null),
+    [fixedLang],
+  );
+  const t = cvLang?.t ?? (screen.t as CvLang["t"]);
+  const uiLang = cvLang?.lang ?? screen.lang;
   const [fetched, setFetched] = useState<unknown>(null);
   const [headlineOpen, setHeadlineOpen] = useState(0);
   /* One "Kept ✓" per thing kept — pressing twice cannot write twice. */
@@ -538,8 +558,9 @@ export default function CvCrosscheck({
   };
 
   return (
-    <div style={{ display: "grid", gap: 16, ...style }}>
-      <style>{`html[lang="ar"] .cvx-mono{letter-spacing:0 !important;text-transform:none !important;}`}</style>
+    <CvLangCtx.Provider value={cvLang}>
+    <div className={uiLang === "ar" ? "cvx-ar" : undefined} style={{ display: "grid", gap: 16, ...style }}>
+      <style>{`.cvx-ar .cvx-mono{letter-spacing:0 !important;text-transform:none !important;font-family:var(--font-arabic),Cairo,sans-serif !important;}`}</style>
       {/* 1 · Verdict — the only night surface here. */}
       <section
         style={{
@@ -669,5 +690,6 @@ export default function CvCrosscheck({
         </Disclosure>
       ) : null}
     </div>
+    </CvLangCtx.Provider>
   );
 }

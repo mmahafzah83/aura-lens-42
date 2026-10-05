@@ -9,6 +9,8 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { addTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ltrIsolate } from "@/i18n";
 
 interface SignalRow {
   id: string;
@@ -74,6 +76,18 @@ export default function TrendDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isReady } = useAuthReady();
+  const { t, lang, chosenLang } = useLanguage();
+  const ar = lang === "ar";
+  /* Database values on chips: display map only; unknown values fall through. */
+  const val = (v: string | null) => {
+    if (!v || !ar) return v ?? "";
+    const k = `trend.val.${v}`;
+    const out = t(k);
+    return out === k ? v : out;
+  };
+  /* Arabic: no capitals, no tracking. */
+  const caps = (s: React.CSSProperties): React.CSSProperties =>
+    ar ? { ...s, textTransform: "none", letterSpacing: 0 } : s;
   const [signal, setSignal] = useState<SignalRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [externalAlive, setExternalAlive] = useState<boolean | null>(null);
@@ -90,10 +104,10 @@ export default function TrendDetail() {
   const headlineForTitle =
     rawHeadline.length > 45 ? rawHeadline.slice(0, 44).trimEnd() + "…" : rawHeadline;
   const metaTitle = rawHeadline
-    ? `${headlineForTitle} — Aura Trend`
-    : "Industry Trend — Aura";
+    ? t("trend.metaTitle", { headline: headlineForTitle })
+    : t("trend.metaTitleEmpty");
   const insightText = (signal?.insight || signal?.summary || "").trim();
-  const descBase = insightText || "A curated industry trend with strategic context for senior professionals.";
+  const descBase = insightText || t("trend.metaDesc");
   const metaDescription =
     descBase.length > 155 ? descBase.slice(0, 154).trimEnd() + "…" : descBase;
   usePageMeta({
@@ -105,12 +119,12 @@ export default function TrendDetail() {
       ? {
           "@context": "https://schema.org",
           "@type": "Article",
-          headline: rawHeadline || "Industry trend",
+          headline: rawHeadline || t("trend.ldHeadline"),
           description: metaDescription,
           datePublished: signal.fetched_at,
           publisher: {
             "@type": "Organization",
-            name: "Aura",
+            name: "KnownBy",
             url: "https://www.aura-intel.org",
           },
           mainEntityOfPage: `https://www.aura-intel.org/trends/${signal.id}`,
@@ -129,7 +143,7 @@ export default function TrendDetail() {
           summary: signal.insight || "",
           content: fallbackContext,
           type: "default",
-          lang: "en",
+          lang: chosenLang === "ar" ? "ar" : "en",
         },
       });
       if (error) throw error;
@@ -144,7 +158,7 @@ export default function TrendDetail() {
       });
     } catch (e) {
       console.error("[TrendDetail] draft-post failed", e);
-      toast.error("Couldn't create draft — try again");
+      toast.error(t("trend.draftFailed"));
       setDrafting(false);
     }
   };
@@ -162,9 +176,9 @@ export default function TrendDetail() {
       final_score: signal.final_score,
     });
     if (result.ok) {
-      toast.success(`Evidence strengthened — ${result.newCount} sources connected to ${result.signalTitle}`);
+      toast.success(t("trend.added", { n: result.newCount, signalTitle: result.signalTitle }));
     } else {
-      toast.error("Couldn't add to signals — try again");
+      toast.error(t("trend.addFailed"));
     }
   };
 
@@ -281,15 +295,15 @@ export default function TrendDetail() {
   if (!signal) {
     return (
       <div className="mx-auto text-center" style={{ maxWidth: 560, padding: "64px 20px" }}>
-        <div style={{ fontSize: 14, color: "hsl(var(--foreground))", marginBottom: 6 }}>Signal not found</div>
+        <div style={{ fontSize: 14, color: "hsl(var(--foreground))", marginBottom: 6 }}>{t("trend.notFound")}</div>
         <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
-          It may have been expired or removed.
+          {t("trend.notFoundBody")}
         </div>
         <button
           onClick={() => navigate("/home")}
           style={{ fontSize: 12, color: "var(--action)", background: "transparent", border: "0.5px solid var(--rule)", padding: "6px 14px", borderRadius: 4, cursor: "pointer" }}
         >
-          Back to Home
+          {t("trend.backHome")}
         </button>
       </div>
     );
@@ -299,10 +313,10 @@ export default function TrendDetail() {
   const dStyle = decisionStyle(signal.decision_label);
   const iColor = impactColor(signal.impact_level);
 
-  const sectionLabel: React.CSSProperties = {
+  const sectionLabel: React.CSSProperties = caps({
     fontSize: 12, fontWeight: 500, letterSpacing: "0.1em",
     textTransform: "uppercase", color: "var(--action)", marginBottom: 6,
-  };
+  });
   const bodyText: React.CSSProperties = {
     fontSize: 14, lineHeight: 1.65, color: "hsl(var(--foreground))",
   };
@@ -316,56 +330,56 @@ export default function TrendDetail() {
         onClick={() => navigate(-1)}
         style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", background: "transparent", border: "none", padding: 0, cursor: "pointer", marginBottom: 20 }}
       >
-        ← Back
+        {t("trend.back")}
       </button>
 
       {/* Tags row */}
       <div className="flex items-center flex-wrap" style={{ gap: 6, marginBottom: 14 }}>
         {signal.decision_label && (
-          <span style={{ fontSize: 12, color: dStyle.color, background: dStyle.bg, border: `0.5px solid ${dStyle.color}55`, padding: "3px 10px", borderRadius: 3, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            ◆ {signal.decision_label}
+          <span style={caps({ fontSize: 12, color: dStyle.color, background: dStyle.bg, border: `0.5px solid ${dStyle.color}55`, padding: "3px 10px", borderRadius: 3, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" })}>
+            ◆ {val(signal.decision_label)}
           </span>
         )}
         {signal.signal_type && (
-          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-            {signal.signal_type}
+          <span dir="auto" style={caps({ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" })}>
+            {val(signal.signal_type)}
           </span>
         )}
         {signal.category && (
-          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-            {signal.category}
+          <span dir="auto" style={caps({ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" })}>
+            {val(signal.category)}
           </span>
         )}
         {signal.impact_level && (
-          <span style={{ fontSize: 12, color: iColor, border: `0.5px solid ${iColor}55`, padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-            Impact · {signal.impact_level}
+          <span style={caps({ fontSize: 12, color: iColor, border: `0.5px solid ${iColor}55`, padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" })}>
+            {t("trend.impact", { level: val(signal.impact_level) })}
           </span>
         )}
         {signal.confidence_level && (
-          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-            Confidence · {signal.confidence_level}
+          <span style={caps({ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" })}>
+            {t("trend.confidence", { level: val(signal.confidence_level) })}
           </span>
         )}
         {isTrusted(signal.source) && (
           <span style={{ fontSize: 12, color: "var(--success)", border: "0.5px solid var(--rule)", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em" }}>
-            ✓ TRUSTED
+            {t("trend.trusted")}
           </span>
         )}
-        <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground) / 0.6)", marginLeft: "auto" }}>
-          {signal.source ? `${signal.source} · ` : ""}{formatSmartDate(signal.fetched_at)}
+        <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground) / 0.6)", marginInlineStart: "auto" }}>
+          {signal.source ? `${ar ? ltrIsolate(signal.source) : signal.source} · ` : ""}{formatSmartDate(signal.fetched_at, lang)}
         </span>
       </div>
 
       {/* Headline */}
-      <h1 style={{ fontSize: 24, fontWeight: 500, lineHeight: 1.3, color: "hsl(var(--foreground))", margin: 0 }}>
+      <h1 dir="auto" style={{ fontSize: 24, fontWeight: 500, lineHeight: 1.3, color: "hsl(var(--foreground))", margin: 0 }}>
         {signal.headline}
       </h1>
 
       {/* Insight */}
       {signal.insight && (
         <div style={{ marginBottom: 16, marginTop: 16 }}>
-          <div style={sectionLabel}>Insight</div>
-          <div style={bodyText}>{signal.insight}</div>
+          <div style={sectionLabel}>{t("trend.insight")}</div>
+          <div dir="auto" style={bodyText}>{signal.insight}</div>
         </div>
       )}
 
@@ -374,11 +388,11 @@ export default function TrendDetail() {
       {/* Why this matters to you */}
       {(whyLoading || whyMatters) && (
         <div style={{ marginBottom: 16 }}>
-          <div style={sectionLabel}>Why this matters to you</div>
+          <div style={sectionLabel}>{t("trend.why")}</div>
           {whyLoading ? (
             <Skeleton className="h-4 w-3/4" />
           ) : (
-            <div style={{ ...bodyText, fontStyle: "italic" }}>{whyMatters}</div>
+            <div dir="auto" style={{ ...bodyText, fontStyle: ar ? "normal" : "italic" }}>{whyMatters}</div>
           )}
         </div>
       )}
@@ -388,8 +402,8 @@ export default function TrendDetail() {
       {/* What to do */}
       {signal.action_recommendation && (
         <div style={{ marginBottom: 16 }}>
-          <div style={sectionLabel}>What to do</div>
-          <div style={bodyText}>{signal.action_recommendation}</div>
+          <div style={sectionLabel}>{t("trend.whatToDo")}</div>
+          <div dir="auto" style={bodyText}>{signal.action_recommendation}</div>
         </div>
       )}
 
@@ -399,19 +413,19 @@ export default function TrendDetail() {
       {signal.content_angle && (
         <div style={{ marginBottom: 16 }}>
           <div className="flex items-center" style={{ gap: 8, marginBottom: 6 }}>
-            <span style={sectionLabel as React.CSSProperties}>Content angle</span>
+            <span style={sectionLabel as React.CSSProperties}>{t("trend.angle")}</span>
             {signal.opportunity_type && (
-              <span style={{ fontSize: 12, color: "var(--success)", background: "var(--glass-2)", border: "0.5px solid var(--rule)", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
-                {signal.opportunity_type} opportunity
+              <span style={caps({ fontSize: 12, color: "var(--success)", background: "var(--glass-2)", border: "0.5px solid var(--rule)", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 })}>
+                {t("trend.opportunity", { type: val(signal.opportunity_type) })}
               </span>
             )}
           </div>
-          <div style={bodyText}>{signal.content_angle}</div>
+          <div dir="auto" style={bodyText}>{signal.content_angle}</div>
         </div>
       )}
 
       {signal.summary && (
-        <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", lineHeight: 1.65, marginBottom: 16 }}>
+        <div dir="auto" style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", lineHeight: ar ? 1.7 : 1.65, marginBottom: 16 }}>
           {signal.summary}
         </div>
       )}
@@ -426,14 +440,16 @@ export default function TrendDetail() {
         if (!hasAny) {
           return (
             <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24, padding: "20px 18px", background: "hsl(var(--muted) / 0.25)", borderRadius: 6 }}>
-              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginBottom: 8, fontWeight: 700 }}>
-                Legacy signal · incomplete
+              <div style={caps({ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginBottom: 8, fontWeight: 700 })}>
+                {t("trend.legacyTitle")}
               </div>
-              <div style={{ fontSize: 14, color: "hsl(var(--foreground) / 0.85)", lineHeight: 1.625, marginBottom: 12 }}>
-                This signal was created before snapshots were stored locally. No internal article copy is available — only the headline and original publisher reference below.
+              <div style={{ fontSize: 14, color: "hsl(var(--foreground) / 0.85)", lineHeight: ar ? 1.7 : 1.625, marginBottom: 12 }}>
+                {t("trend.legacyBody")}
               </div>
               <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                Click <span style={{ color: "var(--action)" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
+                {ar
+                  ? t("trend.legacyHint", { refreshLabel: t("trend.refreshLabel") })
+                  : <>Click <span style={{ color: "var(--action)" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.</>}
               </div>
             </div>
           );
@@ -461,25 +477,26 @@ export default function TrendDetail() {
           <div style={{ marginBottom: 20, marginTop: 4 }}>
             <div style={thinRule} />
             <div className="flex items-center justify-between flex-wrap" style={{ marginBottom: 12, gap: 8 }}>
-              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
-                Article snapshot · {snapshotMode === "clean" ? "cleaned" : "raw"}
+              <div style={caps({ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.7)" })}>
+                {snapshotMode === "clean" ? t("trend.snapClean") : t("trend.snapRaw")}
               </div>
               <div className="flex items-center" style={{ gap: 6 }}>
                 {hasBoth && (
                   <>
-                    {tabBtn("clean", "View clean")}
-                    {tabBtn("raw", "View raw")}
+                    {tabBtn("clean", t("trend.viewClean"))}
+                    {tabBtn("raw", t("trend.viewRaw"))}
                   </>
                 )}
                 <button
                   onClick={() => setShowFullSnapshot(s => !s)}
                   style={{ fontSize: 12, color: "var(--action)", background: "transparent", border: "0.5px solid var(--rule)", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
                 >
-                  {showFullSnapshot ? "Show less" : "Show more"}
+                  {showFullSnapshot ? t("trend.showLess") : t("trend.showMore")}
                 </button>
               </div>
             </div>
             <div
+              dir="auto"
               className="prose prose-sm max-w-none"
               style={{
                 fontSize: 14,
@@ -513,7 +530,7 @@ export default function TrendDetail() {
             opacity: drafting ? 0.7 : 1,
           }}
         >
-          {drafting ? "Drafting..." : "Draft Post"}
+          {drafting ? t("trend.drafting") : t("trend.draftPost")}
         </button>
         {added ? (
           <span
@@ -523,7 +540,7 @@ export default function TrendDetail() {
               background: "transparent", color: "hsl(var(--muted-foreground))",
             }}
           >
-            Added ✓
+            {t("trend.addedBtn")}
           </span>
         ) : (
           <button
@@ -535,7 +552,7 @@ export default function TrendDetail() {
               cursor: "pointer",
             }}
           >
-            Add to Signals
+            {t("trend.addSignals")}
           </button>
         )}
         <button
@@ -546,7 +563,7 @@ export default function TrendDetail() {
             color: "hsl(var(--muted-foreground))", cursor: "pointer",
           }}
         >
-          Dismiss
+          {t("trend.dismiss")}
         </button>
         {externalUrl && externalAlive !== false && (
           <a
@@ -560,7 +577,7 @@ export default function TrendDetail() {
               textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4,
             }}
           >
-            View original ↗
+            {t("trend.original")}
           </a>
         )}
       </div>
