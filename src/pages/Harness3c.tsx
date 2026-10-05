@@ -23,7 +23,7 @@ const ms = {
 
 export default function Harness3c() {
   const [ok, setOk] = useState(false);
-  useEffect(() => { i18n.changeLanguage("ar").then(() => { document.documentElement.dir = "rtl"; document.documentElement.lang = "ar"; setOk(true); }); }, []);
+  useEffect(() => { const f = (l: string) => { if (l !== "ar") setTimeout(() => i18n.changeLanguage("ar"), 0); }; i18n.on("languageChanged", f); i18n.changeLanguage("ar").then(() => { document.documentElement.dir = "rtl"; document.documentElement.lang = "ar"; setOk(true); }); }, []);
   if (!ok) return null;
   const fails = [
     classifyPublishError("quality check", false, true),
