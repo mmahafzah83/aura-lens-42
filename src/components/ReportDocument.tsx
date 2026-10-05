@@ -175,7 +175,23 @@ function ImprintFigure({ score, userId, generatedAt, lang = "en" }: {
   );
 }
 
-function ProfileGrid({ items }: { items: { label: string; value: string }[] }) {
+function ProfileGrid({ items, lang = "en" }: { items: { label: string; value: string }[]; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 32px" }}>
+        {items.map((it) => (
+          <div key={it.label}>
+            <div style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 10.5, color: T.spot, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 3, fontWeight: 700 }, it.label)}>
+              {it.label}
+            </div>
+            <div style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 15, color: T.ink }, it.value)}>
+              <span dir={valDir(lang, it.value)} style={{ unicodeBidi: "isolate" }}>{it.value}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 32px" }}>
       {items.map((it) => (
@@ -186,6 +202,17 @@ function ProfileGrid({ items }: { items: { label: string; value: string }[] }) {
           <div style={{ fontFamily: FONT.serif, fontSize: 15, color: T.ink }}>{it.value}</div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function GoalRow({ g, i, lang }: { g: string; i: number; lang: PaperLang }) {
+  return (
+    <div style={{ display: "flex", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.rule}` }}>
+      <span dir="ltr" style={{ fontFamily: FONT.mono, fontSize: 12, color: T.spot, minWidth: 26, fontWeight: 700, unicodeBidi: "isolate" }}>
+        {String(i + 1).padStart(2, "0")}
+      </span>
+      <span dir={valDir(lang, g)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 15, color: T.ink }, g)}>{g}</span>
     </div>
   );
 }
@@ -219,7 +246,21 @@ function NorthStarBlock({ goals }: { goals: string[] }) {
   );
 }
 
-function PillarsBlock({ pillars }: { pillars: string[] }) {
+function PillarsBlock({ pillars, lang = "en" }: { pillars: string[]; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div>
+        <SectionLabel lang={lang}>{pt(lang, "report.doc.pillars")}</SectionLabel>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {pillars.map((p) => (
+            <span key={p} dir={valDir(lang, p)} style={valStyle(lang, { padding: "6px 12px", fontFamily: FONT.mono, fontSize: 11, color: T.ink, background: T.paper2, border: `1px solid ${T.rule}`, fontWeight: 700 }, p)}>
+              {p}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div>
       <SectionLabel>Brand Pillars</SectionLabel>
@@ -263,7 +304,14 @@ function CapabilityFigure({ data }: { data: CapabilitiesSection }) {
   );
 }
 
-function IntelSummary({ text }: { text: string }) {
+function IntelSummary({ text, lang = "en" }: { text: string; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div dir={valDir(lang, text)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 17, color: T.ink2, lineHeight: 1.55, borderInlineStart: `2px solid ${T.spot}`, paddingInlineStart: 14 }, text)}>
+        {text}
+      </div>
+    );
+  }
   return (
     <div
       style={{
@@ -281,7 +329,17 @@ function IntelSummary({ text }: { text: string }) {
   );
 }
 
-function ThemeCard({ t }: { t: { theme: string; rationale: string } }) {
+function ThemeCard({ t, lang = "en" }: { t: { theme: string; rationale: string }; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div style={{ padding: "12px 14px", border: `1px solid ${T.rule}`, borderInlineStart: `2px solid ${T.spot}`, background: T.paper2 }}>
+        <div dir={valDir(lang, t.theme)} style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 12, fontWeight: 700, color: T.ink, marginBottom: 4 }, t.theme)}>
+          {t.theme}
+        </div>
+        <div dir={valDir(lang, t.rationale)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 14, color: T.ink2, lineHeight: 1.6 }, t.rationale)}>{t.rationale}</div>
+      </div>
+    );
+  }
   return (
     <div style={{ padding: "12px 14px", border: `1px solid ${T.rule}`, borderLeft: `2px solid ${T.spot}`, background: T.paper2 }}>
       <div style={{ fontFamily: FONT.mono, fontSize: 11, fontWeight: 700, color: T.ink, marginBottom: 4, letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -292,7 +350,18 @@ function ThemeCard({ t }: { t: { theme: string; rationale: string } }) {
   );
 }
 
-function ChipRow({ items }: { items: string[] }) {
+function ChipRow({ items, lang = "en" }: { items: string[]; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {items.map((e) => (
+          <span key={e} dir={valDir(lang, e)} style={valStyle(lang, { padding: "5px 10px", fontFamily: FONT.mono, fontSize: 11, color: T.ink2, border: `1px solid ${T.rule}` }, e)}>
+            {e}
+          </span>
+        ))}
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       {items.map((e) => (
@@ -315,8 +384,41 @@ function ChipRow({ items }: { items: string[] }) {
   );
 }
 
-function TerritoriesBlock({ pillars, tags }: { pillars?: string[]; tags: string[] }) {
+function TerritoriesBlock({ pillars, tags, lang = "en" }: { pillars?: string[]; tags: string[]; lang?: PaperLang }) {
   const hasPillars = !!pillars && pillars.length > 0;
+  if (lang === "ar") {
+    return (
+      <div>
+        <SectionLabel lang={lang}>{pt(lang, hasPillars ? "report.doc.territory" : "report.doc.territories")}</SectionLabel>
+        {hasPillars ? (
+          <div style={{ borderInlineStart: `2px solid ${T.spot}`, paddingInlineStart: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+            {pillars!.map((p) => (
+              <div key={p} dir={valDir(lang, p)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 16, color: T.ink, lineHeight: 1.5 }, p)}>{p}</div>
+            ))}
+          </div>
+        ) : (
+          <ChipRow lang={lang} items={tags.map((t) => formatSkillLabel(t))} />
+        )}
+        {hasPillars && tags.length > 0 ? (
+          <div style={{ marginTop: 14 }}>
+            <div style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 11, fontWeight: 700, color: T.ink3, marginBottom: 8 })}>
+              {pt(lang, "report.doc.alsoTracking")}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {tags.map((t) => {
+                const v = formatSkillLabel(t);
+                return (
+                  <span key={t} dir={valDir(lang, v)} style={valStyle(lang, { padding: "3px 8px", fontFamily: FONT.mono, fontSize: 10.5, color: T.ink2, border: `1px solid ${T.rule}` }, v)}>
+                    {v}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   if (!hasPillars) {
     return (
       <div>
@@ -374,7 +476,17 @@ function TerritoriesBlock({ pillars, tags }: { pillars?: string[]; tags: string[
   );
 }
 
-function PositioningBlock({ statement }: { statement: string }) {
+function PositioningBlock({ statement, lang = "en" }: { statement: string; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div>
+        <SectionLabel lang={lang}>{pt(lang, "report.doc.position")}</SectionLabel>
+        <div dir={valDir(lang, statement)} style={valStyle(lang, { borderInlineStart: `2px solid ${T.spot}`, paddingInlineStart: 14, maxWidth: 576, fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.7, color: T.ink }, statement)}>
+          {statement}
+        </div>
+      </div>
+    );
+  }
   return (
     <div>
       <SectionLabel>The Position</SectionLabel>
@@ -395,26 +507,27 @@ function PositioningBlock({ statement }: { statement: string }) {
   );
 }
 
-function FootprintFigure({ fp }: { fp: NonNullable<ReportData["footprint"]> }) {
+function FootprintFigure({ fp, lang = "en" }: { fp: NonNullable<ReportData["footprint"]>; lang?: PaperLang }) {
   const items = [
-    { n: fp.sources,  l: "Sources captured" },
-    { n: fp.evidence, l: "Evidence fragments" },
-    { n: fp.signals,  l: "Active strategic signals" },
-    { n: fp.themes,   l: "Themes owned" },
+    { n: fp.sources,  l: L(lang, "report.doc.fp.sources", "Sources captured") },
+    { n: fp.evidence, l: L(lang, "report.doc.fp.evidence", "Evidence fragments") },
+    { n: fp.signals,  l: L(lang, "report.doc.fp.signals", "Active strategic signals") },
+    { n: fp.themes,   l: L(lang, "report.doc.fp.themes", "Themes owned") },
   ];
   return (
     <PaperFigure
+      lang={lang}
       index={3}
-      label="Intelligence Footprint"
-      meta={`${fp.sources} sources · ${fp.evidence} fragments`}
-      findingBold="Your record is what the paper reads from."
-      findingRest="No inference beyond these counts."
+      label={L(lang, "report.doc.fp.label", "Intelligence Footprint")}
+      meta={L(lang, "report.doc.fp.meta", `${fp.sources} sources · ${fp.evidence} fragments`, { n: fp.sources, m: fp.evidence })}
+      findingBold={L(lang, "report.doc.fp.bold", "Your record is what the paper reads from.")}
+      findingRest={L(lang, "report.doc.fp.rest", "No inference beyond these counts.")}
     >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
         {items.map((s, i) => (
           <div key={i} style={{ padding: "16px 12px", border: `1px solid ${T.rule}`, background: T.paper, textAlign: "center" }}>
             <div style={{ fontFamily: FONT.mono, fontSize: 28, fontWeight: 700, color: T.ink, lineHeight: 1.05 }}>{s.n}</div>
-            <div style={{ marginTop: 8, fontFamily: FONT.mono, fontSize: 10.5, color: T.ink3, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <div style={arStyle(lang, { marginTop: 8, fontFamily: FONT.mono, fontSize: 10.5, color: T.ink3, letterSpacing: "0.12em", textTransform: "uppercase" })}>
               {s.l}
             </div>
           </div>
@@ -424,22 +537,32 @@ function FootprintFigure({ fp }: { fp: NonNullable<ReportData["footprint"]> }) {
   );
 }
 
-function ContentEngineCard({ c }: { c: NonNullable<ReportData["content"]> }) {
+function ContentEngineCard({ c, lang = "en" }: { c: NonNullable<ReportData["content"]>; lang?: PaperLang }) {
   return (
     <div style={{ border: `1.5px solid ${T.ink}`, background: T.paper2, padding: "14px 16px" }}>
-      <SectionLabel>Content Engine</SectionLabel>
-      <Row label="Posts live on LinkedIn" value={String(c.publishedCount)} />
-      {c.frameworks[0] ? <Row label="Lead framework" value={c.frameworks[0].framework_type} /> : null}
+      <SectionLabel lang={lang}>{L(lang, "report.doc.ce.title", "Content Engine")}</SectionLabel>
+      <Row lang={lang} label={L(lang, "report.doc.ce.live", "Posts live on LinkedIn")} value={String(c.publishedCount)} />
+      {c.frameworks[0] ? <Row lang={lang} label={L(lang, "report.doc.ce.lead", "Lead framework")} value={c.frameworks[0].framework_type} /> : null}
       {c.frameworks.length > 1 ? (
-        <Row label="Also using" value={c.frameworks.slice(1, 4).map((f) => f.framework_type).join(" · ")} />
+        <Row lang={lang} label={L(lang, "report.doc.ce.also", "Also using")} value={c.frameworks.slice(1, 4).map((f) => f.framework_type).join(lang === "ar" ? "، " : " · ")} />
       ) : null}
-      <Row label="Tracked posts" value={String(c.trackedCount)} />
+      <Row lang={lang} label={L(lang, "report.doc.ce.tracked", "Tracked posts")} value={String(c.trackedCount)} />
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, lang = "en" }: { label: string; value: string; lang?: PaperLang }) {
   const ar = hasArabic(value);
+  if (lang === "ar") {
+    return (
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.rule}`, fontSize: 12 }}>
+        <span style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 11, color: T.ink3, fontWeight: 600 })}>{withLatin(label, lang)}</span>
+        <span dir={valDir(lang, value)} style={{ ...valStyle(lang, { fontFamily: FONT.serif, fontSize: 14, color: T.ink, maxWidth: "60%" }, value), unicodeBidi: "isolate" }}>
+          {ar ? renderBidi(value) : value}
+        </span>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.rule}`, fontSize: 12 }}>
       <span style={{ fontFamily: FONT.mono, fontSize: 10.5, color: T.ink3, letterSpacing: "0.10em", textTransform: "uppercase", fontWeight: 600 }}>
@@ -463,7 +586,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StackedRow({ label, value }: { label: string; value: string }) {
+function StackedRow({ label, value, lang = "en" }: { label: string; value: string; lang?: PaperLang }) {
   const ar = hasArabic(value);
   let arHead = value;
   let latinBlock: string | null = null;
@@ -480,7 +603,7 @@ function StackedRow({ label, value }: { label: string; value: string }) {
   }
   return (
     <div style={{ padding: "10px 0", borderBottom: `1px solid ${T.rule}` }} dir={ar ? "rtl" : undefined} lang={ar ? "ar" : undefined}>
-      <div style={{ fontFamily: FONT.mono, fontSize: 10.5, color: T.spot, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 5, fontWeight: 700 }}>
+      <div style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 10.5, color: T.spot, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 5, fontWeight: 700 })}>
         {label}
       </div>
       <div
@@ -489,7 +612,7 @@ function StackedRow({ label, value }: { label: string; value: string }) {
           fontSize: 14,
           color: T.ink,
           lineHeight: ar ? 1.85 : 1.65,
-          letterSpacing: ar ? "normal" : undefined,
+          letterSpacing: ar ? (lang === "ar" ? 0 : "normal") : undefined,
         }}
         dir={ar ? "rtl" : "auto"}
         lang={ar ? "ar" : undefined}
@@ -497,7 +620,7 @@ function StackedRow({ label, value }: { label: string; value: string }) {
         {ar ? (arHead ? renderBidi(arHead) : null) : value}
       </div>
       {latinBlock ? (
-        <div dir="ltr" lang="en" style={{ marginTop: 6, fontFamily: FONT.serif, fontStyle: "italic", fontSize: 13, color: T.ink2, lineHeight: 1.55 }}>
+        <div dir="ltr" lang="en" style={{ marginTop: 6, fontFamily: FONT.serif, fontStyle: lang === "ar" ? "normal" : "italic", fontSize: 13, color: T.ink2, lineHeight: 1.55 }}>
           {latinBlock}
         </div>
       ) : null}
@@ -505,7 +628,15 @@ function StackedRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function VoiceHeader() {
+function VoiceHeader({ lang = "en" }: { lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div>
+        <SectionLabel lang={lang}>{pt(lang, "report.doc.voice")}</SectionLabel>
+        <div style={arStyle(lang, { fontFamily: FONT.serif, fontSize: 13, color: T.ink3, marginTop: -6 })}>{pt(lang, "report.doc.voiceSub")}</div>
+      </div>
+    );
+  }
   return (
     <div>
       <SectionLabel>Voice Signature</SectionLabel>
@@ -518,12 +649,32 @@ function VoiceHeader() {
   );
 }
 
+function Next90Head({ lang }: { lang: PaperLang }) {
+  return (
+    <div>
+      <SectionLabel lang={lang}>{L(lang, "report.doc.next90", "Where to Point the Next 90 Days")}</SectionLabel>
+      <div style={arStyle(lang, { fontFamily: FONT.serif, fontSize: 13, color: T.ink3, lineHeight: 1.6, marginBottom: lang === "ar" ? 0 : 14 })}>
+        {L(lang, "report.doc.next90Sub", "Gaps the market would notice — each one is a content move.")}
+      </div>
+    </div>
+  );
+}
+
+function GapRow({ g, lang }: { g: string; lang: PaperLang }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.rule}` }}>
+      <span aria-hidden style={{ display: "inline-block", width: 8, height: 8, background: T.action, flexShrink: 0, marginTop: 6 }} />
+      <span dir={valDir(lang, g)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 15, color: T.ink, lineHeight: 1.6 }, g)}>{g}</span>
+    </div>
+  );
+}
+
 function Next90Block({ gaps }: { gaps: string[] }) {
   return (
     <div>
       <SectionLabel>Where to Point the Next 90 Days</SectionLabel>
       <div style={{ fontFamily: FONT.serif, fontSize: 13, color: T.ink3, lineHeight: 1.6, marginBottom: 14 }}>
-        Three gaps the market would notice — each one is a content move.
+        Gaps the market would notice — each one is a content move.
       </div>
       {gaps.map((g, i) => (
         <div
@@ -548,7 +699,26 @@ function Next90Block({ gaps }: { gaps: string[] }) {
   );
 }
 
-function Footnotes({ score, footprint }: { score: ReportData["score"]; footprint: ReportData["footprint"] }) {
+function Footnotes({ score, footprint, lang = "en" }: { score: ReportData["score"]; footprint: ReportData["footprint"]; lang?: PaperLang }) {
+  if (lang === "ar") {
+    const sup = { fontFamily: FONT.mono, color: T.spot, fontWeight: 700, marginInlineEnd: 4 } as const;
+    return (
+      <div style={arStyle(lang, { marginTop: 24, paddingTop: 14, borderTop: `1.5px solid ${T.ink}`, fontFamily: FONT.serif, fontSize: 13, color: T.ink2, lineHeight: 1.7 })}>
+        <div>
+          <sup style={sup}>1</sup>
+          <span dir="ltr" style={{ unicodeBidi: "isolate" }}>Imprint</span>
+          {pt(lang, "report.doc.fn1").replace(/^Imprint/, "")}
+          {score?.snapshot_at ? pt(lang, "report.doc.fnSnap", { date: arabicDate(score.snapshot_at) }) : ""}
+        </div>
+        {footprint ? (
+          <div>
+            <sup style={sup}>2</sup>
+            {pt(lang, "report.doc.fn2", { n: footprint.sources, m: footprint.evidence })}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div
       style={{
