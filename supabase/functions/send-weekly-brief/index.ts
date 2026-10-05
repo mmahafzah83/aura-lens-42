@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { applyPublishedFilter, filterPublishedRows } from "../_shared/postProvenance.ts";
-import {
-  renderEmail, heading, label, note, stat,
-  CANVAS, BORDER, INK, INK_SOFT, INK_FAINT, ACCENT, BODY, MONO,
-} from "../_shared/emailTemplate.ts";
+import { weeklyBriefEmail, dayDateAr, type WeeklyOpts } from "../_shared/scheduledEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,154 +26,6 @@ function firstSentence(s: string | null | undefined): string {
   const trimmed = s.trim();
   const m = trimmed.match(/^[^.!?]+[.!?]/);
   return (m ? m[0] : trimmed).trim();
-}
-
-function appendParams(url: string, params: Record<string, string | undefined>): string {
-  const u = new URL(url);
-  for (const [k, v] of Object.entries(params)) {
-    if (v) u.searchParams.set(k, v);
-  }
-  return u.toString();
-}
-
-interface BuildHtmlOpts {
-  firstName: string;
-  dayDate: string;
-  topSignals: Array<{ id: string; title: string; currentPct: number; deltaPct: number; whyNow?: string }>;
-  postsThisWeek: number;
-  postsLastWeek: number;
-  headline: string;
-  emailParam: string;
-  marketPulse: { headline: string; url: string | null; isExternal: boolean } | null;
-  yourMove: { copy: string; ctaLabel: string; ctaHref: string };
-  worthReading: { title: string; url: string; author: string | null; readMinutes: number; why: string } | null;
-  activeWeeks: number;
-  rhythmCopy: string;
-  readyPost: { id: string; body: string } | null;
-}
-
-const PREFS_URL = `${APP_URL}/dashboard?settings=notifications`;
-const GOOD = "#12805C";
-const BAD = "#C0392B";
-
-/** One content block, as a table row. Outlook-safe. */
-function row(inner: string): string {
-  return `<tr><td style="padding:0 0 24px;">${inner}</td></tr>`;
-}
-function panel(inner: string, accent?: string): string {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${CANVAS};border-radius:8px;${accent ? `border-left:3px solid ${accent};` : ""}"><tr><td style="padding:14px 16px;">${inner}</td></tr></table>`;
-}
-function body14(text: string, color = INK): string {
-  return `<p style="margin:0;font-family:${BODY};font-size:14px;line-height:1.6;color:${color};">${text}</p>`;
-}
-
-function buildHtml(opts: BuildHtmlOpts): string {
-  const {
-    firstName, dayDate, topSignals, postsThisWeek,
-    headline, marketPulse, yourMove, worthReading, activeWeeks, rhythmCopy, readyPost,
-  } = opts;
-
-  const rows: string[] = [];
-
-  rows.push(row(`
-    ${label("Aura · Weekly brief")}
-    ${heading(escapeHtml(headline))}
-    ${note(escapeHtml(dayDate))}
-  `));
-
-  if (marketPulse) {
-    rows.push(row(`
-      ${label("Market pulse")}
-      ${panel(
-        marketPulse.isExternal
-          ? body14(`${escapeHtml(marketPulse.headline)}${marketPulse.url ? ` &nbsp;<a href="${escapeHtml(marketPulse.url)}" style="color:${ACCENT};font-weight:600;text-decoration:none;">Read &rarr;</a>` : ""}`)
-          : body14(`<span style="color:${INK_SOFT};font-weight:600;">In your sector this week:</span> ${escapeHtml(marketPulse.headline)}`),
-      )}
-    `));
-  }
-
-  rows.push(row(`
-    ${label("Your move this week")}
-    ${panel(`
-      ${body14(escapeHtml(yourMove.copy))}
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 0;"><tr>
-        <td align="center" bgcolor="${ACCENT}" style="border-radius:8px;">
-          <a href="${escapeHtml(yourMove.ctaHref)}" style="display:inline-block;padding:0 26px;height:44px;line-height:44px;font-family:${BODY};font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;">${escapeHtml(yourMove.ctaLabel)}</a>
-        </td></tr></table>
-    `)}
-  `));
-
-  if (readyPost) {
-    const readyHref = appendParams(`${APP_URL}/home`, {
-      tab: "authority", draft: readyPost.id, src: "content_items", email: opts.emailParam, from: "weekly_brief",
-    });
-    rows.push(row(`
-      ${label("Your post is ready")}
-      ${panel(`
-        <p style="margin:0 0 14px;font-family:${BODY};font-size:14px;line-height:1.75;color:${INK};white-space:pre-line;">${escapeHtml(readyPost.body)}</p>
-        <a href="${escapeHtml(readyHref)}" style="font-family:${BODY};font-size:14px;font-weight:600;color:${ACCENT};text-decoration:none;">Open your draft &rarr;</a>
-      `, ACCENT)}
-    `));
-  }
-
-  if (topSignals.length === 0) {
-    const captureHref = appendParams(`${APP_URL}/home`, { email: opts.emailParam });
-    rows.push(row(`
-      ${label("Signal pulse")}
-      ${panel(`
-        ${body14("No active signals yet. Capture 2-3 articles from your sector to seed your first signal.", INK_SOFT)}
-        <p style="margin:10px 0 0;"><a href="${escapeHtml(captureHref)}" style="font-family:${BODY};font-size:14px;font-weight:600;color:${ACCENT};text-decoration:none;">Capture an article &rarr;</a></p>
-      `)}
-    `));
-  } else {
-    const cards = topSignals.slice(0, 2).map((s, idx) => {
-      // Plain language, never a raw number.
-      const movement = s.deltaPct > 0
-        ? `<span style="color:${GOOD};">Strengthening</span> · gained ${s.deltaPct} this week`
-        : s.deltaPct < 0
-          ? `<span style="color:${BAD};">Fading</span> — worth one capture`
-          : "Holding steady";
-      const href = appendParams(`${APP_URL}/home`, {
-        tab: "intelligence", signal: s.id, email: opts.emailParam,
-      });
-      return panel(`
-        <a href="${escapeHtml(href)}" style="display:block;font-family:${BODY};font-size:14px;font-weight:600;color:${ACCENT};text-decoration:none;margin:0 0 6px;">${escapeHtml(s.title)}</a>
-        <p style="margin:0;font-family:${MONO};font-size:11px;line-height:1.5;letter-spacing:.06em;color:${INK_SOFT};">${movement}</p>
-        ${idx === 0 && s.whyNow ? `<p style="margin:8px 0 0;font-family:${BODY};font-size:13px;line-height:1.55;color:${INK_SOFT};"><span style="color:${INK_FAINT};font-weight:600;">Why now:</span> ${escapeHtml(s.whyNow)}</p>` : ""}
-      `, idx === 0 ? ACCENT : BORDER);
-    }).map((c) => `<div style="margin:0 0 10px;">${c}</div>`).join("");
-    rows.push(row(`${label("Signal pulse")}${cards}`));
-  }
-
-  if (worthReading) {
-    rows.push(row(`
-      ${label("Worth reading")}
-      ${panel(`
-        <p style="margin:0 0 6px;font-family:${BODY};font-size:14px;line-height:1.5;">
-          <a href="${escapeHtml(worthReading.url)}" style="color:${ACCENT};font-weight:600;text-decoration:none;">${escapeHtml(worthReading.title)}</a>
-        </p>
-        <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;line-height:1.5;letter-spacing:.06em;color:${INK_FAINT};">${escapeHtml(worthReading.author || "")}${worthReading.author ? " · " : ""}${worthReading.readMinutes} min read</p>
-        ${body14(escapeHtml(worthReading.why), INK_SOFT)}
-      `)}
-    `));
-  }
-
-  rows.push(row(`
-    ${label("Your rhythm")}
-    ${panel(`
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td width="50%" valign="top" style="padding-right:8px;">${stat(postsThisWeek, `Post${postsThisWeek === 1 ? "" : "s"} this week`)}</td>
-        <td width="50%" valign="top" style="padding-left:8px;">${stat(`${activeWeeks} of 12`, "Weeks active")}</td>
-      </tr></table>
-      ${body14(escapeHtml(rhythmCopy), INK_SOFT)}
-    `)}
-  `));
-
-  return renderEmail({
-    preheader: `Your weekly Aura intelligence brief — what shifted in your standing this week.`,
-    prefsHref: PREFS_URL,
-    body: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join("")}</table>`,
-  });
 }
 
 serve(async (req) => {
@@ -435,7 +285,7 @@ serve(async (req) => {
           .order("fetched_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        let marketPulse: BuildHtmlOpts["marketPulse"] = null;
+        let marketPulse: WeeklyOpts["marketPulse"] = null;
         if (latestTrend?.headline) {
           marketPulse = {
             headline: latestTrend.headline as string,
@@ -448,7 +298,7 @@ serve(async (req) => {
         }
 
         // Worth reading — most recent industry_trends not yet captured
-        let worthReading: BuildHtmlOpts["worthReading"] = null;
+        let worthReading: WeeklyOpts["worthReading"] = null;
         const { data: candidateTrends } = await admin
           .from("industry_trends")
           .select("headline, url, source, summary, insight, fetched_at")
@@ -471,75 +321,25 @@ serve(async (req) => {
               url: pick.url as string,
               author: (pick.source as string | null) || null,
               readMinutes: 5,
-              why: firstSentence(pick.insight || pick.summary || "") || "Aura picked this for you.",
+              why: firstSentence(pick.insight || pick.summary || "") || null,
             };
           }
         }
 
-        // Hero headline (dynamic, not signal-name based)
-        let headline: string;
-        if ((postsLastWeek ?? 0) > 0) {
-          headline = `${firstName}, your momentum is building.`;
-        } else if (topSignals.length > 0) {
-          headline = `${firstName}, one move this week keeps your momentum.`;
-        } else {
-          headline = `${firstName}, your intelligence is waiting.`;
-        }
-
-        // Email parameter for prefill on landing
-        const emailParam = email;
-
-        // "Your move this week" CTA logic
-        let yourMove: BuildHtmlOpts["yourMove"];
-        if ((postsLastWeek ?? 0) > 0) {
-          yourMove = {
-            copy: "You published last week — let's see how it landed and where to compound next.",
-            ctaLabel: "See your impact →",
-            ctaHref: appendParams(`${APP_URL}/home`, { tab: "momentum", email: emailParam }),
-          };
-        } else if (topSignals.length > 0) {
-          yourMove = {
-            copy: `Your strongest signal is ready to publish. One post turns market intelligence into visible presence.`,
-            ctaLabel: "Draft your post →",
-            ctaHref: appendParams(`${APP_URL}/home`, { tab: "publish", signal: topSignals[0].id, email: emailParam }),
-          };
-        } else {
-          yourMove = {
-            copy: "Capture one article from your sector this week — that's how Aura starts surfacing signals you can publish from.",
-            ctaLabel: "Capture an article →",
-            ctaHref: appendParams(`${APP_URL}/home`, { email: emailParam }),
-          };
-        }
-
-        // Rhythm copy
-        let rhythmCopy: string;
-        if ((postsThisWeek ?? 0) > 0) {
-          rhythmCopy = "Active rhythm. This is how presence compounds.";
-        } else if (activeWeeks > 0) {
-          rhythmCopy = "You're capturing consistently. Publishing is the next step.";
-        } else {
-          rhythmCopy = "Your first post turns signals into presence. Start this week.";
-        }
-
-        const subject = topSignals.length > 0
-          ? `Your signals shifted — here's your edge · ${dayDate}`
-          : `Your week ahead · ${dayDate}`;
-
-        const html = buildHtml({
+        // The reader's language: the member's saved interface language, else English.
+        const lang = await resolveEmailLang(undefined, admin, userId);
+        const { subject, html } = weeklyBriefEmail({
           firstName,
-          dayDate,
+          dayDate: lang === "ar" ? dayDateAr(now) : dayDate,
           topSignals,
           postsThisWeek: postsThisWeek ?? 0,
           postsLastWeek: postsLastWeek ?? 0,
-          headline,
-          emailParam,
-          marketPulse,
-          yourMove,
-          worthReading,
           activeWeeks,
-          rhythmCopy,
+          emailParam: email,
+          marketPulse,
+          worthReading,
           readyPost,
-        });
+        }, lang);
 
         const resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",

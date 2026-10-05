@@ -10,10 +10,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { adminUserIds } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import {
-  renderEmail, heading, paragraph, quote, divider,
-  INK_SOFT, INK_FAINT, BODY, MONO,
-} from "../_shared/emailTemplate.ts";
+import { morningSignalEmail, type Finding } from "../_shared/scheduledEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,27 +21,7 @@ const corsHeaders = {
 
 const FROM = "KnownBy <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
-const BASE_CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
-const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
 const FRESH_WINDOW_HOURS = 14;
-
-type Finding = {
-  id: string;
-  user_id: string;
-  url: string | null;
-  title: string | null;
-  source: string | null;
-  relevance_score: number | null;
-  implication: string | null;
-  created_at: string;
-  themes: string[] | null;
-};
-
-function escapeHtml(s: string): string {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
 
 // Riyadh is a fixed UTC+3 offset, no DST.
 function riyadh(d: Date): Date {
@@ -52,10 +30,6 @@ function riyadh(d: Date): Date {
 function riyadhDateKey(d: Date): string {
   return riyadh(d).toISOString().slice(0, 10);
 }
-function riyadhHHMM(iso: string): string {
-  return riyadh(new Date(iso)).toISOString().slice(11, 16);
-}
-
 /**
  * Local-time parts for a member's own timezone. Null/invalid falls back to Riyadh,
  * so a member who never set one keeps the behaviour they have today.
@@ -79,89 +53,6 @@ function localParts(tz: string | null | undefined, at: Date): { weekday: number;
     hour: hourRaw === "24" ? 0 : parseInt(hourRaw, 10) || 0,
     dateKey: `${get("year")}-${get("month")}-${get("day")}`,
   };
-}
-
-function firstTheme(f: Finding): string | null {
-  const t = Array.isArray(f.themes) ? f.themes.find((x) => !!x && String(x).trim()) : null;
-  return t ? String(t).trim() : null;
-}
-
-function buildSubject(f: Finding): string {
-  const theme = firstTheme(f);
-  if (theme) return `Aura found something on ${theme} while you slept`;
-  const src = (f.source || "").trim();
-  if (src) return `Aura found something in ${src} while you slept`;
-  return `Aura found something while you slept`;
-}
-
-function provenanceParts(f: Finding): string[] {
-  const parts: string[] = [];
-  if (f.source && String(f.source).trim()) parts.push(String(f.source).trim());
-  const theme = firstTheme(f);
-  if (theme) parts.push(theme);
-  return parts;
-}
-
-function buildEmail(
-  lead: Finding | null,
-  others: Finding[],
-) {
-  const subject = lead ? buildSubject(lead) : "Aura found something while you slept";
-  const kicker = lead ? `THE OVERNIGHT · ${riyadhHHMM(lead.created_at)}` : "THE OVERNIGHT";
-  const headline = lead ? ((lead.title || "").trim() || (lead.url || "").trim()) : "";
-  const prov = lead ? provenanceParts(lead) : [];
-  const extras = others.slice(0, 3);
-  // The button must land on the thing we found, not a generic tab.
-  const leadUrl = lead
-    ? `https://www.aura-intel.org/dashboard?desk=1&finding=${lead.id}`
-    : BASE_CTA_URL;
-
-  const implicationHtml = lead && (lead.implication || "").trim()
-    ? quote(escapeHtml(lead.implication!.trim()))
-    : "";
-
-  const provHtml = prov.length
-    ? `<p style="margin:0 0 6px;font-family:${MONO};font-size:11px;line-height:1.6;letter-spacing:.08em;color:${INK_FAINT};">${escapeHtml(prov.join(" · "))}</p>`
-    : "";
-
-  const extrasHtml = extras.length
-    ? divider() +
-      extras.map((e) =>
-        `<p style="margin:0 0 8px;font-family:${BODY};font-size:13px;line-height:1.5;">` +
-        `<a href="${escapeHtml(e.url || BASE_CTA_URL)}" style="color:${INK_SOFT};text-decoration:underline;">${escapeHtml((e.title || e.url || "").trim())}</a></p>`
-      ).join("")
-    : "";
-
-  const html = renderEmail({
-    preheader: headline || subject,
-    prefsHref: PAUSE_URL,
-    prefsLabel: "Pause these emails",
-    cta: lead ? { href: leadUrl, label: "Open it in Aura" } : undefined,
-    body: `
-      <p style="margin:0 0 14px;font-family:${MONO};font-size:11px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kicker)}</p>
-      ${lead ? heading(escapeHtml(headline)) : ""}
-      ${implicationHtml}
-      ${provHtml}
-      ${extrasHtml}
-      ${divider()}
-      ${paragraph("Sent because last night produced something. Quiet nights send nothing.")}
-    `,
-  });
-
-  const textLines = [kicker, ""];
-  if (lead) {
-    textLines.push(headline);
-    if ((lead.implication || "").trim()) { textLines.push("", lead.implication!.trim()); }
-    if (prov.length) { textLines.push("", prov.join(" · ")); }
-    textLines.push("", `Open it in Aura: ${leadUrl}`);
-  }
-  if (extras.length) {
-    textLines.push("", "Also last night:");
-    for (const e of extras) textLines.push(`- ${(e.title || e.url || "").trim()}${e.url ? ` (${e.url})` : ""}`);
-  }
-  textLines.push("", "Sent because last night produced something. Quiet nights send nothing.", `Pause these emails: ${PAUSE_URL}`);
-
-  return { subject, html, text: textLines.join("\n") };
 }
 
 async function sendResend(
@@ -330,7 +221,8 @@ serve(async (req) => {
         const others = list.slice(1);
 
         if (!lead) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
-        const { subject, html, text } = buildEmail(lead, others);
+        const lang = await resolveEmailLang(undefined, admin, uid);
+        const { subject, html, text } = morningSignalEmail(lead, others, lang);
 
         if (dryRun) {
           results.push({
