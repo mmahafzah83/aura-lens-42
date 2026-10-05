@@ -205,7 +205,7 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
           </h2>
         </div>
         <p style={ar({ margin: "0 0 14px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" })}>
-          {t("readHome.cantSeeBody")} you're good at has no evidence behind it yet. Members turn those from grey to proven by capturing as they work.
+          {t("readHome.cantSeeBody")}
         </p>
         <ButtonGhost onClick={goIdentity}>{t("readHome.seeMap")}</ButtonGhost>
       </section>
