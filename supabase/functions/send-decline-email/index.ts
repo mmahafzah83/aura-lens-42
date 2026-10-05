@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { renderEmail, heading, paragraph, signature, escapeHtml } from "../_shared/emailTemplate.ts";
+import { declineEmail } from "../_shared/personEmails.ts";
+import { langFromBody } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,23 +12,8 @@ const corsHeaders = {
 };
 
 
-const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
+const FROM = "KnownBy <Mohammad.Mahafdhah@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
-
-function buildHtml(name: string) {
-  const greeting = name ? escapeHtml(name) : "there";
-  return renderEmail({
-    preheader: "An update on your Aura application",
-    body: `
-      ${heading("Update on your Aura application")}
-      ${paragraph(`${greeting},`)}
-      ${paragraph("Thank you for your interest in Aura.")}
-      ${paragraph("After reviewing your application, we've decided that Aura isn't the right fit for your profile at this stage. We're focused on a very specific cohort of professionals right now, and we want to make sure every user gets the most value from the platform.")}
-      ${paragraph("This isn't permanent. As Aura expands to new sectors and levels, we may reach out again.")}
-      ${signature()}
-    `,
-  });
-}
 
 serve(withObserve("send-decline-email", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -79,7 +65,8 @@ serve(withObserve("send-decline-email", async (req) => {
       });
     }
     const firstName = name ? name.split(/\s+/)[0] : "";
-    const html = buildHtml(firstName);
+    // The access request stores no language: English unless the body names one.
+    const mail = declineEmail(langFromBody(body?.lang) ?? "en", firstName);
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
@@ -87,8 +74,8 @@ serve(withObserve("send-decline-email", async (req) => {
         from: FROM,
         to: [email],
         reply_to: REPLY_TO,
-        subject: "Update on your Aura application",
-        html,
+        subject: mail.subject,
+        html: mail.html,
         // Declined applicants are not members — no user_id tag.
         tags: [{ name: "email_type", value: "application_declined" }],
       }),

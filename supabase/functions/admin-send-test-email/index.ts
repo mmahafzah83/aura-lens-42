@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 // Mirror send-lifecycle-email's From address and Resend call exactly.
-const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
+const FROM = "KnownBy <Mohammad.Mahafdhah@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
 function json(body: unknown, status = 200) {

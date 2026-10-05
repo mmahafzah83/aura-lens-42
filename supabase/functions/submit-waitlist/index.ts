@@ -227,7 +227,7 @@ serve(withObserve("submit-waitlist", async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+            from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
             to: [email],
             subject: mail.subject,
             reply_to: "mohammad.mahafdhah@aura-intel.org",

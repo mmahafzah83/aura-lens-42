@@ -14,7 +14,7 @@ import {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TO = "mohammad.mahafdhah@aura-intel.org";
-const FROM = "Aura <invites@aura-intel.org>";
+const FROM = "KnownBy <invites@aura-intel.org>";
 
 const TOPICS = [
   "Getting access",

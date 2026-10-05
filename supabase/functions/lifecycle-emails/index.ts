@@ -159,7 +159,7 @@ async function sendResend(
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+      from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
       to: [to],
       subject,
       reply_to: "mohammad.mahafdhah@aura-intel.org",

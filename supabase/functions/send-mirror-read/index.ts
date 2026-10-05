@@ -5,9 +5,8 @@
  * this function only reads `mirror_reads` and hands it to Resend.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
-import {
-  renderEmail, heading, paragraph, signature, escapeHtml as esc,
-} from "../_shared/emailTemplate.ts";
+import { mirrorReadEmail } from "../_shared/personEmails.ts";
+import { langFromBody } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +14,6 @@ const corsHeaders = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const ARABIC_RE = /[\u0600-\u06FF]/;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -62,54 +60,30 @@ Deno.serve(async (req) => {
 
     const { data: row } = await admin
       .from("mirror_reads")
-      .select("handle, read, name, emailed_at, emailed_to")
+      .select("handle, read, read_ar, name, emailed_at, emailed_to")
       .eq("handle", handle)
       .maybeSingle();
     if (!row?.read) return json({ error: "not_found" }, 404);
 
-    const read = row.read as Record<string, string | undefined>;
+    // A public reader has no account: the request's language, else English.
+    // In Arabic, the saved Arabic read when there is one; otherwise the stored read.
+    const lang = langFromBody(body?.lang) ?? "en";
+    const read = ((lang === "ar" && (row as any).read_ar) ? (row as any).read_ar : row.read) as Record<string, string | undefined>;
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) return json({ error: "send_failed" }, 502);
 
-    // Every string below is model-produced and therefore escaped.
-    const parts: string[] = [];
-    if (read.archetype) parts.push(heading(esc(read.archetype)));
-    if (read.market_read) parts.push(paragraph(esc(read.market_read), false));
-    if (read.uncontested_space) {
-      parts.push(paragraph(`<strong>The space nobody has claimed</strong><br>${esc(read.uncontested_space)}`));
-    }
-    if (read.honest_gap) {
-      parts.push(paragraph(`<strong>One honest gap</strong><br>${esc(read.honest_gap)}`));
-    }
-    if (read.own_words_quote) {
-      const rtl = ARABIC_RE.test(read.own_words_quote);
-      const style = rtl
-        ? ' dir="rtl" style="margin:0 0 16px;font-family:Cairo,sans-serif;line-height:1.9;font-size:15px;color:#0F1519;text-align:right;"'
-        : ' style="margin:0 0 16px;font-style:italic;font-size:15px;line-height:1.65;color:#0F1519;"';
-      parts.push(`<p${style}>&ldquo;${esc(read.own_words_quote)}&rdquo;</p>`);
-      if (read.own_words_read) parts.push(paragraph(esc(read.own_words_read)));
-    }
-    parts.push(paragraph(
-      "This is what the world can see. Aura's members get the read on what only they can see. " +
-      "If you want a founding seat, reply to this email and I will read it myself.",
-    ));
-    parts.push(signature());
-
-    const html = renderEmail({
-      preheader: "How your field sees you",
-      body: parts.join("\n"),
-    });
+    const mail = mirrorReadEmail(lang, read);
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+        from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
         to: [email],
         reply_to: "Mohammad.Mahafdhah@aura-intel.org",
-        subject: "How your field sees you",
-        html,
+        subject: mail.subject,
+        html: mail.html,
         tags: [{ name: "email_type", value: "mirror_read" }],
       }),
     });

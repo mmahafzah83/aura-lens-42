@@ -21,7 +21,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const FROM = "Aura <invites@aura-intel.org>";
+const FROM = "KnownBy <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 const BASE_CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
 const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";

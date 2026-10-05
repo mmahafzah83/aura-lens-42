@@ -23,7 +23,7 @@ const corsHeaders = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const FROM = "Aura <invites@aura-intel.org>";
+const FROM = "KnownBy <invites@aura-intel.org>";
 const SITE = (Deno.env.get("SITE_URL") || "https://aura-intel.org").replace(/\/$/, "");
 const INSTANT_MAX_24H = 2;
 const DEFAULT_TZ = "UTC";

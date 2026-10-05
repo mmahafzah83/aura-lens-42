@@ -4,6 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, heading, paragraph, quote, signature, escapeHtml, note as noteLine,
 } from "../_shared/emailTemplate.ts";
+import { colleagueReferralEmail } from "../_shared/personEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -122,22 +124,8 @@ serve(withObserve("colleague-invite", async (req) => {
     // Best-effort emails via Resend (do not block success)
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (resendKey) {
-      const displayInviter = escapeHtml(inviterName || "A colleague");
-      const noteBlock = note
-        ? quote(`${displayInviter} added: &ldquo;${escapeHtml(note)}&rdquo;`)
-        : "";
-      const referralHtml = renderEmail({
-        preheader: `${displayInviter} referred you to Aura`,
-        body: `
-          ${heading("Someone in your circle referred you to Aura.")}
-          ${paragraph(`${displayInviter} thinks Aura is worth your time.`)}
-          ${paragraph("Aura reads what you already read, finds the patterns in your sector, and drafts posts in your own voice. Not templates, not generic AI.")}
-          ${noteBlock}
-          ${paragraph("I read every referral myself and reply within 24 hours.")}
-          ${signature()}
-        `,
-        cta: { href: "https://aura-intel.org", label: "See what Aura is" },
-      });
+      const lang = await resolveEmailLang(body.lang, admin, callerId);
+      const referral = colleagueReferralEmail(lang, inviterName, note);
 
       // 1. Referral email to invited person
       try {
@@ -148,11 +136,11 @@ serve(withObserve("colleague-invite", async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+            from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
             to: [email],
-            subject: `${inviterName || "A colleague"} thinks you should see this`.replace(/[\r\n]/g, " "),
+            subject: referral.subject,
             reply_to: "mohammad.mahafdhah@aura-intel.org",
-            html: referralHtml,
+            html: referral.html,
             // The invited person is not a member yet — no user_id tag.
             tags: [{ name: "email_type", value: "colleague_referral" }],
           }),
@@ -170,7 +158,7 @@ serve(withObserve("colleague-invite", async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+            from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
             to: ["mohammad.mahafdhah@aura-intel.org"],
             subject: `New colleague invite: ${email}`,
             html: renderEmail({

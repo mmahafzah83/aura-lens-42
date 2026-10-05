@@ -16,8 +16,8 @@ const corsHeaders = {
 };
 
 const APP_URL = "https://aura-intel.org";
-const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
-const FROM_INVITES = "Aura <invites@aura-intel.org>";
+const FROM = "KnownBy <Mohammad.Mahafdhah@aura-intel.org>";
+const FROM_INVITES = "KnownBy <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
 type EmailType = "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
