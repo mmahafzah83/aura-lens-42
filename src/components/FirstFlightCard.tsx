@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { type FirstFlightSignal, type FirstFlightState } from "@/hooks/useFirstFlight";
 
 export interface FirstFlightCardProps {
@@ -8,7 +9,10 @@ export interface FirstFlightCardProps {
   onWriteFromSignal: (signal: FirstFlightSignal) => void;
 }
 
-const STEP_LABELS = ["CONNECT", "CAPTURE", "SIGNAL", "PUBLISH"] as const;
+const STEP_KEYS = ["connect", "capture", "signal", "publish"] as const;
+
+// Arabic: Cairo, open line-height, no tracking, no capitals, no italics.
+const AR: React.CSSProperties = { fontFamily: "var(--font-arabic)", lineHeight: 1.7, letterSpacing: 0, textTransform: "none", fontStyle: "normal" };
 
 const kickerStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
@@ -82,6 +86,9 @@ function Dot({ state }: { state: "done" | "current" | "future" }) {
 
 export function FirstFlightCard(props: FirstFlightCardProps) {
   const { state: ff, onConnectLinkedIn, onOpenCapture, onOpenSignal, onWriteFromSignal } = props;
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  const ar = (st: React.CSSProperties): React.CSSProperties => (isAr ? { ...st, ...AR } : st);
 
   if (!ff.active) return null;
 
@@ -112,7 +119,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
   // we cannot know this member finished, so we must not say they did.
   if (justCompleted && !ff.failed) {
     return (
-      <section style={container} aria-label="First Flight complete">
+      <section style={container} aria-label={t("firstFlight.complete")}>
         <style>{`
           @keyframes firstFlightFade { from { opacity: 0 } to { opacity: 1 } }
           @keyframes firstFlightPulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
@@ -122,36 +129,31 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
         `}</style>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "16px 8px", gap: 14 }}>
           <span aria-hidden style={{ fontSize: 40, lineHeight: 1, color: "var(--act)" }}>✦</span>
-          <p style={{ ...proseStyle, fontSize: 20 }}>First Flight complete — KnownBy is now working for you.</p>
-          <button type="button" onClick={ff.retire} style={ctaStyle}>Continue</button>
+          <p style={ar({ ...proseStyle, fontSize: 20 })}>{t("firstFlight.completeLine")}</p>
+          <button type="button" onClick={ff.retire} style={ar(ctaStyle)}>{t("firstFlight.continue")}</button>
         </div>
       </section>
     );
   }
 
-  const stepCopy: Record<number, string> = {
-    1: "Connect LinkedIn so Aura reads how the market already sees you.",
-    2: "Capture one thing you read this week. 30 seconds.",
-    3: "Aura found your first signal. Open it.",
-    4: "Your signal is ready to become a post — everything is pre-filled.",
-  };
+  const stepCopy = (n: number) => t(`firstFlight.copy.${n}`);
 
   const cta = () => {
-    if (currentStep === 1) return { label: "Connect LinkedIn", onClick: onConnectLinkedIn, disabled: false };
-    if (currentStep === 2) return { label: "Capture something", onClick: onOpenCapture, disabled: false };
+    if (currentStep === 1) return { label: t("firstFlight.cta.connect"), onClick: onConnectLinkedIn, disabled: false };
+    if (currentStep === 2) return { label: t("firstFlight.cta.capture"), onClick: onOpenCapture, disabled: false };
     if (currentStep === 3) return {
-      label: "Open the signal",
+      label: t("firstFlight.cta.open"),
       onClick: () => { if (topSignal) { onOpenSignal(topSignal); markSignalSeen(); } },
       disabled: !topSignal,
     };
-    return { label: "See the post Aura prepared", onClick: () => topSignal && onWriteFromSignal(topSignal), disabled: !topSignal };
+    return { label: t("firstFlight.cta.post"), onClick: () => topSignal && onWriteFromSignal(topSignal), disabled: !topSignal };
   };
 
   // Waiting: s2 done but s3 pending → no button, italic serif line.
   const isWaitingForSignal = steps.s2 && !steps.s3;
 
   return (
-    <section style={container} aria-label="First Flight">
+    <section style={container} aria-label={t("firstFlight.title")}>
       <style>{`
         @keyframes firstFlightFade { from { opacity: 0 } to { opacity: 1 } }
         @keyframes firstFlightPulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
@@ -163,13 +165,13 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
 
       {/* Header row */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <span style={kickerStyle}>◆ First Flight</span>
-        <span style={counterStyle}>Step {currentStep} of 4</span>
+        <span style={ar(kickerStyle)}>◆ {t("firstFlight.title")}</span>
+        <span style={ar(counterStyle)}>{t("firstFlight.stepOf", { n: currentStep })}</span>
       </div>
 
       {/* Plain progress */}
-      <div style={{ ...counterStyle, textTransform: "none", letterSpacing: "0.06em", marginTop: -10, marginBottom: 14, textAlign: "end" }}>
-        {doneCount} of 4 done{remaining === 0 ? "" : remaining === 1 ? " — one step left." : ` — ${remaining} steps left.`}
+      <div style={ar({ ...counterStyle, textTransform: "none", letterSpacing: "0.06em", marginTop: -10, marginBottom: 14, textAlign: "end" })}>
+        {t(remaining === 0 ? "firstFlight.progress.none" : remaining === 1 ? "firstFlight.progress.one" : "firstFlight.progress.other", { done: doneCount, r: remaining })}
       </div>
 
       {/* Step rail */}
@@ -188,19 +190,20 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
         }}
         className="ff-rail"
       >
-        {STEP_LABELS.map((label, idx) => {
+        {STEP_KEYS.map((key, idx) => {
+          const label = t(`firstFlight.step.${key}`);
           const st = stepStates[idx];
           const labelColor = st === "done" ? "var(--success-text)" : st === "current" ? "var(--act)" : "var(--text-muted)";
-          const isLast = idx === STEP_LABELS.length - 1;
+          const isLast = idx === STEP_KEYS.length - 1;
           return (
             <li
-              key={label}
+              key={key}
               aria-current={st === "current" ? "step" : undefined}
               style={{ display: "flex", alignItems: "center", flex: isLast ? "0 0 auto" : "1 1 auto", minWidth: 0 }}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8, paddingInlineEnd: 8 }}>
                 <Dot state={st} />
-                <span style={{
+                  <span style={ar({
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   letterSpacing: "0.14em",
@@ -211,7 +214,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
                   textDecoration: st === "done" ? "line-through" : undefined,
                   textDecorationThickness: st === "done" ? "1px" : undefined,
                   opacity: st === "done" ? 0.85 : 1,
-                }}>{label}</span>
+                })}>{label}</span>
               </span>
               {!isLast && (
                 <span aria-hidden style={{ flex: 1, height: 1, background: "var(--rule-outer)", marginInline: 6, minWidth: 12 }} />
@@ -224,7 +227,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
       {/* Action row */}
       {isWaitingForSignal ? (
         <>
-          <p style={{ ...proseStyle, marginBottom: 18 }}>Aura is building your first signal.</p>
+          <p style={ar({ ...proseStyle, marginBottom: 18 })}>{t("firstFlight.building")}</p>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span
@@ -237,36 +240,36 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
                   display: "inline-block",
                 }}
               />
-              <span style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 15, color: "var(--text-secondary)" }}>
-                Reading what you captured… your first signal usually appears within a few minutes.
+              <span style={ar({ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 15, color: "var(--text-secondary)" })}>
+                {t("firstFlight.reading")}
               </span>
             </div>
-            <button type="button" onClick={ff.skip} style={skipStyle} className="ff-skip">I'll explore on my own</button>
+            <button type="button" onClick={ff.skip} style={ar(skipStyle)} className="ff-skip">{t("firstFlight.skip")}</button>
           </div>
         </>
       ) : (
         <>
-          <p style={{ ...proseStyle, marginBottom: 18 }}>{stepCopy[currentStep]}</p>
+          <p style={ar({ ...proseStyle, marginBottom: 18 })}>{stepCopy(currentStep)}</p>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             {(() => {
               const c = cta();
               return (
-                <button type="button" onClick={c.onClick} disabled={c.disabled} style={{ ...ctaStyle, opacity: c.disabled ? 0.5 : 1 }}>
+                <button type="button" onClick={c.onClick} disabled={c.disabled} style={ar({ ...ctaStyle, opacity: c.disabled ? 0.5 : 1 })}>
                   {c.label}
                 </button>
               );
             })()}
-            <button type="button" onClick={ff.skip} style={skipStyle} className="ff-skip">I'll explore on my own</button>
+            <button type="button" onClick={ff.skip} style={ar(skipStyle)} className="ff-skip">{t("firstFlight.skip")}</button>
           </div>
         </>
       )}
 
       {ff.failed ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--rule-divider)" }}>
-          <span style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text-muted)" }}>
-            Aura could not confirm your progress just now. Nothing is lost — this is showing what your device remembers.
+          <span style={ar({ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text-muted)" })}>
+            {t("firstFlight.failed")}
           </span>
-          <button type="button" onClick={ff.refresh} style={skipStyle} className="ff-skip">Try again</button>
+          <button type="button" onClick={ff.refresh} style={ar(skipStyle)} className="ff-skip">{t("firstFlight.retry")}</button>
         </div>
       ) : null}
     </section>
