@@ -183,8 +183,8 @@ export default function ReportViewerSection({
         </Button>
         {version && snapshotAt ? (
           <span style={MUTED}>
-            <span style={{ fontFamily: MONO }}>v{version}</span> ·{" "}
-            <span style={{ fontFamily: MONO }}>
+            <span style={{ fontFamily: MONO, unicodeBidi: "isolate" }}>v{version}</span> ·{" "}
+            <span style={{ fontFamily: MONO, unicodeBidi: "isolate" }}>
               {i18n.language === "ar"
                 ? displayDate(snapshotAt, "ar")
                 : new Date(snapshotAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
@@ -201,6 +201,8 @@ export default function ReportViewerSection({
       ) : (
         <div
           ref={frameRef}
+          /* The scaled sheet is anchored top-left; keep the frame LTR so it stays in view in Arabic. */
+          dir="ltr"
           style={{
             border: "1px solid #E2E7EE",
             borderRadius: 12,
