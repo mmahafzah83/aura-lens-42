@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { DriftResult } from "@/lib/identityDriftCheck";
 import { __DRIFT_KEYS } from "@/lib/identityDriftCheck";
 
@@ -10,6 +11,9 @@ import { __DRIFT_KEYS } from "@/lib/identityDriftCheck";
  */
 export default function IdentityDriftBanner() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  const AR = isAr ? { fontFamily: "var(--font-arabic)", lineHeight: 1.7, letterSpacing: 0, textTransform: "none" as const, fontStyle: "normal" as const } : {};
   const [drift, setDrift] = useState<DriftResult | null>(null);
 
   useEffect(() => {
@@ -59,14 +63,19 @@ export default function IdentityDriftBanner() {
             color: "hsl(var(--brand-bronze, 39 38% 56%))",
             fontWeight: 600,
             marginBottom: 6,
+            ...AR,
           }}
         >
-          Your intelligence is revealing something
+          {t("drift.kicker")}
         </div>
-        <div style={{ fontSize: 14, lineHeight: 1.5, color: "hsl(var(--foreground))", marginBottom: 12 }}>
-          {drift.driftPercentage}% of your recent captures are in &ldquo;{drift.dominantTopic}&rdquo; — a territory not in your current positioning pillars.
+        <div style={{ fontSize: 14, lineHeight: 1.5, color: "hsl(var(--foreground))", marginBottom: 12, ...AR }}>
+          {(() => {
+            // "{pct}%" is isolated left-to-right so it never reorders inside Arabic.
+            const [before, after] = t("drift.body", { pct: "\u0000", topic: drift.dominantTopic }).split("\u0000%");
+            return <>{before}<bdi dir="ltr">{drift.driftPercentage}%</bdi>{after}</>;
+          })()}
           <br />
-          <span style={{ opacity: 0.8 }}>Your intelligence is sharper than your brand. Want to review your positioning?</span>
+          <span style={{ opacity: 0.8 }}>{t("drift.sub")}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -80,9 +89,10 @@ export default function IdentityDriftBanner() {
               color: "hsl(var(--background))",
               cursor: "pointer",
               fontWeight: 500,
+              ...AR,
             }}
           >
-            Review My Story →
+            {t("drift.review")}
           </button>
           <button
             type="button"
@@ -98,12 +108,12 @@ export default function IdentityDriftBanner() {
               cursor: "pointer",
             }}
           >
-            Dismiss
+            {t("drift.dismiss")}
           </button>
         </div>
       </div>
       <button
-        aria-label="Dismiss"
+        aria-label={t("drift.dismiss")}
         className="v23-tap v23-focus"
         onClick={dismiss}
         style={{

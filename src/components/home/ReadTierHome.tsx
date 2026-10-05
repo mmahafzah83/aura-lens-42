@@ -17,7 +17,8 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
 import { toRevealData } from "@/lib/marketRead";
-import { brandPaperHasContent } from "@/lib/buildBrandPaper";
+import { brandPaperHasContent, attachCapabilityNamesAr, type CapabilityNameRow } from "@/lib/buildBrandPaper";
+import { arabicDate } from "@/components/report/paperText";
 import {
   SEAT_ROWS,
   SEAT_PATH,
@@ -44,10 +45,13 @@ const NIGHT: React.CSSProperties = {
   color: "var(--text-inverse)",
 };
 
-function greetingFor(hour: number): string {
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+// Arabic: Cairo, open line-height, no tracking.
+const AR: React.CSSProperties = { fontFamily: "var(--font-arabic)", lineHeight: 1.7, letterSpacing: 0, textTransform: "none", fontStyle: "normal" };
+
+function greetingKey(hour: number): "morning" | "afternoon" | "evening" {
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
 }
 
 const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
@@ -58,6 +62,17 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
   const [results, setResults] = useState<Record<string, any> | null>(null);
   const [exporting, setExporting] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [capNames, setCapNames] = useState<CapabilityNameRow[] | null>(null);
+  const isAr = i18n.language === "ar";
+  const ar = (st: React.CSSProperties): React.CSSProperties => (isAr ? { ...st, ...AR } : st);
+
+  // Same Arabic capability names the report viewer attaches, so both PDFs match.
+  useEffect(() => {
+    let off = false;
+    (supabase.from("capability_dimensions" as any) as any).select("name, name_ar")
+      .then(({ data }: any) => { if (!off) setCapNames(data || null); });
+    return () => { off = true; };
+  }, []);
 
   const { report, version, snapshotAt } = useReportSnapshot();
   const pdfMount = useRef<HTMLDivElement | null>(null);
@@ -87,6 +102,7 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
     if (!resolvedDate) return null;
     const d = new Date(resolvedDate);
     if (isNaN(d.getTime())) return null;
+    if (isAr) return arabicDate(resolvedDate).replace(/ \d{4}$/, "");
     return d.toLocaleDateString(undefined, { day: "numeric", month: "long" });
   })();
 
@@ -97,16 +113,16 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
 
   const handlePdf = async () => {
     if (!report || !pdfMount.current) {
-      toast.error("Your read isn't ready yet. Try again in a moment.");
+      toast.error(t("readHome.toastNotReady"));
       return;
     }
     setExporting(true);
     try {
       const person = (firstName || "Member").replace(/[^A-Za-z0-9]+/g, "-");
       const date = (snapshotAt ? new Date(snapshotAt) : new Date()).toISOString().slice(0, 10);
-      await exportReportPdf(pdfMount.current, `Aura-Report-${person}-v${version ?? 1}-${date}.pdf`);
+      await exportReportPdf(pdfMount.current, `KnownBy-Report-${person}-v${version ?? 1}-${date}.pdf`);
     } catch {
-      toast.error("We couldn't build your PDF. Please try again.");
+      toast.error(t("readHome.toastPdf"));
     } finally {
       setExporting(false);
     }
@@ -118,7 +134,7 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
     try {
       await shareRevealCard(shareMount.current, { caption: undefined });
     } catch {
-      toast.error("We couldn't build the card. Please try again.");
+      toast.error(t("readHome.toastCard"));
     } finally {
       setSharing(false);
     }
@@ -134,12 +150,15 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
         <h1 style={{
           margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 26,
           letterSpacing: "-0.02em", lineHeight: 1.15, color: "var(--text-inverse)",
+          ...(isAr ? { ...AR, lineHeight: 1.4 } : {}),
         }}>
-          {firstName ? `${greetingFor(new Date().getHours())}, ${firstName}.` : `${greetingFor(new Date().getHours())}.`}
+          {firstName
+            ? t(`home.masthead.${greetingKey(new Date().getHours())}Name`, { name: firstName })
+            : t(`home.masthead.${greetingKey(new Date().getHours())}`)}
         </h1>
         {dateLine && (
-          <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: "var(--v23-on-night, rgba(255,255,255,.72))" }}>
-            Your read is from {dateLine}.
+          <p style={ar({ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: "var(--v23-on-night, rgba(255,255,255,.72))" })}>
+            {t("readHome.readFrom", { date: dateLine })}
           </p>
         )}
       </section>
@@ -150,29 +169,28 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
           margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 19,
           color: "var(--text-primary)", lineHeight: 1.25, ...memberText(archetype).style,
         }} dir="auto">
-          {archetype || "Your read"}
+          {archetype || t("readHome.yourRead")}
         </h2>
-        <p style={{ margin: "6px 0 14px", fontSize: 13, color: "var(--text-secondary)" }}>Yours permanently.</p>
+        <p style={ar({ margin: "6px 0 14px", fontSize: 13, color: "var(--text-secondary)" })}>{t("readHome.permanent")}</p>
         {notReady ? (
-          <p style={{ margin: "0 0 14px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-            Your read hasn't been written yet — nothing was produced the last time it ran.
-            Run it again and we'll write it from your answers and your profile.
+          <p style={ar({ margin: "0 0 14px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" })}>
+            {t("readHome.notReady")}
           </p>
         ) : null}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {notReady ? (
-            <ButtonGhost onClick={() => navigate("/onboarding")}>Run my read again</ButtonGhost>
+            <ButtonGhost onClick={() => navigate("/onboarding")}>{t("readHome.runAgain")}</ButtonGhost>
           ) : (
-            <ButtonGhost onClick={goIdentity}>Open the read</ButtonGhost>
+            <ButtonGhost onClick={goIdentity}>{t("readHome.open")}</ButtonGhost>
           )}
           {canPdf && (
             <ButtonGhost onClick={handlePdf} disabled={exporting}>
-              {exporting ? "Building…" : "Download the PDF"}
+              {exporting ? t("readHome.building") : t("readHome.pdf")}
             </ButtonGhost>
           )}
           {revealData && (
             <ButtonGhost onClick={handleShare} disabled={sharing}>
-              {sharing ? "Preparing…" : "Share the card"}
+              {sharing ? t("readHome.preparing") : t("readHome.share")}
             </ButtonGhost>
           )}
         </div>
@@ -182,14 +200,14 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
       <section style={CARD}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <span aria-hidden style={{ width: 6, height: 6, borderRadius: 999, background: "var(--act)", display: "inline-block" }} />
-          <h2 style={{ margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 16, color: "var(--text-primary)" }}>
-            What Aura still can't see
+          <h2 style={ar({ margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 16, color: "var(--text-primary)" })}>
+            {t("readHome.cantSee")}
           </h2>
         </div>
-        <p style={{ margin: "0 0 14px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-          Some of what you're good at has no evidence behind it yet. Members turn those from grey to proven by capturing as they work.
+        <p style={ar({ margin: "0 0 14px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" })}>
+          {t("readHome.cantSeeBody")}
         </p>
-        <ButtonGhost onClick={goIdentity}>See your map</ButtonGhost>
+        <ButtonGhost onClick={goIdentity}>{t("readHome.seeMap")}</ButtonGhost>
       </section>
 
       {/* ── BLOCK 4 — what a seat opens ── */}
@@ -220,7 +238,7 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
       {/* offscreen mounts — the same documents the identity surfaces export */}
       {canPdf && (
         <div ref={pdfMount} aria-hidden style={{ position: "absolute", left: -9999, top: 0, width: 794, pointerEvents: "none" }}>
-          <BrandPaperDocument paper={(report as any).brand_paper} showClosing={false} />
+          <BrandPaperDocument paper={{ ...(report as any).brand_paper, capabilities: attachCapabilityNamesAr((report as any).brand_paper.capabilities || [], capNames) }} showClosing={false} />
         </div>
       )}
       {revealData && (

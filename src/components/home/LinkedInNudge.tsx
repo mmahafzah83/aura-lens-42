@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { loadLinkedInState } from "@/lib/linkedinState";
 
@@ -16,6 +17,8 @@ const MUTED = "#5B6673";
 const KEY = "linkedin_read_nudge";
 
 export default function LinkedInNudge({ userId }: { userId: string | null }) {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [show, setShow] = useState(false);
   const [dismissals, setDismissals] = useState<Record<string, boolean>>({});
 
@@ -53,19 +56,20 @@ export default function LinkedInNudge({ userId }: { userId: string | null }) {
       style={{
         display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
         background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: 12,
-        padding: "10px 12px", marginBottom: 16, fontSize: 13.5, color: INK, lineHeight: 1.5,
+        padding: "10px 12px", marginBottom: 16, fontSize: 13.5, color: INK, lineHeight: isAr ? 1.7 : 1.5,
+        ...(isAr ? { fontFamily: "var(--font-arabic)", letterSpacing: 0 } : {}),
       }}
     >
       <span style={{ flex: "1 1 220px", minWidth: 0 }}>
-        Aura hasn't read your LinkedIn yet — that's what makes it sound like you.{" "}
+        {t("liNudge.body")}{" "}
         <Link to="/settings" style={{ color: ACTION, fontWeight: 500, textDecoration: "none" }}>
-          Add it →
+          {t("liNudge.add")}
         </Link>
       </span>
       <button
         type="button"
         onClick={() => void dismiss()}
-        aria-label="Dismiss"
+        aria-label={t("liNudge.dismiss")}
         style={{ background: "none", border: 0, padding: 4, color: MUTED, cursor: "pointer", lineHeight: 0 }}
       >
         <X size={14} />
