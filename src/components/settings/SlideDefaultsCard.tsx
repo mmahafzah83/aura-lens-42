@@ -67,13 +67,13 @@ export default function SlideDefaultsCard({ userId }: { userId: string | null })
       <div style={{ display: "grid", gap: 18 }}>
         <div style={{ display: "grid", gap: 10 }}>
           <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>{t("settings.slides.family")}</div>
-          <TemplatePicker lang="en" value={template ?? ""} onChange={pickTemplate} />
+          <TemplatePicker lang={i18n.language === "ar" ? "ar" : "en"} value={template ?? ""} onChange={pickTemplate} />
         </div>
 
         {template && (
           <div style={{ display: "grid", gap: 10 }}>
             <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>{t("settings.slides.colour")}</div>
-            <ColourPicker lang="en" template={template} value={theme ?? ""} onChange={(next) => setTheme(next)} />
+            <ColourPicker lang={i18n.language === "ar" ? "ar" : "en"} template={template} value={theme ?? ""} onChange={(next) => setTheme(next)} />
           </div>
         )}
 
