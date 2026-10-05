@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+import { displayDate, AR_TEXT } from "@/lib/arDisplay";
 
 /**
  * The capability radar for "Where you stand".
@@ -19,7 +21,8 @@ const BLUE = "#0670C4";
 const BLUE_HOVER = "#04477C";
 const CYAN = "#00CEC9";
 const NIGHT = "#0F1519";
-const MONO = "'IBM Plex Mono', monospace";
+/* Cairo second: Plex Mono has no Arabic letters, so Arabic in a mono span falls to Cairo. */
+const MONO = "'IBM Plex Mono', 'Cairo', monospace";
 const UI = "Inter, system-ui, sans-serif";
 
 /* White-on-night text scale — no invented colours, opacity only. */
@@ -41,7 +44,22 @@ interface Dimension {
   anchor_mid: string;
   anchor_high: string;
   position: number;
+  name_ar?: string | null;
+  why_line_ar?: string | null;
+  anchor_low_ar?: string | null;
+  anchor_mid_ar?: string | null;
+  anchor_high_ar?: string | null;
 }
+
+/* Display-only Arabic: answers and keys stay on the canonical English row. */
+const localise = (d: Dimension, ar: boolean): Dimension => !ar ? d : {
+  ...d,
+  name: d.name_ar?.trim() || d.name,
+  why_line: d.why_line_ar?.trim() || d.why_line,
+  anchor_low: d.anchor_low_ar?.trim() || d.anchor_low,
+  anchor_mid: d.anchor_mid_ar?.trim() || d.anchor_mid,
+  anchor_high: d.anchor_high_ar?.trim() || d.anchor_high,
+};
 
 interface Snapshot {
   id: string;
@@ -50,20 +68,19 @@ interface Snapshot {
   taken_at: string;
 }
 
-const BAND_CARDS: { band: Band; title: string; line: string }[] = [
-  { band: "work", title: "The work", line: "Your name is on the delivery." },
-  { band: "table", title: "The table", line: "You defend the programme and the budget." },
-  { band: "room", title: "The room", line: "You set the direction others work to." },
-];
+const BAND_CARDS: { band: Band }[] = [{ band: "work" }, { band: "table" }, { band: "room" }];
 
 const anchorFor = (d: Dimension, level: number) =>
   level === 1 ? d.anchor_low : level === 2 ? d.anchor_mid : d.anchor_high;
 
-const fmtDate = (iso: string) =>
+const fmtDate = (iso: string, lang: string) => lang === "ar" ? displayDate(iso, lang) :
   new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
 
-const fmtShort = (iso: string) =>
+const fmtShort = (iso: string, lang: string) => lang === "ar" ? displayDate(iso, lang, { year: false }) :
   new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }).toUpperCase();
+
+/* Arabic text inside this file: Cairo, open line-height, no tracking/caps/italics. */
+const arS = (ar: boolean, s: React.CSSProperties): React.CSSProperties => (ar ? { ...s, ...AR_TEXT } : s);
 
 const NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"];
 
@@ -89,7 +106,12 @@ interface Props {
 }
 
 const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
-  const [dims, setDims] = useState<Dimension[]>([]);
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
+  const ar = lang === "ar";
+  const [rawDims, setDims] = useState<Dimension[]>([]);
+  const dims = useMemo(() => rawDims.map((d) => localise(d, ar)), [rawDims, ar]);
+  const bandName = (b: Band) => tr(`cr.band.${b}.title`);
   const [levels, setLevels] = useState<Record<string, number>>({});
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +127,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
     setLoading(true);
     const [dimRes, respRes, snapRes] = await Promise.all([
       (supabase.from("capability_dimensions") as any)
-        .select('id, name, why_line, anchor_low, anchor_mid, anchor_high, "position"')
+        .select('id, name, why_line, anchor_low, anchor_mid, anchor_high, "position", name_ar, why_line_ar, anchor_low_ar, anchor_mid_ar, anchor_high_ar')
         .eq("active", true).eq("band", band).order("position", { ascending: true }),
       (supabase.from("capability_responses" as any) as any)
         .select("dimension_id, level").eq("user_id", userId),
@@ -196,11 +218,11 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
   if (chooser || !band) {
     return (
       <div style={{ background: "#FFFFFF", border: `1px solid ${BORDER}`, borderRadius: 20, padding: 20 }}>
-        <div style={{ fontFamily: UI, fontSize: 15, color: INK, fontWeight: 500, marginBottom: 4 }}>
-          Which of these rooms is yours?
+        <div style={arS(ar, { fontFamily: UI, fontSize: 15, color: INK, fontWeight: 500, marginBottom: 4 })}>
+          {tr("cr.chooserTitle")}
         </div>
-        <div style={{ fontFamily: UI, fontSize: 13, color: INK_2, marginBottom: 14 }}>
-          The eight questions are different for each one.
+        <div style={arS(ar, { fontFamily: UI, fontSize: 13, color: INK_2, marginBottom: 14 })}>
+          {tr("cr.chooserSub")}
         </div>
         <div style={{ display: "grid", gap: 10 }}>
           {BAND_CARDS.map((c) => (
@@ -219,8 +241,8 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
                 minHeight: 44,
               }}
             >
-              <div style={{ fontFamily: UI, fontSize: 15, fontWeight: 500, color: INK }}>{c.title}</div>
-              <div style={{ fontFamily: UI, fontSize: 13, color: INK_2, marginTop: 2 }}>{c.line}</div>
+              <div style={arS(ar, { fontFamily: UI, fontSize: 15, fontWeight: 500, color: INK })}>{bandName(c.band)}</div>
+              <div style={arS(ar, { fontFamily: UI, fontSize: 13, color: INK_2, marginTop: 2 })}>{tr(`cr.band.${c.band}.line`)}</div>
             </button>
           ))}
         </div>
@@ -228,9 +250,9 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
           <button
             type="button"
             onClick={() => setChooser(false)}
-            style={{ marginTop: 12, background: "transparent", border: "none", color: BLUE, fontFamily: UI, fontSize: 13, cursor: "pointer", padding: 0 }}
+            style={arS(ar, { marginTop: 12, background: "transparent", border: "none", color: BLUE, fontFamily: UI, fontSize: 13, cursor: "pointer", padding: 0 })}
           >
-            Keep what I have
+            {tr("cr.keep")}
           </button>
         )}
       </div>
@@ -291,7 +313,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
             viewBox={`0 0 ${SIZE} ${SIZE}`}
             width="100%"
             role="img"
-            aria-label="What you can do"
+            aria-label={tr("cr.aria")}
             style={{ display: "block", aspectRatio: "1 / 1", maxWidth: 320, marginInline: "auto" }}
           >
             {[0.33, 0.66, 1].map((r) => (
@@ -370,8 +392,8 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
           </svg>
 
           {prevSnap && (
-            <div style={{ fontFamily: MONO, fontSize: 11, color: W_LINK, marginBlockStart: 10, letterSpacing: "0.08em", textAlign: "center" }}>
-              PREVIOUS · {fmtShort(prevSnap.taken_at)}
+            <div style={arS(ar, { fontFamily: MONO, fontSize: 11, color: W_LINK, marginBlockStart: 10, letterSpacing: "0.08em", textAlign: "center" })}>
+              {tr("cr.previous", { date: fmtShort(prevSnap.taken_at, lang) })}
             </div>
           )}
         </div>
@@ -379,21 +401,21 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
         {/* RIGHT — the list */}
         <div>
           {answeredOtherBand && (
-            <p style={{ fontFamily: UI, fontSize: 14, color: W_LINK, margin: "0 0 10px" }}>
-              You're reading at the {band} now. These eight are different.
+            <p style={arS(ar, { fontFamily: UI, fontSize: 14, color: W_LINK, margin: "0 0 10px" })}>
+              {tr("cr.otherBand", { band: ar ? bandName(band) : band })}
             </p>
           )}
 
           {complete && minLevel === 3 && (
-            <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 10px" }}>
-              Nothing here sits low. The shape is where it moves next.
+            <p style={arS(ar, { fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 10px" })}>
+              {tr("cr.noneLow")}
             </p>
           )}
           {complete && lowest.length > 0 && (
-            <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 10px" }}>
+            <p style={arS(ar, { fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 10px" })}>
               {lowest.length === 1
-                ? "One point sits lowest."
-                : `${NUMBER_WORDS[lowest.length] ?? lowest.length} points sit lowest.`}
+                ? tr("cr.lowest_one", { n: 1 })
+                : tr("cr.lowest_other", { n: lowest.length, word: NUMBER_WORDS[lowest.length] ?? lowest.length })}
             </p>
           )}
 
@@ -436,7 +458,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
                     <span style={{ fontFamily: MONO, fontSize: 11, color: activeId === d.id ? CYAN : W_DIM, minWidth: 14 }}>
                       {i + 1}
                     </span>
-                    <span style={{ fontFamily: UI, fontSize: 14, lineHeight: 1.45, flex: 1 }}>{d.name}</span>
+                    <span style={arS(ar, { fontFamily: UI, fontSize: 14, lineHeight: 1.45, flex: 1 })}>{d.name}</span>
                     <span aria-hidden="true" style={{ display: "inline-flex", gap: 4 }}>
                       {[1, 2, 3].map((n) => (
                         <span
@@ -452,13 +474,13 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
                   {isExpanded && (
                     <div style={{ paddingBlockEnd: 12, maxWidth: "62ch" }}>
                       {d.why_line && (
-                        <p style={{ fontFamily: UI, fontSize: 13, color: W_LINK, margin: "0 0 6px", lineHeight: 1.55 }}>
+                        <p style={arS(ar, { fontFamily: UI, fontSize: 13, color: W_LINK, margin: "0 0 6px", lineHeight: 1.55 })}>
                           {d.why_line}
                         </p>
                       )}
                       {level && (
-                        <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: 0, lineHeight: 1.55 }}>
-                          {d.name} — you said: “{anchorFor(d, level)}”
+                        <p style={arS(ar, { fontFamily: UI, fontSize: 14, color: W_BODY, margin: 0, lineHeight: 1.55 })}>
+                          {tr("cr.youSaid", { name: d.name, anchor: anchorFor(d, level) })}
                         </p>
                       )}
                     </div>
@@ -470,48 +492,48 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
 
           {answeredCount === 0 && (
             <div style={{ marginBlockStart: 16 }}>
-              <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 14px" }}>
-                Eight questions about how far your work travels. Two minutes.
+              <p style={arS(ar, { fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 14px" })}>
+                {tr("cr.intro")}
               </p>
-              <PrimaryButton onClick={() => setAssessing(true)}>Answer the eight</PrimaryButton>
+              <PrimaryButton onClick={() => setAssessing(true)}>{tr("cr.answerEight")}</PrimaryButton>
             </div>
           )}
 
           {answeredCount > 0 && !complete && (
             <div style={{ marginBlockStart: 16 }}>
-              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_BODY, marginBlockEnd: 12 }}>
-                {answeredCount} OF {dims.length} ANSWERED
+              <div style={arS(ar, { fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_BODY, marginBlockEnd: 12 })}>
+                {tr("cr.answered", { answered: answeredCount, total: dims.length })}
               </div>
-              <PrimaryButton onClick={() => setAssessing(true)}>Continue</PrimaryButton>
+              <PrimaryButton onClick={() => setAssessing(true)}>{tr("cr.continue")}</PrimaryButton>
             </div>
           )}
 
           {complete && (
             <div style={{ marginBlockStart: 16 }}>
-              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_BODY }}>
-                ANSWERED {current ? fmtDate(current.taken_at) : ""} · BAND: {band.toUpperCase()} ·{" "}
+              <div style={arS(ar, { fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_BODY })}>
+                {tr("cr.answeredOn", { date: current ? fmtDate(current.taken_at, lang) : "", band: ar ? bandName(band) : band.toUpperCase() })}
                 <button type="button" className="cap-link" onClick={() => setChooser(true)}
-                  style={{ background: "transparent", border: "none", padding: 0, fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
-                  change
+                  style={arS(ar, { background: "transparent", border: "none", padding: 0, fontFamily: MONO, fontSize: 11, cursor: "pointer" })}>
+                  {tr("cr.change")}
                 </button>
               </div>
               <button
                 type="button"
                 className="cap-link"
                 onClick={() => setAssessing(true)}
-                style={{ marginBlockStart: 14, background: "transparent", border: "none", padding: 0, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 }}
+                style={arS(ar, { marginBlockStart: 14, background: "transparent", border: "none", padding: 0, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 })}
               >
-                Answer again
+                {tr("cr.again")}
               </button>
             </div>
           )}
 
           {!complete && (
-            <div style={{ marginBlockStart: 14, fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_LINK }}>
-              BAND: {band.toUpperCase()} ·{" "}
+            <div style={arS(ar, { marginBlockStart: 14, fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_LINK })}>
+              {tr("cr.bandOnly", { band: ar ? bandName(band) : band.toUpperCase() })}
               <button type="button" className="cap-link" onClick={() => setChooser(true)}
-                style={{ background: "transparent", border: "none", padding: 0, fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
-                change
+                style={arS(ar, { background: "transparent", border: "none", padding: 0, fontFamily: MONO, fontSize: 11, cursor: "pointer" })}>
+                {tr("cr.change")}
               </button>
             </div>
           )}
@@ -547,6 +569,8 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
 
 const PrimaryButton: React.FC<{ onClick: () => void; disabled?: boolean; children: React.ReactNode }> = ({ onClick, disabled, children }) => {
   const [hover, setHover] = useState(false);
+  const { i18n } = useTranslation();
+  const ar = i18n.language === "ar";
   return (
     <button
       type="button"
@@ -566,6 +590,7 @@ const PrimaryButton: React.FC<{ onClick: () => void; disabled?: boolean; childre
         fontWeight: 500,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
+        ...(ar ? AR_TEXT : {}),
       }}
     >
       {children}
@@ -584,6 +609,8 @@ interface AssessProps {
 }
 
 const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, onExit }) => {
+  const { t: tr, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
   const firstUnanswered = Math.max(0, dims.findIndex((d) => !levels[d.id]));
   const [index, setIndex] = useState(firstUnanswered === -1 ? 0 : firstUnanswered);
   const [local, setLocal] = useState<Record<string, number>>(levels);
@@ -645,14 +672,14 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, o
         if (e.key === "Enter" && canAdvance) { e.preventDefault(); void goForward(); }
       }}
     >
-      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.1em", color: INK_2 }}>
-        {pad(index + 1)} / {pad(dims.length)}
+      <div style={arS(ar, { fontFamily: MONO, fontSize: 11, letterSpacing: "0.1em", color: INK_2 })}>
+        {tr("cr.counter", { a: pad(index + 1), b: pad(dims.length) })}
       </div>
-      <h3 style={{ fontFamily: UI, fontSize: 18, fontWeight: 500, color: INK, margin: "10px 0 6px", lineHeight: 1.35 }}>
+      <h3 style={arS(ar, { fontFamily: UI, fontSize: 18, fontWeight: 500, color: INK, margin: "10px 0 6px", lineHeight: 1.35 })}>
         {dim.name}
       </h3>
       {dim.why_line && (
-        <p style={{ fontFamily: UI, fontSize: 13, fontStyle: "italic", color: INK_2, margin: "0 0 16px", lineHeight: 1.5 }}>
+        <p style={arS(ar, { fontFamily: UI, fontSize: 13, fontStyle: "italic", color: INK_2, margin: "0 0 16px", lineHeight: 1.5 })}>
           {dim.why_line}
         </p>
       )}
@@ -687,6 +714,7 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, o
                 fontSize: 14,
                 lineHeight: 1.5,
                 cursor: finishing ? "not-allowed" : "pointer",
+                ...(ar ? AR_TEXT : {}),
               }}
             >
               {sentence}
@@ -699,12 +727,12 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, o
         <button
           type="button"
           onClick={() => (index === 0 ? onExit() : setIndex(index - 1))}
-          style={{ background: "transparent", border: "none", padding: "0 4px", color: BLUE, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 }}
+          style={arS(ar, { background: "transparent", border: "none", padding: "0 4px", color: BLUE, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 })}
         >
-          {index === 0 ? "Back to the radar" : "Back"}
+          {index === 0 ? tr("cr.backRadar") : tr("cr.back")}
         </button>
         <PrimaryButton onClick={() => void goForward()} disabled={!canAdvance}>
-          {finishing ? "Working" : last ? "Show me the shape" : "Next"}
+          {finishing ? tr("cr.working") : last ? tr("cr.showShape") : tr("cr.next")}
         </PrimaryButton>
       </div>
 

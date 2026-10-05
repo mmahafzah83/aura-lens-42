@@ -8,6 +8,8 @@
  */
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { arStyle } from "@/lib/arDisplay";
 import YourVoice from "@/components/voice/YourVoice";
 import TeachAura from "@/components/voice/TeachAura";
 import TestImprove from "@/components/voice/TestImprove";
@@ -16,14 +18,16 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { BLUE, LINE, MUTED, TYPE } from "@/components/voice/tokens";
 
 const TABS = [
-  { key: "voice", label: "Your Voice" },
-  { key: "teach", label: "Teach Aura" },
-  { key: "test", label: "Test & Improve" },
+  { key: "voice", label: "vws.voice" },
+  { key: "teach", label: "vws.teach" },
+  { key: "test", label: "vws.test" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
 
 export default function VoiceWorkspace({ userId, onWrite }: { userId: string | null; onWrite: () => void }) {
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
   const [searchParams, setSearchParams] = useSearchParams();
   const raw = searchParams.get("voice");
   const active: TabKey = useMemo(
@@ -43,7 +47,7 @@ export default function VoiceWorkspace({ userId, onWrite }: { userId: string | n
     <div>
       <VoiceStyles />
       <div className="vd-tabrow" style={{ borderBlockEnd: `1px solid ${LINE}`, marginBlockEnd: 16 }}>
-        <div role="tablist" aria-label="Voice subpages" style={{ display: "flex", gap: 18 }}>
+        <div role="tablist" aria-label={tr("vws.aria")} style={{ display: "flex", gap: 18 }}>
           {TABS.map((t) => {
             const on = t.key === active;
             return (
@@ -56,14 +60,14 @@ export default function VoiceWorkspace({ userId, onWrite }: { userId: string | n
                 aria-controls={`voice-panel-${t.key}`}
                 tabIndex={on ? 0 : -1}
                 onClick={() => go(t.key)}
-                style={{
+                style={arStyle(lang, {
                   flex: "0 0 auto", whiteSpace: "nowrap", background: "transparent", border: "none",
                   borderBlockEnd: on ? `2px solid ${BLUE}` : "2px solid transparent",
                   color: on ? BLUE : MUTED, fontSize: TYPE.body, fontWeight: 600,
                   padding: "12px 0", minBlockSize: 44, cursor: "pointer",
-                }}
+                })}
               >
-                {t.label}
+                {tr(t.label)}
               </button>
             );
           })}
