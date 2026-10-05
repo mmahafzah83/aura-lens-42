@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, RefreshCw, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { arabicDaysAgo, arStyle } from "@/lib/arDisplay";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
 import { useRunStages, newRunId } from "@/lib/useRunStages";
@@ -26,9 +28,10 @@ interface MirrorRow {
 
 type TabKey = "headhunter" | "client_cio" | "curator";
 
-function relTime(iso: string): string {
+function relTime(iso: string, lang: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+  if (lang === "ar") return arabicDaysAgo(days);
   if (days < 1) return "today";
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
@@ -37,6 +40,9 @@ function relTime(iso: string): string {
 }
 
 export default function MarketMirror({ userId, hideHeader = false }: { userId: string | null; hideHeader?: boolean }) {
+  const { t: tr, i18n } = useTranslation();
+  const lang = i18n.language;
+  const ar = lang === "ar";
   const [row, setRow] = useState<MirrorRow | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -74,20 +80,20 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
       await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke("generate-market-mirror", { body: { run_id: id }, signal: ctrl.signal });
       if (error) {
-        const msg = (error as any)?.context?.error || error.message || "Generation failed";
+        const msg = (error as any)?.context?.error || error.message || tr("mirror.genFailed");
         if (String(msg).includes("rate_limit") || (error as any)?.context?.status === 429) {
-          toast.error("Market Mirror can be refreshed once every 7 days.");
+          toast.error(tr("mirror.rateLimited"));
         } else {
-          toast.error("Couldn't generate Market Mirror.");
+          toast.error(tr("mirror.couldNot"));
         }
         return;
       }
       if (data) setRow(data as MirrorRow);
-      toast.success("Market Mirror updated");
+      toast.success(tr("mirror.updated"));
     } catch (e: any) {
       toast.error(ctrl.signal.aborted
-        ? "That read didn't come back in time. Nothing is lost — try again."
-        : e?.message || "Generation failed");
+        ? tr("mirror.timeout")
+        : e?.message || tr("mirror.genFailed"));
     } finally {
       window.clearTimeout(ceiling);
       genAbortRef.current = null;
@@ -105,10 +111,12 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   // Label by the row's content (what the cached personas WERE generated for).
   const personaSet: RankBucket = row?.gaps?.persona_set ?? "director";
   const labels = PERSONA_LABELS[personaSet];
+  /* Only labels with a supplied Arabic are swapped; the rest stay English. */
+  const personaText = (l: string) => (ar && i18n.exists(`mirror.persona.${l}`) ? tr(`mirror.persona.${l}`) : l);
   const TABS: { key: TabKey; label: string }[] = [
-    { key: "headhunter", label: labels.slot1 },
-    { key: "client_cio", label: labels.slot2 },
-    { key: "curator", label: labels.slot3 },
+    { key: "headhunter", label: personaText(labels.slot1) },
+    { key: "client_cio", label: personaText(labels.slot2) },
+    { key: "curator", label: personaText(labels.slot3) },
   ];
 
   const text = row ? (row as any)[`${tab}_text`] as string | null : null;
@@ -121,7 +129,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
       onNight
       operation="market_read"
       runId={genRunId}
-      title="Reading how the market sees you"
+      title={tr("mirror.reading")}
       stages={genRun.stages}
     />
   );
@@ -141,18 +149,18 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Eye size={16} style={{ color: "#0670C4" }} />
           <h3 style={{ fontFamily: "var(--font-body)", fontSize: 20, margin: 0, fontWeight: 600 }}>
-            Market Mirror
+            {tr("mirror.title")}
           </h3>
         </div>
         {row && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>
-              Last updated: {relTime(row.generated_at)}
+              {tr("mirror.lastUpdated", { time: relTime(row.generated_at, lang) })}
             </span>
             <button
               onClick={generate}
               disabled={!canRefresh || generating}
-              title={canRefresh ? "Refresh Market Mirror" : "Available once every 7 days"}
+              title={canRefresh ? tr("mirror.refreshAria") : tr("mirror.weekly")}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "6px 10px", borderRadius: 8,
@@ -163,7 +171,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
               }}
             >
               {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-              Refresh Mirror
+              {tr("mirror.refresh")}
             </button>
           </div>
         )}
@@ -185,7 +193,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
       {!loading && !row && !generating && (
         <div style={{ padding: "24px 8px", textAlign: "center" }}>
           <p style={{ color: "var(--ink-2)", fontSize: 14, marginBottom: 16 }}>
-            See your positioning through three market-facing perspectives — and the gaps each one would call out.
+            {tr("mirror.emptyBody")}
           </p>
           <button
             onClick={generate}
@@ -200,7 +208,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
             }}
           >
             {generating && <Loader2 size={14} className="animate-spin" />}
-            Generate your Market Mirror →
+            {tr("mirror.generate")}
           </button>
         </div>
       )}
@@ -209,19 +217,19 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
         <>
           {!hideHeader && (
             <p style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.625, margin: "0 0 12px" }}>
-              Three perspectives on your digital footprint — refreshed from your latest intelligence.
+              {tr("mirror.intro")}
             </p>
           )}
           {hideHeader && row && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, marginBottom: 8 }}>
               <span style={{ fontSize: 11, color: "var(--ink-5, var(--ink-muted))" }}>
-                Updated {relTime(row.generated_at)}
+                {tr("mirror.updatedAgo", { time: relTime(row.generated_at, lang) })}
               </span>
               <button
                 onClick={generate}
                 disabled={!canRefresh || generating}
-                title={canRefresh ? "Refresh Market Mirror" : "Available once every 7 days"}
-                aria-label="Refresh Market Mirror"
+                title={canRefresh ? tr("mirror.refreshAria") : tr("mirror.weekly")}
+                aria-label={tr("mirror.refreshAria")}
                 style={{
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   width: 24, height: 24, borderRadius: 6,
@@ -269,12 +277,12 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
             })}
           </div>
 
-          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-display)", fontStyle: text && /[\u0600-\u06FF]/.test(text) ? "normal" : "italic" }}>
-            {text || "No perspective generated."}
+          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-display)", fontStyle: (text && /[\u0600-\u06FF]/.test(text)) || ar ? "normal" : "italic" }}>
+            {text || tr("mirror.noPerspective")}
           </p>
 
           {gap && (() => {
-            const persona = tab === "headhunter" ? labels.gap1 : tab === "client_cio" ? labels.gap2 : labels.gap3;
+            const persona = personaText(tab === "headhunter" ? labels.gap1 : tab === "client_cio" ? labels.gap2 : labels.gap3);
             const ALERT = "var(--live)";
             const gapIsArabic = /[\u0600-\u06FF]/.test(gap);
             return (
@@ -282,19 +290,19 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                 style={{
                   marginTop: 8, padding: "12px 14px",
                   background: "color-mix(in srgb, var(--live) 6%, transparent)",
-                  borderLeft: `3px solid ${ALERT}`,
+                  borderInlineStart: `3px solid ${ALERT}`,
                   borderRadius: 6,
                 }}
               >
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--ink)", fontWeight: 600, marginBottom: 6 }}>
+                <div style={arStyle(lang, { display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--ink)", fontWeight: 600, marginBottom: 6 })}>
                   <span aria-hidden style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: ALERT }} />
-                  Presence gap
+                  {tr("mirror.gapTitle")}
                 </div>
                 <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625 }}>
-                  A {persona} would notice: {gap}
+                  {tr("mirror.wouldNotice", { persona, gap })}
                 </div>
-                <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625, marginTop: 6, fontStyle: gapIsArabic ? "normal" : "italic", opacity: 0.85 }}>
-                  Is that a choice?
+                <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625, marginTop: 6, fontStyle: gapIsArabic || ar ? "normal" : "italic", opacity: 0.85 }}>
+                  {tr("mirror.isChoice")}
                 </div>
               </div>
             );
