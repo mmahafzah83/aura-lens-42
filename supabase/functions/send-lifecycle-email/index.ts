@@ -2,12 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { logError } from "../_shared/logError.ts";
-import {
-  renderEmail, heading as h1, paragraph, note, signature,
-  INK, INK_SOFT, INK_FAINT, CANVAS, ACCENT, BODY as BODY_FONT_STACK, MONO,
-} from "../_shared/emailTemplate.ts";
-// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
-import { countNoun } from "../_shared/vocabulary.ts";
+import { lifecycleEmail } from "../_shared/scheduledEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,209 +17,6 @@ const FROM_INVITES = "KnownBy <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
 type EmailType = "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
-
-const BODY_FONT = BODY_FONT_STACK;
-
-// Every lifecycle email renders through the one shared System-B shell.
-function shell(_BRAND: string, _FONT: string, body: string, preheader: string) {
-  return renderEmail({ preheader, body });
-}
-
-function ctaButton(_BRAND: string, label: string, href: string) {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr>
-    <td align="center" bgcolor="${ACCENT}" style="border-radius:8px;">
-      <a href="${href}" style="display:inline-block;padding:0 30px;height:48px;line-height:48px;font-family:${BODY_FONT};font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;">${label}</a>
-    </td>
-  </tr></table>`;
-}
-
-function heading(text: string) {
-  return h1(text);
-}
-
-function signoff(_firstName: string, _level: string | null) {
-  return signature();
-}
-
-function buildEmail(
-  type: EmailType,
-  ctx: {
-    BRAND: string;
-    FONT: string;
-    firstName: string;
-    sectorFocus: string | null;
-    level: string | null;
-    entriesCount: number;
-    topSignals: { id?: string; signal_title: string; confidence: number }[];
-    score: number | null;
-    tier: string | null;
-    signalCount: number;
-    fadingSignals: { signal_title: string; confidence: number; velocity_status: string | null }[];
-    fadingCount: number;
-    publishedCount: number;
-    recentTrend: { headline: string; source: string } | null;
-    postTitle?: string;
-    postPreview?: string;
-    postId?: string;
-    missingGates?: string[];
-    monthName?: string;
-  },
-): { subject: string; html: string } {
-  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend, postTitle, postPreview, postId, missingGates, monthName } = ctx;
-  const name = firstName || "there";
-  const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
-  const tierMessage = (() => {
-    const t = (tier || "").toLowerCase();
-    if (t.includes("presence")) return "You're in the top tier. Maintain your edge.";
-    if (t.includes("strategist")) return "You're tracking the market — patterns are forming.";
-    return "You're building your intelligence foundation.";
-  })();
-
-  if (type === "day1") {
-    const subject = "Your first signals are forming";
-    const top = topSignals[0];
-    const body = top
-      ? `
-        ${heading(`${name}, your signal graph is forming.`)}
-        <p style="margin:0 0 18px;">Aura detected ${signalCount} ${countNoun(signalCount, "signal")} from your captures. Your strongest right now: <strong>${top.signal_title}</strong>.</p>
-        <p style="margin:0 0 18px;">This is where your intelligence runs deepest. One more capture strengthens the signal. Two more and Aura can generate a post that sounds like you wrote it.</p>
-        ${ctaButton(BRAND, "See your signals", `${APP_URL}/dashboard?tab=intelligence`)}
-        ${signoff(name, level)}`
-      : `
-        ${heading(`${name}, your signal graph is waiting.`)}
-        <p style="margin:0 0 18px;">The captures you've made are being analyzed. A signal forms when the same idea shows up across several of your captures.</p>
-        <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
-        ${ctaButton(BRAND, "Capture something", `${APP_URL}/dashboard`)}
-        ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body, subject) };
-  }
-
-  if (type === "day3") {
-    const subject = "The market moved this week — here's what matters to you";
-    const trendLine = recentTrend
-      ? `The market conversation in ${focus} shifted — '<strong>${recentTrend.headline}</strong>' (via ${recentTrend.source}). You have ${signalCount} live ${countNoun(signalCount, "signal")} tracking this space.`
-      : `Aura is watching ${focus} for fresh market movement. You have ${signalCount} live ${countNoun(signalCount, "signal")} ready to anchor your next post.`;
-    const d3 = topSignals[0];
-    const day3Href = d3?.id
-      ? `${APP_URL}/dashboard?tab=authority&signal=${encodeURIComponent(d3.id)}`
-      : `${APP_URL}/dashboard?tab=authority`;
-    const body = `
-      ${heading(`${name}, your Imprint is ${score ?? 0}.`)}
-      <p style="margin:0 0 18px;">${tierMessage}</p>
-      <p style="margin:0 0 18px;">${trendLine}</p>
-      <p style="margin:0 0 18px;">Publishing from your strongest signal builds presence fastest. Your signals are ready.</p>
-      ${ctaButton(BRAND, "Generate your first post", day3Href)}
-      ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body, subject) };
-  }
-
-  if (type === "day7") {
-    const subject = "Your Aura brief";
-    const top = topSignals[0];
-    const topLine = top
-      ? `Your strongest right now: <strong>${top.signal_title}</strong>.`
-      : "No leading signal yet — a few more captures and signals start to form.";
-    const fadingLine = fadingCount > 0
-      ? `${fadingCount} ${countNoun(fadingCount, "signal")} fading — they need fresh evidence.`
-      : "No signals fading.";
-    const trendLine = recentTrend ? `<strong>${recentTrend.headline}</strong> (${recentTrend.source}).` : "Quiet in your tracked sources.";
-    const body = `
-      ${heading("Your brief")}
-      <p style="margin:0 0 14px;">${signalCount} live ${countNoun(signalCount, "signal")}. ${topLine} ${fadingLine} ${publishedCount} ${countNoun(publishedCount, "post")} on LinkedIn.</p>
-      <p style="margin:0 0 14px;">Imprint: <strong>${score ?? 0}</strong>${tier ? ` (${tier})` : ""}.</p>
-      <p style="margin:0 0 18px;">Recent market movement: ${trendLine}</p>
-      <p style="margin:0 0 18px;">Your signals are ready to publish from.</p>
-      ${ctaButton(BRAND, "Open your weekly brief", `${APP_URL}/dashboard?tab=intelligence`)}
-      ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body, subject) };
-  }
-
-  if (type === "post_ready") {
-    const title = postTitle || "your latest insight";
-    const preview = (postPreview || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const subject = `Your post about ${title} is ready to publish`;
-    const openHref = postId
-      ? `${APP_URL}/home?tab=authority&draft=${encodeURIComponent(postId)}&src=linkedin_posts&from=post_ready`
-      : `${APP_URL}/home?tab=authority&from=post_ready`;
-    const body = `
-      ${heading(`${name}, your post is waiting.`)}
-      <p style="margin:0 0 18px;">You generated a LinkedIn post yesterday — and it's still waiting.</p>
-      <p style="margin:0 0 18px;padding:16px 20px;background:${CANVAS};border-left:2px solid ${ACCENT};font-style:italic;color:${INK_SOFT};">"${preview}${preview.length >= 120 ? "..." : ""}"</p>
-      <p style="margin:0 0 18px;">One tap and it is live.</p>
-      ${ctaButton(BRAND, "Open your draft", openHref)}
-      ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body, subject) };
-  }
-
-  if (type === "aura_card_ready") {
-    const subject = "Your Aura Card is ready";
-    const body = `
-      ${heading(`${name}, your Aura Card is ready.`)}
-      <p style="margin:0 0 18px;">You finished the four steps — the questions, your strengths, your photo, and where you work. Aura now has enough to render a shareable read of who you are, in one card.</p>
-      <p style="margin:0 0 18px;">Open My Story to preview it, download the PNG, or share it to LinkedIn.</p>
-      ${ctaButton(BRAND, "See your card", `${APP_URL}/dashboard?tab=identity`)}
-      ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body, subject) };
-  }
-
-  if (type === "aura_card_nudge") {
-    const gates = (missingGates && missingGates.length > 0) ? missingGates : ["assessment"];
-    const n = gates.length;
-    const subject = `You're ${n} step${n === 1 ? "" : "s"} from your Aura Card`;
-    const labelFor = (g: string) => {
-      const k = g.toLowerCase();
-      if (k === "photo") return "Add a profile photo";
-      if (k === "country") return "Set your country";
-      if (k === "assessment") return "Finish the few questions";
-      if (k === "radar" || k === "skills") return "Fill in your skills radar";
-      return g;
-    };
-    const bullets = gates.map((g) => `<li style="margin:0 0 8px;">${labelFor(g)}</li>`).join("");
-    const body = `
-      ${heading(`${name}, you're ${n} step${n === 1 ? "" : "s"} away.`)}
-      <p style="margin:0 0 14px;">Your Aura Card renders as soon as these are done:</p>
-      <ul style="margin:0 0 18px;padding-left:20px;color:${INK_SOFT};font-family:${BODY_FONT};font-size:15px;line-height:1.65;">${bullets}</ul>
-      <p style="margin:0 0 18px;">A few minutes and the card is yours to preview, download, and share.</p>
-      ${ctaButton(BRAND, "Finish and see your card", `${APP_URL}/dashboard?tab=identity`)}
-      ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body, subject) };
-  }
-
-  if (type === "aura_card_monthly") {
-    const month = monthName || new Date().toLocaleString("en-US", { month: "long" });
-    const subject = `Your ${month} Aura Card`;
-    const body = `
-      ${heading(`${name}, your ${month} card is ready.`)}
-      <p style="margin:0 0 18px;">A fresh read of who you are this month — your practice, your skills, your point of view. One card, made from your own signals.</p>
-      <p style="margin:0 0 18px;">Open it, download the PNG, or share it to LinkedIn.</p>
-      ${ctaButton(BRAND, "View this month's card", `${APP_URL}/dashboard?tab=identity`)}
-      ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body, subject) };
-  }
-
-  // silence / inactive — both paths use the same signal-decay framing
-  const f1 = fadingSignals[0];
-  const f2 = fadingSignals[1];
-  const topFadingTitle = f1?.signal_title || "leading";
-  const subject = `Your ${topFadingTitle} signal is decaying`; // vocab-ok: one named signal, not a count
-  const f1Line = f1
-    ? `Your strongest right now: <strong>${f1.signal_title}</strong>. It needs fresh evidence.`
-    : "Your strongest signals are losing freshness.";
-  const f2Line = f2
-    ? ` ${f2.signal_title} is now <strong>${f2.velocity_status || "fading"}</strong>.`
-    : "";
-  const trendLine = recentTrend
-    ? `Meanwhile, ${recentTrend.source} published on '<strong>${recentTrend.headline}</strong>' — your territory.`
-    : `Meanwhile, the market in ${focus} keeps moving — your territory.`;
-  const body = `
-    ${heading(`${name}, while you were away:`)}
-    <p style="margin:0 0 18px;">${f1Line}${f2Line}</p>
-    <p style="margin:0 0 18px;">${trendLine}</p>
-    <p style="margin:0 0 18px;">One capture brings them back. Consistency matters more than volume here.</p>
-    ${ctaButton(BRAND, "Capture now", `${APP_URL}/dashboard`)}
-    ${signoff(name, level)}`;
-  return { subject, html: shell(BRAND, FONT, body, subject) };
-}
 
 serve(withObserve("send-lifecycle-email", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -441,14 +234,10 @@ serve(withObserve("send-lifecycle-email", async (req) => {
       .maybeSingle();
     const tier = (snap?.components as any)?.tier_name || (snap?.components as any)?.tier || null;
 
-    // Visual language is fixed by the shared email template; these are legacy
-    // pass-throughs kept only so buildEmail's signature stays unchanged.
-    const BRAND = INK;
-    const FONT = BODY_FONT_STACK;
+    // The reader's language: the member's saved interface language, else English.
+    const lang = await resolveEmailLang(undefined, admin, user_id);
 
-    const { subject, html } = buildEmail(email_type, {
-      BRAND,
-      FONT,
+    const { subject, html } = lifecycleEmail(email_type, {
       firstName: profile?.first_name || "",
       sectorFocus: profile?.sector_focus || null,
       level: (profile as any)?.level || null,
@@ -466,7 +255,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
       postId: post_id || undefined,
       missingGates: Array.isArray(missing_gates) ? missing_gates : undefined,
       monthName: typeof month_name === "string" ? month_name : undefined,
-    });
+    }, lang);
 
     const fromAddress = (email_type === "aura_card_ready" || email_type === "aura_card_nudge" || email_type === "aura_card_monthly")
       ? FROM_INVITES

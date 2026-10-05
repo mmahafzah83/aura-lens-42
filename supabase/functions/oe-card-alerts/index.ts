@@ -15,6 +15,8 @@
  */
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { withRun } from "../_shared/oeRun.ts";
+import { renderCardAlert, type AlertCard } from "../_shared/cardAlertEmail.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,23 +31,7 @@ const INSTANT_MAX_24H = 2;
 const DEFAULT_TZ = "UTC";
 
 type Lang = "en" | "ar";
-type Card = { id: string; opportunity_id: string; fit_band: string | null; created_at: string;
-  opp: { title: string; issuer_raw: string | null; location: string | null; deadline: string | null; alive: boolean } };
-
-const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-const fill = (t: string, vars: Record<string, string | number>) => t.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
-const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-function dateText(iso: string | null, lang: Lang): string {
-  if (!iso) return "";
-  const d = new Date(iso); if (isNaN(d.getTime())) return "";
-  return `${d.getUTCDate()} ${(lang === "ar" ? MONTHS_AR : MONTHS_EN)[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
-}
-function localHour(tz: string): number {
-  try {
-    return Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: tz }).format(new Date())) % 24;
-  } catch { return new Date().getUTCHours(); }
-}
+type Card = AlertCard;
 
 async function loadVocab(admin: SupabaseClient) {
   const { data } = await admin.from("oe_vocabulary").select("key,en,ar").like("key", "email_%");
@@ -53,36 +39,8 @@ async function loadVocab(admin: SupabaseClient) {
   return (key: string, lang: Lang) => String((map.get(key) as any)?.[lang] || (map.get(key) as any)?.en || key);
 }
 
-function render(kind: "instant" | "digest", cards: Card[], lang: Lang, v: (k: string, l: Lang) => string) {
-  const rtl = lang === "ar";
-  const font = rtl ? "Cairo, Tahoma, Arial, sans-serif" : "Inter, -apple-system, Segoe UI, Arial, sans-serif";
-  const mono = "'IBM Plex Mono', Menlo, Consolas, monospace";
-  const lh = rtl ? "1.9" : "1.5";
-  const subject = kind === "instant"
-    ? fill(v("email_instant_subject", lang), { title: cards[0].opp.title })
-    : fill(v("email_digest_subject", lang), { n: cards.length });
-  const intro = v(kind === "instant" ? "email_instant_intro" : "email_digest_intro", lang);
-  const rows = cards.map((c) => {
-    const link = `${SITE}/opportunities?card=${encodeURIComponent(c.opportunity_id)}`;
-    const meta = [c.opp.issuer_raw, c.opp.location].filter(Boolean).map(esc).join(" · ");
-    const close = c.opp.deadline ? `<div style="font-family:${mono};font-size:12px;color:#5B6673;margin-top:4px">${esc(dateText(c.opp.deadline, lang))}</div>` : "";
-    return `<tr><td style="padding:16px 20px;border-top:1px solid #E2E7EE">
-      <a href="${link}" style="color:#0F1519;text-decoration:none;font-size:16px;font-weight:600;line-height:${lh}">${esc(c.opp.title)}</a>
-      <div style="color:#5B6673;font-size:13px;line-height:${lh}">${meta}</div>${close}
-      <div style="margin-top:10px"><a href="${link}" style="display:inline-block;background:#0670C4;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:600;padding:9px 16px;border-radius:8px">${esc(v("email_open", lang))}</a></div>
-    </td></tr>`;
-  }).join("");
-  const html = `<!doctype html><html lang="${lang}" dir="${rtl ? "rtl" : "ltr"}"><body style="margin:0;background:#F2F5F9;font-family:${font};color:#0F1519">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F5F9;padding:24px 12px"><tr><td align="center">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#FFFFFF;border:1px solid #E2E7EE;border-radius:20px;overflow:hidden;text-align:${rtl ? "right" : "left"}">
-      <tr><td style="padding:20px 20px 12px"><div style="font-size:13px;font-weight:700;color:#0F1519">Aura</div>
-        <p style="margin:10px 0 0;font-size:15px;line-height:${lh};color:#0F1519">${esc(intro)}</p></td></tr>
-      ${rows}
-      <tr><td style="padding:16px 20px;border-top:1px solid #E2E7EE;font-size:12px;line-height:${lh};color:#5B6673">${esc(v("email_footer", lang))}</td></tr>
-    </table></td></tr></table></body></html>`;
-  const text = [intro, "", ...cards.map((c) => `${c.opp.title}${c.opp.issuer_raw ? ` · ${c.opp.issuer_raw}` : ""}\n${SITE}/opportunities?card=${c.opportunity_id}`), "", v("email_footer", lang)].join("\n");
-  return { subject, html, text };
-}
+const render = (kind: "instant" | "digest", cards: Card[], lang: Lang, v: (k: string, l: Lang) => string) =>
+  renderCardAlert(kind, cards, lang, v, SITE);
 
 Deno.serve(withRun("card_alerts", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -127,9 +85,10 @@ Deno.serve(withRun("card_alerts", async (req) => {
   }
 
   async function member(uid: string) {
-    const [{ data: el }, { data: dir }, { data: prof }] = await Promise.all([
+    const [{ data: el }, lang, { data: prof }] = await Promise.all([
       admin.from("oe_eligibility").select("alert_instant,digest_on,digest_hour").eq("user_id", uid).maybeSingle(),
-      admin.from("oe_direction").select("language").eq("user_id", uid).maybeSingle(),
+      // The reader's language: the member's saved interface language, else English.
+      resolveEmailLang(undefined, admin, uid),
       admin.from("diagnostic_profiles").select("timezone").eq("user_id", uid).maybeSingle(),
     ]);
     const { data: u } = await admin.auth.admin.getUserById(uid);
@@ -137,7 +96,7 @@ Deno.serve(withRun("card_alerts", async (req) => {
       instant: (el as any)?.alert_instant !== false,
       digest: (el as any)?.digest_on !== false,
       hour: Number((el as any)?.digest_hour ?? 8),
-      lang: ((dir as any)?.language === "ar" ? "ar" : "en") as Lang,
+      lang: lang as Lang,
       tz: String((prof as any)?.timezone || DEFAULT_TZ),
       email: u?.user?.email ?? null,
     };

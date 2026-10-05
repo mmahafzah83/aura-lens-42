@@ -14,15 +14,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { adminUserIds } from "../_shared/adminRole.ts";
-import {
-  renderEmail,
-  heading as headingHtml,
-  quote as quoteBlock,
-  INK_SOFT as INK_BODY,
-  INK_FAINT,
-} from "../_shared/emailTemplate.ts";
-// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
-import { countNoun } from "../_shared/vocabulary.ts";
+import { draftReadyEmail } from "../_shared/scheduledEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,114 +82,6 @@ function deriveShortTopic(opts: {
   if (!src) return "";
   const words = src.split(/\s+/).slice(0, 6).join(" ");
   return words.replace(/[.,;:!?—–-]+$/g, "").trim();
-}
-
-function clampForSubject(shortTopic: string): string {
-  // Subject template: `Your post on ${shortTopic} is ready` = 22 chars of chrome.
-  // Keep total under 60 → shortTopic max 38.
-  const MAX = 38;
-  if (shortTopic.length <= MAX) return shortTopic;
-  return shortTopic.slice(0, MAX - 1).replace(/[\s,;:.\-–—]+$/g, "") + "…";
-}
-
-function whenPhrase(newestFragmentIso: string | null): string {
-  if (!newestFragmentIso) return "";
-  const ageDays = (Date.now() - new Date(newestFragmentIso).getTime()) / 86400000;
-  if (ageDays < 4) return "this week";
-  if (ageDays >= 4 && ageDays <= 10) return "last week";
-  return "";
-}
-
-function buildEmail(opts: {
-  firstName: string | null;
-  shortTopic: string;
-  fullTopic: string;
-  excerpt: string;
-  nReadings: number | null;
-  nSources: number | null;
-  newestFragmentIso: string | null;
-  velocityStatus: string | null;
-  ctaUrl: string;
-}): { subject: string; preheader: string; html: string } {
-  const {
-    firstName, shortTopic, fullTopic, excerpt,
-    nReadings, nSources, newestFragmentIso, velocityStatus, ctaUrl,
-  } = opts;
-
-  const shortForSubject = clampForSubject(stripTrailingPunct(shortTopic || fullTopic));
-  const subject = `Your post on ${shortForSubject} is ready`;
-
-  const haveCounts =
-    typeof nReadings === "number" && nReadings > 0 &&
-    typeof nSources === "number" && nSources > 0;
-
-  // ACTOR HONESTY: nReadings counts `evidence_fragments` — what AURA extracted.
-  // The member saved captures, so the verb must belong to Aura, not to them.
-  const preheader = haveCounts
-    ? `${nReadings} ${countNoun(nReadings, "evidence")} Aura pulled from what you saved. One post. Four minutes.`
-    : `One post. Four minutes.`;
-
-  const namePrefix = firstName ? `${escapeHtml(firstName)} — you` : "You";
-  const when = whenPhrase(newestFragmentIso);
-  const whenSuffix = when ? ` ${when}` : "";
-  // Body sentence needs a NOUN PHRASE after "on" — use the theme tag
-  // (shortTopic), never the full signal title. fullTopic is retained only
-  // as a subject-line fallback above; it is intentionally not rendered
-  // into any body sentence.
-  const shortTopicClean = stripTrailingPunct(shortTopic || fullTopic);
-  const shortTopicEsc = escapeHtml(shortTopicClean);
-
-  // One idea per line. Each <p> stands on its own so the eye lands on a beat.
-  // The count is `evidence_fragments`, which Aura extracted — so Aura is the
-  // actor here. The member's own act was the capture.
-  const nameLead = firstName ? `${escapeHtml(firstName)} — Aura` : "Aura";
-  const line1 = haveCounts
-    ? `${nameLead} pulled ${nReadings} ${countNoun(nReadings, "evidence")} out of what you saved on ${shortTopicEsc}${whenSuffix}.`
-    : `${namePrefix} kept a finding on ${shortTopicEsc}.`;
-  const line2 = `Nobody asked you to. That was your judgment, not an algorithm's.`;
-  const line3 = `Aura put that judgment into a post, written the way you write.`;
-  const line4 = `It isn't finished until you've argued with it.`;
-  const line5 = `Cut what isn't you. Sharpen what is.`;
-  const line6 = `Then it's yours to publish — or not.`;
-
-  const excerptClean = escapeHtml(excerpt.slice(0, 140)) + (excerpt.length > 140 ? "…" : "");
-  const quote = quoteBlock(excerptClean);
-
-  const closer = `Four minutes. Nothing goes out without you.`;
-
-  const bodyLine = (t: string, mb = 14) =>
-    `<p style="font-size:16px;line-height:1.65;margin:0 0 ${mb}px;color:${INK_BODY};">${t}</p>`;
-
-  let ps = "";
-  if (velocityStatus === "accelerating") {
-    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:${INK_FAINT};">P.S. — ${escapeHtml(shortTopicClean)} is moving right now. The people paying attention this week are the ones who will remember who said it first.</p>`;
-  }
-
-  const body = `
-    ${headingHtml("You already made this argument.")}
-    ${bodyLine(line1)}
-    ${bodyLine(line2)}
-    ${bodyLine(line3)}
-    ${quote}
-    ${bodyLine(line4, 8)}
-    ${bodyLine(line5, 8)}
-    ${bodyLine(line6, 20)}
-  `;
-
-  const tail = `
-    <p style="font-size:12px;line-height:1.5;margin:16px 0 0;color:${INK_FAINT};">${closer}</p>
-    ${ps}
-  `;
-
-  return {
-    subject,
-    preheader,
-    html: renderEmail({
-      preheader,
-      body: body + tail,
-      cta: { href: ctaUrl, label: "Open your draft" },
-    }),
-  };
 }
 
 serve(async (req) => {
@@ -563,7 +448,8 @@ serve(async (req) => {
       const firstName = (prof?.first_name as string | null)?.trim() || null;
 
       const excerpt = excerptFor(pick.body || "");
-      const { subject, preheader, html } = buildEmail({
+      const lang = await resolveEmailLang(undefined, admin, pick.user_id);
+      const { subject, preheader, html } = draftReadyEmail({
         firstName,
         shortTopic,
         fullTopic,
@@ -573,7 +459,7 @@ serve(async (req) => {
         newestFragmentIso,
         velocityStatus,
         ctaUrl: ctaFor(pick.draft_id, pick.src),
-      });
+      }, lang);
 
 
       // Recipient email
