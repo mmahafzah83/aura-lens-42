@@ -707,7 +707,8 @@ function Footnotes({ score, footprint, lang = "en" }: { score: ReportData["score
         <div>
           <sup style={sup}>1</sup>
           <span dir="ltr" style={{ unicodeBidi: "isolate" }}>Imprint</span>
-          {pt(lang, "report.doc.fn1").replace(/^Imprint/, "")}
+          {pt(lang, "report.doc.fn1").replace(/^Imprint/, "").split(/(\d+%)/).map((part, i) =>
+            /^\d+%$/.test(part) ? <span key={i} dir="ltr" style={{ unicodeBidi: "isolate" }}>{part}</span> : part)}
           {score?.snapshot_at ? pt(lang, "report.doc.fnSnap", { date: arabicDate(score.snapshot_at) }) : ""}
         </div>
         {footprint ? (
@@ -1099,6 +1100,7 @@ function Paginated({ blocks, data, lang = "en" }: { blocks: Block[]; data: Repor
       <Sheet bleed lang={lang} page={total}>
         <ClosingPlate
           lang={lang}
+          paperTitle={footerTitle}
           data={data}
           activeSignals={data.footprint?.signals ?? 0}
           evidenceCount={data.footprint?.evidence ?? 0}
