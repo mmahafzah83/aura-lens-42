@@ -50,7 +50,7 @@ export function readEmail(lang: EmailLang, d: ReadEmailData): BuiltEmail {
   if (lang === "ar") {
     const list = (items: string[]) =>
       `<ul dir="rtl" style="margin:8px 0 0;padding-inline-start:20px;padding-right:20px;padding-left:0;${AR_AUTO}color:#5B6673;font-size:16px;line-height:1.9">
-        ${items.map((i) => `<li dir="auto">${esc(i)}</li>`).join("")}</ul>`;
+        ${items.map((i) => `<li><span dir="auto">${esc(i)}</span></li>`).join("")}</ul>`;
     const lbl = (t: string) => `<p style="${AR_AUTO}font-size:14px;line-height:1.9;color:${INK_SOFT};margin:22px 0 0;text-align:right">${t}</p>`;
     const preheader = "ملفك من KnownBy";
     return {
@@ -411,7 +411,7 @@ export function mirrorReadEmail(lang: EmailLang, read: MirrorRead): BuiltEmail {
       parts.push(autoBlock("p", esc(read.honest_gap), 16, INK_SOFT));
     }
     if (read.own_words_quote) {
-      parts.push(autoBlock("p", `&ldquo;${esc(read.own_words_quote)}&rdquo;`, 16, INK));
+      parts.push(autoBlock("p", `«${esc(read.own_words_quote)}»`, 16, INK));
       if (read.own_words_read) parts.push(autoBlock("p", esc(read.own_words_read), 16, INK_SOFT));
     }
     parts.push(paragraph(isoAr("هذا ما يراه الجميع. أما أعضاء KnownBy فيصلهم ما لا يراه غيرهم. إن أردت مقعد مؤسس فردّ على هذه الرسالة وسأقرؤها بنفسي."), true, lang));
