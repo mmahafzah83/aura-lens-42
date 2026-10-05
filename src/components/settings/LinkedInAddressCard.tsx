@@ -102,7 +102,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
         body: { profile_url },
       });
       if (invokeError || !data || (data as any).error) {
-        const why = causeOf(invokeError ?? (data as any)?.error, "Reading your profile");
+        const why = causeOf(invokeError ?? (data as any)?.error, t("ob.s1.postsFail.profile"));
         setError(t("settings.linkedin.addressSaved", { why }));
         toast.error(t("settings.linkedin.addressSaved", { why }));
         return;

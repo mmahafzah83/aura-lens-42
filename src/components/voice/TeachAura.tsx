@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import {
   loadTeachAura, MIN_POSTS_FOR_COVERAGE, splitPastedPosts, addOwnWriting, addAdmiredPost, removeAdmiredPost,
@@ -32,6 +33,7 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 export default function TeachAura({ userId }: { userId: string | null }) {
+  const { t } = useTranslation();
   const [stage, setStage] = useState<number | null>(null);
   const [lastRead, setLastRead] = useState<string | null | undefined>(undefined);
   const [readSummary, setReadSummary] = useState<string>("");
