@@ -760,6 +760,8 @@ interface Block {
   section: SectionKey;
   spacing: number;
   node: React.ReactNode;
+  /** Arabic only: a title that must not end a sheet without its first block. */
+  keepWithNext?: boolean;
 }
 
 const CONTENT_W = SHEET_W - 2 * PAGE_PAD; // 682
@@ -772,7 +774,8 @@ const CONTENT_H = SHEET_H - 2 * PAGE_PAD - HEADER_RESERVE - FOOTER_RESERVE - 6;
 // map (derived from evidence per band) is wired.
 const CAPABILITY_FIGURE_ENABLED = false;
 
-function buildBlocks(d: ReportData): Block[] {
+function buildBlocks(d: ReportData, lang: PaperLang = "en"): Block[] {
+  const ar = lang === "ar";
   const blocks: Block[] = [];
   const name = [d.profile?.first_name, d.profile?.last_name].filter(Boolean).join(" ").trim();
 
@@ -782,7 +785,7 @@ function buildBlocks(d: ReportData): Block[] {
       key: "i-score",
       section: "identity",
       spacing: 8,
-      node: <ImprintFigure score={d.score} userId={d.user_id} generatedAt={d.generated_at} />,
+      node: <ImprintFigure score={d.score} userId={d.user_id} generatedAt={d.generated_at} lang={lang} />,
     });
   }
   // Full positioning statement — cover shows sentence 1 only; give the
@@ -792,26 +795,34 @@ function buildBlocks(d: ReportData): Block[] {
       key: "i-position",
       section: "identity",
       spacing: 24,
-      node: <PositioningBlock statement={d.positioning.statement} />,
+      node: <PositioningBlock statement={d.positioning.statement} lang={lang} />,
     });
   }
   const p = d.profile;
   if (p) {
     const items: { label: string; value: string }[] = [];
-    if (p.core_practice)  items.push({ label: "Core Practice", value: p.core_practice });
-    if (p.sector_focus)   items.push({ label: "Sector Focus", value: p.sector_focus });
-    if (p.years_experience_raw) items.push({ label: "Experience", value: stripParenTail(p.years_experience_raw) });
+    if (p.core_practice)  items.push({ label: L(lang, "report.doc.corePractice", "Core Practice"), value: p.core_practice });
+    if (p.sector_focus)   items.push({ label: L(lang, "report.doc.sectorFocus", "Sector Focus"), value: p.sector_focus });
+    if (p.years_experience_raw) items.push({ label: L(lang, "report.doc.experience", "Experience"), value: stripParenTail(p.years_experience_raw) });
     if (p.linkedin_handle) items.push({ label: "LinkedIn", value: `/in/${p.linkedin_handle.replace(/^\/?in\//, "")}` });
-    if (items.length > 0) blocks.push({ key: "i-grid", section: "identity", spacing: 26, node: <ProfileGrid items={items} /> });
-    if ((p.north_star_goals ?? []).length > 0)
-      blocks.push({ key: "i-northstar", section: "identity", spacing: 24, node: <NorthStarBlock goals={p.north_star_goals} /> });
+    if (items.length > 0) blocks.push({ key: "i-grid", section: "identity", spacing: 26, node: <ProfileGrid items={items} lang={lang} /> });
+    const goals = p.north_star_goals ?? [];
+    if (goals.length > 0) {
+      if (ar) {
+        // Arabic: one block per goal so a long list splits at a row, never mid-row.
+        blocks.push({ key: "i-northstar", section: "identity", spacing: 24, keepWithNext: true, node: <SectionLabel lang={lang}>{pt(lang, "report.doc.northStar")}</SectionLabel> });
+        goals.forEach((g, i) => blocks.push({ key: `i-northstar-${i}`, section: "identity", spacing: 0, node: <GoalRow g={g} i={i} lang={lang} /> }));
+      } else {
+        blocks.push({ key: "i-northstar", section: "identity", spacing: 24, node: <NorthStarBlock goals={goals} /> });
+      }
+    }
   }
   if (d.brand_position?.pillars.length)
-    blocks.push({ key: "i-pillars", section: "identity", spacing: 22, node: <PillarsBlock pillars={d.brand_position.pillars} /> });
+    blocks.push({ key: "i-pillars", section: "identity", spacing: 22, node: <PillarsBlock pillars={d.brand_position.pillars} lang={lang} /> });
 
   // ── CAPABILITY ───────────────────────────────────────────────────────
   if (d.capabilities || d.profile_intelligence) {
-    blocks.push({ key: "c-title", section: "capability", spacing: 20, node: <SectionTitle title="Capability & Intelligence" kicker={name || "Capability"} /> });
+    blocks.push({ key: "c-title", section: "capability", spacing: 20, keepWithNext: ar, node: <SectionTitle lang={lang} title={L(lang, "report.doc.capTitle", "Capability & Intelligence")} kicker={name || L(lang, "report.doc.capKicker", "Capability")} /> });
     if (CAPABILITY_FIGURE_ENABLED && d.capabilities && d.capabilities.length > 0) {
       blocks.push({ key: "c-radar", section: "capability", spacing: 18, node: <CapabilityFigure data={d.capabilities} /> });
     } else if (d.capabilities && d.capabilities.length > 0) {
@@ -820,23 +831,23 @@ function buildBlocks(d: ReportData): Block[] {
         section: "capability",
         spacing: 4,
         node: (
-          <div style={{ maxWidth: 576, fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.7, color: T.ink2 }}>
-            Your capability map is being rebuilt on the evidence behind each claim. It is deliberately absent here rather than estimated.
+          <div style={arStyle(lang, { maxWidth: 576, fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.7, color: T.ink2 })}>
+            {L(lang, "report.doc.capAbsent", "Your capability map is being rebuilt on the evidence behind each claim. It is deliberately absent here rather than estimated.")}
           </div>
         ),
       });
     }
     const intel = d.profile_intelligence;
     if (intel) {
-      blocks.push({ key: "c-intel-label", section: "capability", spacing: 26, node: <SectionLabel>Profile Intelligence</SectionLabel> });
+      blocks.push({ key: "c-intel-label", section: "capability", spacing: 26, keepWithNext: ar, node: <SectionLabel lang={lang}>{ar ? withLatin(pt(lang, "report.doc.intel"), lang) : "Profile Intelligence"}</SectionLabel> });
       if (intel.identity_summary)
-        blocks.push({ key: "c-intel-summary", section: "capability", spacing: 4, node: <IntelSummary text={intel.identity_summary} /> });
+        blocks.push({ key: "c-intel-summary", section: "capability", spacing: 4, node: <IntelSummary text={intel.identity_summary} lang={lang} /> });
       if (intel.authority_themes.length > 0)
         intel.authority_themes.forEach((t, i) =>
-          blocks.push({ key: `c-theme-${i}`, section: "capability", spacing: 10, node: <ThemeCard t={t} /> })
+          blocks.push({ key: `c-theme-${i}`, section: "capability", spacing: 10, node: <ThemeCard t={t} lang={lang} /> })
         );
       else if (intel.expertise_areas.length > 0)
-        blocks.push({ key: "c-chips", section: "capability", spacing: 10, node: <ChipRow items={intel.expertise_areas} /> });
+        blocks.push({ key: "c-chips", section: "capability", spacing: 10, node: <ChipRow items={intel.expertise_areas} lang={lang} /> });
     }
   }
 
@@ -853,38 +864,45 @@ function buildBlocks(d: ReportData): Block[] {
   // ── MARKET ───────────────────────────────────────────────────────────
   const showMarket = !!d.market_mirror && d.market_mirror.persona_set === rankFromLevel(d.profile?.level);
   if (showMarket) {
-    blocks.push({ key: "m-title", section: "market", spacing: 20, node: <SectionTitle title="Market Position" kicker="How the market reads you" /> });
+    blocks.push({ key: "m-title", section: "market", spacing: 20, keepWithNext: ar, node: <SectionTitle lang={lang} title={L(lang, "report.doc.marketTitle", "Market Position")} kicker={L(lang, "report.doc.marketKicker", "How the market reads you")} /> });
     d.market_mirror!.perspectives.forEach((p, i) =>
-      blocks.push({ key: `m-persona-${i}`, section: "market", spacing: 16, node: <PaperPersonaCard p={p} /> })
+      blocks.push({ key: `m-persona-${i}`, section: "market", spacing: 16, node: <PaperPersonaCard p={p} lang={lang} /> })
     );
   }
 
   // ── FOOTPRINT ────────────────────────────────────────────────────────
   if (d.territories || d.footprint || d.content || d.voice) {
-    blocks.push({ key: "f-title", section: "footprint", spacing: 20, node: <SectionTitle title="Strategic Footprint" kicker={name || "Footprint"} /> });
+    blocks.push({ key: "f-title", section: "footprint", spacing: 20, keepWithNext: ar, node: <SectionTitle lang={lang} title={L(lang, "report.doc.fpTitle", "Strategic Footprint")} kicker={name || L(lang, "report.doc.fpKicker", "Footprint")} /> });
     if (d.territories || d.brand_position?.pillars.length)
       blocks.push({
         key: "f-terr",
         section: "footprint",
         spacing: 22,
-        node: <TerritoriesBlock pillars={d.brand_position?.pillars} tags={d.territories ?? []} />,
+        node: <TerritoriesBlock pillars={d.brand_position?.pillars} tags={d.territories ?? []} lang={lang} />,
       });
-    if (d.footprint)   blocks.push({ key: "f-fp",   section: "footprint", spacing: 24, node: <FootprintFigure fp={d.footprint} /> });
-    if (d.content)     blocks.push({ key: "f-content", section: "footprint", spacing: 22, node: <ContentEngineCard c={d.content} /> });
+    if (d.footprint)   blocks.push({ key: "f-fp",   section: "footprint", spacing: 24, node: <FootprintFigure fp={d.footprint} lang={lang} /> });
+    if (d.content)     blocks.push({ key: "f-content", section: "footprint", spacing: 22, node: <ContentEngineCard c={d.content} lang={lang} /> });
     if (d.voice) {
-      blocks.push({ key: "f-v-h", section: "footprint", spacing: 22, node: <VoiceHeader /> });
-      if (d.voice.tone) blocks.push({ key: "f-v-tone", section: "footprint", spacing: 6, node: <StackedRow label="Tone" value={d.voice.tone} /> });
-      if (d.voice.preferred_structures.length > 0) blocks.push({ key: "f-v-struct", section: "footprint", spacing: 0, node: <StackedRow label="Structure" value={d.voice.preferred_structures.join(" · ")} /> });
-      if (d.voice.storytelling_patterns.length > 0) blocks.push({ key: "f-v-pat", section: "footprint", spacing: 0, node: <StackedRow label="Patterns" value={d.voice.storytelling_patterns.join(" · ")} /> });
+      const join = ar ? "، " : " · ";
+      blocks.push({ key: "f-v-h", section: "footprint", spacing: 22, keepWithNext: ar, node: <VoiceHeader lang={lang} /> });
+      if (d.voice.tone) blocks.push({ key: "f-v-tone", section: "footprint", spacing: 6, node: <StackedRow lang={lang} label={L(lang, "report.doc.tone", "Tone")} value={d.voice.tone} /> });
+      if (d.voice.preferred_structures.length > 0) blocks.push({ key: "f-v-struct", section: "footprint", spacing: 0, node: <StackedRow lang={lang} label={L(lang, "report.doc.structure", "Structure")} value={d.voice.preferred_structures.join(join)} /> });
+      if (d.voice.storytelling_patterns.length > 0) blocks.push({ key: "f-v-pat", section: "footprint", spacing: 0, node: <StackedRow lang={lang} label={L(lang, "report.doc.patterns", "Patterns")} value={d.voice.storytelling_patterns.join(join)} /> });
       if (d.voice.vocabulary_preferences.prefer && d.voice.vocabulary_preferences.prefer.length > 0)
-        blocks.push({ key: "f-v-pref", section: "footprint", spacing: 0, node: <StackedRow label="Prefers" value={d.voice.vocabulary_preferences.prefer.join(", ")} /> });
+        blocks.push({ key: "f-v-pref", section: "footprint", spacing: 0, node: <StackedRow lang={lang} label={L(lang, "report.doc.prefers", "Prefers")} value={d.voice.vocabulary_preferences.prefer.join(ar ? "، " : ", ")} /> });
     }
     if (d.market_mirror) {
       const gaps = d.market_mirror.perspectives.map((p) => p.gap).filter(Boolean);
-      if (gaps.length > 0)
-        blocks.push({ key: "f-next90", section: "footprint", spacing: 24, node: <Next90Block gaps={gaps} /> });
+      if (gaps.length > 0) {
+        if (ar) {
+          blocks.push({ key: "f-next90", section: "footprint", spacing: 24, keepWithNext: true, node: <Next90Head lang={lang} /> });
+          gaps.forEach((g, i) => blocks.push({ key: `f-next90-${i}`, section: "footprint", spacing: i === 0 ? 14 : 0, node: <GapRow g={g} lang={lang} /> }));
+        } else {
+          blocks.push({ key: "f-next90", section: "footprint", spacing: 24, node: <Next90Block gaps={gaps} /> });
+        }
+      }
     }
-    blocks.push({ key: "f-footnotes", section: "footprint", spacing: 20, node: <Footnotes score={d.score} footprint={d.footprint} /> });
+    blocks.push({ key: "f-footnotes", section: "footprint", spacing: 20, node: <Footnotes score={d.score} footprint={d.footprint} lang={lang} /> });
   }
 
   return blocks;
@@ -893,7 +911,7 @@ function buildBlocks(d: ReportData): Block[] {
 interface PackedBlock extends Block { height: number; effectiveSpacing: number; }
 interface PackedSheet { section: SectionKey; blocks: PackedBlock[]; }
 
-function packSheets(blocks: Block[], heights: number[]): PackedSheet[] {
+function packSheets(blocks: Block[], heights: number[], keepTitles = false): PackedSheet[] {
   const sheets: PackedSheet[] = [];
   let cur: PackedSheet | null = null;
   let used = 0;
@@ -907,7 +925,11 @@ function packSheets(blocks: Block[], heights: number[]): PackedSheet[] {
     }
     const isFirst = cur.blocks.length === 0;
     const spacing = isFirst ? 0 : b.spacing;
-    if (!isFirst && used + spacing + h > CONTENT_H) {
+    // Arabic: a title only stays when its first block fits under it too.
+    const nextNeed = keepTitles && b.keepWithNext && i + 1 < blocks.length
+      ? blocks[i + 1].spacing + (heights[i + 1] || 0)
+      : 0;
+    if (!isFirst && used + spacing + h + nextNeed > CONTENT_H) {
       cur = { section: b.section, blocks: [] };
       sheets.push(cur);
       used = 0;
@@ -921,8 +943,27 @@ function packSheets(blocks: Block[], heights: number[]): PackedSheet[] {
   return sheets;
 }
 
+/** Arabic display copy: level, tier, persona and capability names in Arabic. Saved data untouched. */
+function arabicDisplay(d: ReportData, titles: SeniorityTitle[], caps: CapabilityNameRow[] | null): ReportData {
+  const level = d.profile?.level;
+  const row = level ? titles.find((t) => t.title === level) : null;
+  const tierKey = d.score?.tier ? `tier.${d.score.tier.toLowerCase()}` : null;
+  const tierAr = tierKey ? pt("ar", tierKey) : null;
+  const who = (w: string) => { const v = pt("ar", `mirror.persona.${w}`); return v.startsWith("mirror.persona.") ? w : v; };
+  return {
+    ...d,
+    profile: d.profile ? { ...d.profile, level: row ? titleLabel(row, "ar") : level ?? null } : d.profile,
+    score: d.score ? { ...d.score, tier: tierAr && tierAr !== tierKey ? tierAr : d.score.tier } : d.score,
+    capabilities: d.capabilities ? attachCapabilityNamesAr(d.capabilities, caps) : d.capabilities,
+    market_mirror: d.market_mirror
+      ? { ...d.market_mirror, perspectives: d.market_mirror.perspectives.map((p) => ({ ...p, who: who(p.who) })) }
+      : d.market_mirror,
+  };
+}
+
 // ── Root ───────────────────────────────────────────────────────────────
-export default function ReportDocument({ data }: { data: ReportData }) {
+export default function ReportDocument({ data, lang: langProp }: { data: ReportData; lang?: PaperLang }) {
+  const lang: PaperLang = langProp ?? reportLang(data as any);
   const safeData: ReportData = useMemo(() => {
     if (!data.market_mirror) return data;
     const wanted = rankFromLevel(data.profile?.level);
@@ -930,18 +971,50 @@ export default function ReportDocument({ data }: { data: ReportData }) {
     return data;
   }, [data]);
 
-  const blocks = useMemo(() => buildBlocks(safeData), [safeData]);
+  // Arabic names are read for display only.
+  const [titles, setTitles] = useState<SeniorityTitle[] | null>(lang === "ar" ? null : []);
+  const [caps, setCaps] = useState<CapabilityNameRow[] | null>(null);
+  useEffect(() => {
+    if (lang !== "ar") return;
+    let off = false;
+    fetchSeniorityTitles().then((r) => { if (!off) setTitles(r); }).catch(() => { if (!off) setTitles([]); });
+    (supabase.from("capability_dimensions" as any) as any).select("name, name_ar")
+      .then(({ data: rows }: any) => { if (!off) setCaps(rows || null); });
+    return () => { off = true; };
+  }, [lang]);
 
-  return <Paginated key={safeData.user_id + ":" + safeData.generated_at} blocks={blocks} data={safeData} />;
+  const shown: ReportData = useMemo(
+    () => (lang === "ar" ? arabicDisplay(safeData, titles ?? [], caps) : safeData),
+    [lang, safeData, titles, caps],
+  );
+  const blocks = useMemo(() => buildBlocks(shown, lang), [shown, lang]);
+
+  if (lang === "ar" && titles === null) return null;
+  return <Paginated key={safeData.user_id + ":" + safeData.generated_at + ":" + lang} blocks={blocks} data={shown} lang={lang} />;
 }
 
-function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
+function Paginated({ blocks, data, lang = "en" }: { blocks: Block[]; data: ReportData; lang?: PaperLang }) {
+  const ar = lang === "ar";
   const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [heights, setHeights] = useState<number[] | null>(null);
   const { delta: sparkDelta } = useImprintDelta(data.user_id);
 
   useLayoutEffect(() => {
     if (heights !== null) return;
+    if (ar) {
+      // Arabic: measure only after the fonts settle, so Cairo line heights count.
+      let off = false;
+      const measure = () => {
+        if (off) return;
+        const next = blocks.map((_, i) => measureRefs.current[i]?.offsetHeight ?? 0);
+        if (next.some((h) => h === 0)) { setTimeout(measure, 80); return; }
+        setHeights(next);
+      };
+      const ready = (document as any).fonts?.ready;
+      if (ready) ready.then(() => setTimeout(measure, 50)); else setTimeout(measure, 80);
+      return () => { off = true; };
+    }
     const next = blocks.map((_, i) => measureRefs.current[i]?.offsetHeight ?? 0);
     if (next.some((h) => h === 0)) {
       const t = setTimeout(() => {
@@ -951,17 +1024,30 @@ function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
       return () => clearTimeout(t);
     }
     setHeights(next);
-  }, [blocks, heights]);
+  }, [blocks, heights, ar]);
+
+  // Any sheet that still overflows is marked and logged.
+  useEffect(() => {
+    if (!heights || !rootRef.current) return;
+    const root = rootRef.current;
+    let off = false;
+    const check = () => { if (!off) reportOverflowingSheets(root); };
+    check();
+    (document as any).fonts?.ready?.then(() => setTimeout(check, 100));
+    return () => { off = true; };
+  }, [heights]);
 
   if (!heights) {
     return (
       <div
         aria-hidden
         data-theme="light"
+        dir={ar ? "rtl" : undefined}
+        lang={ar ? "ar" : undefined}
         style={{
           position: "fixed", left: -99999, top: 0,
           width: CONTENT_W, background: T.paper, color: T.ink,
-          fontFamily: FONT.serif, letterSpacing: "normal", visibility: "hidden",
+          fontFamily: FONT.serif, letterSpacing: ar ? 0 : "normal", visibility: "hidden",
         }}
       >
         {blocks.map((b, i) => (
@@ -977,26 +1063,27 @@ function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
     );
   }
 
-  const packed = packSheets(blocks, heights);
+  const packed = packSheets(blocks, heights, ar);
   const totalPacked = packed.length;
   // Total pages including cover (1) + packed + closing (1)
   const total = totalPacked + 2;
+  const footerTitle = ar ? pt(lang, "paper.rp.kicker") : undefined;
 
   return (
-    <div style={{ background: T.paper3, padding: "24px 0" }} data-report-ready="true">
+    <div ref={rootRef} style={{ background: T.paper3, padding: "24px 0" }} data-report-ready="true">
       {/* Cover — page 1 */}
-      <Sheet>
-        <PaperHeader label="Prepared for you · Edition 1" />
+      <Sheet lang={lang} page={1}>
+        <PaperHeader lang={lang} label={L(lang, "report.doc.prepared", "Prepared for you · Edition 1")} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, marginTop: 24 }}>
-          <PaperCover data={data} />
+          <PaperCover data={data} lang={lang} />
         </div>
-        <PaperFooter n={1} total={total} />
+        <PaperFooter n={1} total={total} lang={lang} paperTitle={footerTitle} showDescriptor={false} showTagline={false} />
       </Sheet>
 
       {/* Packed body — pages 2..N-1 */}
       {packed.map((sheet, i) => (
-        <Sheet key={i}>
-          <PaperHeader label={SECTION_LABEL[sheet.section]} />
+        <Sheet key={i} lang={lang} page={i + 2}>
+          <PaperHeader lang={lang} label={ar ? (withLatin(pt(lang, `report.doc.sec.${sheet.section}`), lang) as unknown as string) : SECTION_LABEL[sheet.section]} />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, marginTop: 20 }}>
             {sheet.blocks.map((b) => (
               <div key={b.key} style={{ marginTop: b.effectiveSpacing, width: "100%" }}>
@@ -1004,13 +1091,14 @@ function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
               </div>
             ))}
           </div>
-          <PaperFooter n={i + 2} total={total} />
+          <PaperFooter n={i + 2} total={total} lang={lang} paperTitle={footerTitle} showDescriptor={false} showTagline={false} />
         </Sheet>
       ))}
 
       {/* Closing plate — final page (full-bleed) */}
-      <Sheet bleed>
+      <Sheet bleed lang={lang} page={total}>
         <ClosingPlate
+          lang={lang}
           data={data}
           activeSignals={data.footprint?.signals ?? 0}
           evidenceCount={data.footprint?.evidence ?? 0}
