@@ -848,12 +848,12 @@ export function ImprintSparkline({ userId, lang = "en" }: { userId: string; lang
       <span
         dir={lang === "ar" ? "ltr" : undefined}
         style={{
-          ...(lang === "ar" ? { unicodeBidi: "isolate" as const, letterSpacing: 0 } : {}),
+          ...(lang === "ar" ? { unicodeBidi: "isolate" as const } : {}),
           fontFamily: FONT.mono,
           fontSize: 30,
           fontWeight: 700,
           color: "var(--machine-text)",
-          letterSpacing: "0.02em",
+          letterSpacing: lang === "ar" ? 0 : "0.02em",
         }}
       >
         {delta >= 0 ? "+" : ""}{delta}
@@ -955,7 +955,29 @@ export function CapabilityDotPlot({ data, lang = "en" }: { data: CapabilitiesSec
 }
 
 // ── PersonaCard (Market Mirror) ────────────────────────────────────────
-export function PaperPersonaCard({ p }: { p: { who: string; sees: string; gap: string } }) {
+export function PaperPersonaCard({ p, lang = "en" }: { p: { who: string; sees: string; gap: string }; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div style={{ border: `1.5px solid ${T.ink}`, background: T.paper }}>
+        <div style={valStyle(lang, { padding: "10px 14px", background: T.paper2, borderBottom: `1px solid ${T.rule}`, fontFamily: FONT.mono, fontSize: 12, fontWeight: 700, color: T.ink }, p.who)}>
+          <span dir={valDir(lang, p.who)} style={{ unicodeBidi: "isolate" }}>{pt(lang, "paper.rp.persona", { who: p.who })}</span>
+        </div>
+        {p.sees ? (
+          <div dir={valDir(lang, p.sees)} style={valStyle(lang, { padding: "14px 16px", fontFamily: FONT.serif, fontSize: 14, color: T.ink2, lineHeight: 1.65 }, p.sees)}>
+            {p.sees}
+          </div>
+        ) : null}
+        {p.gap ? (
+          <div style={{ padding: "10px 16px", borderTop: `1px solid ${T.rule}` }}>
+            <span style={arStyle(lang, { color: T.spot, fontWeight: 700, fontFamily: FONT.mono, fontSize: 12 })}>{pt(lang, "paper.rp.wouldNotice")}</span>
+            <span dir={valDir(lang, p.gap)} style={{ ...valStyle(lang, { color: T.ink2, fontFamily: FONT.serif, fontSize: 13 }, p.gap), unicodeBidi: "isolate" }}>
+              {p.gap}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div style={{ border: `1.5px solid ${T.ink}`, background: T.paper }}>
       <div
@@ -993,7 +1015,7 @@ export function PaperPersonaCard({ p }: { p: { who: string; sees: string; gap: s
 // ── ClosingPlate ───────────────────────────────────────────────────────
 export function ClosingPlate({
   data, activeSignals = null, evidenceCount = null, sparkDelta = null,
-  headline, body, ctaLabel = "Built from my own record ↗",
+  headline, body, ctaLabel,
   moves, paperTitle, pageLine, personName, lang = "en",
 }: {
   lang?: PaperLang;
@@ -1013,6 +1035,7 @@ export function ClosingPlate({
   /** e.g. "Page 05 / 05" — appended to the footer line when present. */
   pageLine?: React.ReactNode;
 }) {
+  const cta = ctaLabel ?? (lang === "ar" ? pt(lang, "paper.rp.cta") : "Built from my own record ↗");
   const p = data?.profile;
   const fullName =
     [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim() || (personName || "").trim();
@@ -1079,13 +1102,19 @@ export function ClosingPlate({
             maxWidth: 560,
           })}
         >
-          {headline ?? (
+          {headline ?? (lang === "ar" ? (
+            <>
+              {pt(lang, "paper.rp.closingA")}
+              <span style={{ color: T.action }}>{pt(lang, "paper.rp.closingAccent")}</span>
+              {pt(lang, "paper.rp.closingB")}
+            </>
+          ) : (
             <>
               Ninety days is enough to{" "}
               <span style={{ fontStyle: "italic", color: T.action }}>close</span> the gap
               between your record and how the market reads it.
             </>
-          )}
+          ))}
         </h2>
         {body ? (
           <p
@@ -1190,7 +1219,7 @@ export function ClosingPlate({
               textTransform: "uppercase",
             })}
           >
-            {ctaLabel}
+            {cta}
           </span>
         </div>
       </div>
