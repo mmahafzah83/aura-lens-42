@@ -106,6 +106,9 @@ export function linkedinStatus(input: LinkedInStatusInput, now: number = Date.no
 
   return {
     key: "connected",
+    labelKey: "liStatus.connected.label",
+    actionLabelKey: null,
+    explanationKey: "liStatus.connected.explanation",
     label: "Connected",
     tone: "green",
     action: null,
