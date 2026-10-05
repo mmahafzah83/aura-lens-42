@@ -34,6 +34,7 @@ const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const LinkedInImport = lazy(() => import("./pages/LinkedInImport"));
 const EditionStudio = lazy(() => import("./pages/EditionStudio"));
 const Admin = lazy(() => import("./pages/Admin"));
+const HarnessR5 = lazy(() => import("./pages/__r5/HarnessR5"));
 const AdminAccess = lazy(() => import("./pages/AdminAccess"));
 const AdminCost = lazy(() => import("./pages/AdminCost"));
 const AdminPeople = lazy(() => import("./pages/AdminPeople"));
