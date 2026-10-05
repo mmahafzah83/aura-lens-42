@@ -6,7 +6,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import Harness3c from "@/pages/Harness3c";
 import i18n, { readStoredLang } from "@/i18n";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
@@ -187,7 +186,6 @@ const App = () => (
             {import.meta.env.DEV && (
               <Route path="/carousel-preview" element={<CarouselPreview />} />
             )}
-            <Route path="/__h3c" element={<Harness3c />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
