@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import ReportViewerSection from "@/components/identity/ReportViewerSection";
 import { diffReports, type ReportDiffRow } from "@/lib/reportDiff";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
+import { displayDate, arStyle } from "@/lib/arDisplay";
 
 const MONO = "'IBM Plex Mono', ui-monospace, monospace";
 const INK = "#0F1519";
@@ -66,8 +69,8 @@ const DIFF_ROW: React.CSSProperties = {
   borderBottom: `1px solid ${BORDER}`,
 };
 const AMBER_STRIP: React.CSSProperties = {
-  borderLeft: `3px solid ${AMBER}`,
-  paddingLeft: 12,
+  borderInlineStart: `3px solid ${AMBER}`,
+  paddingInlineStart: 12,
 };
 
 interface SnapshotRow {
@@ -85,10 +88,12 @@ interface Props {
   onCompleteAssessment: () => void;
 }
 
-const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const fmtDate = (iso: string) => displayDate(iso, i18n.language);
 
 export default function ReportVersions({ firstName, lastName, onCompleteAssessment }: Props) {
+  const { t: tr, i18n: i18 } = useTranslation();
+  const lang = i18.language;
+  const ar = lang === "ar";
   const [rows, setRows] = useState<SnapshotRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [building, setBuilding] = useState(false);
@@ -134,11 +139,11 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
       const { data, error: err } = await supabase.functions.invoke("capture-report-snapshot", {
         body: { created_by: "user" },
       });
-      if (err) throw new Error((err as any)?.message || "We couldn't build your report.");
+      if (err) throw new Error((err as any)?.message || tr("versions.buildFail"));
       if ((data as any)?.error) throw new Error(String((data as any).error));
       await load(true);
     } catch (e: any) {
-      setError(typeof e?.message === "string" && e.message ? e.message : "We couldn't build your report.");
+      setError(typeof e?.message === "string" && e.message ? e.message : tr("versions.buildFail"));
     } finally {
       setBuilding(false);
     }
@@ -152,22 +157,26 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
       {loaded && rows.length >= 2 && !viewingOld ? (
         diff.length > 0 ? (
           <div style={CARD_BOX}>
-            <SectionHeader label="WHAT CHANGED" />
+            <SectionHeader label={ar ? tr("versions.changed") : "WHAT CHANGED"} />
             <div>
               {diff.map((d) => (
                 <div key={d.path} style={DIFF_ROW}>
                   <span style={{ fontSize: 13, color: INK }}>{d.label}</span>
                   <span style={{ fontFamily: MONO, fontSize: 13, color: INK }}>
+                    {ar ? (
+                      <>{d.from}{" "}<span style={{ ...arStyle(lang), color: d.direction === "up" ? UP : d.direction === "down" ? DOWN : MUTED }}>إلى</span>{" "}{d.to}</>
+                    ) : (<>
                     {d.from}{" "}
                     <span style={{ color: d.direction === "up" ? UP : d.direction === "down" ? DOWN : MUTED }}>→</span>{" "}
                     {d.to}
+                    </>)}
                   </span>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <p style={NOTE_LINE}>Nothing measurable changed since your last report.</p>
+          <p style={NOTE_LINE}>{tr("versions.nothing")}</p>
         )
       ) : null}
 
@@ -188,7 +197,7 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
               }}
             >
               <span style={{ fontFamily: MONO }}>
-                {rows.length - 1} earlier {rows.length - 1 === 1 ? "version" : "versions"}
+                {ar ? tr("versions.earlierAr", { n: rows.length - 1 }) : `${rows.length - 1} earlier ${rows.length - 1 === 1 ? "version" : "versions"}`}
               </span>
               <span aria-hidden style={{ transform: showOlder ? "rotate(180deg)" : "none" }}>▾</span>
             </button>
@@ -224,10 +233,10 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
           <button type="button" style={{ ...PRIMARY_BTN, opacity: building ? 0.6 : 1 }} disabled={building} onClick={handleNewVersion}>
-            {building ? "Building your report…" : "Make a new version"}
+            {building ? tr("versions.building") : tr("versions.make")}
           </button>
           {loaded && onlyOne ? (
-            <span style={NOTE_LINE}>This is your first report. Make a new one whenever something has changed.</span>
+            <span style={NOTE_LINE}>{tr("versions.first")}</span>
           ) : null}
         </div>
         {error ? <div style={ERROR_LINE}>{error}</div> : null}
@@ -237,15 +246,17 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
       <div style={viewingOld ? AMBER_STRIP : undefined}>
         {viewingOld && selected && current ? (
           <p style={{ ...NOTE_LINE, marginBottom: 8 }}>
+            {ar ? (<>{tr("versions.lookingAr", { v: selected.version, date: fmtDate(selected.created_at), current: current.version })}{" "}</>) : (<>
             You're looking at version <span style={{ fontFamily: MONO }}>{selected.version}</span>, from{" "}
             <span style={{ fontFamily: MONO }}>{fmtDate(selected.created_at)}</span>. Your current report is{" "}
             <span style={{ fontFamily: MONO }}>v{current.version}</span>.{" "}
+            </>)}
             <button
               type="button"
               onClick={() => setSelectedId(current.id)}
               style={{ background: "none", border: 0, padding: 0, color: ACTION, fontSize: 13, cursor: "pointer" }}
             >
-              Back to current
+              {tr("versions.back")}
             </button>
           </p>
         ) : null}

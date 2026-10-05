@@ -5,6 +5,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { displayDate } from "@/lib/arDisplay";
 import { Button } from "@/components/ui/button";
 import ReportDocument from "@/components/ReportDocument";
 import { exportReportPdf } from "@/lib/exportReportPdf";
@@ -45,6 +47,7 @@ export default function ReportViewerSection({
   overrideVersion,
   overrideSnapshotAt,
 }: Props) {
+  const { t: tr, i18n } = useTranslation();
   const live = useReportSnapshot();
   const usingOverride = !!overrideReport;
   const report = usingOverride ? overrideReport : live.report;
@@ -114,21 +117,21 @@ export default function ReportViewerSection({
         .replace(/^-|-$/g, "") || "Member";
     const date = (snapshotAt ? new Date(snapshotAt) : new Date()).toISOString().slice(0, 10);
     const v = version ?? 1;
-    return `Aura-Report-${person}-v${v}-${date}.pdf`;
+    return `KnownBy-Report-${person}-v${v}-${date}.pdf`;
   };
 
   const handleExport = async () => {
     if (!report || !exportMountRef.current) {
-      setExportError("Your report isn't ready yet. Try again in a moment.");
+      setExportError(tr("viewer.notReady"));
       return;
     }
     setExporting(true);
     setExportError(null);
     try {
       await exportReportPdf(exportMountRef.current, fileName());
-      toast.success("Report downloaded");
+      toast.success(tr("viewer.downloaded"));
     } catch (e: any) {
-      setExportError("We couldn't build your PDF. Please try again.");
+      setExportError(tr("viewer.pdfFail"));
     } finally {
       setExporting(false);
     }
@@ -138,11 +141,11 @@ export default function ReportViewerSection({
     return (
       <section style={SHELL}>
         <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
-          Complete your brand assessment to generate your identity report.
+          {tr("viewer.empty")}
         </p>
         <div style={{ marginTop: 12 }}>
           <Button variant="default" size="sm" onClick={onCompleteAssessment}>
-            Complete brand assessment
+            {tr("brandRep.completeCta")}
           </Button>
         </div>
       </section>
@@ -155,12 +158,11 @@ export default function ReportViewerSection({
     return (
       <section style={SHELL}>
         <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
-          Your read hasn't been written yet, so there is no paper to show. Run it
-          again and we'll build the report from your answers and your profile.
+          {tr("viewer.unwritten")}
         </p>
         <div style={{ marginTop: 12 }}>
           <Button variant="default" size="sm" onClick={onCompleteAssessment}>
-            Run my read again
+            {tr("viewer.runAgain")}
           </Button>
         </div>
       </section>
@@ -176,17 +178,15 @@ export default function ReportViewerSection({
           onClick={handleExport}
           disabled={exporting || loading || !report}
         >
-          {exporting ? "Preparing your PDF…" : "Download PDF"}
+          {exporting ? tr("viewer.preparingPdf") : tr("viewer.download")}
         </Button>
         {version && snapshotAt ? (
           <span style={MUTED}>
             <span style={{ fontFamily: MONO }}>v{version}</span> ·{" "}
             <span style={{ fontFamily: MONO }}>
-              {new Date(snapshotAt).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              {i18n.language === "ar"
+                ? displayDate(snapshotAt, "ar")
+                : new Date(snapshotAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
             </span>
           </span>
         ) : null}
@@ -195,7 +195,7 @@ export default function ReportViewerSection({
 
       {loading || !report ? (
         <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
-          Preparing your report…
+          {tr("viewer.preparing")}
         </p>
       ) : (
         <div
@@ -210,7 +210,7 @@ export default function ReportViewerSection({
         >
           <div
             ref={previewRef}
-            aria-label="Strategic Identity Report preview"
+            aria-label={tr("viewer.previewAria")}
             style={{
               width: SHEET_W,
               transform: `scale(${scale})`,
