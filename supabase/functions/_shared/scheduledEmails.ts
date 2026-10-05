@@ -820,7 +820,7 @@ export function weeklyBriefEmail(o: WeeklyOpts, lang: EmailLang = "en"): BuiltEm
     ${panel(`
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"${A ? ' dir="rtl"' : ""}><tr>
         <td width="50%" valign="top" style="padding-${A ? "left" : "right"}:8px;">${stat(postsThisWeek, A ? "منشورات هذا الأسبوع" : `Post${postsThisWeek === 1 ? "" : "s"} this week`, lang)}</td>
-        <td width="50%" valign="top" style="padding-${A ? "right" : "left"}:8px;">${stat(A ? `${activeWeeks} من 12` : `${activeWeeks} of 12`, A ? "أسابيع نشطة" : "Weeks active", lang)}</td>
+        <td width="50%" valign="top" style="padding-${A ? "right" : "left"}:8px;">${stat(A ? `<span dir="rtl" style="white-space:nowrap">${activeWeeks} من 12</span>` : `${activeWeeks} of 12`, A ? "أسابيع نشطة" : "Weeks active", lang)}</td>
       </tr></table>
       ${body14(esc(rhythmCopy), INK_SOFT)}
     `)}
