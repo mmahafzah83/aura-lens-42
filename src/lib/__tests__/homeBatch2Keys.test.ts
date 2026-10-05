@@ -15,6 +15,10 @@ describe("Home batch 2 keys", () => {
       expect(A[k]).not.toMatch(/Aura|→/);
       expect(E[k]).not.toMatch(/\bAura\b/);
     }
-    for (const k of Object.keys(A).filter((k) => PREFIXES.some((p) => k.startsWith(p)))) expect(E[k], k).toBeTruthy();
+    /* Arabic has plural forms English lacks; those need the English _other. */
+    for (const k of Object.keys(A).filter((k) => PREFIXES.some((p) => k.startsWith(p)))) {
+      const en = /_(zero|two|few|many)$/.test(k) ? k.replace(/_(zero|two|few|many)$/, "_other") : k;
+      expect(E[en], k).toBeTruthy();
+    }
   });
 });
