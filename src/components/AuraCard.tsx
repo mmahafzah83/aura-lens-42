@@ -4,6 +4,9 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import { flagFor } from "@/components/CountryPicker";
 import { useTranslation } from "react-i18next";
 import { AR_TEXT } from "@/lib/arDisplay";
+import { AR_MONTHS } from "@/components/report/paperText";
+import { useSeniorityTitles, titleLabel } from "@/lib/seniorityTitles";
+import { attachCapabilityNamesAr, type CapabilityNameRow } from "@/lib/buildBrandPaper";
 
 /* Arabic: Cairo, open line-height, no tracking, capitals or italics — joined letters in the export too. */
 const arFix = (ar: boolean, s: React.CSSProperties): React.CSSProperties => (ar ? { ...s, ...AR_TEXT } : s);
@@ -54,7 +57,8 @@ function useProfile() {
   return { profile, loading };
 }
 
-function mastheadDate(d = new Date()): string {
+function mastheadDate(d = new Date(), ar = false, t?: (k: string, o?: Record<string, unknown>) => string): string {
+  if (ar && t) return t("acf.vol", { date: `${AR_MONTHS[d.getMonth()]} ${d.getFullYear()}` });
   const months = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
   return `VOL. 1 · ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
@@ -180,6 +184,21 @@ export default function AuraCard({ variant }: AuraCardProps) {
   const { profile, loading } = useProfile();
   const { t, i18n } = useTranslation();
   const ar = i18n.language === "ar";
+  const { titles: seniorityTitles } = useSeniorityTitles();
+  /* Display only: Arabic capability names, joined on the canonical English name. */
+  const [capNames, setCapNames] = useState<CapabilityNameRow[]>([]);
+  useEffect(() => {
+    if (!ar) return;
+    let off = false;
+    (supabase.from("capability_dimensions" as any) as any).select("name,name_ar")
+      .then(({ data }: any) => { if (!off) setCapNames((data as CapabilityNameRow[]) || []); });
+    return () => { off = true; };
+  }, [ar]);
+  const levelText = (lvl: string) => {
+    if (!ar) return lvl;
+    const row = seniorityTitles.find((x) => x.title === lvl);
+    return row ? titleLabel(row, "ar") : lvl;
+  };
 
   const fullName = useMemo(() => {
     if (!profile) return "";
@@ -207,8 +226,9 @@ export default function AuraCard({ variant }: AuraCardProps) {
   }, [profile]);
 
   const topSkills = useMemo(() => {
-    return [...radarData].sort((a, b) => b.score - a.score).slice(0, 3);
-  }, [radarData]);
+    const top = [...radarData].sort((a, b) => b.score - a.score).slice(0, 3);
+    return ar ? attachCapabilityNamesAr(top as { name: string; score: number; name_ar?: string | null }[], capNames) : top;
+  }, [radarData, ar, capNames]);
 
   // Card surface — fixed proportion (4:5-ish), scales with parent.
   const cardStyle: React.CSSProperties = {
@@ -239,8 +259,8 @@ export default function AuraCard({ variant }: AuraCardProps) {
             lineHeight: 1,
           }} dir="ltr">KnownBy</span>
         </span>
-        <div dir="ltr" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: INK_3 }}>
-          {mastheadDate()}
+        <div dir={ar ? "rtl" : "ltr"} style={arFix(ar, { fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: INK_3 })}>
+          {mastheadDate(new Date(), ar, t as any)}
         </div>
       </header>
 
@@ -250,8 +270,8 @@ export default function AuraCard({ variant }: AuraCardProps) {
       <section style={{ display: "flex", gap: 22, alignItems: "center", marginBottom: 24 }}>
         <AvatarRing src={profile?.avatar_url} alt={fullName || "KnownBy"} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: INK_3, marginBottom: 6 }}>
-            KNOWNBY MEMBER
+          <div style={arFix(ar, { fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: INK_3, marginBottom: 6 })}>
+            {ar ? t("acf.member") : "KNOWNBY MEMBER"}
           </div>
           {loading ? (
             <div style={{ height: 34, width: "60%", background: RULE }} />
@@ -263,8 +283,8 @@ export default function AuraCard({ variant }: AuraCardProps) {
             <Empty ar={ar} text={ar ? t("acf.addName") : "Add your name in Settings to unlock this."} />
           )}
           {profile?.level && (
-            <div style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 15, color: INK_2, marginTop: 4 }}>
-              {profile.level}
+            <div style={arFix(ar, { fontFamily: SERIF, fontStyle: "italic", fontSize: 15, color: INK_2, marginTop: 4 })}>
+              {levelText(profile.level)}
             </div>
           )}
           {(profile?.country_code || profile?.country) && (
@@ -312,14 +332,14 @@ export default function AuraCard({ variant }: AuraCardProps) {
             <div style={{ display: "flex", gap: 22, alignItems: "center", marginBottom: 22 }}>
               <div style={{ flex: "0 0 auto" }}><Radar data={radarData} label={ar ? t("acf.radar") : "Capability radar"} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: INK_3, marginBottom: 8 }}>
-                  Their 3 strongest skills
+                <div style={arFix(ar, { fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: INK_3, marginBottom: 8 })}>
+                  {ar ? t("acf.top3") : "Their 3 strongest skills"}
                 </div>
                 <ol style={{ listStyle: "none", padding: 0, margin: 0 }}>
                   {topSkills.map((s, i) => (
                     <li key={s.name} style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : `1px solid ${RULE}` }}>
                       <span style={{ fontFamily: MONO, fontSize: 11, color: INK_3, width: 18 }}>{String(i+1).padStart(2, "0")}</span>
-                      <span style={{ fontFamily: SERIF, fontSize: 15, color: INK, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+                      <span style={{ fontFamily: SERIF, fontSize: 15, color: INK, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...(ar ? AR_TEXT : {}) }}>{(ar && (s as { name_ar?: string | null }).name_ar) || s.name}</span>
                       <span style={{ fontFamily: MONO, fontSize: 13, color: SPOT }}>{Math.round(s.score)}</span>
                     </li>
                   ))}

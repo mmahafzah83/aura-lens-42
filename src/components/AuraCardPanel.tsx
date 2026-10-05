@@ -5,7 +5,7 @@ import { Download, Linkedin, Loader2, CheckCircle2, Circle } from "lucide-react"
 import AuraCard, { type AuraCardVariant } from "@/components/AuraCard";
 import { downloadBlob } from "@/lib/download";
 import { generationMetadata } from "@/lib/generationMetadata";
-import { classifyPublishError } from "@/lib/publishFailure";
+import { classifyPublishError, publishFailureText } from "@/lib/publishFailure";
 import { useTranslation } from "react-i18next";
 import { AR_TEXT } from "@/lib/arDisplay";
 
@@ -230,7 +230,7 @@ export default function AuraCardPanel({
       );
     } catch (e: any) {
       const failure = classifyPublishError(e, attempted);
-      const message = failure.message;
+      const message = publishFailureText(failure, i18n.language, (k, o) => tr(k, o as any) as string);
       // 1. Record why. The post is only marked failed when LinkedIn was
       //    actually asked and said no — otherwise it stays a draft.
       if (insertedId) {
@@ -256,7 +256,7 @@ export default function AuraCardPanel({
         await (supabase.from("ef_error_log" as any) as any).insert({
           function_name: "aura-card-share",
           severity: "high",
-          error_message: String(message).slice(0, 1000),
+          error_message: String(failure.message).slice(0, 1000),
           user_id: uidForLog,
           context: { post_id: insertedId, variant, attempted, reason: failure.reason },
         });
