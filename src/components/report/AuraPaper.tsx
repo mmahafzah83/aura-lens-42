@@ -530,16 +530,15 @@ function MetaCell({ label, value, sub, lang = "en", valueLatin }: { label: strin
         {label}
       </div>
       <div
-        dir={ar ? (valueLatin ? "ltr" : valDir(lang, value)) : undefined}
         style={ar
-          ? { ...valStyle(lang, { fontFamily: FONT.serif, fontSize: 17, color: T.ink, lineHeight: 1.3 }, value), textAlign: "start", unicodeBidi: "isolate" }
+          ? valStyle(lang, { fontFamily: FONT.serif, fontSize: 17, color: T.ink, lineHeight: 1.3 }, valueLatin ? null : value)
           : { fontFamily: FONT.serif, fontSize: 17, color: T.ink, lineHeight: 1.3 }}
       >
-        {ar && valueLatin ? <span dir="ltr" style={{ unicodeBidi: "isolate" }}>{value}</span> : value}
+        {ar ? <span dir={valueLatin ? "ltr" : valDir(lang, value)} style={{ unicodeBidi: "isolate" }}>{value}</span> : value}
       </div>
       {sub ? (
-        <div style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 11, color: T.ink3, marginTop: 3, letterSpacing: "0.06em" }, sub)} dir={valDir(lang, sub)}>
-          {sub}
+        <div style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 11, color: T.ink3, marginTop: 3, letterSpacing: "0.06em" }, sub)}>
+          {ar ? <span dir={valDir(lang, sub)} style={{ unicodeBidi: "isolate" }}>{sub}</span> : sub}
         </div>
       ) : null}
     </div>
