@@ -26,6 +26,13 @@ export interface PresenceRow {
   /** The plain reason the score is what it is. */
   rule: string;
   weak: boolean;
+  /** Translation keys + params — the screen resolves these in its language. */
+  labelKey: string;
+  factKey: string;
+  factParams: Record<string, number>;
+  /** Empty string when there is no rule. */
+  ruleKey: string;
+  ruleParams: Record<string, number>;
 }
 
 const asArray = (v: unknown): Record<string, unknown>[] =>
@@ -71,6 +78,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
   const hasProof = /\d/.test(headline) || STRONG_VERBS.some((v) => new RegExp(`\\b${v}\\b`).test(lower));
   if (hasProof) headlineScore += 2;
   /* The rule names the branch that actually fired, with the member's own number. */
+  const headlineRuleKey = hLen < 40 ? "ph.headline.short" : hLen < 120 ? "ph.headline.mid" : hasProof ? "" : "ph.headline.noFigure";
   const headlineRule = hLen < 40
     ? "Under 40 characters is a job title, not a position."
     : hLen < 120
@@ -82,6 +90,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
   const aboutWords = wordCount(String(s.about || ""));
   const aboutScore =
     aboutWords === 0 ? 0 : aboutWords < 50 ? 3 : aboutWords < 150 ? 6 : aboutWords < 300 ? 9 : 10;
+  const aboutRuleKey = aboutWords === 0 ? "ph.about.empty" : aboutWords < 50 ? "ph.about.placeholder" : aboutWords < 150 ? "ph.about.facts" : "";
   const aboutRule = aboutWords === 0
     ? "Nothing here. It is the first thing a stranger reads."
     : aboutWords < 50
@@ -94,6 +103,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
   const withDesc = roles.filter((r) => roleDescription(r).length > 0).length;
   const blankRoles = roles.length - withDesc;
   const expScore = roles.length === 0 ? 0 : Math.round((withDesc / roles.length) * 10);
+  const expRuleKey = roles.length === 0 ? "ph.experience.none" : "ph.experience.blank";
   const expRule = roles.length === 0
     ? "No roles on file. A stranger has nothing to place you against."
     : `${blankRoles} of your ${roles.length} roles carry no description.`;
@@ -101,6 +111,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
   const skillCount = arrayLength(s.skills);
   const skillScore =
     skillCount === 0 ? 0 : skillCount < 5 ? 3 : skillCount < 10 ? 6 : skillCount < 20 ? 9 : 10;
+  const skillRuleKey = skillCount < 5 ? "ph.skills.few" : skillCount < 20 ? "ph.skills.under20" : "";
   const skillRule = skillCount < 5
     ? `${skillCount} listed. Skills are how you get found in a search.`
     : skillCount < 20
@@ -117,6 +128,8 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       score: photoScore,
       fact: photoScore ? "Photo on file" : "No photo",
       rule: "A profile without a face gets skipped.",
+      labelKey: "ph.photo.label", factKey: photoScore ? "ph.photo.on" : "ph.photo.none", factParams: {},
+      ruleKey: "ph.photo.rule", ruleParams: {},
       weak: false,
     },
     {
@@ -125,6 +138,8 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       score: headlineScore,
       fact: `${hLen} characters`,
       rule: headlineRule,
+      labelKey: "ph.headline.label", factKey: "ph.headline.fact", factParams: { n: hLen },
+      ruleKey: headlineRuleKey, ruleParams: { n: hLen },
       weak: false,
     },
     {
@@ -133,6 +148,8 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       score: aboutScore,
       fact: `${aboutWords} words`,
       rule: aboutRule,
+      labelKey: "ph.about.label", factKey: "ph.about.fact", factParams: { n: aboutWords },
+      ruleKey: aboutRuleKey, ruleParams: { n: aboutWords },
       weak: false,
     },
     {
@@ -141,6 +158,8 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       score: expScore,
       fact: `${withDesc} of ${roles.length} roles described`,
       rule: expRule,
+      labelKey: "ph.experience.label", factKey: "ph.experience.fact", factParams: { a: withDesc, b: roles.length },
+      ruleKey: expRuleKey, ruleParams: { a: blankRoles, b: roles.length },
       weak: false,
     },
     {
@@ -149,6 +168,8 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       score: skillScore,
       fact: `${skillCount} skills listed`,
       rule: skillRule,
+      labelKey: "ph.skills.label", factKey: "ph.skills.fact", factParams: { n: skillCount },
+      ruleKey: skillRuleKey, ruleParams: { n: skillCount },
       weak: false,
     },
     {
@@ -157,6 +178,8 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       score: eduScore,
       fact: eduCount > 0 ? `${eduCount} entries` : "Nothing listed",
       rule: "Blank education raises a question you don't want asked.",
+      labelKey: "ph.education.label", factKey: eduCount > 0 ? "ph.education.fact" : "ph.education.none", factParams: { n: eduCount },
+      ruleKey: "ph.education.rule", ruleParams: {},
       weak: false,
     },
   ];
