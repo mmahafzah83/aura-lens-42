@@ -17,7 +17,8 @@ import {
 import { toast } from "sonner";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
-import { classifyPublishError } from "@/lib/publishFailure";
+import { classifyPublishError, publishFailureText } from "@/lib/publishFailure";
+import i18n from "@/i18n";
 
 type FlashLang = "ar" | "en";
 type FlashMode = "theme" | "spark";
@@ -419,7 +420,7 @@ export default function FlashPanel() {
       if (!(data as any)?.success) {
         // Answered, and answered badly: name the reason and store it.
         const failure = classifyPublishError((data as any)?.error || "Publish failed", true, !!(data as any)?.blocked);
-        toast.error(failure.message);
+        toast.error(publishFailureText(failure, i18n.language, (k, o) => i18n.t(k, o as any) as string));
         await supabase
           .from("linkedin_posts")
           .update({ rejection_reason: failure.reason } as any)

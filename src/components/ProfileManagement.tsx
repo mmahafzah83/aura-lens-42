@@ -11,7 +11,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
-import { useSeniorityTitles, bandOfTitle } from "@/lib/seniorityTitles";
+import { useSeniorityTitles, bandOfTitle, titleLabel } from "@/lib/seniorityTitles";
+import { useTranslation } from "react-i18next";
+import { AR_TEXT } from "@/lib/arDisplay";
 
 interface Skill {
   name: string;
@@ -61,6 +63,19 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
   const [radarKey, setRadarKey] = useState(0);
   const loadedRef = useRef<Record<string, unknown>>({});
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
+  const L = (k: string, en: string) => (ar ? t(k) : en);
+  /* Display only — stored values stay the English option. */
+  const sectorText = (s: string) => {
+    if (!ar || !s) return s;
+    if (i18n.exists(`sector.${s}`)) return t(`sector.${s}`);
+    return i18n.exists(`editProfile.sectorOpt.${s}`) ? t(`editProfile.sectorOpt.${s}`) : s;
+  };
+  const levelText = (lvl: string) => {
+    const row = seniorityTitles.find((x) => x.title === lvl);
+    return row ? titleLabel(row, i18n.language) : lvl;
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -147,9 +162,9 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         ...(mandatoryComplete ? { onboarding_completed: true, completed: true } : {}),
       }, "ProfileManagement.handleSave");
     if (!ok) {
-      toast({ title: "That didn't save — try once more.", variant: "destructive" });
+      toast({ title: L("editProfile.saveFailed", "That didn't save — try once more."), variant: "destructive" });
     } else {
-      toast({ title: "Profile saved." });
+      toast({ title: L("pm.saved", "Profile saved.") });
       if (mandatoryComplete) {
         try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
         setHasSavedBefore(true);
@@ -174,10 +189,10 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
       const url = data.publicUrl;
       setAvatarUrl(url);
       const saved = await writeProfile(userId, { avatar_url: url }, "ProfileManagement.handleAvatarUpload");
-      if (!saved) { toast({ title: "That didn't save — try once more.", variant: "destructive" }); return; }
-      toast({ title: "Avatar updated" });
+      if (!saved) { toast({ title: L("editProfile.saveFailed", "That didn't save — try once more."), variant: "destructive" }); return; }
+      toast({ title: L("pm.avatarOk", "Avatar updated") });
     } catch (e: any) {
-      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+      toast({ title: L("pm.uploadFailed", "Upload failed"), description: e.message, variant: "destructive" });
     } finally {
       setUploadingAvatar(false);
     }
@@ -207,35 +222,35 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
 
   return (
     <>
-    <div className="glass-card rounded-2xl p-6 sm:p-8">
+    <div className="glass-card rounded-2xl p-6 sm:p-8" dir={ar ? "rtl" : undefined} style={ar ? AR_TEXT : undefined}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
             <UserCog className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Profile & Skills</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Your declared starting point — Aura refines this as evidence accumulates</p>
+            <h3 className="text-lg font-semibold text-foreground">{L("pm.title", "Profile & Skills")}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{L("pm.sub", "Your declared starting point — KnownBy refines this as evidence accumulates")}</p>
           </div>
         </div>
         <button onClick={() => setExpanded(!expanded)} className="text-xs text-muted-foreground hover:text-primary transition-colors">
-          {expanded ? "Collapse" : "Edit Profile"}
+          {expanded ? L("pm.collapse", "Collapse") : L("pm.edit", "Edit Profile")}
         </button>
       </div>
 
       {!expanded ? (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            {[{ label: "Firm", value: firm }, { label: "Level", value: level }, { label: "Practice", value: corePractice }, { label: "Sector", value: sectorFocus }].map(item => (
+            {[{ label: L("pm.firm", "Firm"), value: firm }, { label: L("pm.level", "Level"), value: levelText(level) }, { label: L("pm.practice", "Practice"), value: corePractice }, { label: L("pm.sector", "Sector"), value: sectorText(sectorFocus) }].map(item => (
               <div key={item.label} className="p-3 rounded-xl bg-secondary/30">
-                <span className="text-xs text-muted-foreground tracking-wider uppercase">{item.label}</span>
+                <span className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"}`}>{item.label}</span>
                 <p className="text-sm text-foreground mt-0.5 truncate">{item.value || "—"}</p>
               </div>
             ))}
           </div>
           {northStar && (
             <div className="p-3 rounded-xl bg-secondary/30">
-              <span className="text-xs text-muted-foreground tracking-wider uppercase">My 3-year ambition</span>
+              <span className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"}`}>{L("pm.ambition", "My 3-year ambition")}</span>
               <p className="text-sm text-foreground mt-0.5">{northStar}</p>
             </div>
           )}
@@ -262,9 +277,9 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
                 )}
               </div>
               <label
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer"
+                className="absolute -bottom-1 -end-1 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer"
                 style={{ background: "var(--brand)", color: "#fff" }}
-                title="Change avatar"
+                title={L("pm.avatar", "Change avatar")}
               >
                 {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                 <input
@@ -279,53 +294,53 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               </label>
             </div>
             <div className="flex-1">
-              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">First name</label>
-              <Input placeholder="e.g., Mohammad" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
+              <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-1 block`}>{L("pm.firstName", "First name")}</label>
+              <Input placeholder={L("pm.firstPh", "e.g., Mohammad")} value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
             </div>
             <div className="flex-1">
-              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Last name</label>
-              <Input placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
+              <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-1 block`}>{L("pm.lastName", "Last name")}</label>
+              <Input placeholder={L("pm.lastName", "Last name")} value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Firm", value: firm, set: setFirm, placeholder: "e.g., Deloitte, Saudi Aramco, your organization" },
-              { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Strategy, Technology, Finance — the area you work in" },
+              { label: L("pm.firm", "Firm"), value: firm, set: setFirm, placeholder: "e.g., Deloitte, Saudi Aramco, your organization" },
+              { label: L("pm.corePractice", "Core Practice"), value: corePractice, set: setCorePractice, placeholder: L("pm.corePh", "e.g., Strategy, Technology, Finance — the area you work in") },
             ].map(item => (
               <div key={item.label}>
-                <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">{item.label}</label>
+                <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-1 block`}>{item.label}</label>
                 <Input placeholder={item.placeholder} value={item.value} onChange={(e) => item.set(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
               </div>
             ))}
             <div>
-              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Level</label>
+              <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-1 block`}>{L("pm.level", "Level")}</label>
               <Select value={level || undefined} onValueChange={setLevel}>
                 <SelectTrigger className="h-9 bg-secondary border-border/30 text-sm">
-                  <SelectValue placeholder="Select…" />
+                  <SelectValue placeholder={L("pm.select", "Select…")} />
                 </SelectTrigger>
                 <SelectContent>
                   {seniorityTitles.map((t) => (
-                    <SelectItem key={t.title} value={t.title}>{t.title}</SelectItem>
+                    <SelectItem key={t.title} value={t.title}>{titleLabel(t, i18n.language)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Sector Focus</label>
+              <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-1 block`}>{L("pm.sectorFocus", "Sector Focus")}</label>
               <Select value={sectorFocus || undefined} onValueChange={setSectorFocus}>
                 <SelectTrigger className="h-9 bg-secondary border-border/30 text-sm">
-                  <SelectValue placeholder="Select…" />
+                  <SelectValue placeholder={L("pm.select", "Select…")} />
                 </SelectTrigger>
                 <SelectContent>
                   {SECTOR_OPTIONS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>{sectorText(s)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {sectorFocus === "Other" && (
                 <Input
-                  placeholder="Type your sector"
+                  placeholder={L("pm.sectorPh", "Type your sector")}
                   value={sectorOther}
                   onChange={(e) => setSectorOther(e.target.value)}
                   className="h-9 bg-secondary border-border/30 text-sm mt-2"
@@ -335,10 +350,10 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Target register</label>
+            <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-1 block`}>{L("pm.register", "Target register")}</label>
             <Select value={targetRegister || undefined} onValueChange={setTargetRegister}>
               <SelectTrigger className="h-9 bg-secondary border-border/30 text-sm">
-                <SelectValue placeholder="Select…" />
+                <SelectValue placeholder={L("pm.select", "Select…")} />
               </SelectTrigger>
               <SelectContent>
                 {registerOptions.map((r) => (
@@ -347,25 +362,25 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground/80 mt-1.5 leading-relaxed">
-              The language variety Aura writes in for you.
+              {L("pm.registerHelp", "The language variety KnownBy writes in for you.")}
             </p>
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">My 3-year ambition</label>
+            <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-1 block`}>{L("pm.ambition", "My 3-year ambition")}</label>
             <Input
-              placeholder="What do you want to be known for in 3 years?"
+              placeholder={L("pm.ambitionPh", "What do you want to be known for in 3 years?")}
               value={northStar}
               onChange={(e) => setNorthStar(e.target.value)}
               className="h-9 bg-secondary border-border/30 text-sm"
             />
             <p className="text-xs text-muted-foreground/80 mt-1.5 leading-relaxed">
-              Where do you want your career to be? Be specific — Aura uses this to shape your content.
+              Where do you want your career to be? Be specific — KnownBy uses this to shape your content.
             </p>
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground tracking-wider uppercase mb-2 block">Brand Pillars</label>
+            <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-2 block`}>{L("pm.pillars", "Brand Pillars")}</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {brandPillars.map((p, i) => (
                 <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
@@ -375,13 +390,13 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               ))}
             </div>
             <div className="flex gap-2">
-              <Input placeholder="The 2–3 topics you want to own — e.g., Digital Government, AI in Banking" value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
+              <Input placeholder={L("pm.pillarsPh", "The 2–3 topics you want to own — e.g., Digital Government, AI in Banking")} value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
               <Button size="sm" variant="outline" onClick={addPillar} className="h-8"><Plus className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground tracking-wider uppercase mb-2 block">Skills & Self-Assessment</label>
+            <label className={`text-xs text-muted-foreground ${ar ? "" : "tracking-wider uppercase"} mb-2 block`}>{L("pm.skills", "Skills & Self-Assessment")}</label>
             <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
               {skills.map((skill) => {
                 const isObjective = EVIDENCE_MATRIX.some(e => e.name === skill.name);
@@ -390,7 +405,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm text-foreground">{formatSkillLabel(skill.name)}</span>
-                        {isObjective && <span title="Verified via Objective Diagnostic"><ShieldCheck className="w-3.5 h-3.5 text-primary" /></span>}
+                        {isObjective && <span title={L("pm.verified", "Verified via Objective Diagnostic")}><ShieldCheck className="w-3.5 h-3.5 text-primary" /></span>}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-primary font-medium">{ratings[skill.name] || 0}%</span>
@@ -403,7 +418,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               })}
             </div>
             <div className="flex gap-2 mt-3">
-              <Input placeholder="Add skill…" value={newSkillName} onChange={(e) => setNewSkillName(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addSkill()} />
+              <Input placeholder={L("pm.addSkill", "Add skill…")} value={newSkillName} onChange={(e) => setNewSkillName(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addSkill()} />
               <Button size="sm" variant="outline" onClick={addSkill} className="h-8"><Plus className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
@@ -441,7 +456,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
                   { completed: false, skill_ratings: {}, generated_skills: [] },
                   "ProfileManagement.resetAssessment",
                 );
-                if (!cleared) { toast({ title: "That didn't save — try once more.", variant: "destructive" }); return; }
+                if (!cleared) { toast({ title: L("editProfile.saveFailed", "That didn't save — try once more."), variant: "destructive" }); return; }
                 onResetDiagnostic();
               }}
               className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"

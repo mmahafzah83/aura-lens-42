@@ -17,7 +17,8 @@ import {
 } from "@/lib/broadsheetExport";
 import { ensureCardFontsLoaded } from "./fitText";
 import { generationMetadata } from "@/lib/generationMetadata";
-import { classifyPublishError } from "@/lib/publishFailure";
+import { classifyPublishError, publishFailureText } from "@/lib/publishFailure";
+import i18n from "@/i18n";
 
 interface Props {
   family: FamilyEntry;
@@ -235,7 +236,7 @@ export default function Publish({
       });
     } catch (e: any) {
       const failure = classifyPublishError(e, attempted);
-      const message = failure.message;
+      const message = publishFailureText(failure, i18n.language, (k, o) => i18n.t(k, o as any) as string);
       // 1. Record why. Only a real, answered attempt can mark a post failed;
       //    everything else stays a draft the member can send again.
       if (insertedId) {
@@ -266,7 +267,7 @@ export default function Publish({
         await (supabase.from("ef_error_log" as any) as any).insert({
           function_name: "signature-card-share",
           severity: "high",
-          error_message: String(message).slice(0, 1000),
+          error_message: String(failure.message).slice(0, 1000),
           user_id: uidForLog,
           context: { post_id: insertedId, family: family.id, lang, attempted, reason: failure.reason },
         });

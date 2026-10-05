@@ -34,7 +34,8 @@ import {
   type ComposerProvenance,
 } from "@/lib/composerProvenance";
 import { editFields } from "@/lib/editDistance";
-import { classifyPublishError } from "@/lib/publishFailure";
+import { classifyPublishError, publishFailureText } from "@/lib/publishFailure";
+import i18n from "@/i18n";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
@@ -2201,7 +2202,7 @@ export default function StudioPanel({
     // A real, answered attempt that came back bad: say why, and store why.
     const failure = classifyPublishError(payload?.error || error?.message || "", true, !!(payload as any)?.blocked);
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-    toast.error(failure.message);
+    toast.error(publishFailureText(failure, i18n.language, (k, o) => i18n.t(k, o as any) as string));
     try {
       await supabase
         .from("linkedin_posts")
