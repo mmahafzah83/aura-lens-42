@@ -858,7 +858,7 @@ function buildBlocks(d: ReportData, lang: PaperLang = "en"): Block[] {
       key: "c-cv-crosscheck",
       section: "capability",
       spacing: 22,
-      node: <CvCrosscheck data={d.cv_crosscheck} />,
+      node: <CvCrosscheck data={d.cv_crosscheck} lang={lang} />,
     });
   }
 
