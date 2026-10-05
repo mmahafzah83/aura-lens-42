@@ -608,7 +608,7 @@ export function PaperFigure({
 }
 
 // ── ImprintDial ────────────────────────────────────────────────────────
-export function ImprintDial({ score, tier }: { score: number; tier: string | null }) {
+export function ImprintDial({ score, tier, lang = "en" }: { score: number; tier: string | null; lang?: PaperLang }) {
   const size = 220;
   const cx = size / 2;
   const cy = size / 2;
@@ -666,13 +666,14 @@ export function ImprintDial({ score, tier }: { score: number; tier: string | nul
         x={cx}
         y={cy + 30}
         textAnchor="middle"
-        fontFamily={FONT.mono}
-        fontSize={10.5}
+        fontFamily={lang === "ar" ? AR_FONT : FONT.mono}
+        fontSize={lang === "ar" ? 12 : 10.5}
         fontWeight={700}
-        letterSpacing="1.6"
+        letterSpacing={lang === "ar" ? 0 : "1.6"}
+        direction={lang === "ar" ? "rtl" : undefined}
         fill={T.spot}
       >
-        IMPRINT · {(tier || "—").toUpperCase()}
+        {lang === "ar" ? pt(lang, "paper.rp.dial", { tier: tier || "—" }) : <>IMPRINT · {(tier || "—").toUpperCase()}</>}
       </text>
     </svg>
   );
@@ -680,8 +681,9 @@ export function ImprintDial({ score, tier }: { score: number; tier: string | nul
 
 // ── ComponentBar ───────────────────────────────────────────────────────
 export function ComponentBar({
-  label, weight, value, weighted, isConsistency,
+  label, weight, value, weighted, isConsistency, lang = "en",
 }: {
+  lang?: PaperLang;
   label: string;
   weight: number;
   value: number;
@@ -690,6 +692,32 @@ export function ComponentBar({
 }) {
   const pct = Math.max(0, Math.min(100, value));
   const fill = isConsistency ? T.action : T.spot;
+  const ar = lang === "ar";
+  const pts = weighted != null ? Math.round(weighted) : Math.round((value * weight) / 100);
+  if (ar) {
+    return (
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+          <span style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 12, fontWeight: 700, color: T.ink })}>
+            {label}
+            <span style={{ color: T.ink3, marginInlineStart: 8, fontWeight: 400 }}>{pt(lang, "paper.rp.weight", { weight })}</span>
+          </span>
+          <span dir="ltr" style={{ fontFamily: FONT.mono, fontSize: 14, fontWeight: 700, color: T.ink, unicodeBidi: "isolate" }}>
+            {Math.round(value)}
+          </span>
+        </div>
+        <div style={{ position: "relative", height: 12, background: T.paper3 }}>
+          {[25, 50, 75].map((tick) => (
+            <span key={tick} aria-hidden style={{ position: "absolute", top: 0, bottom: 0, right: `${tick}%`, width: 1, background: T.paper }} />
+          ))}
+          <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: `${pct}%`, background: fill }} />
+        </div>
+        <div style={arStyle(lang, { marginTop: 5, fontFamily: FONT.mono, fontSize: 11, color: T.ink3 })}>
+          {pt(lang, "paper.rp.contributes", { n: pts, weight })}
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
@@ -791,7 +819,7 @@ export function useImprintDelta(userId: string): { rows: { score: number }[] | n
 }
 
 // ── ImprintSparkline ───────────────────────────────────────────────────
-export function ImprintSparkline({ userId }: { userId: string }) {
+export function ImprintSparkline({ userId, lang = "en" }: { userId: string; lang?: PaperLang }) {
   const { rows, delta } = useImprintDelta(userId);
 
   if (!rows || rows.length < 2) {
@@ -813,12 +841,14 @@ export function ImprintSparkline({ userId }: { userId: string }) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} direction={lang === "ar" ? "ltr" : undefined}>
         <polyline points={pts.join(" ")} fill="none" stroke={T.spot} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
         <circle cx={last[0]} cy={last[1]} r={3.5} fill={T.live} />
       </svg>
       <span
+        dir={lang === "ar" ? "ltr" : undefined}
         style={{
+          ...(lang === "ar" ? { unicodeBidi: "isolate" as const, letterSpacing: 0 } : {}),
           fontFamily: FONT.mono,
           fontSize: 30,
           fontWeight: 700,
