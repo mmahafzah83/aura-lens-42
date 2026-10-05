@@ -13,3 +13,8 @@ describe("isolateLatin", () => {
   });
   it("leaves pure Arabic untouched", () => expect(isolateLatin("الدورة")).toBe("الدورة"));
 });
+describe("isolateLatin brackets", () => {
+  it("keeps a bracketed Latin term with its brackets", () => {
+    expect(isolateLatin("للنصوص (text-embedding-3-small) للبحث")).toBe("للنصوص \u2066(text-embedding-3-small)\u2069 للبحث");
+  });
+});
