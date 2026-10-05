@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { flagFor } from "@/components/CountryPicker";
+import { useTranslation } from "react-i18next";
+import { AR_TEXT } from "@/lib/arDisplay";
+
+/* Arabic: Cairo, open line-height, no tracking, capitals or italics — joined letters in the export too. */
+const arFix = (ar: boolean, s: React.CSSProperties): React.CSSProperties => (ar ? { ...s, ...AR_TEXT } : s);
 
 // System-B semantic tokens (the card reads tokens directly so it renders correctly in any parent).
 const PAPER = "var(--surface-page)";
@@ -54,9 +59,9 @@ function mastheadDate(d = new Date()): string {
   return `VOL. 1 · ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function Empty({ text }: { text: string }) {
+function Empty({ text, ar = false }: { text: string; ar?: boolean }) {
   return (
-    <div style={{
+    <div style={arFix(ar, {
       border: `1px dashed ${RULE}`,
       padding: "14px 16px",
       color: INK_3,
@@ -64,20 +69,20 @@ function Empty({ text }: { text: string }) {
       fontStyle: "italic",
       fontSize: 14,
       lineHeight: 1.4,
-    }}>{text}</div>
+    })}>{text}</div>
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+function Label({ children, ar = false }: { children: React.ReactNode; ar?: boolean }) {
   return (
-    <div style={{
+    <div style={arFix(ar, {
       fontFamily: MONO,
       fontSize: 10,
       letterSpacing: "0.16em",
       textTransform: "uppercase",
       color: INK_3,
       marginBottom: 8,
-    }}>{children}</div>
+    })}>{children}</div>
   );
 }
 
@@ -132,7 +137,7 @@ function Chips({ items }: { items: string[] }) {
   );
 }
 
-function Radar({ data }: { data: Array<{ name: string; score: number }> }) {
+function Radar({ data, label }: { data: Array<{ name: string; score: number }>; label: string }) {
   const size = 260;
   const cx = size / 2;
   const cy = size / 2;
@@ -150,7 +155,7 @@ function Radar({ data }: { data: Array<{ name: string; score: number }> }) {
   };
   const poly = data.map((d, i) => pt(i, d.score).join(",")).join(" ");
   return (
-    <svg width={size} height={size} role="img" aria-label="Capability radar">
+    <svg width={size} height={size} role="img" aria-label={label}>
       {[0.25, 0.5, 0.75, 1].map((f, k) => (
         <circle key={k} cx={cx} cy={cy} r={R * f} fill="none" stroke={RULE} strokeWidth={1} />
       ))}
@@ -173,6 +178,8 @@ export interface AuraCardProps {
 
 export default function AuraCard({ variant }: AuraCardProps) {
   const { profile, loading } = useProfile();
+  const { t, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
 
   const fullName = useMemo(() => {
     if (!profile) return "";
@@ -218,7 +225,7 @@ export default function AuraCard({ variant }: AuraCardProps) {
   };
 
   return (
-    <article style={cardStyle} aria-label={`Aura ${variant} card`}>
+    <article style={cardStyle} dir={ar ? "rtl" : undefined} lang={ar ? "ar" : undefined} aria-label={ar ? t("acf.aria") : `KnownBy ${variant} card`}>
       {/* Header */}
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -230,9 +237,9 @@ export default function AuraCard({ variant }: AuraCardProps) {
             letterSpacing: "0.04em",
             color: INK,
             lineHeight: 1,
-          }}>Aura</span>
+          }} dir="ltr">KnownBy</span>
         </span>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: INK_3 }}>
+        <div dir="ltr" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: INK_3 }}>
           {mastheadDate()}
         </div>
       </header>
@@ -241,10 +248,10 @@ export default function AuraCard({ variant }: AuraCardProps) {
 
       {/* Hero */}
       <section style={{ display: "flex", gap: 22, alignItems: "center", marginBottom: 24 }}>
-        <AvatarRing src={profile?.avatar_url} alt={fullName || "Aura"} />
+        <AvatarRing src={profile?.avatar_url} alt={fullName || "KnownBy"} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: INK_3, marginBottom: 6 }}>
-            AURA MEMBER
+            KNOWNBY MEMBER
           </div>
           {loading ? (
             <div style={{ height: 34, width: "60%", background: RULE }} />
@@ -253,7 +260,7 @@ export default function AuraCard({ variant }: AuraCardProps) {
               {fullName}
             </h1>
           ) : (
-            <Empty text="Add your name in Settings to unlock this." />
+            <Empty ar={ar} text={ar ? t("acf.addName") : "Add your name in Settings to unlock this."} />
           )}
           {profile?.level && (
             <div style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 15, color: INK_2, marginTop: 4 }}>
@@ -263,7 +270,7 @@ export default function AuraCard({ variant }: AuraCardProps) {
           {(profile?.country_code || profile?.country) && (
             <div style={{ fontFamily: MONO, fontSize: 11, color: INK_2, marginTop: 8, letterSpacing: "0.06em" }}>
               <span style={{ fontSize: 14 }}>{flagFor(profile?.country_code)}</span>
-              <span style={{ marginLeft: 6 }}>{profile?.country || ""}</span>
+              <span style={{ marginInlineStart: 6 }}>{profile?.country || ""}</span>
             </div>
           )}
         </div>
@@ -274,36 +281,36 @@ export default function AuraCard({ variant }: AuraCardProps) {
       {/* Body — variant-specific */}
       {variant === "voice" && (
         <section style={{ marginBottom: 24 }}>
-          <Label>Top voice in</Label>
+          <Label ar={ar}>{ar ? t("acf.topVoice") : "Top voice in"}</Label>
           {topVoice ? (
             <div style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, letterSpacing: "-0.01em", color: SPOT, marginBottom: 22 }}>
               {topVoice}
             </div>
           ) : (
             <div style={{ marginBottom: 22 }}>
-              <Empty text="Finish your assessment to unlock this." />
+              <Empty ar={ar} text={ar ? t("acf.finish") : "Finish your assessment to unlock this."} />
             </div>
           )}
 
-          <Label>What they're known for</Label>
-          <div style={{
+          <Label ar={ar}>{ar ? t("acf.knownFor") : "What they're known for"}</Label>
+          <div style={arFix(ar, {
             fontFamily: MONO, fontSize: 10, letterSpacing: "0.14em",
             textTransform: "uppercase", color: INK_3, marginTop: -4, marginBottom: 10,
-          }}>Their point of view on the field</div>
+          })}>{ar ? t("acf.pov") : "Their point of view on the field"}</div>
           {pillars.length > 0 ? (
             <Chips items={pillars.slice(0, 3)} />
           ) : (
-            <Empty text="Finish your assessment to unlock this." />
+            <Empty ar={ar} text={ar ? t("acf.finish") : "Finish your assessment to unlock this."} />
           )}
         </section>
       )}
 
       {variant === "skills" && (
         <section style={{ marginBottom: 24 }}>
-          <Label>Where they are strongest</Label>
+          <Label ar={ar}>{ar ? t("acf.strongest") : "Where they are strongest"}</Label>
           {radarData.length >= 3 ? (
             <div style={{ display: "flex", gap: 22, alignItems: "center", marginBottom: 22 }}>
-              <div style={{ flex: "0 0 auto" }}><Radar data={radarData} /></div>
+              <div style={{ flex: "0 0 auto" }}><Radar data={radarData} label={ar ? t("acf.radar") : "Capability radar"} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: INK_3, marginBottom: 8 }}>
                   Their 3 strongest skills
@@ -320,7 +327,7 @@ export default function AuraCard({ variant }: AuraCardProps) {
               </div>
             </div>
           ) : (
-            <Empty text="Finish your assessment to unlock this." />
+            <Empty ar={ar} text={ar ? t("acf.finish") : "Finish your assessment to unlock this."} />
           )}
         </section>
       )}
@@ -331,9 +338,9 @@ export default function AuraCard({ variant }: AuraCardProps) {
       <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: MONO, fontSize: 10, letterSpacing: "0.14em", color: INK_3 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <AuraLogo variant="light" size={14} withWordmark={false} />
-          <span>MEASURED BY AURA</span>
+          <span style={ar ? AR_TEXT : undefined}>{ar ? t("acf.measured") : "MEASURED BY KNOWNBY"}</span>
         </div>
-        <span>AURA-INTEL.ORG</span>
+        <span dir="ltr">AURA-INTEL.ORG</span>
       </footer>
     </article>
   );
