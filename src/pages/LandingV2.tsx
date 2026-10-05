@@ -6,6 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
+const SEAT_PRICE_AR = "XX في الشهر";
+const SEAT_CTA_AR = "احجز مقعدي";
+const SEAT_NO_CARD_AR = "لا بطاقة اليوم. ولا تدفع شيئاً قبل أن يبدأ KnownBy بالنشر لك.";
+const SEAT_SOLD_OUT_AR = "المقاعد التأسيسية الخمسون حُجزت كلها. أخبرني برغبتك وسأكتب إليك حين يتوفّر مقعد.";
+const LTRI = (v: string | number) => `\u2066${v}\u2069`;
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
 import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
 import { BRAND } from "@/constants/language";
@@ -620,7 +625,7 @@ export const LANDING_COPY = {
   pay4: ["A posting tool", "أداة نشر"],
   pay5: ["An AI writing tool", "أداة كتابة بالذكاء الاصطناعي"],
   pay6: ["KnownBy, all of it", "KnownBy، كل ما سبق"],
-  payP: [`Your report is free and stays free. The part that runs every night is ${SEAT_PRICE} — and a founding seat locks that price for as long as you keep it.`, `ملفك مجاني ويبقى مجانياً. والجزء الذي يعمل كل ليلة سعره ${I(SEAT_PRICE)}، والمقعد التأسيسي يثبّت لك هذا السعر ما دمت محتفظاً به.`],
+  payP: [`Your report is free and stays free. The part that runs every night is ${SEAT_PRICE} — and a founding seat locks that price for as long as you keep it.`, `ملفك مجاني ويبقى مجانياً. والجزء الذي يعمل كل ليلة سعره ${I(SEAT_PRICE_AR)}، والمقعد التأسيسي يثبّت لك هذا السعر ما دمت محتفظاً به.`],
   payNote: ["EXAMPLE FIGURES, ADJUSTABLE TO YOUR OWN HOURS AND RATE. WE DO NOT PROMISE FOLLOWERS OR LIKES.", "أرقام توضيحية يمكنك تعديلها بساعاتك وقيمة ساعتك. لا وعد بمتابعين ولا بإعجابات."],
   prTag: ["One road, one seat", "طريق واحد، ومقعد واحد"],
   prH2a: ["Seeing yourself is free.", "أن تعرف نفسك: مجاناً."],
@@ -666,7 +671,7 @@ export const LANDING_COPY = {
   faqH2b: ["before joining.", "قبل الانضمام."],
   faqSub: ["No hedging and no small print. Where the answer is no, it says no.", "بلا مواربة ولا شروط مخفية. وحين يكون الجواب لا، أقول لا."],
   fq1: ["What does &ldquo;free&rdquo; mean exactly?", "ماذا تعني «مجاناً» بالضبط؟"],
-  fa1: [`Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and I onboard you personally. ${SEAT_NO_CARD}`, `ملفك مجاني دائماً، وليس فترة تجربة. والجزء الذي يعمل كل ليلة، فيكتب ويصمّم وأنت نائم، سعره ${I(SEAT_PRICE)}. المقعد التأسيسي يثبّت لك هذا السعر ما دمت محتفظاً به، وأجهّز حسابك بنفسي. ${I(SEAT_NO_CARD)}`],
+  fa1: [`Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and I onboard you personally. ${SEAT_NO_CARD}`, `ملفك مجاني دائماً، وليس فترة تجربة. والجزء الذي يعمل كل ليلة، فيكتب ويصمّم وأنت نائم، سعره ${I(SEAT_PRICE_AR)}. المقعد التأسيسي يثبّت لك هذا السعر ما دمت محتفظاً به، وأجهّز حسابك بنفسي. ${SEAT_NO_CARD_AR}`],
   fq2: ["Can I stop?", "هل أستطيع التوقف؟"],
   fa2: ["Any month. Everything you kept and everything you wrote stays yours.", "في أي شهر. وكل ما حفظته وكتبته يبقى لك."],
   fq3: ["Will it sound like AI?", "هل سيبدو مكتوباً بالذكاء الاصطناعي؟"],
@@ -1280,7 +1285,7 @@ export const landingHtml = (t: LandingStrings, ar: boolean) => `
         </svg>
         <div style="display:flex;align-items:center;gap:9px;margin-top:12px;font-size:13px;color:#66707D">
           <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.4" stroke="#E0A82E" stroke-width="1.8" fill="none"/></svg>
-          The two rings show what to improve next.
+          ${ar ? "الحلقتان تبيّنان ما تحسّنه بعد ذلك." : "The two rings show what to improve next."}
         </div>
       </div>
     </div>
@@ -1487,7 +1492,7 @@ export const landingHtml = (t: LandingStrings, ar: boolean) => `
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">${t.pay3}</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:40%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$30–160</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">${t.pay4}</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:26%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–100</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">${t.pay5}</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:18%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–40</span></div>
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0F1519;font-weight:600">${t.pay6}</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">${SEAT_PRICE.split(" ")[0]}</span></div>
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0F1519;font-weight:600">${t.pay6}</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">${ar ? I("XX") : SEAT_PRICE.split(" ")[0]}</span></div>
     <p style="margin-top:16px;font-size:13.5px;color:var(--ink3);line-height:1.7">${t.payP}</p>
     <p class="mi" style="margin-top:12px;line-height:1.7">${t.payNote}</p>
   </div>
@@ -1534,7 +1539,7 @@ export const landingHtml = (t: LandingStrings, ar: boolean) => `
       <div class="ptop"><span class="plab">${t.seatLab}</span><span class="pchip">${t.seatChip}</span></div>
       <h3>${t.seatH3}</h3>
       <p class="who">${t.seatWho}</p>
-      <div class="prc"><span class="p">${SEAT_PRICE.split(" ")[0]}</span><span class="u">${t.seatU}</span></div>
+      <div class="prc"><span class="p">${ar ? I("XX") : SEAT_PRICE.split(" ")[0]}</span><span class="u">${t.seatU}</span></div>
       <ul class="ticks">
         <li><span class="tk"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#00CEC9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${t.tick1}</span></li>
         <li><span class="tk"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#00CEC9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${t.tick2}</span></li>
@@ -1543,7 +1548,7 @@ export const landingHtml = (t: LandingStrings, ar: boolean) => `
         <li><span class="tk"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#00CEC9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${t.tick5}</span></li>
       </ul>
       <p class="lock">${t.seatLock}</p>
-      <div class="pcta"><a class="btn bwhite" href="${SEAT_PATH}">${SEAT_CTA}</a><p class="undr">${SEAT_NO_CARD}</p></div>
+      <div class="pcta"><a class="btn bwhite" href="${SEAT_PATH}">${ar ? SEAT_CTA_AR : SEAT_CTA}</a><p class="undr">${ar ? SEAT_NO_CARD_AR : SEAT_NO_CARD}</p></div>
     </div>
   </div>
 
@@ -1907,12 +1912,12 @@ const LandingV2 = () => {
           // The fifty are gone — no wave exists, so nothing about waves is shown.
           chips.forEach((el) => { el.style.display = "none"; });
           if (card) card.style.display = "none";
-          if (priceNote) priceNote.textContent = SEAT_SOLD_OUT_NOTE;
+          if (priceNote) priceNote.textContent = ar ? SEAT_SOLD_OUT_AR : SEAT_SOLD_OUT_NOTE;
           return;
         }
 
         chips.forEach((el) => {
-          el.textContent = w.chip.toUpperCase();
+          el.textContent = ar ? `الدفعة ${LTRI(w.wave)} · المتبقي: ${LTRI(w.leftWave)}` : w.chip.toUpperCase();
           el.style.display = "";
         });
         if (card) card.style.display = "";
@@ -1923,13 +1928,15 @@ const LandingV2 = () => {
           ).join("");
         }
         const note = root.querySelector<HTMLElement>('[data-wave="note"]');
-        if (note) note.textContent = w.note;
+        if (note) note.textContent = !ar ? w.note : w.wave === 1
+          ? `المحجوز من العشرة الأولى: ${LTRI(w.inWave)}. وحين تُغلق الدفعة الأولى تُفتح الثانية، بالسعر نفسه والتثبيت نفسه.`
+          : `الدفعة ${LTRI(w.wave - 1)} اكتملت. المحجوز من الدفعة ${LTRI(w.wave)}: ${LTRI(w.inWave)} من ${LTRI(10)}، بالسعر نفسه والتثبيت نفسه.`;
       } catch {
         /* silent — the wave elements simply stay hidden */
       }
     })();
     return () => { cancelled = true; };
-  }, [mounted, html]);
+  }, [mounted, html, ar]);
 
   return (
     <>
