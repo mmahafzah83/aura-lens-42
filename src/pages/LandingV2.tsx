@@ -6,10 +6,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
-const SEAT_PRICE_AR = "XX في الشهر";
-const SEAT_CTA_AR = "احجز مقعدي";
-const SEAT_NO_CARD_AR = "لا بطاقة اليوم. ولا تدفع شيئاً قبل أن يبدأ KnownBy بالنشر لك.";
-const SEAT_SOLD_OUT_AR = "المقاعد التأسيسية الخمسون حُجزت كلها. أخبرني برغبتك وسأكتب إليك حين يتوفّر مقعد.";
+import i18nInstance from "@/i18n";
+/* Arabic seat lines come from the shared seatOffer.* locale keys (also read by /request-access). */
+const tAr = i18nInstance.getFixedT("ar");
+const SEAT_PRICE_AR = tAr("seatOffer.price");
+const SEAT_CTA_AR = tAr("seatOffer.cta");
+const SEAT_NO_CARD_AR = tAr("seatOffer.noCard");
+const SEAT_SOLD_OUT_AR = tAr("seatOffer.soldOut");
 const LTRI = (v: string | number) => `\u2066${v}\u2069`;
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
 import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
@@ -1917,7 +1920,7 @@ const LandingV2 = () => {
         }
 
         chips.forEach((el) => {
-          el.textContent = ar ? `الدفعة ${LTRI(w.wave)} · المتبقي: ${LTRI(w.leftWave)}` : w.chip.toUpperCase();
+          el.textContent = ar ? tAr("seatOffer.waveChip", { wave: LTRI(w.wave), left: LTRI(w.leftWave) }) : w.chip.toUpperCase();
           el.style.display = "";
         });
         if (card) card.style.display = "";
@@ -1929,8 +1932,8 @@ const LandingV2 = () => {
         }
         const note = root.querySelector<HTMLElement>('[data-wave="note"]');
         if (note) note.textContent = !ar ? w.note : w.wave === 1
-          ? `المحجوز من العشرة الأولى: ${LTRI(w.inWave)}. وحين تُغلق الدفعة الأولى تُفتح الثانية، بالسعر نفسه والتثبيت نفسه.`
-          : `الدفعة ${LTRI(w.wave - 1)} اكتملت. المحجوز من الدفعة ${LTRI(w.wave)}: ${LTRI(w.inWave)} من ${LTRI(10)}، بالسعر نفسه والتثبيت نفسه.`;
+          ? tAr("seatOffer.waveNoteFirst", { inWave: LTRI(w.inWave) })
+          : tAr("seatOffer.waveNoteLater", { prev: LTRI(w.wave - 1), wave: LTRI(w.wave), inWave: LTRI(w.inWave), size: LTRI(10) });
       } catch {
         /* silent — the wave elements simply stay hidden */
       }
