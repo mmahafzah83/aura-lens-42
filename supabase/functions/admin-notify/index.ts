@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${RESEND}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          from: "Aura <alerts@aura-intel.org>",
+          from: "KnownBy <alerts@aura-intel.org>",
           to: [ADMIN_ALERT_EMAIL],
           subject,
           html: htmlOut,

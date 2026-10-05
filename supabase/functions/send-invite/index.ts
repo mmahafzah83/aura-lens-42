@@ -3,10 +3,8 @@ import { isAdmin } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { logError as logEfError } from "../_shared/logError.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import {
-  renderEmail, label, heading, paragraph, note, quote, divider, signature,
-  escapeHtml as esc,
-} from "../_shared/emailTemplate.ts";
+import { inviteEmail } from "../_shared/personEmails.ts";
+import { langFromBody } from "../_shared/emailLang.ts";
 
 import { provisionAccount } from "../_shared/provisionAccount.ts";
 
@@ -22,44 +20,6 @@ const REDIRECT_URL = "https://aura-intel.org/onboarding";
 // Public ceremony page shown BEFORE the token is verified — the user clicks
 // "Let the world see what I know →" here, which then triggers Supabase verify.
 const ACCEPTANCE_URL = "https://aura-intel.org/accept-invitation";
-
-const buildEmailHtml = () => {
-  const step = (n: string, title: string, desc: string) => `
-    <tr>
-      <td valign="top" width="26" style="width:26px;padding:0 12px 16px 0;font-family:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;font-size:11px;letter-spacing:.16em;color:#98A2AE;line-height:1.6;">${n}</td>
-      <td valign="top" style="padding:0 0 16px;">
-        <div style="font-family:'Inter', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;font-size:14px;font-weight:600;color:#0F1519;margin:0 0 4px;">${title}</div>
-        <div style="font-family:'Inter', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;font-size:13px;line-height:1.6;color:#5B6673;">${desc}</div>
-      </td>
-    </tr>`;
-
-  const body = `
-    ${label("A private invitation")}
-    ${heading("{{GREETING}} your Aura is ready.")}
-    ${paragraph("I built Aura because the smartest people I know stay invisible. Not for lack of expertise — for lack of a way to turn what they already read and think into something the market can see.")}
-    ${paragraph("Aura reads what you read, finds the pattern in it, and drafts a post in your own voice. You approve it. That's the whole loop.")}
-    {{INVITER_LINE_BLOCK}}
-    {{INVITER_NOTE_BLOCK}}
-    ${divider()}
-    ${label("Your first ten minutes")}
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px;">
-      ${step("01", "Give Aura one thing you read", "A link. Aura reads it and shows you what it found, before it asks you anything.")}
-      ${step("02", "Tell Aura who you are", "Paste your LinkedIn headline. No forms.")}
-      ${step("03", "Rate your strengths", "Ten sliders, your own read. Aura corrects it from there.")}
-      ${step("04", "See how the market reads you", "The first thing Aura gives back.")}
-    </table>
-    ${divider()}
-    ${paragraph("Fewer than 50 people have access right now. I read your profile myself before sending this.")}
-    ${note("This link is single-use. If it stops working, reply to this email and I'll send another.")}
-    ${signature()}
-  `;
-
-  return renderEmail({
-    preheader: "A private invitation. Fewer than 50 people have access.",
-    body,
-    cta: { href: "{{CONFIRMATION_URL}}", label: "Open my Aura" },
-  });
-};
 
 serve(withObserve("send-invite", async (req) => {
   if (req.method === "OPTIONS") {
@@ -184,31 +144,22 @@ serve(withObserve("send-invite", async (req) => {
     }
 
     // Name the inviter when we can resolve a first name — never a placeholder.
-    let inviterLine = "";
+    let inviterFirst = "";
     try {
       const { data: inviterProf } = await admin
         .from("diagnostic_profiles")
         .select("first_name")
         .eq("user_id", callerId)
         .maybeSingle();
-      const inviterFirst = ((inviterProf as any)?.first_name || "").trim();
-      if (inviterFirst) {
-        inviterLine = paragraph(`${esc(inviterFirst)} thought you should have this.`, false);
-      }
+      inviterFirst = ((inviterProf as any)?.first_name || "").trim();
     } catch (e) {
       console.warn("[send-invite] inviter lookup failed", e);
     }
 
-    const inviterNoteBlock = inviterNote ? quote(esc(inviterNote)) : "";
-
-    // Build email HTML
-    const greeting = firstName ? `${esc(firstName)},` : "Hi there,";
-    const html = buildEmailHtml()
-      .replace(/{{GREETING}}/g, greeting)
-      .replace(/{{CONFIRMATION_URL}}/g, ceremonyUrl)
-      .replace(/{{INVITER_NOTE_BLOCK}}/g, inviterNoteBlock)
-      .replace(/{{INVITER_LINE_BLOCK}}/g, inviterLine)
-      .replace(/{{EMAIL}}/g, email);
+    // The access request stores no language, so an admin-sent invite is
+    // English unless the request body names one.
+    const lang = langFromBody(body.lang) ?? "en";
+    const mail = inviteEmail(lang, { firstName, inviterFirst, inviterNote, url: ceremonyUrl });
 
     // Send via Resend
     const resendRes = await fetch("https://api.resend.com/emails", {
@@ -218,11 +169,11 @@ serve(withObserve("send-invite", async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+        from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
         to: [email],
-        subject: firstName ? `Your Aura is ready, ${firstName}` : "Your Aura is ready",
+        subject: mail.subject,
         reply_to: "mohammad.mahafdhah@aura-intel.org",
-        html,
+        html: mail.html,
         tags: [
           ...(linkRes.data?.user?.id ? [{ name: "user_id", value: linkRes.data.user.id }] : []),
           { name: "email_type", value: "invite" },

@@ -1,9 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import {
-  renderEmail, heading, paragraph, signature, escapeHtml as esc,
-} from "../_shared/emailTemplate.ts";
+import { waitlistEmail } from "../_shared/personEmails.ts";
+import { langFromBody } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -218,14 +217,8 @@ serve(withObserve("submit-waitlist", async (req) => {
     try {
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (resendKey) {
-        const safeName = esc(name);
-        const body = `
-          ${heading(`${safeName}, you're on the list.`)}
-          ${paragraph("We have your request. Aura is in private beta with fewer than 50 people, and I read every application myself.")}
-          ${paragraph("You'll hear back from me within 24 hours. If Aura is right for you, that reply will include your invitation.")}
-          ${signature()}
-        `;
-        const html = renderEmail({ preheader: "You're on the list", body });
+        // A waitlist applicant has no account yet: the request's language, else English.
+        const mail = waitlistEmail(langFromBody(body.lang) ?? "en", name);
         console.log(`[submit-waitlist] Attempting to send confirmation email to ${email}`);
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -234,11 +227,11 @@ serve(withObserve("submit-waitlist", async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+            from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
             to: [email],
-            subject: `You're on the list, ${name}`.replace(/[\r\n]/g, " "),
+            subject: mail.subject,
             reply_to: "mohammad.mahafdhah@aura-intel.org",
-            html,
+            html: mail.html,
             // Waitlist applicants are not members yet — no user_id tag.
             tags: [{ name: "email_type", value: "waitlist_confirmation" }],
           }),

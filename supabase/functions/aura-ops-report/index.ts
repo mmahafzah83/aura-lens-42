@@ -12,7 +12,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const FROM = "Aura <invites@aura-intel.org>";
+const FROM = "KnownBy <invites@aura-intel.org>";
 
 type Verdict = "GREEN" | "AMBER" | "RED";
 function worse(a: Verdict, b: Verdict): Verdict {

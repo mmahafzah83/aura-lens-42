@@ -58,6 +58,7 @@ import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyShell, { STAGE_NAMES, type JourneySub } from "@/components/journey/JourneyShell";
+import { emailLang } from "@/i18n";
 import {
   MANUAL_SCREEN, TRUST_SLIDERS_SCREEN, CV_SCREEN, SHARE_SCREEN, SEAT_SCREEN,
   beatOf, journeyFraction,
@@ -2129,6 +2130,7 @@ const Onboarding = () => {
           body: {
             archetype: reveal.archetype,
             marketRead: reveal.marketRead,
+            lang: emailLang(),
             subjects: reveal.subjects,
             softGround: reveal.softGround,
           },
@@ -2303,7 +2305,7 @@ const Onboarding = () => {
           }, "finish later save");
           /* one email, the first time only — never a sequence */
           if (!alreadyEmailed) {
-            supabase.functions.invoke("send-resume-email", { body: { stage } }).catch(() => {});
+            supabase.functions.invoke("send-resume-email", { body: { stage, lang: emailLang() } }).catch(() => {});
           }
         } catch (e) { console.error("[journey] finish later save threw", e); }
       }
@@ -2636,7 +2638,7 @@ const Onboarding = () => {
       if (!verified) { toast.error("Please try that once more."); setSettingPwd(false); return; }
       await supabase.auth.updateUser({ data: { password_set: true } }).catch(() => {});
       supabase.functions.invoke("send-account-notification", {
-        body: { type: "password_set", email: verified.email, first_name: null },
+        body: { type: "password_set", email: verified.email, first_name: null, lang: emailLang() },
       }).catch(() => {});
       setNeedsPassword(false);
       setPwd(""); setPwdConfirm("");
@@ -3882,6 +3884,7 @@ const Onboarding = () => {
           body: {
             email: wallEmail.trim().toLowerCase(), password: wallPassword,
             origin: window.location.origin, consent_version: CONSENT_VERSION,
+            lang: emailLang(),
           },
         });
         type SignupResult = { ok?: boolean; existing?: boolean; code?: string; error?: string };

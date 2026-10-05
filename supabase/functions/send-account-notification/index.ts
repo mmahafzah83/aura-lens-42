@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import {
-  renderEmail, heading as headingHtml, paragraph, note,
-} from "../_shared/emailTemplate.ts";
+import { accountNotificationEmail } from "../_shared/personEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +39,7 @@ serve(async (req) => {
       });
     }
 
-    const { type, email, first_name } = await req.json();
+    const { type, email, first_name, lang: bodyLang } = await req.json();
     if (!type || !email) {
       return new Response(JSON.stringify({ error: "type and email required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -55,34 +54,13 @@ serve(async (req) => {
       });
     }
 
-    const name = first_name || "there";
-    let subject = "";
-    let heading = "";
-    let message = "";
-    let warningBlock = "";
-    let cta: { href: string; label: string } | undefined;
-
-    if (type === "password_set") {
-      subject = "Your KnownBy password is set";
-      heading = "You're all set.";
-      message = `Hi ${name}, your KnownBy password has been created. You can log in any time at aura-intel.org.`;
-      cta = { href: "https://aura-intel.org/auth", label: "Open KnownBy" };
-    } else if (type === "password_changed") {
-      subject = "Your KnownBy password was changed";
-      heading = "Password updated.";
-      message = `Hi ${name}, your KnownBy password was just changed. If this was you, nothing else is needed.`;
-      warningBlock = note("If you didn't make this change, reset your password now at aura-intel.org/auth.");
-    } else {
+    const lang = await resolveEmailLang(bodyLang, admin, userData.user.id);
+    const mail = accountNotificationEmail(lang, String(type), first_name || null);
+    if (!mail) {
       return new Response(JSON.stringify({ error: "Unknown notification type" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const bodyHtml = `
-      ${headingHtml(heading)}
-      ${paragraph(message)}
-      ${warningBlock}
-    `;
-    const html = renderEmail({ preheader: subject, body: bodyHtml, cta });
 
     await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -94,8 +72,8 @@ serve(async (req) => {
         from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
         to: [email],
         reply_to: "mohammad.mahafdhah@aura-intel.org",
-        subject,
-        html,
+        subject: mail.subject,
+        html: mail.html,
         tags: [
           { name: "user_id", value: userData.user.id },
           { name: "email_type", value: String(type).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 250) },

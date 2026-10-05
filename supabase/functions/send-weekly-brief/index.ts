@@ -548,7 +548,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
+            from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
             reply_to: "mohammad.mahafdhah@aura-intel.org",
             to: [email],
             subject,

@@ -273,7 +273,7 @@ export default function Mirror() {
       const res = await fetch(`${base}/functions/v1/send-mirror-read`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ handle: result?.handle, email: sendEmail.trim() }),
+        body: JSON.stringify({ handle: result?.handle, email: sendEmail.trim(), lang: readStoredLang() }),
       });
       const data = await res.json().catch(() => ({} as { ok?: boolean; error?: string }));
       if (!res.ok || !data?.ok) {
@@ -303,6 +303,7 @@ export default function Mirror() {
           email: listEmail.trim(),
           seniority: listSeniority || undefined,
           source: "mirror",
+          lang: readStoredLang(),
           ref: ref || undefined,
         }),
       });
