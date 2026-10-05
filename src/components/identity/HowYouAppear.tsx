@@ -9,6 +9,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
+import { displayDate, displayNumber, arabicList, arStyle } from "@/lib/arDisplay";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { scorePresence, earliestExperienceYear, type PresenceRow, type PresenceKey } from "@/lib/presenceHealth";
@@ -103,7 +106,7 @@ function formatReadDate(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return displayDate(d, i18n.language);
 }
 
 /** Same shape, plus the clock time — used when two stored reads share a day,
@@ -112,7 +115,7 @@ function formatReadDateTime(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
-  const day = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const day = displayDate(d, i18n.language, { year: false });
   const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   return `${day} ${time}`;
 }
@@ -159,7 +162,14 @@ const STATE_WORDS: Record<"carried" | "partial" | "missing", string> = {
 const overallWord = (sum: number) => (sum >= 50 ? "Strong" : sum >= 30 ? "Uneven" : "Thin");
 
 /** Where a half-carried subject already shows up, in the member's words. */
+const FIELD_AR: Record<string, string> = {
+  "your headline": "العنوان", "your About": "النبذة", "your skills": "المهارات", "your roles": "الخبرات",
+};
 function fieldList(fields: ThemeField[]): string {
+  if (i18n.language === "ar") {
+    if (fields.length === 0) return "صفحتك";
+    return arabicList(fields.map((f) => FIELD_AR[f] ?? f));
+  }
   if (fields.length === 0) return "your profile";
   if (fields.length === 1) return fields[0];
   return `${fields.slice(0, -1).join(", ")} and ${fields[fields.length - 1]}`;
@@ -167,6 +177,8 @@ function fieldList(fields: ThemeField[]): string {
 
 export default function HowYouAppear({ userId }: { userId: string | null }) {
   const navigate = useNavigate();
+  const { t: tr, i18n: i18 } = useTranslation();
+  const lang = i18.language;
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   /* Every stored read, newest first. Used only to find the most recent
@@ -377,7 +389,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       console.error("[how-you-appear] read failed", { stage: openStage, error: e });
       const raw = ctrl.signal.aborted ? new DOMException("Aborted", "AbortError") : e;
       setReadFailure({ stageKey: openStage, error: raw });
-      toast.error(causeOf(raw, openStage === "posts" ? "Reading your posts" : "Reading your profile"));
+      toast.error(causeOf(raw, openStage === "posts" ? tr("journey.stage.linkedin_read.posts") : tr("ob.s1.postsFail.profile")));
     } finally {
       window.clearTimeout(ceiling);
       readAbortRef.current = null;
@@ -394,8 +406,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
      a later step failed. These two calls are not one measured operation, so no
      operation name is passed and no percentage is claimed. */
   const readStages: WorkingStage[] = ([
-    { key: "profile", label: "Reading your profile" },
-    { key: "posts", label: "Reading your posts" },
+    { key: "profile", label: tr("ob.s1.postsFail.profile") },
+    { key: "posts", label: tr("journey.stage.linkedin_read.posts") },
   ] as const).map((s) => ({
     key: s.key,
     label: s.label,
@@ -411,7 +423,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const readPanel = (
     <WorkingPanel
       runId={readRunId}
-      title="Reading what LinkedIn shows"
+      title={tr("appear.readingTitle")}
       stages={readStages}
       failure={stage === null ? readFailure : null}
       onRetryFromStage={(key) => void readProfile(key === "posts" ? "posts" : "profile")}
@@ -420,7 +432,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       onCarryOn={
         stage === null && readFailure
           ? {
-              label: readDone.includes("profile") ? "Continue without your posts" : "Continue without this read",
+              label: readDone.includes("profile") ? tr("appear.carryNoPosts") : tr("appear.carryNoRead"),
               action: () => { setReadFailure(null); void load(); },
             }
           : null
@@ -432,8 +444,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const useLinkedInPhoto = useCallback(async () => {
     if (!userId || !snapshot?.photo_url || avatarUrl) return;
     const { error } = await supabase.from("diagnostic_profiles").update({ avatar_url: snapshot.photo_url }).eq("user_id", userId);
-    if (error) toast.error("Couldn't save that photo just now.");
-    else { setAvatarUrl(snapshot.photo_url); toast.success("Your LinkedIn photo is now your Aura photo."); }
+    if (error) toast.error(tr("appear.photoFail"));
+    else { setAvatarUrl(snapshot.photo_url); toast.success(tr("appear.photoDone")); }
   }, [userId, snapshot, avatarUrl]);
 
   if (loading || !userId) return null;
@@ -443,14 +455,14 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     return (
       <section style={cardStyle} data-testid="how-you-appear-empty">
         <h2 style={{ fontFamily: SANS, fontSize: 19, fontWeight: 700, color: INK, margin: 0 }}>
-          Aura hasn't read your profile yet.
+          {tr("appear.empty.title")}
         </h2>
         <p style={{ fontSize: 13.5, color: MUTED, margin: "8px 0 16px", lineHeight: 1.6 }}>
-          One address, once. Then this fills in.
+          {tr("appear.empty.body")}
         </p>
         {stage !== null || readFailure ? readPanel : (
           <button type="button" style={primaryButtonStyle} onClick={() => void readProfile()}>
-            Read my profile
+            {tr("appear.empty.cta")}
           </button>
         )}
       </section>
@@ -465,14 +477,14 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       <div style={halfStyle}>
         <div>
           <div style={ruleStyle} />
-          <SectionHeader label="WHAT LINKEDIN SHOWS" />
+          <SectionHeader label={lang === "ar" ? tr("appear.linkedinShows") : "WHAT LINKEDIN SHOWS"} />
         </div>
       <section style={nightCardStyle}>
         <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
           {snapshot.photo_url ? (
             <img
               src={snapshot.photo_url}
-              alt={snapshot.full_name ? `${snapshot.full_name}'s profile photo` : "Profile photo"}
+              alt={snapshot.full_name ? tr("appear.photoAlt", { name: snapshot.full_name }) : tr("appear.photo")}
               style={{ width: 72, height: 72, borderRadius: 999, objectFit: "cover", flexShrink: 0, border: "1px solid rgba(255,255,255,.14)" }}
             />
           ) : (
@@ -502,32 +514,32 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginBlockStart: 20 }}>
           {[
-            { value: snapshot.followers, label: "People following you" },
-            { value: postsWithText, label: "Posts KnownBy has read" },
-            { value: yearsVisible, label: "Years on record" },
+            { value: snapshot.followers, label: tr("appear.fig.followers") },
+            { value: postsWithText, label: tr("appear.fig.posts") },
+            { value: yearsVisible, label: tr("appear.fig.years") },
           ].map((f) => (
             <div key={f.label} style={{ minWidth: 104 }}>
               <div style={figureValueStyle}>
-                {typeof f.value === "number" ? f.value.toLocaleString() : EM_DASH}
+                {typeof f.value === "number" ? displayNumber(f.value) : EM_DASH}
               </div>
-              <div style={figureLabelStyle}>{f.label}</div>
+              <div style={arStyle(lang, figureLabelStyle)}>{f.label}</div>
             </div>
           ))}
         </div>
 
         <div style={{ fontSize: 12.5, color: NIGHT_DIM, marginBlockStart: 18 }}>
-          This is what someone sees before they meet you.
+          {tr("appear.beforeMeet")}
         </div>
       </section>
 
         <div style={readLineStyle}>
           <span>
-            Read from LinkedIn on{" "}
+            {tr("appear.readOn.before")}{" "}
             <span style={dashStyle}>{readDate ?? EM_DASH}</span>
           </span>
           {stage === null && !readFailure ? (
             <button type="button" style={{ ...quietLinkStyle, marginBlockStart: 0 }} onClick={() => void readProfile()}>
-              Read again
+              {tr("appear.readAgain")}
             </button>
           ) : null}
         </div>
@@ -546,17 +558,17 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       <div style={halfStyle}>
         <div>
           <div style={ruleStyle} />
-          <SectionHeader label="WHAT KNOWNBY SEES" />
+          <SectionHeader label={lang === "ar" ? tr("appear.knownbySees") : "WHAT KNOWNBY SEES"} />
         </div>
-        <p style={halfNoteStyle}>LinkedIn shows the facts. This is what they add up to.</p>
+        <p style={halfNoteStyle}>{tr("appear.factsNote")}</p>
 
       {/* ── SECTION 2 — presence health ──────────────────────────────────── */}
       <section style={cardStyle}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <SectionHeader label="PRESENCE HEALTH" />
+          <SectionHeader label={lang === "ar" ? tr("appear.health") : "PRESENCE HEALTH"} />
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-            <span style={{ ...dashStyle, fontSize: 15, fontWeight: 600, color: INK }}>{sum}/60</span>
-            <span style={{ fontSize: 12.5, color: MUTED }}>{overallWord(sum)}</span>
+            <span style={{ ...dashStyle, fontSize: 15, fontWeight: 600, color: INK }}>{lang === "ar" ? tr("appear.sumOf", { sum, max: 60 }) : `${sum}/60`}</span>
+            <span style={{ fontSize: 12.5, color: MUTED }}>{tr(`appear.word.${overallWord(sum)}`)}</span>
           </div>
         </div>
 
@@ -612,14 +624,19 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       {/* ── SECTION 3 — the gap ──────────────────────────────────────────── */}
       {themeRows.length >= 3 && (
         <section id="how-you-appear-gap" style={cardStyle}>
-          <SectionHeader label="WHAT YOU WRITE ABOUT VS WHAT YOUR PROFILE SAYS" />
+          <SectionHeader label={lang === "ar" ? tr("appear.gapTitle") : "WHAT YOU WRITE ABOUT VS WHAT YOUR PROFILE SAYS"} />
           <p style={{ fontSize: 13.5, color: INK, margin: "0 0 12px", lineHeight: 1.6 }}>
+            {lang === "ar" ? (<>
+              {tr("appear.gapIntroAr", { total: totalThemes, shown, carried: carriedOfShown })}
+              {partialOfShown > 0 ? tr("appear.gapIntroArPartial", { partial: partialOfShown }) : null}
+            </>) : (<>
             You write about <span style={dashStyle}>{totalThemes}</span> strands of the work you keep returning to. Your profile carries{" "}
             <span style={dashStyle}>{carriedOfShown}</span> of the <span style={dashStyle}>{shown}</span> biggest
             {partialOfShown > 0 ? (
               <> and half-carries <span style={dashStyle}>{partialOfShown}</span></>
             ) : null}
             .
+            </>)}
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {themeRows.map((t) => {
@@ -630,12 +647,12 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                   key={t.theme}
                   title={
                     state === "carried"
-                      ? `On ${fieldList(t.match.fields)}`
+                      ? tr("appear.chip.on", { fields: fieldList(t.match.fields) })
                       : state === "partial"
                         ? (t.match.listedOnly
-                            ? `In your record — ${fieldList(t.match.listedFields)} — but not in your headline or About.`
-                            : `"${t.match.matched.join(" ")}" is on ${fieldList(t.match.fields)}. "${t.match.missing.join(" ")}" is not.`)
-                        : "Only in your writing"
+                            ? tr("appear.chip.listed", { fields: fieldList(t.match.listedFields) })
+                            : tr("appear.chip.partial", { matched: t.match.matched.join(" "), fields: fieldList(t.match.fields), missing: t.match.missing.join(" ") }))
+                        : tr("appear.chip.only")
                   }
                   style={{
                     ...chipBase,
@@ -646,7 +663,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                   <StateDot state={state} />
                   {t.theme}
                   <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-                    {state === "carried" ? " — on your profile" : state === "partial" ? " — half on your profile" : " — only in your writing"}
+                    {state === "carried" ? tr("appear.sr.carried") : state === "partial" ? tr("appear.sr.partial") : tr("appear.sr.missing")}
                   </span>
                 </span>
               );
@@ -654,35 +671,33 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
           </div>
           {totalThemes > shown && (
             <div style={{ fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
-              Showing your <span style={dashStyle}>{shown}</span> most frequent.
+              {lang === "ar" ? tr("appear.showingAr", { shown }) : (<>Showing your <span style={dashStyle}>{shown}</span> most frequent.</>)}
             </div>
           )}
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
             <StateDot state="carried" />
-            on your profile
+            {tr("appear.legend.carried")}
             <span aria-hidden="true">·</span>
             <StateDot state="partial" />
-            half of it
+            {tr("appear.legend.partial")}
             <span aria-hidden="true">·</span>
             <StateDot state="missing" />
-            only in your writing
+            {tr("appear.legend.missing")}
           </div>
           {/* The summary names the state the member is actually in — including
               the half-way one, which used to be reported as a miss. */}
           {top && top.match.state === "missing" ? (
             <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-              The thing you write about most — {top.theme} — appears nowhere on your profile.
+              {tr("appear.sum.topMissing", { theme: top.theme })}
             </p>
           ) : top && top.match.state === "partial" ? (
             top.match.listedOnly ? (
               <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-                {top.theme} is in your record — {fieldList(top.match.listedFields)} — but you never say it in your
-                headline or your About.
+                {tr("appear.sum.listed", { theme: top.theme, fields: fieldList(top.match.listedFields) })}
               </p>
             ) : (
               <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-                {top.theme} is half on your profile. "{top.match.matched.join(" ")}" is on {fieldList(top.match.fields)}
-                ; "{top.match.missing.join(" ")}" is not.
+                {tr("appear.sum.partial", { theme: top.theme, matched: top.match.matched.join(" "), fields: fieldList(top.match.fields), missing: top.match.missing.join(" ") })}
               </p>
             )
           ) : firstPartial ? (
@@ -690,22 +705,20 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                untouched gap, because the member already showed intent there. */
             firstPartial.match.listedOnly ? (
               <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-                {firstPartial.theme} is in your record — {fieldList(firstPartial.match.listedFields)} — but you never
-                say it in your headline or your About.
+                {tr("appear.sum.listed", { theme: firstPartial.theme, fields: fieldList(firstPartial.match.listedFields) })}
               </p>
             ) : (
               <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-                {firstPartial.theme} is half on your profile. "{firstPartial.match.matched.join(" ")}" is on{" "}
-                {fieldList(firstPartial.match.fields)}; "{firstPartial.match.missing.join(" ")}" is not.
+                {tr("appear.sum.partial", { theme: firstPartial.theme, matched: firstPartial.match.matched.join(" "), fields: fieldList(firstPartial.match.fields), missing: firstPartial.match.missing.join(" ") })}
               </p>
             )
           ) : firstMissing ? (
             <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-              You write about {firstMissing.theme} often. Your profile never mentions it.
+              {tr("appear.sum.missing", { theme: firstMissing.theme })}
             </p>
           ) : (
             <p style={{ fontSize: 13.5, color: MUTED, margin: "12px 0 0", lineHeight: 1.6 }}>
-              Everything you write about is on your profile.
+              {tr("appear.sum.all")}
             </p>
           )}
           {/* One action, and it names the target it will actually help. */}
@@ -718,8 +731,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
               onClick={() => setDraftTarget(ctaTheme.target)}
             >
               {ctaTheme.target === "about"
-                ? `Say ${ctaTheme.theme} in my About →`
-                : `Put ${ctaTheme.theme} in my headline →`}
+                ? tr("appear.cta.about", { theme: ctaTheme.theme })
+                : tr("appear.cta.headline", { theme: ctaTheme.theme })}
             </button>
           ) : null}
 
@@ -752,35 +765,36 @@ function FixAction({
   /** Set only when the next LinkedIn read FOUND the copied wording live. */
   appliedAt?: string | null;
 }) {
+  const { t: tr } = useTranslation();
   /* The member already acted on this one and Aura has seen it. Do not ask
      again — say what happened, and get out of the way. */
   if (appliedAt && (rowKey === "headline" || rowKey === "about")) {
     return (
       <div style={{ ...comingNextStyle, color: SUCCESS }}>
-        You put Aura's wording here on <span style={dashStyle}>{formatReadDate(appliedAt) ?? EM_DASH}</span>.
+        {tr("appear.applied.before")}<span style={dashStyle}>{formatReadDate(appliedAt) ?? EM_DASH}</span>{tr("appear.applied.after")}
       </div>
     );
   }
   if (rowKey === "photo") {
     if (!canUsePhoto) return null;
-    return <button type="button" style={quietLinkStyle} onClick={onUsePhoto}>Use my LinkedIn photo</button>;
+    return <button type="button" style={quietLinkStyle} onClick={onUsePhoto}>{tr("appear.fix.photo")}</button>;
   }
   if (rowKey === "headline") {
-    return <button type="button" style={quietLinkStyle} onClick={() => onDraft("headline")}>Draft a sharper one from my posts →</button>;
+    return <button type="button" style={quietLinkStyle} onClick={() => onDraft("headline")}>{tr("appear.fix.headline")}</button>;
   }
   if (rowKey === "about") {
-    return <button type="button" style={quietLinkStyle} onClick={() => onDraft("about")}>Draft this from what I've already written →</button>;
+    return <button type="button" style={quietLinkStyle} onClick={() => onDraft("about")}>{tr("appear.fix.about")}</button>;
   }
   if (rowKey === "experience") {
-    return <div style={comingNextStyle}>Aura can draft these from your posts — coming next.</div>;
+    return <div style={comingNextStyle}>{tr("appear.fix.experience")}</div>;
   }
   if (rowKey === "skills") {
     return (
-      <a href="#how-you-appear-gap" style={quietLinkStyle}>See the skills my posts prove →</a>
+      <a href="#how-you-appear-gap" style={quietLinkStyle}>{tr("appear.fix.skills")}</a>
     );
   }
   if (!profileUrl) return null;
-  return <a href={profileUrl} target="_blank" rel="noreferrer" style={quietLinkStyle}>Add it on LinkedIn →</a>;
+  return <a href={profileUrl} target="_blank" rel="noreferrer" style={quietLinkStyle}>{tr("appear.fix.add")}</a>;
 }
 
 /**
