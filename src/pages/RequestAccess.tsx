@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
+import { fetchSeniorityTitles } from "@/lib/seniorityTitles";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
   SEAT_LEAD, SEAT_HOW, SEAT_VS_TOOLS, SEAT_RACK_LABEL,
@@ -54,7 +55,26 @@ function usePositionCount(target: number, start: boolean, duration = 800) {
 }
 
 export default function RequestAccess() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const ar = i18n.language === "ar";
+  /** English keeps the seatCopy constants untouched; Arabic reads the shared seatOffer.* keys. */
+  const S = (en: string, key: string, opts?: Record<string, unknown>) => (ar ? t(key, opts) : en);
+  const [levelAr, setLevelAr] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!ar) return;
+    let alive = true;
+    fetchSeniorityTitles()
+      .then((rows) => {
+        if (!alive) return;
+        const m: Record<string, string> = {};
+        rows.forEach((r) => { if (r.title_ar && r.title_ar.trim()) m[r.title] = r.title_ar; });
+        setLevelAr(m);
+      })
+      .catch(() => { /* English labels stay */ });
+    return () => { alive = false; };
+  }, [ar]);
+  const levelLabel = (o: string) => (ar ? levelAr[o] ?? o : o);
+  const sectorLabel = (o: string) => (ar ? t(`sector.${o}`, { defaultValue: o }) : o);
   usePageMeta({
     title: t("auth.meta.requestTitle"),
     description:
@@ -196,13 +216,13 @@ export default function RequestAccess() {
         <div>
           <div className="ra-eyebrow"><span>{t("auth.request.eyebrow")}</span></div>
           <h1 className="ra-h1">{t("seat.heading")}</h1>
-          <p className="ra-lede">{SEAT_LEAD}</p>
+          <p className="ra-lede">{S(SEAT_LEAD, "seatOffer.lead")}</p>
           <p className="ra-onejob">{t("seat.oneJob")}</p>
           <p className="ra-howlb">{t("seat.howLabel")}</p>
           <ul className="ra-how">
             {SEAT_HOW.map((_r, i) => t(`seat.how.${i + 1}`)).map((row) => <li key={row}>{row}</li>)}
           </ul>
-          <p className="ra-vs">{SEAT_VS_TOOLS}</p>
+          <p className="ra-vs">{S(SEAT_VS_TOOLS, "seatOffer.vsTools")}</p>
           <p className="ra-constraint">{t("seat.constraint")}</p>
 
           {seats && (
@@ -220,7 +240,7 @@ export default function RequestAccess() {
                 <>
                   <div className="ra-rackhead">
                     <span className="ra-n">
-                      {SEAT_RACK_LABEL(seats.claimed, seats.cap)}
+                      {S(SEAT_RACK_LABEL(seats.claimed, seats.cap), "seatOffer.rackLabel", { claimed: seats.claimed, cap: seats.cap })}
                     </span>
                     <span className="ra-lb">{t("auth.request.foundingCircle")}</span>
                   </div>
@@ -294,12 +314,12 @@ export default function RequestAccess() {
                 />
                 <Select
                   id="ra-seniority" label={t("auth.request.levelLabel")} placeholder={t("auth.request.levelPlaceholder")}
-                  value={seniority} options={SENIORITY} error={errors.seniority}
+                  value={seniority} options={SENIORITY} labelOf={levelLabel} error={errors.seniority}
                   onChange={(v) => { setSeniority(v); if (errors.seniority) setErrors((p) => ({ ...p, seniority: undefined })); }}
                 />
                 <Select
                   id="ra-sector" label={t("auth.request.sectorLabel")} placeholder={t("auth.request.sectorPlaceholder")}
-                  value={sector} options={SECTOR} error={errors.sector}
+                  value={sector} options={SECTOR} labelOf={sectorLabel} error={errors.sector}
                   onChange={(v) => { setSector(v); if (errors.sector) setErrors((p) => ({ ...p, sector: undefined })); }}
                 />
 
@@ -353,27 +373,27 @@ export default function RequestAccess() {
             <Ceremony
               position={position}
               seatTag={seats ? t("auth.request.seatTag", { claimed: seats.claimed, cap: seats.cap }) : t("auth.request.reserved")}
-              title={RESERVED_TITLE}
-              body={RESERVED_BODY}
+              title={S(RESERVED_TITLE, "seatOffer.reservedTitle")}
+              body={S(RESERVED_BODY, "seatOffer.reservedBody")}
               withSignature
             >
               {worthState === "sent" || worthState === "skipped" ? (
-                <p className="ra-quiet" role="status">{WORTH_THANKS}</p>
+                <p className="ra-quiet" role="status">{S(WORTH_THANKS, "seatOffer.worthThanks")}</p>
               ) : (
                 <div className="ra-worth">
-                  <label htmlFor="ra-worth">{WORTH_QUESTION}</label>
+                  <label htmlFor="ra-worth">{S(WORTH_QUESTION, "seatOffer.worthQuestion")}</label>
                   <textarea
                     id="ra-worth" className="ra-field" rows={3} maxLength={1000}
-                    placeholder={WORTH_PLACEHOLDER}
+                    placeholder={S(WORTH_PLACEHOLDER, "seatOffer.worthPlaceholder")}
                     value={worth} onChange={(e) => setWorth(e.target.value)}
                   />
                   <div className="ra-doors">
                     <button type="button" className="ra-door ra-door-fill"
                       disabled={worthState === "sending"} onClick={() => void sendWorth()}>
-                      {worthState === "sending" ? <span className="ra-pulse">{t("auth.request.sending")}</span> : WORTH_SEND}
+                      {worthState === "sending" ? <span className="ra-pulse">{t("auth.request.sending")}</span> : S(WORTH_SEND, "seatOffer.worthSend")}
                     </button>
                     <button type="button" className="ra-door ra-door-line"
-                      onClick={() => setWorthState("skipped")}>{WORTH_SKIP}</button>
+                      onClick={() => setWorthState("skipped")}>{S(WORTH_SKIP, "seatOffer.worthSkip")}</button>
                   </div>
                 </div>
               )}
@@ -381,7 +401,7 @@ export default function RequestAccess() {
           )}
 
           {status === "success" && intent === INTENT_KEEP_POSTED && (
-            <Ceremony position={null} title={POSTED_TITLE} body={t("auth.request.thanks", { name: submittedName })} />
+            <Ceremony position={null} title={S(POSTED_TITLE, "seatOffer.postedTitle")} body={t("auth.request.thanks", { name: submittedName })} />
           )}
 
           {status === "duplicate" && (
@@ -428,9 +448,9 @@ function Field({
 }
 
 function Select({
-  id, label, value, options, placeholder, onChange, error,
+  id, label, value, options, placeholder, onChange, error, labelOf,
 }: {
-  id: string; label: string; value: string; options: string[];
+  id: string; label: string; value: string; options: string[]; labelOf?: (o: string) => string;
   placeholder: string; onChange: (v: string) => void; error?: string;
 }) {
   return (
@@ -441,7 +461,7 @@ function Select({
         onChange={(e) => onChange(e.target.value)}
       >
         <option value="">{placeholder}</option>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        {options.map((o) => <option key={o} value={o}>{labelOf ? labelOf(o) : o}</option>)}
       </select>
       {error && <p className="ra-err">{error}</p>}
     </div>

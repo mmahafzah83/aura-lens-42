@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
+import i18n from "@/i18n";
 
 const STORAGE_KEY = "aura-cookie-consent";
 
@@ -7,6 +9,9 @@ const CookieConsent = () => {
   const [show, setShow] = useState(false);
   const [closing, setClosing] = useState(false);
   const bar = useRef<HTMLDivElement | null>(null);
+  const { lang } = useLanguage();
+  const ar = lang === "ar";
+  const t = i18n.getFixedT(lang);
 
   useEffect(() => {
     try {
@@ -58,7 +63,8 @@ const CookieConsent = () => {
     <div
       ref={bar}
       role="region"
-      aria-label="Cookie consent"
+      aria-label={t("cookie.aria")}
+      dir={ar ? "rtl" : undefined}
       className="fixed left-0 right-0 bottom-0 z-50"
       style={{
         background: "var(--vellum)",
@@ -72,14 +78,14 @@ const CookieConsent = () => {
         style={{ maxWidth: 1280 }}
       >
         <p
-          className="text-xs sm:text-sm text-left"
-          style={{ color: "var(--ink)", fontFamily: "var(--font-body)" }}
+          className="text-xs sm:text-sm text-start"
+          style={{ color: "var(--ink)", fontFamily: ar ? "'Cairo','CairoAR',sans-serif" : "var(--font-body)", ...(ar ? { lineHeight: 1.7, letterSpacing: 0 } : {}) }}
         >
-          <span className="hidden sm:inline">KnownBy uses essential cookies for authentication and preferences. </span>
-          <span className="sm:hidden">Essential cookies only. </span>
+          <span className="hidden sm:inline">{t("cookie.full")}</span>
+          <span className="sm:hidden">{t("cookie.short")}</span>
           <Link to="/privacy" className="v23-textlink">
-            <span className="hidden sm:inline">Read our Privacy Policy</span>
-            <span className="sm:hidden">Privacy</span>
+            <span className="hidden sm:inline">{t("cookie.linkFull")}</span>
+            <span className="sm:hidden">{t("cookie.linkShort")}</span>
           </Link>
           .
         </p>
@@ -87,9 +93,9 @@ const CookieConsent = () => {
           type="button"
           onClick={accept}
           className="px-5 py-2 rounded-md text-sm font-medium transition-opacity hover:opacity-90 shrink-0 v23-tap v23-focus"
-          style={{ background: "var(--brand)", color: "var(--paper)", minHeight: 44 }}
+          style={{ background: "var(--brand)", color: "var(--paper)", minHeight: 44, ...(ar ? { fontFamily: "'Cairo','CairoAR',sans-serif" } : {}) }}
         >
-          Accept
+          {t("cookie.accept")}
         </button>
       </div>
     </div>

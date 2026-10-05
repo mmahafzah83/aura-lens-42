@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import i18n, { readStoredLang } from "@/i18n";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -117,9 +118,15 @@ const App = () => (
                 >
                   KnownBy
                 </div>
-                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                  Loading your intelligence…
-                </p>
+                {readStoredLang() === "ar" ? (
+                  <p className="text-sm" dir="rtl" style={{ color: "var(--text-secondary)", fontFamily: "'Cairo','CairoAR',sans-serif", lineHeight: 1.7 }}>
+                    {i18n.getFixedT("ar")("notFound.loading")}
+                  </p>
+                ) : (
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    Loading your intelligence…
+                  </p>
+                )}
               </div>
             }
           >
