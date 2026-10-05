@@ -11,7 +11,18 @@ import { AuraLogo } from "@/components/brand/AuraLogo";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
 import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
-import { pt, arStyle, AR_FONT, type PaperLang } from "@/components/report/paperText";
+import { pt, arStyle, AR_FONT, arabicDate, sentences, type PaperLang } from "@/components/report/paperText";
+
+const AR_ANY = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+/** Per-value handling inside an Arabic report: Arabic values get Cairo; Latin values keep their font but lose tracking/capitals. */
+export function valStyle(lang: PaperLang, s: React.CSSProperties, value?: string | null): React.CSSProperties {
+  if (lang !== "ar") return s;
+  if (value && AR_ANY.test(value)) return arStyle(lang, s);
+  return { ...s, letterSpacing: 0, textTransform: "none", fontStyle: "normal" };
+}
+/** Value direction inside an Arabic report. */
+export const valDir = (lang: PaperLang, value?: string | null): "rtl" | "ltr" | undefined =>
+  lang !== "ar" ? undefined : value && AR_ANY.test(value) ? "rtl" : "ltr";
 
 /** Keeps a Latin run (KnownBy, a domain) in its own direction inside Arabic. */
 export function LatinIsolate({ children }: { children: React.ReactNode }) {
@@ -50,7 +61,8 @@ export const FONT = {
 // ── Small helpers ──────────────────────────────────────────────────────
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
-function todayLabel(iso: string): string {
+function todayLabel(iso: string, lang: PaperLang = "en"): string {
+  if (lang === "ar") return arabicDate(iso);
   try {
     return new Date(iso).toLocaleDateString("en-GB", {
       day: "2-digit", month: "long", year: "numeric",
