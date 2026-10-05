@@ -357,7 +357,7 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
                 >
                   {o.text}
                 </div>
-                <div style={COUNT_LINE}>
+                <div style={A(COUNT_LINE)}>
                   {target === "headline"
                     ? tr("dpc.chars", { n: o.text.length })
                     : tr("dpc.words", { n: wordCount(o.text) })}
