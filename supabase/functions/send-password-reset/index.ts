@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import {
-  renderEmail, heading, paragraph, note,
-} from "../_shared/emailTemplate.ts";
+import { passwordResetEmail } from "../_shared/personEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,7 +17,7 @@ serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
 
-    const { email, origin } = await req.json();
+    const { email, origin, lang: bodyLang } = await req.json();
     if (!email || typeof email !== "string") {
       return new Response(JSON.stringify({ error: "email is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -70,25 +69,17 @@ serve(async (req) => {
 
     const resetUrl = linkData.properties.action_link;
 
-    let name = "there";
+    let firstName: string | null = null;
     try {
       const { data: profile } = await admin
         .from("diagnostic_profiles")
         .select("first_name")
         .eq("user_id", linkData.user!.id)
         .maybeSingle();
-      if (profile?.first_name) name = profile.first_name;
+      if (profile?.first_name) firstName = profile.first_name;
     } catch (_) { /* ignore */ }
-    const body = `
-      ${heading("Reset your password")}
-      ${paragraph(`Hi ${name}, we received a request to reset the password on your KnownBy account. Use the button below to set a new one.`)}
-      ${note("The link expires in 24 hours. If you didn't ask for this, you can ignore this email.")}
-    `;
-    const html = renderEmail({
-      preheader: "Reset your KnownBy password",
-      body,
-      cta: { href: resetUrl, label: "Set a new password" },
-    });
+    const lang = await resolveEmailLang(bodyLang, admin, linkData.user?.id);
+    const mail = passwordResetEmail(lang, firstName, resetUrl);
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -100,8 +91,8 @@ serve(async (req) => {
         from: "KnownBy <Mohammad.Mahafdhah@aura-intel.org>",
         to: [cleanEmail],
         reply_to: "mohammad.mahafdhah@aura-intel.org",
-        subject: "Reset your KnownBy password",
-        html,
+        subject: mail.subject,
+        html: mail.html,
         tags: [
           ...(linkData.user?.id ? [{ name: "user_id", value: linkData.user.id }] : []),
           { name: "email_type", value: "password_reset" },

@@ -3,7 +3,8 @@
 // the journey. Never a sequence — the caller records that it has been sent.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { renderEmail, heading, INK_SOFT } from "../_shared/emailTemplate.ts";
+import { resumeEmail } from "../_shared/personEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,18 +31,12 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const stage = Number(body?.stage || 0);
-    const line = stage
-      ? `You stopped at step ${stage} of 5. Everything you answered is saved.`
-      : `Everything you answered is saved.`;
-
-    const html = renderEmail({
-      preheader: "Pick up where you left off",
-      body: [
-        heading("Pick up where you left off"),
-        `<p style="font-size:15px;line-height:1.7;color:${INK_SOFT}">${line}</p>`,
-      ].join(""),
-      cta: { href: "https://www.aura-intel.org/onboarding", label: "Pick up where I left off" },
-    });
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+    const lang = await resolveEmailLang(body?.lang, admin, user.id);
+    const mail = resumeEmail(lang, stage);
 
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
     if (!RESEND_KEY) return json({ error: "RESEND_API_KEY missing" }, 500);
@@ -49,7 +44,7 @@ serve(async (req) => {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: [user.email], subject: "Pick up where you left off", html }),
+      body: JSON.stringify({ from: FROM, to: [user.email], subject: mail.subject, html: mail.html }),
     });
     if (!resp.ok) {
       const detail = await resp.text();

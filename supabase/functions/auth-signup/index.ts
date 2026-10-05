@@ -4,6 +4,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { LIMITS, clientIp, hashIp } from "../_shared/limits.ts";
 import { renderEmail, heading, paragraph } from "../_shared/emailTemplate.ts";
+import { welcomeEmail } from "../_shared/personEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 import { provisionAccount } from "../_shared/provisionAccount.ts";
 
 const corsHeaders = {
@@ -55,7 +57,7 @@ async function alertFounder(admin: any, ip_hash: string, attempts: number, shown
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Aura <invites@aura-intel.org>",
+        from: "KnownBy <invites@aura-intel.org>",
         to: ["mmahafzah8386@gmail.com"],
         subject: "Aura — signup ceiling reached",
         html,
@@ -77,7 +79,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { email, password, origin, consent_version } = await req.json();
+    const { email, password, origin, consent_version, lang: bodyLang } = await req.json();
     const addr = String(email || "").trim().toLowerCase();
     const pwd = String(password || "");
     if (!addr.includes("@") || addr.length < 5) return json({ error: "Enter a valid email address." }, 400);
@@ -189,25 +191,16 @@ serve(async (req) => {
         // device: the sign-in door carries the destination, never becomes it.
         const base = origin || "https://www.aura-intel.org";
         const dest = onboardingStep >= 4 ? "/home" : "/onboarding";
-        const html = renderEmail({
-          preheader: "Your account is open. Your read is being written now.",
-          body: [
-            heading("Your account is open."),
-            paragraph("Everything you just answered is saved to it. Your read is being written now."),
-          ].join(""),
-          cta: {
-            href: `${base}/auth?next=${encodeURIComponent(dest)}`,
-            label: "Open your read",
-          },
-        });
+        const lang = await resolveEmailLang(bodyLang, admin, newUserId);
+        const mail = welcomeEmail(lang, `${base}/auth?next=${encodeURIComponent(dest)}`);
         const resp = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             from: "KnownBy <invites@aura-intel.org>",
             to: [addr],
-            subject: "Welcome to KnownBy",
-            html,
+            subject: mail.subject,
+            html: mail.html,
           }),
         });
         if (!resp.ok) console.error(`welcome email failed [${resp.status}]: ${await resp.text()}`);

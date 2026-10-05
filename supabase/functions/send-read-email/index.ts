@@ -3,7 +3,8 @@
 // than a browser tab. Called once, at the end of onboarding, by the member.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { renderEmail, heading, INK, INK_SOFT } from "../_shared/emailTemplate.ts";
+import { readEmail } from "../_shared/personEmails.ts";
+import { resolveEmailLang } from "../_shared/emailLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,9 +12,6 @@ const corsHeaders = {
 };
 
 const FROM = "KnownBy <invites@aura-intel.org>";
-const esc = (s: string) =>
-  String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -38,23 +36,6 @@ serve(async (req) => {
     const thin: string[] = Array.isArray(body?.softGround) ? body.softGround.slice(0, 3).map(String) : [];
     if (!archetype && !marketRead) return json({ error: "Nothing to send yet" }, 400);
 
-    const list = (items: string[]) =>
-      `<ul style="margin:8px 0 0;padding-inline-start:20px;color:#5B6673;font-size:15px;line-height:1.65">
-        ${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
-
-    const html = renderEmail({
-      preheader: "Your read from KnownBy",
-      body: [
-        heading("How people see you"),
-        archetype ? `<p style="font-size:20px;font-weight:700;color:${INK};margin:0 0 12px">${esc(archetype)}</p>` : "",
-        marketRead ? `<p style="font-size:15px;line-height:1.7;color:${INK_SOFT}">${esc(marketRead)}</p>` : "",
-        subjects.length ? `<p style="font-size:13px;color:${INK_SOFT};margin:22px 0 0">The subjects you own</p>${list(subjects)}` : "",
-        thin.length ? `<p style="font-size:13px;color:${INK_SOFT};margin:22px 0 0">Where you're thinnest</p>${list(thin)}` : "",
-        `<p style="font-size:13px;line-height:1.6;color:${INK_SOFT};margin:24px 0 0">This is a read, not a verdict. If it got you wrong, reply to this email and tell me what it missed — I read every reply myself, and the read changes.</p>`,
-      ].join(""),
-      cta: { href: "https://www.aura-intel.org/home", label: "Open KnownBy" },
-    });
-
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
     if (!RESEND_KEY) return json({ error: "RESEND_API_KEY missing" }, 500);
 
@@ -63,6 +44,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
+    const lang = await resolveEmailLang(body?.lang, admin, user.id);
+    const mail = readEmail(lang, { archetype, marketRead, subjects, thin });
     const logAttempt = async (key: string) => {
       try {
         await admin.from("lifecycle_email_log").insert({ user_id: user.id, message_key: key });
@@ -77,8 +60,8 @@ serve(async (req) => {
         to: [user.email],
         // The ask has to land somewhere a person reads.
         reply_to: "Mohammad.Mahafdhah@aura-intel.org",
-        subject: "Your read from KnownBy",
-        html,
+        subject: mail.subject,
+        html: mail.html,
       }),
     });
     if (!resp.ok) {
