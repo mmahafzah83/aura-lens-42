@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
+import { reportLang } from "@/components/report/paperText";
 import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import CountryPicker from "@/components/CountryPicker";
 import PreferencesPanel from "@/components/PreferencesPanel";
@@ -284,7 +285,7 @@ const handleDeleteAccount = async () => {
       .toISOString()
       .slice(0, 10);
     const v = reportVersion ? `-v${reportVersion}` : "";
-    return `aura-report-${slug}${v}-${date}.pdf`;
+    return `knownby-report-${slug}${v}-${date}.pdf`;
   };
 
   const reportMountRef = useRef<HTMLDivElement | null>(null);
@@ -917,7 +918,7 @@ const handleDeleteAccount = async () => {
             pointerEvents: "none",
           }}
         >
-          <ReportDocument data={report} />
+          <ReportDocument data={report} lang={reportLang(report)} />
         </div>
       ) : null}
 

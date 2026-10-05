@@ -74,3 +74,17 @@ describe("persona labels", () => {
     }
   });
 });
+
+import { reportLang, sentences } from "@/components/report/paperText";
+describe("report language", () => {
+  it("saved brand paper language wins", () => {
+    expect(reportLang({ brand_paper: { lang: "en" }, positioning: { statement: "أساعد" } })).toBe("en");
+  });
+  it("falls back to the statement's first letters", () => {
+    expect(reportLang({ positioning: { statement: "أساعد شركات" } })).toBe("ar");
+    expect(reportLang({ positioning: { statement: "I help" } })).toBe("en");
+  });
+  it("splits on Arabic and Latin sentence ends", () => {
+    expect(sentences("أولى. ثانية؟ ثالثة.")).toEqual(["أولى.", "ثانية؟", "ثالثة."]);
+  });
+});

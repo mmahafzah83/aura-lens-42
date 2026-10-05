@@ -64,3 +64,24 @@ export function arStyle(lang: PaperLang, s: CSSProperties, opts?: { mono?: boole
 
 /** Curly quotes in English, guillemets in Arabic. */
 export const quote = (lang: PaperLang, v: string) => (lang === "ar" ? `«${v}»` : `“${v}”`);
+
+/**
+ * The Strategic Identity Report's language: the saved brand paper language,
+ * else Arabic when the positioning statement opens in Arabic script.
+ * Never the screen language.
+ */
+export function reportLang(data: {
+  lang?: string | null;
+  brand_paper?: { lang?: string | null } | null;
+  positioning?: { statement?: string | null; title?: string | null } | null;
+} | null | undefined): PaperLang {
+  const saved = data?.brand_paper?.lang ?? data?.lang;
+  if (saved === "ar" || saved === "en") return saved;
+  const s = (data?.positioning?.statement || data?.positioning?.title || "").trim();
+  return AR_START.test(s) ? "ar" : "en";
+}
+
+/** Splits text into whole sentences; «.» «؟» «!» «?» end a sentence. */
+export function sentences(s: string): string[] {
+  return s.split(/(?<=[.؟!?])\s+/u).map((x) => x.trim()).filter(Boolean);
+}

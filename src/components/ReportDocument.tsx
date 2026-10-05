@@ -11,7 +11,12 @@ import { rankFromLevel } from "@/lib/marketPersonas";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
 import CvCrosscheck, { hasCvCrosscheck } from "@/components/report/CvCrosscheck";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { fetchSeniorityTitles, titleLabel, type SeniorityTitle } from "@/lib/seniorityTitles";
+import { attachCapabilityNamesAr, type CapabilityNameRow } from "@/lib/buildBrandPaper";
+import { pt, arStyle, arabicDate, reportLang, type PaperLang } from "@/components/report/paperText";
+import { reportOverflowingSheets } from "@/components/report/BrandPaperDocument";
 import {
   PaperHeader,
   PaperFooter,
@@ -24,9 +29,18 @@ import {
   PaperPersonaCard,
   ClosingPlate,
   useImprintDelta,
+  valStyle,
+  valDir,
+  withLatin,
   T,
   FONT,
 } from "@/components/report/AuraPaper";
+
+/** Fixed text: Arabic from the locale file, English exactly as written. */
+const L = (lang: PaperLang, key: string, english: string, vars?: Record<string, string | number>) =>
+  lang === "ar" ? pt(lang, key, vars) : english;
+const shortDate = (iso: string, lang: PaperLang) =>
+  lang === "ar" ? arabicDate(iso) : new Date(iso).toLocaleDateString("en-GB");
 
 // ── Layout constants ───────────────────────────────────────────────────
 const SHEET_W = 794;   // A4 @ 96dpi
@@ -63,11 +77,14 @@ function todayLabel(iso: string): string {
 }
 
 // ── Sheet chassis ──────────────────────────────────────────────────────
-function Sheet({ children, bleed }: { children: React.ReactNode; bleed?: boolean }) {
+function Sheet({ children, bleed, lang = "en", page }: { children: React.ReactNode; bleed?: boolean; lang?: PaperLang; page?: number }) {
   return (
     <div
       className="aura-report-sheet"
       data-report-page
+      data-page={page}
+      dir={lang === "ar" ? "rtl" : undefined}
+      lang={lang === "ar" ? "ar" : undefined}
       data-theme="light"
       style={{
         width: SHEET_W,
@@ -82,7 +99,7 @@ function Sheet({ children, bleed }: { children: React.ReactNode; bleed?: boolean
         flexDirection: "column",
         boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.08)",
         margin: "0 auto 32px",
-        letterSpacing: "normal",
+        letterSpacing: lang === "ar" ? 0 : "normal",
       }}
     >
       {children}
@@ -90,10 +107,10 @@ function Sheet({ children, bleed }: { children: React.ReactNode; bleed?: boolean
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, lang = "en" }: { children: React.ReactNode; lang?: PaperLang }) {
   return (
     <div
-      style={{
+      style={arStyle(lang, {
         fontFamily: FONT.mono,
         fontSize: 10.5,
         fontWeight: 700,
@@ -101,7 +118,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         textTransform: "uppercase",
         color: T.spot,
         marginBottom: 12,
-      }}
+      })}
     >
       {children}
     </div>
@@ -109,51 +126,72 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ── Block sub-renderers ────────────────────────────────────────────────
-function SectionTitle({ title, kicker }: { title: string; kicker?: string }) {
+function SectionTitle({ title, kicker, lang = "en" }: { title: string; kicker?: string; lang?: PaperLang }) {
   return (
     <div>
       {kicker ? (
-        <div style={{ fontFamily: FONT.mono, fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: T.spot, fontWeight: 700, marginBottom: 8 }}>
-          {kicker}
+        <div style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: T.spot, fontWeight: 700, marginBottom: 8 }, lang === "ar" && !/[A-Za-z]/.test(kicker) ? kicker : null)}>
+          {lang === "ar" ? <span dir={valDir(lang, kicker)} style={{ unicodeBidi: "isolate" }}>{kicker}</span> : kicker}
         </div>
       ) : null}
-      <h2 style={{ fontFamily: FONT.serif, fontSize: 34, fontWeight: 500, margin: 0, color: T.ink, lineHeight: 1.15 }}>
-        {title}
+      <h2 style={arStyle(lang, { fontFamily: FONT.serif, fontSize: 34, fontWeight: 500, margin: 0, color: T.ink, lineHeight: 1.15 })}>
+        {withLatin(title, lang)}
       </h2>
     </div>
   );
 }
 
-function ImprintFigure({ score, userId, generatedAt }: {
+function ImprintFigure({ score, userId, generatedAt, lang = "en" }: {
   score: NonNullable<ReportData["score"]>;
   userId: string;
   generatedAt: string;
+  lang?: PaperLang;
 }) {
   const c = score.components;
+  const ar = lang === "ar";
   return (
     <PaperFigure
+      lang={lang}
       index={1}
-      label="The Imprint Instrument"
-      meta={new Date(score.snapshot_at || generatedAt).toLocaleDateString("en-GB")}
-      findingBold={`Your standing is at ${score.score} of 100${score.tier ? " · " + score.tier + " tier" : ""}.`}
-      findingRest="Weighting: Signal 40 · Content 40 · Consistency 20."
+      label={ar ? (withLatin(pt(lang, "report.doc.imprintInstrument"), lang) as unknown as string) : "The Imprint Instrument"}
+      meta={shortDate(score.snapshot_at || generatedAt, lang)}
+      findingBold={ar
+        ? pt(lang, score.tier ? "report.doc.standingTier" : "report.doc.standing", { score: score.score, tier: score.tier || "" })
+        : `Your standing is at ${score.score} of 100${score.tier ? " · " + score.tier + " tier" : ""}.`}
+      findingRest={L(lang, "report.doc.weighting", "Weighting: Signal 40 · Content 40 · Consistency 20.")}
     >
       <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 30, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-          <ImprintDial score={score.score} tier={score.tier} />
-          <ImprintSparkline userId={userId} />
+          <ImprintDial score={score.score} tier={score.tier} lang={lang} />
+          <ImprintSparkline userId={userId} lang={lang} />
         </div>
         <div>
-          <ComponentBar label="Signal"      weight={40} value={c.signal}  weighted={c.signal_weighted} />
-          <ComponentBar label="Content"     weight={40} value={c.content} weighted={c.content_weighted} />
-          <ComponentBar label="Consistency" weight={20} value={c.capture} weighted={c.capture_weighted} isConsistency />
+          <ComponentBar lang={lang} label={L(lang, "report.doc.signal", "Signal")}      weight={40} value={c.signal}  weighted={c.signal_weighted} />
+          <ComponentBar lang={lang} label={L(lang, "report.doc.content", "Content")}     weight={40} value={c.content} weighted={c.content_weighted} />
+          <ComponentBar lang={lang} label={L(lang, "report.doc.consistency", "Consistency")} weight={20} value={c.capture} weighted={c.capture_weighted} isConsistency />
         </div>
       </div>
     </PaperFigure>
   );
 }
 
-function ProfileGrid({ items }: { items: { label: string; value: string }[] }) {
+function ProfileGrid({ items, lang = "en" }: { items: { label: string; value: string }[]; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 32px" }}>
+        {items.map((it) => (
+          <div key={it.label}>
+            <div style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 10.5, color: T.spot, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 3, fontWeight: 700 }, it.label)}>
+              {it.label}
+            </div>
+            <div style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 15, color: T.ink }, it.value)}>
+              <span dir={valDir(lang, it.value)} style={{ unicodeBidi: "isolate" }}>{it.value}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 32px" }}>
       {items.map((it) => (
@@ -164,6 +202,17 @@ function ProfileGrid({ items }: { items: { label: string; value: string }[] }) {
           <div style={{ fontFamily: FONT.serif, fontSize: 15, color: T.ink }}>{it.value}</div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function GoalRow({ g, i, lang }: { g: string; i: number; lang: PaperLang }) {
+  return (
+    <div style={{ display: "flex", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.rule}` }}>
+      <span dir="ltr" style={{ fontFamily: FONT.mono, fontSize: 12, color: T.spot, minWidth: 26, fontWeight: 700, unicodeBidi: "isolate" }}>
+        {String(i + 1).padStart(2, "0")}
+      </span>
+      <span dir={valDir(lang, g)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 15, color: T.ink }, g)}>{g}</span>
     </div>
   );
 }
@@ -197,7 +246,21 @@ function NorthStarBlock({ goals }: { goals: string[] }) {
   );
 }
 
-function PillarsBlock({ pillars }: { pillars: string[] }) {
+function PillarsBlock({ pillars, lang = "en" }: { pillars: string[]; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div>
+        <SectionLabel lang={lang}>{pt(lang, "report.doc.pillars")}</SectionLabel>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {pillars.map((p) => (
+            <span key={p} dir={valDir(lang, p)} style={valStyle(lang, { padding: "6px 12px", fontFamily: FONT.mono, fontSize: 11, color: T.ink, background: T.paper2, border: `1px solid ${T.rule}`, fontWeight: 700 }, p)}>
+              {p}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div>
       <SectionLabel>Brand Pillars</SectionLabel>
@@ -241,7 +304,14 @@ function CapabilityFigure({ data }: { data: CapabilitiesSection }) {
   );
 }
 
-function IntelSummary({ text }: { text: string }) {
+function IntelSummary({ text, lang = "en" }: { text: string; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div dir={valDir(lang, text)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 17, color: T.ink2, lineHeight: 1.55, borderInlineStart: `2px solid ${T.spot}`, paddingInlineStart: 14 }, text)}>
+        {text}
+      </div>
+    );
+  }
   return (
     <div
       style={{
@@ -259,7 +329,17 @@ function IntelSummary({ text }: { text: string }) {
   );
 }
 
-function ThemeCard({ t }: { t: { theme: string; rationale: string } }) {
+function ThemeCard({ t, lang = "en" }: { t: { theme: string; rationale: string }; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div style={{ padding: "12px 14px", border: `1px solid ${T.rule}`, borderInlineStart: `2px solid ${T.spot}`, background: T.paper2 }}>
+        <div dir={valDir(lang, t.theme)} style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 12, fontWeight: 700, color: T.ink, marginBottom: 4 }, t.theme)}>
+          {t.theme}
+        </div>
+        <div dir={valDir(lang, t.rationale)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 14, color: T.ink2, lineHeight: 1.6 }, t.rationale)}>{t.rationale}</div>
+      </div>
+    );
+  }
   return (
     <div style={{ padding: "12px 14px", border: `1px solid ${T.rule}`, borderLeft: `2px solid ${T.spot}`, background: T.paper2 }}>
       <div style={{ fontFamily: FONT.mono, fontSize: 11, fontWeight: 700, color: T.ink, marginBottom: 4, letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -270,7 +350,18 @@ function ThemeCard({ t }: { t: { theme: string; rationale: string } }) {
   );
 }
 
-function ChipRow({ items }: { items: string[] }) {
+function ChipRow({ items, lang = "en" }: { items: string[]; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {items.map((e) => (
+          <span key={e} dir={valDir(lang, e)} style={valStyle(lang, { padding: "5px 10px", fontFamily: FONT.mono, fontSize: 11, color: T.ink2, border: `1px solid ${T.rule}` }, e)}>
+            {e}
+          </span>
+        ))}
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       {items.map((e) => (
@@ -293,8 +384,41 @@ function ChipRow({ items }: { items: string[] }) {
   );
 }
 
-function TerritoriesBlock({ pillars, tags }: { pillars?: string[]; tags: string[] }) {
+function TerritoriesBlock({ pillars, tags, lang = "en" }: { pillars?: string[]; tags: string[]; lang?: PaperLang }) {
   const hasPillars = !!pillars && pillars.length > 0;
+  if (lang === "ar") {
+    return (
+      <div>
+        <SectionLabel lang={lang}>{pt(lang, hasPillars ? "report.doc.territory" : "report.doc.territories")}</SectionLabel>
+        {hasPillars ? (
+          <div style={{ borderInlineStart: `2px solid ${T.spot}`, paddingInlineStart: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+            {pillars!.map((p) => (
+              <div key={p} dir={valDir(lang, p)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 16, color: T.ink, lineHeight: 1.5 }, p)}>{p}</div>
+            ))}
+          </div>
+        ) : (
+          <ChipRow lang={lang} items={tags.map((t) => formatSkillLabel(t))} />
+        )}
+        {hasPillars && tags.length > 0 ? (
+          <div style={{ marginTop: 14 }}>
+            <div style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 11, fontWeight: 700, color: T.ink3, marginBottom: 8 })}>
+              {pt(lang, "report.doc.alsoTracking")}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {tags.map((t) => {
+                const v = formatSkillLabel(t);
+                return (
+                  <span key={t} dir={valDir(lang, v)} style={valStyle(lang, { padding: "3px 8px", fontFamily: FONT.mono, fontSize: 10.5, color: T.ink2, border: `1px solid ${T.rule}` }, v)}>
+                    {v}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   if (!hasPillars) {
     return (
       <div>
@@ -352,7 +476,17 @@ function TerritoriesBlock({ pillars, tags }: { pillars?: string[]; tags: string[
   );
 }
 
-function PositioningBlock({ statement }: { statement: string }) {
+function PositioningBlock({ statement, lang = "en" }: { statement: string; lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div>
+        <SectionLabel lang={lang}>{pt(lang, "report.doc.position")}</SectionLabel>
+        <div dir={valDir(lang, statement)} style={valStyle(lang, { borderInlineStart: `2px solid ${T.spot}`, paddingInlineStart: 14, maxWidth: 576, fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.7, color: T.ink }, statement)}>
+          {statement}
+        </div>
+      </div>
+    );
+  }
   return (
     <div>
       <SectionLabel>The Position</SectionLabel>
@@ -373,26 +507,27 @@ function PositioningBlock({ statement }: { statement: string }) {
   );
 }
 
-function FootprintFigure({ fp }: { fp: NonNullable<ReportData["footprint"]> }) {
+function FootprintFigure({ fp, lang = "en" }: { fp: NonNullable<ReportData["footprint"]>; lang?: PaperLang }) {
   const items = [
-    { n: fp.sources,  l: "Sources captured" },
-    { n: fp.evidence, l: "Evidence fragments" },
-    { n: fp.signals,  l: "Active strategic signals" },
-    { n: fp.themes,   l: "Themes owned" },
+    { n: fp.sources,  l: L(lang, "report.doc.fp.sources", "Sources captured") },
+    { n: fp.evidence, l: L(lang, "report.doc.fp.evidence", "Evidence fragments") },
+    { n: fp.signals,  l: L(lang, "report.doc.fp.signals", "Active strategic signals") },
+    { n: fp.themes,   l: L(lang, "report.doc.fp.themes", "Themes owned") },
   ];
   return (
     <PaperFigure
+      lang={lang}
       index={3}
-      label="Intelligence Footprint"
-      meta={`${fp.sources} sources · ${fp.evidence} fragments`}
-      findingBold="Your record is what the paper reads from."
-      findingRest="No inference beyond these counts."
+      label={L(lang, "report.doc.fp.label", "Intelligence Footprint")}
+      meta={L(lang, "report.doc.fp.meta", `${fp.sources} sources · ${fp.evidence} fragments`, { n: fp.sources, m: fp.evidence })}
+      findingBold={L(lang, "report.doc.fp.bold", "Your record is what the paper reads from.")}
+      findingRest={L(lang, "report.doc.fp.rest", "No inference beyond these counts.")}
     >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
         {items.map((s, i) => (
           <div key={i} style={{ padding: "16px 12px", border: `1px solid ${T.rule}`, background: T.paper, textAlign: "center" }}>
             <div style={{ fontFamily: FONT.mono, fontSize: 28, fontWeight: 700, color: T.ink, lineHeight: 1.05 }}>{s.n}</div>
-            <div style={{ marginTop: 8, fontFamily: FONT.mono, fontSize: 10.5, color: T.ink3, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <div style={arStyle(lang, { marginTop: 8, fontFamily: FONT.mono, fontSize: 10.5, color: T.ink3, letterSpacing: "0.12em", textTransform: "uppercase" })}>
               {s.l}
             </div>
           </div>
@@ -402,22 +537,32 @@ function FootprintFigure({ fp }: { fp: NonNullable<ReportData["footprint"]> }) {
   );
 }
 
-function ContentEngineCard({ c }: { c: NonNullable<ReportData["content"]> }) {
+function ContentEngineCard({ c, lang = "en" }: { c: NonNullable<ReportData["content"]>; lang?: PaperLang }) {
   return (
     <div style={{ border: `1.5px solid ${T.ink}`, background: T.paper2, padding: "14px 16px" }}>
-      <SectionLabel>Content Engine</SectionLabel>
-      <Row label="Posts live on LinkedIn" value={String(c.publishedCount)} />
-      {c.frameworks[0] ? <Row label="Lead framework" value={c.frameworks[0].framework_type} /> : null}
+      <SectionLabel lang={lang}>{L(lang, "report.doc.ce.title", "Content Engine")}</SectionLabel>
+      <Row lang={lang} label={L(lang, "report.doc.ce.live", "Posts live on LinkedIn")} value={String(c.publishedCount)} />
+      {c.frameworks[0] ? <Row lang={lang} label={L(lang, "report.doc.ce.lead", "Lead framework")} value={c.frameworks[0].framework_type} /> : null}
       {c.frameworks.length > 1 ? (
-        <Row label="Also using" value={c.frameworks.slice(1, 4).map((f) => f.framework_type).join(" · ")} />
+        <Row lang={lang} label={L(lang, "report.doc.ce.also", "Also using")} value={c.frameworks.slice(1, 4).map((f) => f.framework_type).join(lang === "ar" ? "، " : " · ")} />
       ) : null}
-      <Row label="Tracked posts" value={String(c.trackedCount)} />
+      <Row lang={lang} label={L(lang, "report.doc.ce.tracked", "Tracked posts")} value={String(c.trackedCount)} />
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, lang = "en" }: { label: string; value: string; lang?: PaperLang }) {
   const ar = hasArabic(value);
+  if (lang === "ar") {
+    return (
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.rule}`, fontSize: 12 }}>
+        <span style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 11, color: T.ink3, fontWeight: 600 })}>{withLatin(label, lang)}</span>
+        <span dir={valDir(lang, value)} style={{ ...valStyle(lang, { fontFamily: FONT.serif, fontSize: 14, color: T.ink, maxWidth: "60%" }, value), unicodeBidi: "isolate" }}>
+          {ar ? renderBidi(value) : value}
+        </span>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.rule}`, fontSize: 12 }}>
       <span style={{ fontFamily: FONT.mono, fontSize: 10.5, color: T.ink3, letterSpacing: "0.10em", textTransform: "uppercase", fontWeight: 600 }}>
@@ -441,7 +586,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StackedRow({ label, value }: { label: string; value: string }) {
+function StackedRow({ label, value, lang = "en" }: { label: string; value: string; lang?: PaperLang }) {
   const ar = hasArabic(value);
   let arHead = value;
   let latinBlock: string | null = null;
@@ -458,7 +603,7 @@ function StackedRow({ label, value }: { label: string; value: string }) {
   }
   return (
     <div style={{ padding: "10px 0", borderBottom: `1px solid ${T.rule}` }} dir={ar ? "rtl" : undefined} lang={ar ? "ar" : undefined}>
-      <div style={{ fontFamily: FONT.mono, fontSize: 10.5, color: T.spot, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 5, fontWeight: 700 }}>
+      <div style={arStyle(lang, { fontFamily: FONT.mono, fontSize: 10.5, color: T.spot, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 5, fontWeight: 700 })}>
         {label}
       </div>
       <div
@@ -467,7 +612,7 @@ function StackedRow({ label, value }: { label: string; value: string }) {
           fontSize: 14,
           color: T.ink,
           lineHeight: ar ? 1.85 : 1.65,
-          letterSpacing: ar ? "normal" : undefined,
+          letterSpacing: ar ? (lang === "ar" ? 0 : "normal") : undefined,
         }}
         dir={ar ? "rtl" : "auto"}
         lang={ar ? "ar" : undefined}
@@ -475,7 +620,7 @@ function StackedRow({ label, value }: { label: string; value: string }) {
         {ar ? (arHead ? renderBidi(arHead) : null) : value}
       </div>
       {latinBlock ? (
-        <div dir="ltr" lang="en" style={{ marginTop: 6, fontFamily: FONT.serif, fontStyle: "italic", fontSize: 13, color: T.ink2, lineHeight: 1.55 }}>
+        <div dir="ltr" lang="en" style={{ marginTop: 6, fontFamily: FONT.serif, fontStyle: lang === "ar" ? "normal" : "italic", fontSize: 13, color: T.ink2, lineHeight: 1.55 }}>
           {latinBlock}
         </div>
       ) : null}
@@ -483,7 +628,15 @@ function StackedRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function VoiceHeader() {
+function VoiceHeader({ lang = "en" }: { lang?: PaperLang }) {
+  if (lang === "ar") {
+    return (
+      <div>
+        <SectionLabel lang={lang}>{pt(lang, "report.doc.voice")}</SectionLabel>
+        <div style={arStyle(lang, { fontFamily: FONT.serif, fontSize: 13, color: T.ink3, marginTop: -6 })}>{pt(lang, "report.doc.voiceSub")}</div>
+      </div>
+    );
+  }
   return (
     <div>
       <SectionLabel>Voice Signature</SectionLabel>
@@ -496,12 +649,32 @@ function VoiceHeader() {
   );
 }
 
+function Next90Head({ lang }: { lang: PaperLang }) {
+  return (
+    <div>
+      <SectionLabel lang={lang}>{L(lang, "report.doc.next90", "Where to Point the Next 90 Days")}</SectionLabel>
+      <div style={arStyle(lang, { fontFamily: FONT.serif, fontSize: 13, color: T.ink3, lineHeight: 1.6, marginBottom: lang === "ar" ? 0 : 14 })}>
+        {L(lang, "report.doc.next90Sub", "Gaps the market would notice — each one is a content move.")}
+      </div>
+    </div>
+  );
+}
+
+function GapRow({ g, lang }: { g: string; lang: PaperLang }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.rule}` }}>
+      <span aria-hidden style={{ display: "inline-block", width: 8, height: 8, background: T.action, flexShrink: 0, marginTop: 6 }} />
+      <span dir={valDir(lang, g)} style={valStyle(lang, { fontFamily: FONT.serif, fontSize: 15, color: T.ink, lineHeight: 1.6 }, g)}>{g}</span>
+    </div>
+  );
+}
+
 function Next90Block({ gaps }: { gaps: string[] }) {
   return (
     <div>
       <SectionLabel>Where to Point the Next 90 Days</SectionLabel>
       <div style={{ fontFamily: FONT.serif, fontSize: 13, color: T.ink3, lineHeight: 1.6, marginBottom: 14 }}>
-        Three gaps the market would notice — each one is a content move.
+        Gaps the market would notice — each one is a content move.
       </div>
       {gaps.map((g, i) => (
         <div
@@ -526,7 +699,27 @@ function Next90Block({ gaps }: { gaps: string[] }) {
   );
 }
 
-function Footnotes({ score, footprint }: { score: ReportData["score"]; footprint: ReportData["footprint"] }) {
+function Footnotes({ score, footprint, lang = "en" }: { score: ReportData["score"]; footprint: ReportData["footprint"]; lang?: PaperLang }) {
+  if (lang === "ar") {
+    const sup = { fontFamily: FONT.mono, color: T.spot, fontWeight: 700, marginInlineEnd: 4 } as const;
+    return (
+      <div style={arStyle(lang, { marginTop: 24, paddingTop: 14, borderTop: `1.5px solid ${T.ink}`, fontFamily: FONT.serif, fontSize: 13, color: T.ink2, lineHeight: 1.7 })}>
+        <div>
+          <sup style={sup}>1</sup>
+          <span dir="ltr" style={{ unicodeBidi: "isolate" }}>Imprint</span>
+          {pt(lang, "report.doc.fn1").replace(/^Imprint/, "").split(/(\d+%)/).map((part, i) =>
+            /^\d+%$/.test(part) ? <span key={i} dir="ltr" style={{ unicodeBidi: "isolate" }}>{part}</span> : part)}
+          {score?.snapshot_at ? pt(lang, "report.doc.fnSnap", { date: arabicDate(score.snapshot_at) }) : ""}
+        </div>
+        {footprint ? (
+          <div>
+            <sup style={sup}>2</sup>
+            {pt(lang, "report.doc.fn2", { n: footprint.sources, m: footprint.evidence })}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div
       style={{
@@ -568,6 +761,8 @@ interface Block {
   section: SectionKey;
   spacing: number;
   node: React.ReactNode;
+  /** Arabic only: a title that must not end a sheet without its first block. */
+  keepWithNext?: boolean;
 }
 
 const CONTENT_W = SHEET_W - 2 * PAGE_PAD; // 682
@@ -580,7 +775,8 @@ const CONTENT_H = SHEET_H - 2 * PAGE_PAD - HEADER_RESERVE - FOOTER_RESERVE - 6;
 // map (derived from evidence per band) is wired.
 const CAPABILITY_FIGURE_ENABLED = false;
 
-function buildBlocks(d: ReportData): Block[] {
+function buildBlocks(d: ReportData, lang: PaperLang = "en"): Block[] {
+  const ar = lang === "ar";
   const blocks: Block[] = [];
   const name = [d.profile?.first_name, d.profile?.last_name].filter(Boolean).join(" ").trim();
 
@@ -590,7 +786,7 @@ function buildBlocks(d: ReportData): Block[] {
       key: "i-score",
       section: "identity",
       spacing: 8,
-      node: <ImprintFigure score={d.score} userId={d.user_id} generatedAt={d.generated_at} />,
+      node: <ImprintFigure score={d.score} userId={d.user_id} generatedAt={d.generated_at} lang={lang} />,
     });
   }
   // Full positioning statement — cover shows sentence 1 only; give the
@@ -600,26 +796,34 @@ function buildBlocks(d: ReportData): Block[] {
       key: "i-position",
       section: "identity",
       spacing: 24,
-      node: <PositioningBlock statement={d.positioning.statement} />,
+      node: <PositioningBlock statement={d.positioning.statement} lang={lang} />,
     });
   }
   const p = d.profile;
   if (p) {
     const items: { label: string; value: string }[] = [];
-    if (p.core_practice)  items.push({ label: "Core Practice", value: p.core_practice });
-    if (p.sector_focus)   items.push({ label: "Sector Focus", value: p.sector_focus });
-    if (p.years_experience_raw) items.push({ label: "Experience", value: stripParenTail(p.years_experience_raw) });
+    if (p.core_practice)  items.push({ label: L(lang, "report.doc.corePractice", "Core Practice"), value: p.core_practice });
+    if (p.sector_focus)   items.push({ label: L(lang, "report.doc.sectorFocus", "Sector Focus"), value: p.sector_focus });
+    if (p.years_experience_raw) items.push({ label: L(lang, "report.doc.experience", "Experience"), value: stripParenTail(p.years_experience_raw) });
     if (p.linkedin_handle) items.push({ label: "LinkedIn", value: `/in/${p.linkedin_handle.replace(/^\/?in\//, "")}` });
-    if (items.length > 0) blocks.push({ key: "i-grid", section: "identity", spacing: 26, node: <ProfileGrid items={items} /> });
-    if ((p.north_star_goals ?? []).length > 0)
-      blocks.push({ key: "i-northstar", section: "identity", spacing: 24, node: <NorthStarBlock goals={p.north_star_goals} /> });
+    if (items.length > 0) blocks.push({ key: "i-grid", section: "identity", spacing: 26, node: <ProfileGrid items={items} lang={lang} /> });
+    const goals = p.north_star_goals ?? [];
+    if (goals.length > 0) {
+      if (ar) {
+        // Arabic: one block per goal so a long list splits at a row, never mid-row.
+        blocks.push({ key: "i-northstar", section: "identity", spacing: 24, keepWithNext: true, node: <SectionLabel lang={lang}>{pt(lang, "report.doc.northStar")}</SectionLabel> });
+        goals.forEach((g, i) => blocks.push({ key: `i-northstar-${i}`, section: "identity", spacing: 0, node: <GoalRow g={g} i={i} lang={lang} /> }));
+      } else {
+        blocks.push({ key: "i-northstar", section: "identity", spacing: 24, node: <NorthStarBlock goals={goals} /> });
+      }
+    }
   }
   if (d.brand_position?.pillars.length)
-    blocks.push({ key: "i-pillars", section: "identity", spacing: 22, node: <PillarsBlock pillars={d.brand_position.pillars} /> });
+    blocks.push({ key: "i-pillars", section: "identity", spacing: 22, node: <PillarsBlock pillars={d.brand_position.pillars} lang={lang} /> });
 
   // ── CAPABILITY ───────────────────────────────────────────────────────
   if (d.capabilities || d.profile_intelligence) {
-    blocks.push({ key: "c-title", section: "capability", spacing: 20, node: <SectionTitle title="Capability & Intelligence" kicker={name || "Capability"} /> });
+    blocks.push({ key: "c-title", section: "capability", spacing: 20, keepWithNext: ar, node: <SectionTitle lang={lang} title={L(lang, "report.doc.capTitle", "Capability & Intelligence")} kicker={name || L(lang, "report.doc.capKicker", "Capability")} /> });
     if (CAPABILITY_FIGURE_ENABLED && d.capabilities && d.capabilities.length > 0) {
       blocks.push({ key: "c-radar", section: "capability", spacing: 18, node: <CapabilityFigure data={d.capabilities} /> });
     } else if (d.capabilities && d.capabilities.length > 0) {
@@ -628,23 +832,23 @@ function buildBlocks(d: ReportData): Block[] {
         section: "capability",
         spacing: 4,
         node: (
-          <div style={{ maxWidth: 576, fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.7, color: T.ink2 }}>
-            Your capability map is being rebuilt on the evidence behind each claim. It is deliberately absent here rather than estimated.
+          <div style={arStyle(lang, { maxWidth: 576, fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.7, color: T.ink2 })}>
+            {L(lang, "report.doc.capAbsent", "Your capability map is being rebuilt on the evidence behind each claim. It is deliberately absent here rather than estimated.")}
           </div>
         ),
       });
     }
     const intel = d.profile_intelligence;
     if (intel) {
-      blocks.push({ key: "c-intel-label", section: "capability", spacing: 26, node: <SectionLabel>Profile Intelligence</SectionLabel> });
+      blocks.push({ key: "c-intel-label", section: "capability", spacing: 26, keepWithNext: ar, node: <SectionLabel lang={lang}>{ar ? withLatin(pt(lang, "report.doc.intel"), lang) : "Profile Intelligence"}</SectionLabel> });
       if (intel.identity_summary)
-        blocks.push({ key: "c-intel-summary", section: "capability", spacing: 4, node: <IntelSummary text={intel.identity_summary} /> });
+        blocks.push({ key: "c-intel-summary", section: "capability", spacing: 4, node: <IntelSummary text={intel.identity_summary} lang={lang} /> });
       if (intel.authority_themes.length > 0)
         intel.authority_themes.forEach((t, i) =>
-          blocks.push({ key: `c-theme-${i}`, section: "capability", spacing: 10, node: <ThemeCard t={t} /> })
+          blocks.push({ key: `c-theme-${i}`, section: "capability", spacing: 10, node: <ThemeCard t={t} lang={lang} /> })
         );
       else if (intel.expertise_areas.length > 0)
-        blocks.push({ key: "c-chips", section: "capability", spacing: 10, node: <ChipRow items={intel.expertise_areas} /> });
+        blocks.push({ key: "c-chips", section: "capability", spacing: 10, node: <ChipRow items={intel.expertise_areas} lang={lang} /> });
     }
   }
 
@@ -661,38 +865,45 @@ function buildBlocks(d: ReportData): Block[] {
   // ── MARKET ───────────────────────────────────────────────────────────
   const showMarket = !!d.market_mirror && d.market_mirror.persona_set === rankFromLevel(d.profile?.level);
   if (showMarket) {
-    blocks.push({ key: "m-title", section: "market", spacing: 20, node: <SectionTitle title="Market Position" kicker="How the market reads you" /> });
+    blocks.push({ key: "m-title", section: "market", spacing: 20, keepWithNext: ar, node: <SectionTitle lang={lang} title={L(lang, "report.doc.marketTitle", "Market Position")} kicker={L(lang, "report.doc.marketKicker", "How the market reads you")} /> });
     d.market_mirror!.perspectives.forEach((p, i) =>
-      blocks.push({ key: `m-persona-${i}`, section: "market", spacing: 16, node: <PaperPersonaCard p={p} /> })
+      blocks.push({ key: `m-persona-${i}`, section: "market", spacing: 16, node: <PaperPersonaCard p={p} lang={lang} /> })
     );
   }
 
   // ── FOOTPRINT ────────────────────────────────────────────────────────
   if (d.territories || d.footprint || d.content || d.voice) {
-    blocks.push({ key: "f-title", section: "footprint", spacing: 20, node: <SectionTitle title="Strategic Footprint" kicker={name || "Footprint"} /> });
+    blocks.push({ key: "f-title", section: "footprint", spacing: 20, keepWithNext: ar, node: <SectionTitle lang={lang} title={L(lang, "report.doc.fpTitle", "Strategic Footprint")} kicker={name || L(lang, "report.doc.fpKicker", "Footprint")} /> });
     if (d.territories || d.brand_position?.pillars.length)
       blocks.push({
         key: "f-terr",
         section: "footprint",
         spacing: 22,
-        node: <TerritoriesBlock pillars={d.brand_position?.pillars} tags={d.territories ?? []} />,
+        node: <TerritoriesBlock pillars={d.brand_position?.pillars} tags={d.territories ?? []} lang={lang} />,
       });
-    if (d.footprint)   blocks.push({ key: "f-fp",   section: "footprint", spacing: 24, node: <FootprintFigure fp={d.footprint} /> });
-    if (d.content)     blocks.push({ key: "f-content", section: "footprint", spacing: 22, node: <ContentEngineCard c={d.content} /> });
+    if (d.footprint)   blocks.push({ key: "f-fp",   section: "footprint", spacing: 24, node: <FootprintFigure fp={d.footprint} lang={lang} /> });
+    if (d.content)     blocks.push({ key: "f-content", section: "footprint", spacing: 22, node: <ContentEngineCard c={d.content} lang={lang} /> });
     if (d.voice) {
-      blocks.push({ key: "f-v-h", section: "footprint", spacing: 22, node: <VoiceHeader /> });
-      if (d.voice.tone) blocks.push({ key: "f-v-tone", section: "footprint", spacing: 6, node: <StackedRow label="Tone" value={d.voice.tone} /> });
-      if (d.voice.preferred_structures.length > 0) blocks.push({ key: "f-v-struct", section: "footprint", spacing: 0, node: <StackedRow label="Structure" value={d.voice.preferred_structures.join(" · ")} /> });
-      if (d.voice.storytelling_patterns.length > 0) blocks.push({ key: "f-v-pat", section: "footprint", spacing: 0, node: <StackedRow label="Patterns" value={d.voice.storytelling_patterns.join(" · ")} /> });
+      const join = ar ? "، " : " · ";
+      blocks.push({ key: "f-v-h", section: "footprint", spacing: 22, keepWithNext: ar, node: <VoiceHeader lang={lang} /> });
+      if (d.voice.tone) blocks.push({ key: "f-v-tone", section: "footprint", spacing: 6, node: <StackedRow lang={lang} label={L(lang, "report.doc.tone", "Tone")} value={d.voice.tone} /> });
+      if (d.voice.preferred_structures.length > 0) blocks.push({ key: "f-v-struct", section: "footprint", spacing: 0, node: <StackedRow lang={lang} label={L(lang, "report.doc.structure", "Structure")} value={d.voice.preferred_structures.join(join)} /> });
+      if (d.voice.storytelling_patterns.length > 0) blocks.push({ key: "f-v-pat", section: "footprint", spacing: 0, node: <StackedRow lang={lang} label={L(lang, "report.doc.patterns", "Patterns")} value={d.voice.storytelling_patterns.join(join)} /> });
       if (d.voice.vocabulary_preferences.prefer && d.voice.vocabulary_preferences.prefer.length > 0)
-        blocks.push({ key: "f-v-pref", section: "footprint", spacing: 0, node: <StackedRow label="Prefers" value={d.voice.vocabulary_preferences.prefer.join(", ")} /> });
+        blocks.push({ key: "f-v-pref", section: "footprint", spacing: 0, node: <StackedRow lang={lang} label={L(lang, "report.doc.prefers", "Prefers")} value={d.voice.vocabulary_preferences.prefer.join(ar ? "، " : ", ")} /> });
     }
     if (d.market_mirror) {
       const gaps = d.market_mirror.perspectives.map((p) => p.gap).filter(Boolean);
-      if (gaps.length > 0)
-        blocks.push({ key: "f-next90", section: "footprint", spacing: 24, node: <Next90Block gaps={gaps} /> });
+      if (gaps.length > 0) {
+        if (ar) {
+          blocks.push({ key: "f-next90", section: "footprint", spacing: 24, keepWithNext: true, node: <Next90Head lang={lang} /> });
+          gaps.forEach((g, i) => blocks.push({ key: `f-next90-${i}`, section: "footprint", spacing: i === 0 ? 14 : 0, node: <GapRow g={g} lang={lang} /> }));
+        } else {
+          blocks.push({ key: "f-next90", section: "footprint", spacing: 24, node: <Next90Block gaps={gaps} /> });
+        }
+      }
     }
-    blocks.push({ key: "f-footnotes", section: "footprint", spacing: 20, node: <Footnotes score={d.score} footprint={d.footprint} /> });
+    blocks.push({ key: "f-footnotes", section: "footprint", spacing: 20, node: <Footnotes score={d.score} footprint={d.footprint} lang={lang} /> });
   }
 
   return blocks;
@@ -701,7 +912,7 @@ function buildBlocks(d: ReportData): Block[] {
 interface PackedBlock extends Block { height: number; effectiveSpacing: number; }
 interface PackedSheet { section: SectionKey; blocks: PackedBlock[]; }
 
-function packSheets(blocks: Block[], heights: number[]): PackedSheet[] {
+function packSheets(blocks: Block[], heights: number[], keepTitles = false): PackedSheet[] {
   const sheets: PackedSheet[] = [];
   let cur: PackedSheet | null = null;
   let used = 0;
@@ -715,7 +926,11 @@ function packSheets(blocks: Block[], heights: number[]): PackedSheet[] {
     }
     const isFirst = cur.blocks.length === 0;
     const spacing = isFirst ? 0 : b.spacing;
-    if (!isFirst && used + spacing + h > CONTENT_H) {
+    // Arabic: a title only stays when its first block fits under it too.
+    const nextNeed = keepTitles && b.keepWithNext && i + 1 < blocks.length
+      ? blocks[i + 1].spacing + (heights[i + 1] || 0)
+      : 0;
+    if (!isFirst && used + spacing + h + nextNeed > CONTENT_H) {
       cur = { section: b.section, blocks: [] };
       sheets.push(cur);
       used = 0;
@@ -729,8 +944,27 @@ function packSheets(blocks: Block[], heights: number[]): PackedSheet[] {
   return sheets;
 }
 
+/** Arabic display copy: level, tier, persona and capability names in Arabic. Saved data untouched. */
+function arabicDisplay(d: ReportData, titles: SeniorityTitle[], caps: CapabilityNameRow[] | null): ReportData {
+  const level = d.profile?.level;
+  const row = level ? titles.find((t) => t.title === level) : null;
+  const tierKey = d.score?.tier ? `tier.${d.score.tier.toLowerCase()}` : null;
+  const tierAr = tierKey ? pt("ar", tierKey) : null;
+  const who = (w: string) => { const v = pt("ar", `mirror.persona.${w}`); return v.startsWith("mirror.persona.") ? w : v; };
+  return {
+    ...d,
+    profile: d.profile ? { ...d.profile, level: row ? titleLabel(row, "ar") : level ?? null } : d.profile,
+    score: d.score ? { ...d.score, tier: tierAr && tierAr !== tierKey ? tierAr : d.score.tier } : d.score,
+    capabilities: d.capabilities ? attachCapabilityNamesAr(d.capabilities, caps) : d.capabilities,
+    market_mirror: d.market_mirror
+      ? { ...d.market_mirror, perspectives: d.market_mirror.perspectives.map((p) => ({ ...p, who: who(p.who) })) }
+      : d.market_mirror,
+  };
+}
+
 // ── Root ───────────────────────────────────────────────────────────────
-export default function ReportDocument({ data }: { data: ReportData }) {
+export default function ReportDocument({ data, lang: langProp }: { data: ReportData; lang?: PaperLang }) {
+  const lang: PaperLang = langProp ?? reportLang(data as any);
   const safeData: ReportData = useMemo(() => {
     if (!data.market_mirror) return data;
     const wanted = rankFromLevel(data.profile?.level);
@@ -738,18 +972,50 @@ export default function ReportDocument({ data }: { data: ReportData }) {
     return data;
   }, [data]);
 
-  const blocks = useMemo(() => buildBlocks(safeData), [safeData]);
+  // Arabic names are read for display only.
+  const [titles, setTitles] = useState<SeniorityTitle[] | null>(lang === "ar" ? null : []);
+  const [caps, setCaps] = useState<CapabilityNameRow[] | null>(null);
+  useEffect(() => {
+    if (lang !== "ar") return;
+    let off = false;
+    fetchSeniorityTitles().then((r) => { if (!off) setTitles(r); }).catch(() => { if (!off) setTitles([]); });
+    (supabase.from("capability_dimensions" as any) as any).select("name, name_ar")
+      .then(({ data: rows }: any) => { if (!off) setCaps(rows || null); });
+    return () => { off = true; };
+  }, [lang]);
 
-  return <Paginated key={safeData.user_id + ":" + safeData.generated_at} blocks={blocks} data={safeData} />;
+  const shown: ReportData = useMemo(
+    () => (lang === "ar" ? arabicDisplay(safeData, titles ?? [], caps) : safeData),
+    [lang, safeData, titles, caps],
+  );
+  const blocks = useMemo(() => buildBlocks(shown, lang), [shown, lang]);
+
+  if (lang === "ar" && titles === null) return null;
+  return <Paginated key={safeData.user_id + ":" + safeData.generated_at + ":" + lang} blocks={blocks} data={shown} lang={lang} />;
 }
 
-function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
+function Paginated({ blocks, data, lang = "en" }: { blocks: Block[]; data: ReportData; lang?: PaperLang }) {
+  const ar = lang === "ar";
   const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [heights, setHeights] = useState<number[] | null>(null);
   const { delta: sparkDelta } = useImprintDelta(data.user_id);
 
   useLayoutEffect(() => {
     if (heights !== null) return;
+    if (ar) {
+      // Arabic: measure only after the fonts settle, so Cairo line heights count.
+      let off = false;
+      const measure = () => {
+        if (off) return;
+        const next = blocks.map((_, i) => measureRefs.current[i]?.offsetHeight ?? 0);
+        if (next.some((h) => h === 0)) { setTimeout(measure, 80); return; }
+        setHeights(next);
+      };
+      const ready = (document as any).fonts?.ready;
+      if (ready) ready.then(() => setTimeout(measure, 50)); else setTimeout(measure, 80);
+      return () => { off = true; };
+    }
     const next = blocks.map((_, i) => measureRefs.current[i]?.offsetHeight ?? 0);
     if (next.some((h) => h === 0)) {
       const t = setTimeout(() => {
@@ -759,17 +1025,30 @@ function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
       return () => clearTimeout(t);
     }
     setHeights(next);
-  }, [blocks, heights]);
+  }, [blocks, heights, ar]);
+
+  // Any sheet that still overflows is marked and logged.
+  useEffect(() => {
+    if (!heights || !rootRef.current) return;
+    const root = rootRef.current;
+    let off = false;
+    const check = () => { if (!off) reportOverflowingSheets(root); };
+    check();
+    (document as any).fonts?.ready?.then(() => setTimeout(check, 100));
+    return () => { off = true; };
+  }, [heights]);
 
   if (!heights) {
     return (
       <div
         aria-hidden
         data-theme="light"
+        dir={ar ? "rtl" : undefined}
+        lang={ar ? "ar" : undefined}
         style={{
           position: "fixed", left: -99999, top: 0,
           width: CONTENT_W, background: T.paper, color: T.ink,
-          fontFamily: FONT.serif, letterSpacing: "normal", visibility: "hidden",
+          fontFamily: FONT.serif, letterSpacing: ar ? 0 : "normal", visibility: "hidden",
         }}
       >
         {blocks.map((b, i) => (
@@ -785,26 +1064,27 @@ function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
     );
   }
 
-  const packed = packSheets(blocks, heights);
+  const packed = packSheets(blocks, heights, ar);
   const totalPacked = packed.length;
   // Total pages including cover (1) + packed + closing (1)
   const total = totalPacked + 2;
+  const footerTitle = ar ? pt(lang, "paper.rp.kicker") : undefined;
 
   return (
-    <div style={{ background: T.paper3, padding: "24px 0" }} data-report-ready="true">
+    <div ref={rootRef} style={{ background: T.paper3, padding: "24px 0" }} data-report-ready="true">
       {/* Cover — page 1 */}
-      <Sheet>
-        <PaperHeader label="Prepared for you · Edition 1" />
+      <Sheet lang={lang} page={1}>
+        <PaperHeader lang={lang} label={L(lang, "report.doc.prepared", "Prepared for you · Edition 1")} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, marginTop: 24 }}>
-          <PaperCover data={data} />
+          <PaperCover data={data} lang={lang} />
         </div>
-        <PaperFooter n={1} total={total} />
+        <PaperFooter n={1} total={total} lang={lang} paperTitle={footerTitle} showDescriptor={false} showTagline={false} />
       </Sheet>
 
       {/* Packed body — pages 2..N-1 */}
       {packed.map((sheet, i) => (
-        <Sheet key={i}>
-          <PaperHeader label={SECTION_LABEL[sheet.section]} />
+        <Sheet key={i} lang={lang} page={i + 2}>
+          <PaperHeader lang={lang} label={ar ? (withLatin(pt(lang, `report.doc.sec.${sheet.section}`), lang) as unknown as string) : SECTION_LABEL[sheet.section]} />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, marginTop: 20 }}>
             {sheet.blocks.map((b) => (
               <div key={b.key} style={{ marginTop: b.effectiveSpacing, width: "100%" }}>
@@ -812,13 +1092,15 @@ function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
               </div>
             ))}
           </div>
-          <PaperFooter n={i + 2} total={total} />
+          <PaperFooter n={i + 2} total={total} lang={lang} paperTitle={footerTitle} showDescriptor={false} showTagline={false} />
         </Sheet>
       ))}
 
       {/* Closing plate — final page (full-bleed) */}
-      <Sheet bleed>
+      <Sheet bleed lang={lang} page={total}>
         <ClosingPlate
+          lang={lang}
+          paperTitle={footerTitle}
           data={data}
           activeSignals={data.footprint?.signals ?? 0}
           evidenceCount={data.footprint?.evidence ?? 0}
