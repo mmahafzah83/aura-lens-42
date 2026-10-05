@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
+import { milestoneName } from "@/lib/milestoneNames";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import { useTranslation } from "react-i18next";
@@ -200,7 +201,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
         <CollapsibleList
           items={earned}
           visibleCount={3}
-          label="milestones"
+          label={tr("ms.listLabel")}
           renderItem={(m) => {
             const summary = summarizeContext(tr, m.id, m.context);
             const isNew = isNewlyEarned(m.earned_at);
@@ -221,8 +222,8 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
               >
                 <Check size={16} strokeWidth={2.25} style={{ color: "hsl(var(--primary))", marginTop: 2, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
-                    {m.name}
+                  <div style={arStyle(lang, { fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" })}>
+                    {milestoneName(m.name, tr)}
                   </div>
                   {m.earned_at && (
                     <div style={arStyle(lang, { fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 })}>
@@ -238,10 +239,10 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                 {celebrationsEnabled && (
                   <button
                     type="button"
-                    aria-label={tr("ms.shareAria", { name: m.name })}
+                    aria-label={tr("ms.shareAria", { name: milestoneName(m.name, tr) })}
                     onClick={() => setShareData({
-                      name: m.name,
-                      context: buildShareContext(tr, m.id, m.name, m.context, profile?.sector_focus || null),
+                      name: milestoneName(m.name, tr),
+                      context: buildShareContext(tr, m.id, milestoneName(m.name, tr), m.context, profile?.sector_focus || null),
                       earnedAt: m.earned_at,
                       icon: MILESTONE_ICONS[m.id] || "✦",
                       firstName: profile?.first_name || null,
@@ -298,7 +299,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                 >
                   <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: isNext ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontWeight: isNext ? 500 : 400 }}>
                     {isNext && !ar && <span style={{ color: "hsl(var(--primary))", marginInlineEnd: 6 }}>›</span>}
-                    {m.name}
+                    <span style={arStyle(lang)}>{milestoneName(m.name, tr)}</span>
                   </div>
                   <div style={arStyle(lang, { fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 })}>
                     {NEXT_IDS.has(m.id) ? tr(`ms.desc.${m.id}`) : tr("ms.keepGoing")}
