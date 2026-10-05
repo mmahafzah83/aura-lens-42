@@ -4,30 +4,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { usePublicText } from "@/hooks/usePublicText";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const TOPICS = [
-  "Getting access",
-  "Something is broken",
-  "Billing",
-  "Partnership",
-  "Something else",
+/* value = what the server receives (English, unchanged); key = the visible label. */
+const TOPICS: { value: string; key: string }[] = [
+  { value: "Getting access", key: "contact.topic.access" },
+  { value: "Something is broken", key: "contact.topic.broken" },
+  { value: "Billing", key: "contact.topic.billing" },
+  { value: "Partnership", key: "contact.topic.partner" },
+  { value: "Something else", key: "contact.topic.else" },
 ];
 
 type Status = "idle" | "sending" | "sent" | "error";
 
 const Contact = () => {
+  const { t } = useLanguage();
+  const { ar, T } = usePublicText();
   usePageMeta({
-    title: "Aura — Contact",
-    description:
-      "Talk to a person. Aura is small enough that your message reaches the founder, not a queue. Replies within 24 hours.",
+    title: t("contact.metaTitle"),
+    description: t("contact.metaDesc"),
     path: "/contact",
   });
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [topic, setTopic] = useState(TOPICS[0]);
+  const [topic, setTopic] = useState(TOPICS[0].value);
   const [message, setMessage] = useState("");
   const [company, setCompany] = useState(""); // honeypot
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -35,13 +39,13 @@ const Contact = () => {
 
   const validate = () => {
     const next: Record<string, string> = {};
-    if (!name.trim()) next.name = "Your name is required";
-    else if (name.trim().length > 120) next.name = "Keep your name under 120 characters";
-    if (!email.trim()) next.email = "Your email is required";
-    else if (!EMAIL_RE.test(email.trim())) next.email = "Enter a valid email address";
-    if (!message.trim()) next.message = "A message is required";
-    else if (message.trim().length < 10) next.message = "Tell me a little more — at least 10 characters";
-    else if (message.trim().length > 5000) next.message = "Keep it under 5000 characters";
+    if (!name.trim()) next.name = "contact.err.nameReq";
+    else if (name.trim().length > 120) next.name = "contact.err.nameLong";
+    if (!email.trim()) next.email = "contact.err.emailReq";
+    else if (!EMAIL_RE.test(email.trim())) next.email = "contact.err.emailBad";
+    if (!message.trim()) next.message = "contact.err.msgReq";
+    else if (message.trim().length < 10) next.message = "contact.err.msgShort";
+    else if (message.trim().length > 5000) next.message = "contact.err.msgLong";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -70,41 +74,41 @@ const Contact = () => {
   };
 
   return (
-    <div className="ct">
+    <div className={ar ? "ct ct-ar" : "ct"}>
       <style>{CT_CSS}</style>
       <PublicMasthead />
 
       <main className="ct-main">
         <div className="ct-wrap">
-          <span className="ct-eyebrow">Contact</span>
-          <h1 className="ct-h1">Talk to a person.</h1>
+          <span className="ct-eyebrow">{T("contact.eyebrow")}</span>
+          <h1 className="ct-h1">{T("contact.h1")}</h1>
           <p className="ct-intro">
-            Aura is small enough that your message reaches me, not a queue. Tell me what you need
-            and I'll reply within 24 hours.
+            {T("contact.intro")}
           </p>
 
           <div className="ct-card">
             {status === "sent" ? (
               <div className="ct-done">
-                <p className="ct-done-t">Message sent. I'll reply within 24 hours.</p>
-                <Link className="ct-back" to="/">Back to the home page</Link>
+                <p className="ct-done-t">{T("contact.sent")}</p>
+                <Link className="ct-back" to="/">{T("pubpg.backHomePage")}</Link>
               </div>
             ) : (
               <form onSubmit={handleSubmit} noValidate>
                 <div className="ct-field">
-                  <label className="ct-label" htmlFor="ct-name">Name</label>
+                  <label className="ct-label" htmlFor="ct-name">{T("contact.name")}</label>
                   <input
                     id="ct-name"
                     className="ct-input"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     autoComplete="name"
+                    dir={ar ? "auto" : undefined}
                   />
-                  {errors.name && <p className="ct-err">{errors.name}</p>}
+                  {errors.name && <p className="ct-err">{T(errors.name)}</p>}
                 </div>
 
                 <div className="ct-field">
-                  <label className="ct-label" htmlFor="ct-email">Email</label>
+                  <label className="ct-label" htmlFor="ct-email">{T("contact.email")}</label>
                   <input
                     id="ct-email"
                     className="ct-input"
@@ -112,32 +116,34 @@ const Contact = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"
+                    dir={ar ? "ltr" : undefined}
                   />
-                  {errors.email && <p className="ct-err">{errors.email}</p>}
+                  {errors.email && <p className="ct-err">{T(errors.email)}</p>}
                 </div>
 
                 <div className="ct-field">
-                  <label className="ct-label" htmlFor="ct-topic">What's this about?</label>
+                  <label className="ct-label" htmlFor="ct-topic">{T("contact.topic")}</label>
                   <select
                     id="ct-topic"
                     className="ct-input"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                   >
-                    {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
+                    {TOPICS.map((o) => <option key={o.value} value={o.value}>{T(o.key)}</option>)}
                   </select>
                 </div>
 
                 <div className="ct-field">
-                  <label className="ct-label" htmlFor="ct-message">Message</label>
+                  <label className="ct-label" htmlFor="ct-message">{T("contact.message")}</label>
                   <textarea
                     id="ct-message"
                     className="ct-input ct-area"
                     rows={6}
+                    dir={ar ? "auto" : undefined}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                   />
-                  {errors.message && <p className="ct-err">{errors.message}</p>}
+                  {errors.message && <p className="ct-err">{T(errors.message)}</p>}
                 </div>
 
                 {/* honeypot — hidden from people, visible to bots */}
@@ -154,13 +160,13 @@ const Contact = () => {
                 </div>
 
                 <button className="ct-pill" type="submit" disabled={status === "sending"}>
-                  {status === "sending" ? "Sending…" : "Send"}
+                  {status === "sending" ? T("contact.sending") : T("contact.send")}
                 </button>
 
                 {status === "error" && (
                   <p className="ct-err ct-err-block">
-                    That didn't go through. Email me directly at{" "}
-                    <a href="mailto:support@aura-intel.org">support@aura-intel.org</a> and I'll pick it up.
+                    {T("contact.failPre")}
+                    <a href="mailto:support@aura-intel.org"><bdi dir="ltr">support@aura-intel.org</bdi></a>{T("contact.failPost")}
                   </p>
                 )}
               </form>
@@ -168,8 +174,8 @@ const Contact = () => {
           </div>
 
           <p className="ct-alt">
-            Prefer email? <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>{" "}
-            <span className="ct-plain">support@aura-intel.org</span>
+            {T("contact.prefer")} <a href="mailto:support@aura-intel.org"><bdi dir="ltr">support@aura-intel.org</bdi></a>{" "}
+            <bdi dir="ltr" className="ct-plain">support@aura-intel.org</bdi>
           </p>
         </div>
       </main>
@@ -228,4 +234,11 @@ const CT_CSS = `
 .ct-alt a{color:var(--faint);text-decoration:underline;}
 .ct-plain{user-select:all;}
 @media (prefers-reduced-motion:reduce){ .ct *{transition:none !important;} }
+.ct-ar{font-family:var(--font-arabic);}
+.ct-ar .ct-eyebrow,.ct-ar .ct-label{font-family:var(--font-arabic);letter-spacing:0;text-transform:none;font-size:13px;line-height:1.7;}
+.ct-ar .ct-h1,.ct-ar .ct-done-t{font-family:var(--font-arabic);letter-spacing:0;line-height:1.7;}
+.ct-ar .ct-intro{line-height:1.9;}
+.ct-ar .ct-input,.ct-ar .ct-pill{font-family:var(--font-arabic);}
+.ct-ar input[type=email]{font-family:var(--body);text-align:left;}
+.ct-ar .ct-err,.ct-ar .ct-alt,.ct-ar .ct-back{line-height:1.9;}
 `;

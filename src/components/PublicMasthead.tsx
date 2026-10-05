@@ -97,9 +97,11 @@ const PM_CSS = `
 .pm-a{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;
   background:rgba(255,255,255,.16);font-size:10px;transition:transform .22s cubic-bezier(.2,.7,.3,1);}
 .pm-cta:hover .pm-a{transform:translate(2px,-2px);}
-[dir="rtl"] .pm-a{transform:scaleX(-1);}
+[dir="rtl"] .pm-a{display:none;}
+[dir="rtl"] .pm-link{white-space:nowrap;}
+@media (max-width:420px){ [dir="rtl"] .pm{padding-inline:14px;gap:8px;} [dir="rtl"] .pm .pm-link{padding:11px 4px;font-size:12px;} [dir="rtl"] .pm .kb-lt{padding:0 4px;min-width:0;} [dir="rtl"] .pm-nav{gap:2px;} [dir="rtl"] .pm .pm-cta{padding:10px 11px;font-size:12px;} }
 [dir="rtl"] .pm-cta:hover .pm-a{transform:translate(-2px,-2px) scaleX(-1);}
-[dir="rtl"] .pm-link{letter-spacing:0;font-family:'CairoAR',var(--mono);font-size:12.5px;}
+[dir="rtl"] .pm-link{letter-spacing:0;text-transform:none;font-family:'CairoAR',var(--mono);font-size:12.5px;}
 [dir="rtl"] .pm{font-family:'CairoAR',var(--ui);}
 @media (max-width:520px){
   .pm-cta{font-size:12.5px;padding:10px 13px;}

@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
+import { usePublicText } from "@/hooks/usePublicText";
 
 export interface LegalSection {
   title: string;
@@ -9,36 +10,61 @@ export interface LegalSection {
 }
 
 interface Props {
-  title: string;
-  updated: string;
-  sections: LegalSection[];
+  /** Locale prefix: `${prefix}.title`, `${prefix}.s{n}.t`, `${prefix}.s{n}.b`. */
+  prefix: string;
+  count: number;
+  /** Arabic only: the line saying the English text governs. */
+  translationNote?: boolean;
 }
 
-const LegalPage = ({ title, updated, sections }: Props) => {
+/** Arabic body: blocks split on blank lines; a block of "·" lines becomes a list. */
+function ArabicBody({ text }: { text: string }) {
+  return (
+    <div className="lg-body">
+      {text.split(/\n\n/).map((blk, i) => {
+        const lines = blk.split("\n");
+        if (lines.every((l) => /^\s*·/.test(l))) {
+          return (
+            <ul key={i} className="lg-ul">
+              {lines.map((l, j) => <li key={j}>{l.replace(/^\s*·\s*/, "")}</li>)}
+            </ul>
+          );
+        }
+        return <p key={i} className="lg-p">{blk}</p>;
+      })}
+    </div>
+  );
+}
+
+const LegalPage = ({ prefix, count, translationNote }: Props) => {
+  const { ar, T } = usePublicText();
+  const title = T(`${prefix}.title`);
+  const sections: LegalSection[] = Array.from({ length: count }, (_, i) => ({
+    title: T(`${prefix}.s${i + 1}.t`),
+    body: T(`${prefix}.s${i + 1}.b`),
+  }));
   const location = useLocation();
   const path = location.pathname;
   const isTrust = path.startsWith("/trust");
   const isTerms = path.startsWith("/terms");
 
-  const kicker = isTrust ? "Trust · Security" : isTerms ? "Legal · Terms" : "Legal · Privacy";
+  const kicker = T(isTrust ? "legal.kicker.trust" : isTerms ? "legal.kicker.terms" : "legal.kicker.privacy");
   const crossTo = isTrust ? "/privacy" : isTerms ? "/privacy" : "/terms";
-  const crossLabel = isTrust
-    ? "Read our Privacy Policy →"
-    : isTerms
-      ? "Read our Privacy Policy →"
-      : "Read our Terms of Service →";
+  const crossLabel = T(isTrust || isTerms ? "legal.readPrivacy" : "legal.readTerms");
+  const back = <Link to="/" className="lg-back"><ArrowLeft size={13} className="lg-arrow" /> {T("pubpg.backHome")}</Link>;
 
   return (
-    <div className="lg">
+    <div className={ar ? "lg lg-ar" : "lg"}>
       <style>{LG_CSS}</style>
       <PublicMasthead />
 
       <main className="lg-main">
-        <Link to="/" className="lg-back"><ArrowLeft size={13} /> Back to home</Link>
+        {back}
 
         <div className="lg-eyebrow"><span>{kicker}</span></div>
         <h1 className="lg-h1">{title}</h1>
-        <p className="lg-updated">Last updated · {updated}</p>
+        <p className="lg-updated">{T("legal.updated")}</p>
+        {ar && translationNote && <p className="lg-note">{T("legal.translationNote")}</p>}
 
         <div className="lg-sections">
           {sections.map((s, i) => (
@@ -47,13 +73,13 @@ const LegalPage = ({ title, updated, sections }: Props) => {
                 <span className="lg-no">{String(i + 1).padStart(2, "0")}</span>
                 {s.title}
               </h2>
-              <p className="lg-body">{s.body}</p>
+              {ar ? <ArabicBody text={s.body} /> : <p className="lg-body">{s.body}</p>}
             </section>
           ))}
         </div>
 
         <div className="lg-end">
-          <Link to="/" className="lg-back"><ArrowLeft size={13} /> Back to home</Link>
+          {back}
           <Link to={crossTo} className="lg-cross">{crossLabel}</Link>
         </div>
       </main>
@@ -117,5 +143,25 @@ const LG_CSS = `
 .lg-cross:hover{text-decoration:underline;}
 
 @media (max-width:560px){ .lg-body{padding-left:0;} }
+
+.lg-ar{font-family:var(--font-arabic);}
+.lg-ar .lg-back,.lg-ar .lg-eyebrow span,.lg-ar .lg-updated,.lg-ar .lg-cross,.lg-ar .lg-no{
+  letter-spacing:0;text-transform:none;font-style:normal;}
+.lg-ar .lg-back,.lg-ar .lg-eyebrow span,.lg-ar .lg-updated,.lg-ar .lg-cross{font-family:var(--font-arabic);font-size:13px;}
+.lg-ar .lg-arrow{transform:scaleX(-1);}
+.lg-ar .lg-h1,.lg-ar .lg-h2{font-family:var(--font-arabic);}
+.lg-ar .lg-h1{line-height:1.7;letter-spacing:0;}
+.lg-ar .lg-h2{line-height:1.7;letter-spacing:0;}
+.lg-ar .lg-no{transform:none;}
+.lg-ar .lg-eyebrow::before{left:auto;right:0;border-right:1.5px solid var(--n300);border-left:0;}
+.lg-ar .lg-eyebrow::after{right:auto;left:0;border-left:1.5px solid var(--n300);border-right:0;}
+.lg-ar .lg-body{padding-left:0;padding-inline-start:38px;line-height:1.9;white-space:normal;}
+.lg-ar .lg-p{white-space:pre-line;}
+.lg-ar .lg-p + .lg-p,.lg-ar .lg-p + .lg-ul,.lg-ar .lg-ul + .lg-p,.lg-ar .lg-ul + .lg-ul{margin-top:14px;}
+.lg-ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;}
+.lg-ul li{position:relative;padding-inline-start:18px;}
+.lg-ul li::before{content:'·';position:absolute;inset-inline-start:2px;top:0;font-weight:700;color:var(--cy-t);}
+.lg-note{margin-top:10px;font-size:13px;line-height:1.9;color:var(--n500);}
+@media (max-width:560px){ .lg-ar .lg-body{padding-inline-start:0;} }
 @media (prefers-reduced-motion:reduce){ .lg *{transition:none !important;} }
 `;
