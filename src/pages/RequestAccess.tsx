@@ -8,8 +8,8 @@ import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import { fetchSeniorityTitles } from "@/lib/seniorityTitles";
 import AuraLogo from "@/components/brand/AuraLogo";
-import {
 import { emailLang } from "@/i18n";
+import {
   SEAT_LEAD, SEAT_HOW, SEAT_VS_TOOLS, SEAT_RACK_LABEL,
   INTENT_RESERVE, INTENT_KEEP_POSTED, RESERVED_TITLE, RESERVED_BODY, POSTED_TITLE,
   WORTH_QUESTION, WORTH_PLACEHOLDER, WORTH_SEND, WORTH_SKIP, WORTH_THANKS,
