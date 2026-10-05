@@ -228,14 +228,14 @@ export function PaperFooter({
 }
 
 // ── Ghost mark (Aura ray group at low opacity, bleeds off right edge) ──
-function GhostMark() {
+function GhostMark({ lang = "en" }: { lang?: PaperLang }) {
   return (
     <div
       aria-hidden
       style={{
         position: "absolute",
         top: 40,
-        right: -240,
+        ...(lang === "ar" ? { left: -240 } : { right: -240 }),
         width: 720,
         height: 720,
         opacity: 0.055,
@@ -249,7 +249,8 @@ function GhostMark() {
 }
 
 // ── PaperCover ─────────────────────────────────────────────────────────
-export function PaperCover({ data }: { data: ReportData }) {
+export function PaperCover({ data, lang = "en" }: { data: ReportData; lang?: PaperLang }) {
+  const ar = lang === "ar";
   const p = data.profile;
   const first = p?.first_name || "";
   const last = p?.last_name || "";
@@ -258,7 +259,7 @@ export function PaperCover({ data }: { data: ReportData }) {
   const scoreVal = data.score?.score ?? null;
   const tier = data.score?.tier || "";
   const rawStatement = data.positioning?.statement || data.positioning?.title || "";
-  const statement = (() => {
+  const statementEn = (() => {
     if (rawStatement.length <= 320) return rawStatement;
     const slice = rawStatement.slice(0, 320);
     const b = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf(" · "));
@@ -272,13 +273,32 @@ export function PaperCover({ data }: { data: ReportData }) {
     if (/[.!?]$/.test(cut)) return cut;
     return cut.replace(/[.]+$/u, "") + "…";
   })();
+  // Arabic: whole sentences only, dropped from the end while the cover overflows.
+  const arSentences = React.useMemo(() => (ar ? sentences(rawStatement) : []), [ar, rawStatement]);
+  const [keep, setKeep] = useState<number>(arSentences.length);
+  useEffect(() => { setKeep(arSentences.length); }, [arSentences.length]);
+  const coverRef = React.useRef<HTMLDivElement | null>(null);
+  React.useLayoutEffect(() => {
+    if (!ar) return;
+    let off = false;
+    const check = () => {
+      const el = coverRef.current;
+      if (off || !el) return;
+      if (el.scrollHeight > el.clientHeight + 1 && keep > 1) setKeep((k) => Math.max(1, k - 1));
+    };
+    check();
+    (document as any).fonts?.ready?.then(check);
+    return () => { off = true; };
+  }, [ar, keep]);
+  const statement = ar ? arSentences.slice(0, keep).join(" ") : statementEn;
+  const L = (key: string, english: string, vars?: Record<string, string | number>) => (ar ? pt(lang, key, vars) : english);
 
   return (
-    <div style={{ position: "relative", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
-      <GhostMark />
+    <div ref={coverRef} style={{ position: "relative", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
+      <GhostMark lang={lang} />
       <div style={{ position: "relative", zIndex: 1 }}>
         <div
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.mono,
             fontSize: 13,
             fontWeight: 700,
@@ -286,35 +306,42 @@ export function PaperCover({ data }: { data: ReportData }) {
             textTransform: "uppercase",
             color: T.spot,
             marginBottom: 28,
-          }}
+          })}
         >
-          The KnownBy Paper · № 01
+          {ar ? withLatin(pt(lang, "paper.rp.kicker"), lang) : "The KnownBy Paper · № 01"}
         </div>
         <h1
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.serif,
-            fontSize: 64,
+            fontSize: ar ? 52 : 64,
             fontWeight: 400,
             lineHeight: 1.04,
             color: T.ink,
             margin: 0,
             letterSpacing: "-0.01em",
-          }}
+          })}
         >
-          A Strategic Identity Report,
+          {L("paper.rp.title", "A Strategic Identity Report,")}
           <br />
-          <span style={{ fontStyle: "italic" }}>{fullName || "for you"}</span>
+          {ar ? (
+            <span dir={valDir(lang, fullName || "x")} style={valStyle(lang, { fontFamily: FONT.serif }, fullName || pt(lang, "paper.rp.forYou"))}>
+              {fullName || pt(lang, "paper.rp.forYou")}
+            </span>
+          ) : (
+            <span style={{ fontStyle: "italic" }}>{fullName || "for you"}</span>
+          )}
         </h1>
         {statement ? (
           <p
-            style={{
+            dir={valDir(lang, statement)}
+            style={valStyle(lang, {
               fontFamily: FONT.serif,
               fontSize: 20,
               lineHeight: 1.5,
               color: T.ink2,
               margin: "26px 0 0",
               maxWidth: 560,
-            }}
+            }, statement)}
           >
             {statement}
           </p>
@@ -338,18 +365,18 @@ export function PaperCover({ data }: { data: ReportData }) {
         }}
       >
         <span
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.serif,
             fontStyle: "italic",
             fontSize: 21,
             color: T.paper,
             lineHeight: 1.3,
-          }}
+          })}
         >
-          Your experience is worth more than your profile shows.
+          {L("paper.rp.slogan", "Your experience is worth more than your profile shows.")}
         </span>
         <span
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.mono,
             fontSize: 10.5,
             fontWeight: 700,
@@ -357,9 +384,9 @@ export function PaperCover({ data }: { data: ReportData }) {
             textTransform: "uppercase",
             color: "#FFFFFF",
             whiteSpace: "nowrap",
-          }}
+          })}
         >
-          Built from your record alone
+          {L("paper.rp.built", "Built from your record alone")}
         </span>
       </div>
 
@@ -385,7 +412,7 @@ export function PaperCover({ data }: { data: ReportData }) {
         }}
       >
         <div
-          style={{
+          style={arStyle(lang, {
             padding: "10px 14px",
             borderBottom: `1px solid ${T.rule}`,
             fontFamily: FONT.mono,
@@ -394,9 +421,11 @@ export function PaperCover({ data }: { data: ReportData }) {
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: T.ink,
-          }}
+          })}
         >
-          {cells === 1
+          {ar
+            ? pt(lang, `paper.legend.${cells}`)
+            : cells === 1
             ? "How to read this paper — one colour, one meaning"
             : cells === 2
               ? "How to read this paper — two colours, two meanings"
@@ -404,13 +433,13 @@ export function PaperCover({ data }: { data: ReportData }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cells}, 1fr)` }}>
           {hasFinding ? (
-            <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your evidence." />
+            <LegendCell lang={lang} swatch={T.spot} title={L("paper.legend.finding", "Finding")} body={L("paper.rp.findingBody", "A conclusion drawn from your evidence.")} />
           ) : null}
           {hasMovement ? (
-            <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your record." border={hasFinding} />
+            <LegendCell lang={lang} swatch={T.live} title={L("paper.legend.movement", "Movement")} body={L("paper.rp.movementBody", "Something live and rising in your record.")} border={hasFinding} />
           ) : null}
           {hasAction ? (
-            <LegendCell swatch="var(--a-500)" title="Action" body="Held by you, unclaimed — the next move." border={hasFinding || hasMovement} />
+            <LegendCell lang={lang} swatch="var(--a-500)" title={L("paper.legend.action", "Action")} body={L("paper.legend.actionBody", "Held by you, unclaimed — the next move.")} border={hasFinding || hasMovement} />
           ) : null}
         </div>
       </div>
@@ -432,55 +461,63 @@ export function PaperCover({ data }: { data: ReportData }) {
       >
         {fullName ? (
           <MetaCell
-            label="Prepared for"
+            lang={lang}
+            label={L("paper.preparedFor", "Prepared for")}
             value={fullName}
             sub={level}
           />
         ) : null}
         <MetaCell
-          label="Standing at issue"
+          lang={lang}
+          label={L("paper.rp.standing", "Standing at issue")}
           value={scoreVal !== null ? `Imprint ${scoreVal}` : "—"}
-          sub={tier ? `${tier} tier` : ""}
+          valueLatin
+          sub={tier ? L("paper.rp.tier", `${tier} tier`, { tier }) : ""}
         />
         <MetaCell
-          label="Issued"
-          value={todayLabel(data.generated_at)}
-          sub="Edition 1"
+          lang={lang}
+          label={L("paper.issued", "Issued")}
+          value={todayLabel(data.generated_at, lang)}
+          sub={L("paper.rp.edition", "Edition 1")}
         />
       </div>
     </div>
   );
 }
 
-function LegendCell({ swatch, title, body, border }:
-  { swatch: string; title: string; body: string; border?: boolean }) {
+function LegendCell({ swatch, title, body, border, lang = "en" }:
+  { swatch: string; title: string; body: string; border?: boolean; lang?: PaperLang }) {
+  const ar = lang === "ar";
   return (
-    <div style={{ padding: "14px 14px", borderLeft: border ? `1px solid ${T.rule}` : undefined }}>
+    <div style={ar
+      ? { padding: "14px 14px", borderInlineStart: border ? `1px solid ${T.rule}` : undefined }
+      : { padding: "14px 14px", borderLeft: border ? `1px solid ${T.rule}` : undefined }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
         <span aria-hidden style={{ display: "inline-block", width: 16, height: 16, background: swatch }} />
         <span
-          style={{
+          style={arStyle(lang, {
             fontFamily: FONT.mono,
             fontSize: 10.5,
             fontWeight: 700,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: T.ink,
-          }}
+          })}
         >
           {title}
         </span>
       </div>
-      <div style={{ fontFamily: FONT.serif, fontSize: 14, lineHeight: 1.55, color: T.ink2 }}>{body}</div>
+      <div style={arStyle(lang, { fontFamily: FONT.serif, fontSize: 14, lineHeight: 1.55, color: T.ink2 })}>{body}</div>
     </div>
   );
 }
 
-function MetaCell({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function MetaCell({ label, value, sub, lang = "en", valueLatin }: { label: string; value: string; sub?: string; lang?: PaperLang; valueLatin?: boolean }) {
+  const ar = lang === "ar";
   return (
     <div>
       <div
-        style={{
+        style={arStyle(lang, {
           fontFamily: FONT.mono,
           fontSize: 10.5,
           fontWeight: 700,
@@ -488,13 +525,20 @@ function MetaCell({ label, value, sub }: { label: string; value: string; sub?: s
           textTransform: "uppercase",
           color: T.ink3,
           marginBottom: 6,
-        }}
+        })}
       >
         {label}
       </div>
-      <div style={{ fontFamily: FONT.serif, fontSize: 17, color: T.ink, lineHeight: 1.3 }}>{value}</div>
+      <div
+        dir={ar ? (valueLatin ? "ltr" : valDir(lang, value)) : undefined}
+        style={ar
+          ? { ...valStyle(lang, { fontFamily: FONT.serif, fontSize: 17, color: T.ink, lineHeight: 1.3 }, value), textAlign: "start", unicodeBidi: "isolate" }
+          : { fontFamily: FONT.serif, fontSize: 17, color: T.ink, lineHeight: 1.3 }}
+      >
+        {ar && valueLatin ? <span dir="ltr" style={{ unicodeBidi: "isolate" }}>{value}</span> : value}
+      </div>
       {sub ? (
-        <div style={{ fontFamily: FONT.mono, fontSize: 11, color: T.ink3, marginTop: 3, letterSpacing: "0.06em" }}>
+        <div style={valStyle(lang, { fontFamily: FONT.mono, fontSize: 11, color: T.ink3, marginTop: 3, letterSpacing: "0.06em" }, sub)} dir={valDir(lang, sub)}>
           {sub}
         </div>
       ) : null}
