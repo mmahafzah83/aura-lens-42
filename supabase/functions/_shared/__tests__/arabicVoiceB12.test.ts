@@ -35,6 +35,19 @@ describe("Batch 12 Arabic checker", () => {
     expect(withArabicVoice("S", "en")).toBe("S");
     expect(withArabicVoice("S", "ar").endsWith(ARABIC_VOICE_BLOCK)).toBe(true);
   });
+  it("requires Arabic industry and sector names in running text", () => {
+    expect(ARABIC_VOICE_BLOCK).toContain("الطاقة والمرافق");
+    expect(ARABIC_VOICE_BLOCK).toContain("الخدمات المالية");
+    expect(ARABIC_VOICE_BLOCK).toContain("القطاع الحكومي");
+    expect(checks("يتابع التحول في Energy & Utilities داخل المملكة.")).toContain("english_sector");
+    expect(checks("يتابع التحول في الطاقة والمرافق داخل المملكة.")).not.toContain("english_sector");
+  });
+  it("rejects standalone Latin technical tokens but permits proper names", () => {
+    for (const token of ["AI", "KPI", "KPIs", "dashboard", "roadmap", "stakeholders"]) {
+      expect(checks(`يربط ${token} بالقرار التنفيذي داخل المؤسسة.`)).toContain("latin_technical");
+    }
+    expect(checks("يربط الذكاء الاصطناعي بالقرار في KnownBy و LinkedIn و Imprint.")).not.toContain("latin_technical");
+  });
   it("gate rejects the BAD line", () => expect(arabicGate({ x: "لا تنظر إلى المشروع كملف تقني، بل كقرار إداري." })).toBe("kaf_as"));
 });
 
