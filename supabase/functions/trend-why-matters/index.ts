@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { memberLang } from "../_shared/memberLang.ts";
+import { withArabicVoice } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,11 +10,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const AR_TAIL = withArabicVoice("\n\nWrite the sentence in Arabic, at most 20 words, addressed to the reader. Trend names and sector names may stay as given only when they are proper names.", "ar");
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { headline, insight } = await req.json();
+    const { headline, insight, lang: bodyLang } = await req.json();
     if (!headline) {
       return new Response(JSON.stringify({ error: "headline required" }), {
         status: 400,
@@ -46,6 +50,7 @@ serve(async (req) => {
     const practice = profile?.core_practice || "their practice";
     const goal = profile?.north_star_goal || "their stated goal";
 
+    const lang = await memberLang(supabase, user.id, bodyLang);
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -60,7 +65,8 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are Aura. You know this professional's focus: ${sector}, ${practice}, ${goal} from their diagnostic_profiles row.\n\nGiven a trend, write exactly ONE sentence (max 20 words) explaining why it is personally relevant to this specific professional.\n\nBe specific to their sector and role. Never say "this is relevant to you" or "as a professional". Just state the implication directly.\n\nReturn plain text only. No JSON. No quotes.`,
+            content: `You are Aura. You know this professional's focus: ${sector}, ${practice}, ${goal} from their diagnostic_profiles row.\n\nGiven a trend, write exactly ONE sentence (max 20 words) explaining why it is personally relevant to this specific professional.\n\nBe specific to their sector and role. Never say "this is relevant to you" or "as a professional". Just state the implication directly.\n\nReturn plain text only. No JSON. No quotes.`
+              + (lang === "ar" ? AR_TAIL : ""),
           },
           {
             role: "user",

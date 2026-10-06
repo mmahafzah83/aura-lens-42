@@ -1,3 +1,5 @@
+import { withArabicVoice } from "../_shared/arabicVoice.ts";
+import { pickMemberLang } from "../_shared/memberLang.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -5,6 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const EN_ONLY_LINE = "- Write ALL output strictly in English. Never include Chinese, Japanese, Korean, Cyrillic, or Arabic characters in any field. Sector and place names are written in their English form.";
+const AR_LINE = "- Write every text value in Arabic (the member reads Arabic). Never include Chinese, Japanese, Korean or Cyrillic characters. Company, programme and place names that are proper names may stay in Latin letters.";
+const AR_BLOCK_TAIL = withArabicVoice("", "ar");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -68,6 +74,8 @@ ${fragments.slice(0, 15).map(f => `- ${f.title} (${f.fragment_type}) [${(f.tags 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const identityAr = pickMemberLang((profileRes as any)?.data?.ui_language) === "ar";
+    const fieldLang = (d: string) => (identityAr ? d.replace("(English only)", "(Arabic)") : d);
     const requestBody = {
       model: "google/gemini-3-flash-preview",
       messages: [
@@ -84,7 +92,7 @@ Rules:
 - Always write as if a GCC Chief Digital Officer will read this output and decide in 30 seconds whether this person is worth calling.
 - Write ALL output strictly in English. Never include Chinese, Japanese, Korean, Cyrillic, or Arabic characters in any field. Sector and place names are written in their English form.
 
-Analyze the user's data and generate their Executive Positioning Model. Return JSON using the provided tool.`
+Analyze the user's data and generate their Executive Positioning Model. Return JSON using the provided tool.`.replace(EN_ONLY_LINE, identityAr ? AR_LINE : EN_ONLY_LINE) + (identityAr ? AR_BLOCK_TAIL : "")
         },
         {
           role: "user",
@@ -99,29 +107,29 @@ Analyze the user's data and generate their Executive Positioning Model. Return J
           parameters: {
             type: "object",
             properties: {
-              primary_role: { type: "string", description: "Primary strategic role e.g. 'AI Strategy Architect' (English only)" },
-              secondary_strengths: { type: "array", items: { type: "string" }, description: "2-4 secondary strengths (English only)" },
-              identity_summary: { type: "string", description: "2-3 sentence strategic identity summary (English only)" },
-              expertise_areas: { type: "array", items: { type: "string" }, description: "5-8 expertise areas (English only)" },
-              industries: { type: "array", items: { type: "string" }, description: "Industries the user focuses on (English only)" },
-              knowledge_domains: { type: "array", items: { type: "string" }, description: "Key knowledge domains (English only)" },
-              values: { type: "array", items: { type: "string" }, description: "Core professional values inferred (English only)" },
-              authority_ambitions: { type: "array", items: { type: "string" }, description: "Where the user is building authority (English only)" },
-              strategic_goals: { type: "array", items: { type: "string" }, description: "Inferred strategic goals (English only)" },
+              primary_role: { type: "string", description: fieldLang("Primary strategic role e.g. 'AI Strategy Architect' (English only)") },
+              secondary_strengths: { type: "array", items: { type: "string" }, description: fieldLang("2-4 secondary strengths (English only)") },
+              identity_summary: { type: "string", description: fieldLang("2-3 sentence strategic identity summary (English only)") },
+              expertise_areas: { type: "array", items: { type: "string" }, description: fieldLang("5-8 expertise areas (English only)") },
+              industries: { type: "array", items: { type: "string" }, description: fieldLang("Industries the user focuses on (English only)") },
+              knowledge_domains: { type: "array", items: { type: "string" }, description: fieldLang("Key knowledge domains (English only)") },
+              values: { type: "array", items: { type: "string" }, description: fieldLang("Core professional values inferred (English only)") },
+              authority_ambitions: { type: "array", items: { type: "string" }, description: fieldLang("Where the user is building authority (English only)") },
+              strategic_goals: { type: "array", items: { type: "string" }, description: fieldLang("Inferred strategic goals (English only)") },
               authority_themes: {
                 type: "array",
                 items: {
                   type: "object",
                   properties: {
-                    theme: { type: "string", description: "Theme name (English only)" },
-                    rationale: { type: "string", description: "Rationale for the theme (English only)" }
+                    theme: { type: "string", description: fieldLang("Theme name (English only)") },
+                    rationale: { type: "string", description: fieldLang("Rationale for the theme (English only)") }
                   },
                   required: ["theme", "rationale"]
                 },
-                description: "3-5 suggested signal themes with rationale (English only)"
+                description: fieldLang("3-5 suggested signal themes with rationale (English only)")
               },
-              capabilities: { type: "array", items: { type: "string" }, description: "Core capabilities (English only)" },
-              clients: { type: "array", items: { type: "string" }, description: "Target client types (English only)" }
+              capabilities: { type: "array", items: { type: "string" }, description: fieldLang("Core capabilities (English only)") },
+              clients: { type: "array", items: { type: "string" }, description: fieldLang("Target client types (English only)") }
             },
             required: ["primary_role", "secondary_strengths", "identity_summary", "expertise_areas", "industries", "knowledge_domains", "values", "authority_ambitions", "strategic_goals", "authority_themes", "capabilities", "clients"]
           }

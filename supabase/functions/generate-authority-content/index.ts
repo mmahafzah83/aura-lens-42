@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
+import { ARABIC_VOICE_BLOCK, arabicTextNotes, arabicFixInstruction } from "../_shared/arabicVoice.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   buildContentDNA,
@@ -75,7 +76,7 @@ const corsHeaders = {
  * on a question" mandate and a worked example that opened on "معظم" — which is
  * how 47 of 80 Arabic and English drafts came to open with the same word.
  */
-const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura. مهمتك كتابة منشورات LinkedIn عربية باسم {{name}}، {{role}} المتخصص في {{sector}}.
+const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى في KnownBy. مهمتك كتابة منشورات LinkedIn عربية باسم {{name}}، {{role}} المتخصص في {{sector}}.
 
 هويتك في الكتابة:
 أنت لا تكتب محتوى — أنت تكشف الواقع.
@@ -84,7 +85,8 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 
 السجل اللغوي:
 السجل المستهدف: {{register}} — واضح، مباشر، كأنك تتحدث مع مدير لا تكتب مقالاً.
-الكلمات التقنية تبقى بالإنجليزية: AI، KPI، dashboard، API، roadmap.
+القارئ: مهني سعودي وخليجي أولاً، وواضح لأي قارئ عربي.
+الكلمات التقنية: استخدم الكلمة العربية المتداولة مهنياً (الذكاء الاصطناعي، مؤشرات الأداء، لوحة المؤشرات)؛ واترك اللاتينية للأسماء أو لما لا مقابل عربياً مقبولاً له.
 لا عامية كاملة، لا لغة إعلامية رسمية.
 
 الهيكل: اتبع "هيكل المنشور" الوارد أعلاه حرفياً — هو الهيكل الوحيد. لا تضف حركات ولا تعد ترتيبها.
@@ -1010,9 +1012,9 @@ serve(withObserve("generate-authority-content", async (req) => {
             .replace(/\{\{sector\}\}/g, arSector || "مجاله");
         }
         // Arabic-native prompt replaces voice section
-        voiceSection = voiceProfile
+        voiceSection = (voiceProfile
           ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile, chosenOpening, evidenceHasNumber)
-          : arabicBase;
+          : arabicBase) + "\n\n" + ARABIC_VOICE_BLOCK;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
       } else {
         voiceSection = buildVoiceContext(voiceProfile, chosenOpening, evidenceHasNumber);
@@ -1473,7 +1475,10 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
       let correctiveRan = false;
       voiceMatch = scoreOf(firstA.v);
 
-      if (!firstA.allOk) {
+      // Batch 12: the shared Arabic checker joins the ONE corrective rewrite
+      // (no extra serial call) when it finds violations in the Arabic draft.
+      const arVoiceNotes = isAr ? arabicTextNotes(content) : [];
+      if (!firstA.allOk || arVoiceNotes.length) {
         const preGate = firstA.pre;
         const unsourcedEntities = firstA.ents;
         const first = firstA.v;
@@ -1527,6 +1532,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
           directive += rotBit + neverBit + first.fidelity.directive;
         }
 
+        if (arVoiceNotes.length) directive += "\n\n" + arabicFixInstruction(arVoiceNotes);
         if (elapsed() > 60000) {
           console.warn(`[generate-authority-content] corrective pass skipped — time budget (${elapsed()}ms)`);
         } else {
@@ -1841,7 +1847,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
       }
 
       const langRule = lang === "ar"
-        ? `All output text MUST be in فصحى معاصرة (modern standard Arabic). Short, sharp sentences. Keep technical terms in English (AI, KPI, dashboard, API). No classical filler.`
+        ? `All output text MUST be in Arabic.\n${ARABIC_VOICE_BLOCK}`
         : `All output text in English. Sharp, specific, executive register. No buzzwords (no "leverage", "synergy", "cutting-edge", "unlock"). No vague abstractions.`;
 
       const systemPrompt = `You are a senior consulting content strategist restructuring a LinkedIn post into 8 different visual card formats.
@@ -1909,13 +1915,13 @@ Return ONLY a JSON object matching this exact schema:
           const t = await aiResp.text();
           console.error("extract_card_content AI error:", aiResp.status, t);
           if (aiResp.status === 429) {
-            return new Response(JSON.stringify({ error: "Aura is busy — try again in a moment." }), {
+            return new Response(JSON.stringify({ error: "KnownBy is busy — try again in a moment." }), {
               status: 429,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
           if (aiResp.status === 402) {
-            return new Response(JSON.stringify({ error: "Aura is temporarily unavailable. Try again later." }), {
+            return new Response(JSON.stringify({ error: "KnownBy is temporarily unavailable. Try again later." }), {
               status: 402,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
@@ -2094,7 +2100,8 @@ Return ONLY a JSON object matching this exact schema:
       const dirSystem = effectiveLanguage === "ar"
         ? `أنت تساعد ${readerDescription} على اختيار زاوية قبل الكتابة.
 أعطِ أربع زوايا مختلفة تماماً لنفس الموضوع: زاوية معاكسة للسائد، زاوية تشخيصية، زاوية من تجربة ممارس، وزاوية استشرافية.
-كل زاوية جملة واحدة قصيرة بالعربية الفصحى المعاصرة، والمصطلحات التقنية تبقى بالإنجليزية.
+كل زاوية جملة واحدة قصيرة، بالسجل الموصوف في كتلة الصوت العربي أدناه.
+${ARABIC_VOICE_BLOCK}
 لا وسوم، لا إيموجي، لا مقدمة، لا تسميات مثل "زاوية معاكسة".
 استند فقط إلى الأدلة أدناه؛ لا تخترع أرقاماً أو جهات.
 أعد JSON فقط بهذا الشكل: {"directions":[{"id":"1","angle":"..."},{"id":"2","angle":"..."},{"id":"3","angle":"..."},{"id":"4","angle":"..."}]}`

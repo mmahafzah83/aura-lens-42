@@ -5,6 +5,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { withObserve } from "../_shared/observe.ts";
 import { logError } from "../_shared/logError.ts";
+import { withArabicVoice } from "../_shared/arabicVoice.ts";
+import { pickMemberLang } from "../_shared/memberLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -134,10 +136,15 @@ function cleanImplication(s: string): string {
   return out.slice(0, 400);
 }
 
+const AR_IMPLICATION = withArabicVoice(
+  "\n\nARABIC: write the implication in Arabic instead of English, one sentence, addressed to the reader. The JSON keys stay in English.",
+  "ar",
+);
+
 async function scoreRelevance(
   lovableKey: string,
   article: { url: string; title: string; source: string; summary: string },
-  ctx: { level: string; sector: string; practice: string; themes: string[] },
+  ctx: { level: string; sector: string; practice: string; themes: string[]; lang?: "ar" | "en" },
 ): Promise<RelevanceGate | null> {
   const system =
     "You score how relevant a news article is to a specific professional. " +
@@ -145,7 +152,8 @@ async function scoreRelevance(
     "STRICT EXCLUSION: any political, religious, or socially controversial topic → score MUST be 0. " +
     "The implication must be ONE sentence, plain English, personalized to their level + sector + top theme, " +
     "stating what this development means for their position. " +
-    "Never use these words: authority, trajectory, personal brand, thought leader, leverage, utilize, facilitate.";
+    "Never use these words: authority, trajectory, personal brand, thought leader, leverage, utilize, facilitate." +
+    (ctx.lang === "ar" ? AR_IMPLICATION : "");
   const user =
     `Reader profile:\n` +
     `- Level: ${ctx.level || "senior professional"}\n` +
@@ -304,7 +312,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
       // Diagnostic profile
       const { data: profile } = await admin
         .from("diagnostic_profiles")
-        .select("sector_focus, core_practice, level, notification_prefs")
+        .select("sector_focus, core_practice, level, notification_prefs, ui_language")
         .eq("user_id", userId)
         .maybeSingle();
       if (!profile) { summary.skipped++; continue; }
@@ -382,6 +390,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
         sector: String((profile as any).sector_focus ?? ""),
         practice: String((profile as any).core_practice ?? ""),
         themes: topThemes,
+        lang: pickMemberLang((profile as any).ui_language),
       };
 
       // Perplexity search

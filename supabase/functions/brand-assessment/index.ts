@@ -5,7 +5,19 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
-import { ARABIC_VOICE_BLOCK, arabicStyleNotes, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicStyleNotes, fieldFixRequest, applyFieldFix, FIELD_FIX_SYSTEM, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
+
+async function arabicFieldFixCall(apiKey: string, user: string): Promise<string> {
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 1500, system: FIELD_FIX_SYSTEM, messages: [{ role: "user", content: user }] }),
+  });
+  if (!r.ok) { await r.text(); return ""; }
+  const d = await r.json();
+  return (d?.content || []).map((c: any) => c?.text || "").join("");
+}
+
 import { ARABIC_REPORT_OVERRIDE, RECORD_REPORT_TOOL, normaliseReport, reportChecks, retryAllowed, buildInterpretationFromReport } from "./report.ts";
 import { LIMITS, QUEUE_MESSAGE } from "../_shared/limits.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
@@ -303,6 +315,19 @@ serve(withObserve("brand-assessment", async (req) => {
         return pendingResponse();
       }
       styleNotes = arabicStyleNotes(report, { skipKeys: ["own_words_quote", "content_pillars"] });
+      /* Banned words or «كـ»: ONE field-level correction when no correction
+         call has run yet and the time budget allows. */
+      if (correctionCalls === 0 && retryAllowed(Date.now() - startedAt)) {
+        const fixReq = fieldFixRequest(report, styleNotes);
+        if (fixReq) {
+          correctionCalls = 1;
+          try {
+            const replaced = applyFieldFix(report, fixReq.fields, await arabicFieldFixCall(Deno.env.get("ANTHROPIC_API_KEY") ?? "", fixReq.user));
+            console.log("brand-assessment: arabic_field_fix", Object.keys(fixReq.fields).length, "replaced", replaced);
+            styleNotes = arabicStyleNotes(report, { skipKeys: ["own_words_quote", "content_pillars"] });
+          } catch (e) { console.error("brand-assessment: arabic field fix failed", e); }
+        }
+      }
       interpretation = buildInterpretationFromReport(report);
     }
 

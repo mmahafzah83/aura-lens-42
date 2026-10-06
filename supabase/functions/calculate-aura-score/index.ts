@@ -3,6 +3,30 @@ import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 import { logError } from "../_shared/logError.ts";
 import { isMadeWithAura } from "../_shared/postProvenance.ts";
+import { pickMemberLang } from "../_shared/memberLang.ts";
+
+/* Arabic twins, returned as *_ar fields only for Arabic members. The English
+   fields are unchanged; stored rows (milestone_name, snapshots) stay English. */
+const AR_TIER: Record<string, string> = {
+  Observer: "متابع", Explorer: "مستكشف", Strategist: "استراتيجي", Voice: "صاحب رأي", Presence: "مرجع",
+};
+const AR_STATUS: Record<string, string> = {
+  "Commanding presence": "مرجع في سوقه",
+  "Gaining voice": "رأيك يُسمع أكثر",
+  "Building strategy": "تبني موقعك",
+  "Exploring": "تستكشف",
+  "Starting": "في البداية",
+};
+const AR_MILESTONE: Record<string, string> = {
+  profile_complete: "ملفك مكتمل",
+  first_signal: "أول إشارة",
+  voice_trained: "KnownBy يعرف صوتك",
+  first_publish: "أول منشور عبر KnownBy",
+  brand_assessment: "قراءة موقعك",
+  five_signals: "خمس إشارات",
+  sector_depth: "عمق في قطاعك",
+  weekly_rhythm_4: "إيقاع أسبوعي",
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -321,6 +345,15 @@ serve(withObserve("calculate-aura-score", async (req) => {
       }
     }
 
+    const AR_DESC: Record<string, string> = {
+      "Strong across the board — keep your current pace.": "متوازن في كل الجوانب. حافظ على وتيرتك.",
+      "Your signals need more diverse sources — capture from different organisations to strengthen confidence.": "إشاراتك تحتاج مصادر أكثر تنوّعاً. احفظ من جهات مختلفة لتقوى الثقة بها.",
+      "Your capture consistency has gaps — capture at least once per week to keep your intelligence fresh.": "حفظك متقطّع. احفظ شيئاً مرة في الأسبوع على الأقل لتبقى مادّتك حديثة.",
+      "Your signals are ready — draft a post from your top signal to start building content momentum.": "إشاراتك جاهزة. اكتب منشوراً من أقوى إشارة عندك.",
+    };
+    const scoreDescriptionAr: string = AR_DESC[scoreDescription]
+      ?? `منشوراتك على LinkedIn في آخر 30 يوماً: ${totalPublishedCount}. النشر من أقوى إشارة عندك يرفع مؤشرك.`;
+
     // --- score_trend: compare to 7 days ago snapshot ---
     const { data: prevSnapshot } = await admin
       .from("score_snapshots")
@@ -486,7 +519,7 @@ serve(withObserve("calculate-aura-score", async (req) => {
     // ── G4 Personalized nudge ──
     const { data: profile } = await admin
       .from("diagnostic_profiles")
-      .select("sector_focus,north_star_goal")
+      .select("sector_focus,north_star_goal,ui_language")
       .eq("user_id", userId)
       .maybeSingle();
     const sectorFocus = (profile as any)?.sector_focus || "your sector";
@@ -505,12 +538,13 @@ serve(withObserve("calculate-aura-score", async (req) => {
       .eq("status", "active")
       .order("confidence", { ascending: false });
     const topSignal = signalsFull?.[0] as any;
+    const memberAr = pickMemberLang((profile as any)?.ui_language) === "ar";
     const topTitle = topSignal?.signal_title || "your top";
     const topConf = topSignal ? Math.round(Number(topSignal.confidence) * 100) : 0;
 
     let personalized_nudge: string;
     if ((signalsFull?.length || 0) === 0) {
-      personalized_nudge = `Your sector is moving. Paste one link about ${sectorFocus} and see what Aura finds that you didn't notice.`;
+      personalized_nudge = `Your sector is moving. Paste one link about ${sectorFocus} and see what KnownBy finds that you didn't notice.`;
     } else if (weakest === "capture") {
       personalized_nudge = `Your ${topTitle} signal is strong at ${topConf}%. Reinforce it with a new capture from a different source.`;
     } else if (weakest === "signal") {
@@ -520,7 +554,23 @@ serve(withObserve("calculate-aura-score", async (req) => {
     } else if (topSignal && Number(topSignal.confidence) >= 0.6) {
       personalized_nudge = `Your signal "${topTitle}" (${topConf}%) is ready — draft a post from it to lift your content score.`;
     } else {
-      personalized_nudge = `Your sector is moving. Paste one link about ${sectorFocus} and see what Aura finds that you didn't notice.`;
+      personalized_nudge = `Your sector is moving. Paste one link about ${sectorFocus} and see what KnownBy finds that you didn't notice.`;
+    }
+
+    let personalized_nudge_ar: string | null = null;
+    if (memberAr) {
+      const sectorAr = (profile as any)?.sector_focus || "قطاعك";
+      if ((signalsFull?.length || 0) === 0) {
+        personalized_nudge_ar = `قطاعك يتحرّك. أرسل رابطاً واحداً عن ${sectorAr}، وسيريك KnownBy ما فاتك.`;
+      } else if (weakest === "capture") {
+        personalized_nudge_ar = `إشارتك «${topSignal?.signal_title || ""}» قوية. ادعمها بشيء تحفظه من مصدر مختلف.`;
+      } else if (weakest === "signal") {
+        personalized_nudge_ar = `إشاراتك: ${signalsFull?.length || 0}. احفظ من زاوية جديدة في ${sectorAr} لتتّسع الصورة.`;
+      } else if (topSignal && Number(topSignal.confidence) >= 0.6) {
+        personalized_nudge_ar = `إشارتك «${topSignal?.signal_title || ""}» جاهزة. اكتب منها منشوراً.`;
+      } else {
+        personalized_nudge_ar = `قطاعك يتحرّك. أرسل رابطاً واحداً عن ${sectorAr}، وسيريك KnownBy ما فاتك.`;
+      }
     }
 
     // ── G4 Milestones ──
@@ -563,7 +613,7 @@ serve(withObserve("calculate-aura-score", async (req) => {
       },
       {
         id: "first_publish",
-        name: "Published through Aura",
+        name: "Published through KnownBy",
         earned: (publishedPost || []).some((row: any) => isMadeWithAura(row)),
         context: { post_count: lpCount ?? 0 },
       },
@@ -619,6 +669,7 @@ serve(withObserve("calculate-aura-score", async (req) => {
       milestones.push({
         id: c.id,
         name: c.name,
+        ...(memberAr ? { name_ar: AR_MILESTONE[c.id] ?? null } : {}),
         earned: c.earned,
         earned_at: earnedAt,
         context: c.earned ? c.context : null,
@@ -653,6 +704,14 @@ serve(withObserve("calculate-aura-score", async (req) => {
       next_tier_name,
       points_to_next,
       personalized_nudge,
+      ...(memberAr ? {
+        lang: "ar",
+        tier_name_ar: AR_TIER[tier_name] ?? null,
+        next_tier_name_ar: next_tier_name ? AR_TIER[next_tier_name] ?? null : null,
+        score_status_ar: AR_STATUS[scoreStatus] ?? null,
+        score_description_ar: scoreDescriptionAr,
+        personalized_nudge_ar,
+      } : {}),
       weekly_rhythm,
       milestones,
       newly_earned,

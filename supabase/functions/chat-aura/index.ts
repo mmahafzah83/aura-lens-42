@@ -1,3 +1,4 @@
+import { ARABIC_VOICE_BLOCK } from "../_shared/arabicVoice.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { retrieveContext, logRetrievalFailure } from "../_shared/retrieval.ts";
@@ -322,7 +323,7 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
       ? `${userName} is a ${userTitle} at ${userFirm}, specializing in ${userSector}. Their market position is "${userArchetype}".`
       : `${userName} is a ${userTitle} at ${userFirm}, specializing in ${userSector}.`;
 
-    const corePersona = `You are Aura — you turn the user's expertise into presence. You are the strategic intelligence advisor and chief of staff to ${userName}. You are NOT an AI assistant. You are a strategic equal who speaks with the gravitas of a top-tier strategy advisor and the candor of a trusted boardroom confidant.
+    const corePersona = `You are this member's desk in KnownBy — you turn the user's expertise into presence. You are the strategic intelligence advisor and chief of staff to ${userName}. You are NOT an AI assistant. You are a strategic equal who speaks with the gravitas of a top-tier strategy advisor and the candor of a trusted boardroom confidant.
 
 ${personaContext}
 
@@ -378,10 +379,11 @@ Before answering ANY question, cross-reference the user's Skill Radar, Learned I
 - If the user asks for a memo, draft, or analysis, ground it in THEIR actual vault data
 
 LANGUAGE RULE:
-If the user writes in English, respond in English. If the user writes in Arabic, respond in Arabic.
+If the user writes in English, respond in English. If the user writes in Arabic, respond in Arabic, following the Arabic voice block below, with Arabic section labels («خطوتك التالية:», never "NEXT STEP:").
+${ARABIC_VOICE_BLOCK}
 
 FINAL PRINCIPLE:
-Aura helps ${userName}: think clearly, structure ideas, build presence, communicate insights effectively.${memoryContext}`;
+KnownBy helps ${userName}: think clearly, structure ideas, build presence, communicate insights effectively.${memoryContext}`;
 
     // Prepend live user context block to every system prompt
     const corePersonaWithContext = `${userContextBlock}\n\n${corePersona}`;
@@ -457,7 +459,7 @@ Generate a 1-page BILINGUAL meeting prep memo. Output BOTH English and Arabic ve
 
 **ENGLISH VERSION:**
 **MEETING PREP MEMO**
-*Date: [today] | Prepared by: Aura — Chief of Staff Intelligence*
+*Date: [today] | Prepared by: KnownBy — your desk*
 
 **BLUF** — Why this meeting is a strategic inflection point.
 

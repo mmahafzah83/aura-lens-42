@@ -82,7 +82,9 @@ describe("repairArabic", () => {
 describe("gate after repair", () => {
   const g = (o: Record<string, unknown>) => arabicGate(repairValues(o, ["own_words_quote"]));
   it("repaired glue passes; unreachable glue fails", () => {
-    expect(g({ market_read: "عملت في NWC وSPL و50 مشروعًا بـEY سنوات طويلة." })).toBeNull();
+    expect(g({ market_read: "عملت في NWC وSPL و50 مشروعًا في EY سنوات طويلة." })).toBeNull();
+    // Batch 12: a prefix kept apart by a tatweel is still attached to the Latin word.
+    expect(g({ market_read: "عملت في NWC وSPL و50 مشروعًا بـEY سنوات طويلة." })).toBe("latin_prefix");
     expect(g({ market_read: "عملت سنوات طويلة بEY في القطاع العام." })).toBe("glued_latin");
     expect(g({ market_read: "قدّمت تقارير كثيرة للPMO في القطاع العام." })).toBe("glued_latin");
   });

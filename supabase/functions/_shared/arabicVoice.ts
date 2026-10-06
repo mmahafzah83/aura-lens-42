@@ -18,7 +18,18 @@ BANNED — never write: يُعدّ، في ظلّ، من خلال، يسلّط ا
 CALQUE TEST on every sentence: would a native who never saw English have written it? If it mirrors an English idiom (seat at the table, owns the space, moves the needle), rewrite the idea.
 ARCHETYPE NAME in Arabic: a definite noun followed by a definite adjective, two words, e.g. «المُصلح الهادئ». The noun comes from what THIS person repeatedly does in their own material — a specific kind of work, not a job family. Banned nouns: المهندس، المعماري، الخبير، القائد، المنفّذ، المستشار، الرائد، صاحب الرؤية. Banned adjectives: الاستراتيجي، الواضح، المتميّز، الفعّال، الناجح. If the name would fit half of all senior professionals, choose again.
 QUOTES from the person's own posts stay verbatim in the language they were written in. Never translate or tidy a quote.
-JSON keys and any UPPERCASE section marker lines stay exactly as specified, in English.`;
+JSON keys and any UPPERCASE section marker lines stay exactly as specified, in English.
+READER: Write as a careful Saudi professional writes to a peer: contemporary, plain, confident. Gulf reader first, clear to any Arab reader. Not dialect, not ministry Arabic, not translated English. Short sentences. Say the thing directly.
+PRODUCT TERMS (always): the read or report = «ملفك» or «ملف الهوية المهنية». The LinkedIn profile = «صفحتك». Standing = «مكانتك». Position in the market = «موقعك». Evidence = «دليل» / «أدلة». What the member saves = «ما حفظته». Signal = «إشارة». The product name is KnownBy in Latin letters; the score is Imprint in Latin letters. Stage names: «متابع · مستكشف · استراتيجي · صاحب رأي · مرجع». Never write «الحضور المهني», «العلامة الشخصية», «قائد فكر», «أورا» or "Aura".
+TECHNICAL WORDS: use the Arabic word when one is in common professional use («الذكاء الاصطناعي», «لوحة المؤشرات», «مؤشرات الأداء»). Keep a Latin term only for a proper name or when no accepted Arabic exists. Never attach «الـ», «لـ», «بـ», «كـ» to a Latin word.
+BANNED CONSTRUCTIONS: «كـ» meaning "as" in any form (rewrite with a direct object or «بوصفه»); «تم» / «يتم» + verbal noun; «من خلال»; «يمكنك»; «قم بـ»; «الخاص بك»; «ليس فقط … بل»; the contrast skeleton «ليس X. بل Y» more than once in a text; openers «معظم…», «في عالم اليوم», «لا يخفى على أحد», «في ظل»; «تملك فرصة أن»; empty paired aphorisms; arrows and decorative symbols; Arabic-Indic digits (use 0-9).
+DIALECT: no Levantine or Egyptian words («مش», «ما حد», «يحكي», «هيك», «ليش», «عشان», «كتير», «بدّي») in interface text, reads, reports, emails or notifications. Post drafts follow the member's own measured voice and samples; if the samples are not dialect, the draft is not dialect.
+GOOD: «يراك السوق مدير برامج رقمية يعمل داخل جهات حكومية كبيرة.» / «مساحتك: ما يحدث في الشهر الثالث بعد الإطلاق. لم يشغلها أحد.»
+BAD: «لا تنظر إلى المشروع كملف تقني، بل كقرار إداري.» (uses «كـ» twice and the «ليس… بل» skeleton). Write instead: «لا ترى المشروع ملفاً تقنياً، بل قراراً إدارياً.»`;
+
+/** The block appended to a system prompt only when the output is Arabic. */
+export const withArabicVoice = (system: string, lang: string | null | undefined): string =>
+  lang === "ar" ? `${system}\n\n${ARABIC_VOICE_BLOCK}` : system;
 
 /** Whole words / phrases. Matched with diacritics removed on both sides. */
 export const ARABIC_BANNED = [
@@ -27,16 +38,48 @@ export const ARABIC_BANNED = [
   "يلعب دورًا", "في نهاية المطاف", "رائد فكر", "قائد فكر", "العلامة الشخصية", "علامتك الشخصية",
   "رحلة", "رحلتك", "مشهد", "تسخير", "تمكين", "الارتقاء", "سلس", "متين", "على حدّ سواء", "السلطة",
   "شو", "ليش", "هيك", "كتير", "بس", "كمان", "عشان", "زي",
+  "مش", "ما حد", "يحكي", "بدي", "بدّي",
+  "يمكنك", "الخاص بك", "الخاصة بك", "ليس فقط", "تملك فرصة", "الحضور المهني", "أورا", "Aura",
 ];
+
+/** Sentence openers that mark generic Arabic. */
+export const ARABIC_BANNED_OPENERS = ["معظم", "في عالم اليوم", "لا يخفى على أحد", "في ظل"];
 
 export const ARCHETYPE_BANNED_NOUNS = ["المهندس", "المعماري", "الخبير", "القائد", "المنفّذ", "المستشار", "الرائد", "صاحب الرؤية"];
 export const ARCHETYPE_BANNED_ADJECTIVES = ["الاستراتيجي", "الواضح", "المتميّز", "الفعّال", "الناجح"];
 const KAF_AS = ["كمدير", "كمديرة", "كخبير", "كقائد", "كمستشار", "كمرجع", "كمن", "كشخص", "كمهني", "كشريك", "كمسؤول",
   "كملف", "كقرار", "كمشروع", "كأداة", "كفرصة", "كجزء", "كنتيجة", "كوسيلة", "كطريقة", "كمصدر", "كدليل", "كمفهوم", "كأولوية", "كشرط", "كعائق", "كرسالة", "كخطوة", "كحل", "كبديل", "كمثال", "كنقطة", "كأساس", "كمنصة", "كخدمة", "كمنتج", "كفريق", "كجهة", "كعميل", "كمحترف", "كمتخصص", "كصاحب", "كمؤسس", "كعضو"];
 
+/** Words that begin with ك as a root letter or a particle — never «كـ» = 'as'. */
+const KAF_ROOT = new Set(["كل", "كلا", "كلها", "كله", "كلهم", "كان", "كانت", "كانوا", "كما", "كذلك", "كذا", "كثير", "كثيرة", "كثيرا", "كثيراً",
+  "كبير", "كبيرة", "كبار", "كتاب", "كتب", "كتابة", "كلمة", "كلمات", "كيف", "كم", "كأن", "كي", "كافة", "كامل", "كاملة", "كاملا", "كفاءة",
+  "كمية", "كميات", "كمال", "كمبيوتر", "كمبيوترك", "كمان", "كمين", "كهرباء", "كلية", "كيان", "كوادر", "كفاية", "كسب", "كشف", "كلفة",
+  "كلف", "كرسي", "كود", "كتلة", "كتابي", "كتابك", "كبرى", "كتابتك", "كلامك", "كلام", "كنت", "كن", "كأس", "كفى", "كرة", "كسر", "كميل"]);
+const KAF_TOKEN = /(^|[^\u0600-\u06FF])(ك[\u0600-\u06FF]+)/gu;
+/** The first «كـ» used as 'as': a known form, «كـ» + noun of the م-pattern, or «كـ» before a Latin word. */
+export function findKafAs(text: string): string | null {
+  const t = text.replace(/[\u064B-\u0652\u0670]/g, "");
+  const latin = /(^|[^\u0600-\u06FF])كـ\s*[A-Za-z]/u.exec(t);
+  if (latin) return t.slice(latin.index, latin.index + 14).trim();
+  for (const m of t.matchAll(KAF_TOKEN)) {
+    const w = m[2];
+    if (KAF_ROOT.has(w)) continue;
+    const stem = w.slice(1);
+    if (KAF_AS.includes(w)) return w;
+    if (stem.length >= 3 && stem.startsWith("م") && !stem.startsWith("ما")) return w;
+  }
+  return null;
+}
+
+/** More than one «ليس … بل» contrast skeleton in one text. */
+export function contrastSkeletons(text: string): number {
+  return (text.match(/(^|[^\u0600-\u06FF]|و)ليس[^.؟!?\n]{0,90}?[.،,]?\s*بل(?=$|[^\u0600-\u06FF])/gu) ?? []).length;
+}
+
 export type ArabicCheck =
   | "arabic_ratio" | "arabic_indic_digits" | "banned_word" | "kaf_as" | "glued_latin"
-  | "glued_digit" | "anta_openers" | "archetype_english" | "archetype_banned";
+  | "glued_digit" | "anta_openers" | "archetype_english" | "archetype_banned"
+  | "banned_opener" | "latin_prefix" | "contrast_skeleton";
 
 export type ArabicGateDetail = { check: ArabicCheck; field: string; word?: string; fragment?: string };
 
@@ -134,7 +177,17 @@ export function arabicGateDetail(
     if (new RegExp(`(^|[^${AR}])بشكل\\s+[${AR}]`, "u").test(v)) return { check: "banned_word", field: k, word: "بشكل" };
     if (new RegExp(`(^|[^${AR}])قام\\s+ب`, "u").test(v)) return { check: "banned_word", field: k, word: "قام بـ" };
   }
-  for (const [k, v] of all) for (const w of KAF_AS) if (wholeWord(v, w)) return { check: "kaf_as", field: k, word: w, fragment: frag(v, Math.max(0, v.indexOf(w))) };
+  for (const [k, v] of all) {
+    const w = findKafAs(v);
+    if (w) return { check: "kaf_as", field: k, word: w, fragment: frag(v, Math.max(0, v.indexOf(w))) };
+  }
+  for (const [k, v] of all) {
+    const o = openerIn(v);
+    if (o) return { check: "banned_opener", field: k, word: o };
+    const lp = LATIN_PREFIX.exec(v);
+    if (lp) return { check: "latin_prefix", field: k, fragment: frag(v, lp.index) };
+  }
+  if (all.reduce((n, [, v]) => n + contrastSkeletons(v), 0) > 1) return { check: "contrast_skeleton", field: "*" };
   // After repair: only an Arabic letter (not the tatweel) fused to a Latin letter.
   for (const [k, v] of all) {
     const m = /[\u0600-\u063F\u0641-\u06FF][A-Za-z]/.exec(v);
@@ -149,6 +202,15 @@ export function arabicGateDetail(
     for (const s of v.split(/[.؟!?\n]/)) if (/^\s*أنت\s/.test(s)) openers++;
   }
   if (openers > 2) return { check: "anta_openers", field: "*" };
+  return null;
+}
+
+const LATIN_PREFIX = /(^|[^\u0600-\u06FF])(الـ|لـ|بـ|كـ)\s*[A-Za-z]/u;
+function openerIn(v: string): string | null {
+  for (const s of v.split(/[.؟!?\n]/)) {
+    const b = bare(s).trim();
+    for (const o of ARABIC_BANNED_OPENERS) if (b.startsWith(bare(o))) return o;
+  }
   return null;
 }
 
@@ -170,6 +232,9 @@ const WHAT: Record<ArabicCheck, string> = {
   anta_openers: "opens more than two sentences with «أنت». Address the reader through the verb and attached pronoun",
   archetype_english: "is in English. Write it in Arabic as a definite noun followed by a definite adjective",
   archetype_banned: "uses a banned archetype noun or adjective. Choose a name from what this person repeatedly does",
+  banned_opener: "opens a sentence with a banned generic opener. Start with the concrete point",
+  latin_prefix: "attaches «الـ», «لـ», «بـ» or «كـ» to a Latin word. Use a full preposition or restructure",
+  contrast_skeleton: "uses the «ليس … بل» contrast more than once. Keep at most one; say the rest directly",
 };
 
 /** The one correction message: names the failed check. */
@@ -187,6 +252,7 @@ export function arabicCorrectionText(d: ArabicGateDetail): string {
 export const ARABIC_HARD_CHECKS: ArabicCheck[] = ["arabic_ratio", "archetype_english"];
 export const ARABIC_STYLE_CHECKS: ArabicCheck[] = [
   "banned_word", "kaf_as", "glued_latin", "glued_digit", "anta_openers", "archetype_banned", "arabic_indic_digits",
+  "banned_opener", "latin_prefix", "contrast_skeleton",
 ];
 
 const ARCHETYPE_KEYS = ["archetype", "primary_archetype", "secondary_archetype"];
@@ -227,13 +293,20 @@ export function arabicStyleNotes(
   }
   const all = flatten(values, skip);
   let openers = 0;
+  let skeletons = 0;
   for (const [k, v] of all) {
     const m = /[\u0660-\u0669]/.exec(v);
     if (m) out.push({ check: "arabic_indic_digits", field: k, fragment: frag(v, m.index) });
     for (const w of ARABIC_BANNED) if (wholeWord(v, w)) out.push({ check: "banned_word", field: k, word: w, fragment: frag(v, Math.max(0, v.indexOf(w))) });
     if (new RegExp(`(^|[^${AR}])بشكل\\s+[${AR}]`, "u").test(v)) out.push({ check: "banned_word", field: k, word: "بشكل" });
     if (new RegExp(`(^|[^${AR}])قام\\s+ب`, "u").test(v)) out.push({ check: "banned_word", field: k, word: "قام بـ" });
-    for (const w of KAF_AS) if (wholeWord(v, w)) out.push({ check: "kaf_as", field: k, word: w, fragment: frag(v, Math.max(0, v.indexOf(w))) });
+    const kw = findKafAs(v);
+    if (kw) out.push({ check: "kaf_as", field: k, word: kw, fragment: frag(v, Math.max(0, v.indexOf(kw))) });
+    const op = openerIn(v);
+    if (op) out.push({ check: "banned_opener", field: k, word: op });
+    const lp = LATIN_PREFIX.exec(v);
+    if (lp) out.push({ check: "latin_prefix", field: k, fragment: frag(v, lp.index) });
+    skeletons += contrastSkeletons(v);
     const gl = /[\u0600-\u063F\u0641-\u06FF][A-Za-z]/.exec(v);
     if (gl) out.push({ check: "glued_latin", field: k, fragment: frag(v, gl.index) });
     const gd = new RegExp(`(^|[^${AR}])(و|الـ|ال)[0-9]`, "u").exec(v);
@@ -241,5 +314,70 @@ export function arabicStyleNotes(
     for (const s of v.split(/[.؟!?\n]/)) if (/^\s*أنت\s/.test(s)) openers++;
   }
   if (openers > 2) out.push({ check: "anta_openers", field: "*" });
+  if (skeletons > 1) out.push({ check: "contrast_skeleton", field: "*" });
   return out;
+}
+
+/** Style findings for one Arabic text (a post, an answer, a line). */
+export function arabicTextNotes(text: string): ArabicGateDetail[] {
+  return arabicStyleNotes({ text });
+}
+
+/** One correction instruction listing every finding, for a single correction call. */
+export function arabicFixInstruction(notes: ArabicGateDetail[]): string {
+  const lines = notes.slice(0, 12).map((d) => {
+    const where = d.field === "*" ? "The text" : `"${d.field}"`;
+    const word = d.word ? ` («${d.word}»)` : "";
+    const quote = d.fragment ? ` Offending text: «${d.fragment.slice(0, 60)}».` : "";
+    return `- ${where}${word} ${WHAT[d.check]}.${quote}`;
+  });
+  return `Fix ONLY these Arabic problems and change nothing else. Return exactly the same structure.\n${lines.join("\n")}\nApply every rule of the LANGUAGE block.`;
+}
+
+/* ── Batch 12: one field-level correction ─────────────────────────────────
+   When the checker finds banned words or «كـ» in model-written Arabic, the
+   offending fields only are sent once for correction. A fixed value is kept
+   only when it has fewer findings than before; otherwise the original stays. */
+const pathTokens = (p: string) => (p.match(/[^.[\]]+/g) ?? []).map((t) => (/^\d+$/.test(t) ? Number(t) : t));
+export function pathGet(obj: unknown, p: string): unknown {
+  let cur: any = obj;
+  for (const t of pathTokens(p)) { if (cur == null) return undefined; cur = cur[t as any]; }
+  return cur;
+}
+export function pathSet(obj: unknown, p: string, v: unknown): boolean {
+  const ts = pathTokens(p);
+  let cur: any = obj;
+  for (let i = 0; i < ts.length - 1; i++) { cur = cur?.[ts[i] as any]; if (cur == null || typeof cur !== "object") return false; }
+  if (cur == null || typeof cur[ts[ts.length - 1] as any] !== "string") return false;
+  cur[ts[ts.length - 1] as any] = v;
+  return true;
+}
+export const FIELD_FIX_CHECKS = new Set<ArabicCheck>(["banned_word", "kaf_as"]);
+export const FIELD_FIX_SYSTEM = `You correct Arabic text. You receive a JSON object of field paths to Arabic values and a list of problems. Return ONLY a JSON object with the same keys, each value the corrected text. Change only what the problems name. Keep the meaning, every fact, figure and name. No markdown.\n\n${ARABIC_VOICE_BLOCK}`;
+
+/** Builds the one correction request, or null when nothing is fixable. */
+export function fieldFixRequest(obj: unknown, notes: ArabicGateDetail[]): { user: string; fields: Record<string, string> } | null {
+  const fixable = notes.filter((n) => FIELD_FIX_CHECKS.has(n.check) && n.field !== "*");
+  const fields: Record<string, string> = {};
+  for (const n of fixable) { const v = pathGet(obj, n.field); if (typeof v === "string") fields[n.field] = v; }
+  if (!Object.keys(fields).length) return null;
+  return { fields, user: `${arabicFixInstruction(fixable)}\n\nFIELDS:\n${JSON.stringify(fields)}` };
+}
+
+/** Applies the model's reply; returns how many fields were replaced. */
+export function applyFieldFix(obj: unknown, fields: Record<string, string>, reply: string): number {
+  let parsed: Record<string, unknown> | null = null;
+  try {
+    const m = reply.replace(/```(?:json)?/g, "").match(/\{[\s\S]*\}/);
+    parsed = m ? JSON.parse(m[0]) : null;
+  } catch { parsed = null; }
+  if (!parsed) return 0;
+  let n = 0;
+  for (const [k, before] of Object.entries(fields)) {
+    const after = parsed[k];
+    if (typeof after !== "string" || !after.trim()) continue;
+    const bad = (s: string) => arabicTextNotes(s).filter((d) => FIELD_FIX_CHECKS.has(d.check)).length;
+    if (bad(after) < bad(before) && pathSet(obj, k, after.trim())) n++;
+  }
+  return n;
 }

@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatDistanceToNow } from "date-fns";
+import { formatSmartDate } from "@/lib/formatDate";
+import { displayNotificationTitle } from "@/lib/notificationTitle";
 
 interface Notification {
   id: string;
@@ -45,7 +46,8 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language === "ar" ? "ar" : "en";
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -212,12 +214,12 @@ const NotificationBell = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h5 className="text-xs font-semibold truncate" style={{ color: "var(--ink)" }}>{n.title}</h5>
+                        <h5 dir="auto" className="text-xs font-semibold truncate" style={{ color: "var(--ink)" }}>{displayNotificationTitle(n.title, lang)}</h5>
                         <span className="text-xs shrink-0" style={{ color: "var(--ink-4)" }}>
-                          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                          {formatSmartDate(n.created_at, lang)}
                         </span>
                       </div>
-                      <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--ink-3)" }}>{n.body}</p>
+                      <p dir="auto" className="text-xs mt-1 leading-relaxed" style={{ color: "var(--ink-3)" }}>{n.body}</p>
 
                       {/* Alert urgency badge */}
                       {n.metadata?.urgency === "high" && (

@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
-import { ARABIC_VOICE_BLOCK, arabicStyleNotes, repairArabic } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicStyleNotes, repairArabic, fieldFixRequest, applyFieldFix, FIELD_FIX_SYSTEM } from "../_shared/arabicVoice.ts";
 import { normaliseCrosscheck } from "./normalise.ts";
 import { spanIsWrong, SENTENCE_SPLIT } from "./spans.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
@@ -95,10 +95,21 @@ function parseJsonLoose(raw: string): any | null {
 
 const ARABIC_CV_ADDITION = `FIELDS IN ARABIC: headline_finding, every finding's what / why_it_matters / do_this / what_you_lose, defensibility, cv_is_behind, profile_vs_voice, reading_the_shape, the_hard_truth, every recommendation's action / why_now, and peer_comparison.
 FIELDS THAT STAY AS THEY ARE: weight and aura_can keep their English enum values. evidence.cv_line and evidence.profile_line are verbatim quotes in the language of the source; write the single English word Absent when that side has nothing. rewrite and headline_suggestion are text the person will paste into their CV or LinkedIn profile: write each in the language of the document it replaces (an English CV line gets an English rewrite; an Arabic one gets Arabic).
-The three evidence rungs in defensibility are written in Arabic: «قابل للدفاع الآن», «قابل للدفاع بتفصيل واحد إضافي», «غير قابل للدفاع».
+The three evidence rungs in defensibility are written in Arabic: «يصمد أمام السؤال الآن», «قابل للدفاع بتفصيل واحد إضافي», «غير قابل للدفاع».
 The reader named in what_you_lose is named in Arabic (لجنة الترشيحات، شريك البحث التنفيذي، العميل المحتمل…).
 Years of experience: compute every span from the two dates you cite, exactly as in English. Write spans as «N سنة» / «N سنوات» with Western digits.
 Never use these Arabic CV-coaching platitudes: «أبرز إنجازاتك», «استخدم أفعالًا قوية», «خصّص سيرتك», «أظهر نقاط قوتك», «قِس إنجازاتك بالأرقام» as generic advice.`;
+
+async function arabicFieldFixCall(apiKey: string, user: string): Promise<string> {
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 1500, system: FIELD_FIX_SYSTEM, messages: [{ role: "user", content: user }] }),
+  });
+  if (!r.ok) { await r.text(); return ""; }
+  const d = await r.json();
+  return (d?.content || []).map((c: any) => c?.text || "").join("");
+}
 
 const ARABIC_CV_SYSTEM = SYSTEM_PROMPT + "\n\n" + ARABIC_VOICE_BLOCK + "\n" + ARABIC_CV_ADDITION;
 
@@ -504,6 +515,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
   /* ONE model call per request, in both languages (founder ruling 4 Oct):
      runs average ~106 s and the connection closes at 150 s, so any second
      call loses the whole result. Code repairs or drops; nothing retries. */
+  const cvCallStartedAt = Date.now();
   const resp = await callAnthropic(userPrompt, lang === "ar" ? ARABIC_CV_SYSTEM : SYSTEM_PROMPT, lang);
   const rawBody = await resp.text();
   if (!resp.ok) {
@@ -618,8 +630,22 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
   const qualityNotes = [...first.changes, ...usable.notes];
   console.log("[cv-crosscheck] quality_notes", JSON.stringify(qualityNotes));
 
-  /* Arabic style findings advise only: recorded with the result. */
-  const styleNotes = lang === "ar" ? arabicStyleNotes(arabicProse(usable.result)) : [];
+  /* Arabic style findings: banned words and «كـ» get ONE field-level
+     correction call while time allows (the connection closes at 150 s);
+     everything else is recorded with the result. */
+  let styleNotes = lang === "ar" ? arabicStyleNotes(arabicProse(usable.result)) : [];
+  let fieldFixCalls = 0;
+  if (lang === "ar" && !usable.failure && Date.now() - cvCallStartedAt < 115_000) {
+    const fixReq = fieldFixRequest(usable.result, styleNotes);
+    if (fixReq) {
+      fieldFixCalls = 1;
+      try {
+        const replaced = applyFieldFix(usable.result, fixReq.fields, await arabicFieldFixCall(ANTHROPIC_API_KEY, fixReq.user));
+        console.log("[cv-crosscheck] arabic_field_fix", Object.keys(fixReq.fields).length, "replaced", replaced);
+        styleNotes = arabicStyleNotes(arabicProse(usable.result));
+      } catch (e) { console.error("[cv-crosscheck] arabic_field_fix failed", e); }
+    }
+  }
   if (lang === "ar") console.log("[cv-crosscheck] arabic_style_notes", styleNotes.length, JSON.stringify(styleNotes));
 
   logUsage({
@@ -628,7 +654,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     rewrites_removed: usable.rewritesRemoved,
     defensibility_dropped: usable.defensibilityDropped,
     intention_sentences_removed: usable.intentionSentencesRemoved,
-    ...(lang === "ar" ? { style_notes_count: styleNotes.length } : {}),
+    ...(lang === "ar" ? { style_notes_count: styleNotes.length, field_fix_calls: fieldFixCalls } : {}),
   });
 
   if (usable.failure) {

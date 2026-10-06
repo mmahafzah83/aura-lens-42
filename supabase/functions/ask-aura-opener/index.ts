@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { SIGNAL, nCaptures } from "../_shared/vocabulary.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { pickMemberLang } from "../_shared/memberLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -145,6 +146,20 @@ const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+/* Arabic twins of the fixed opener text. Arabic skips the English sentence
+   contract (its splitter and jargon list are English) and keeps the same
+   shape: greeting + one number-free line, or two lines without a greeting. */
+const AR_WEEKDAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const AR_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const AR_ELSE: Chip = { label: "أمر آخر", prompt: "لنتحدث في أمر آخر." };
+const AR_QUIET = "صباح هادئ. لا شيء ينتظرك.";
+const AR_WRITE: Chip = { label: "ماذا أكتب؟", prompt: "مما حفظته حتى الآن، ماذا أكتب بعد ذلك؟" };
+function assembleAr(greeting: string | null, lines: string[]): string {
+  const clean = lines.map((l) => String(l || "").trim()).filter(Boolean);
+  const parts = greeting ? [greeting, clean.find((l) => !/\d/.test(l)) ?? ""] : clean.slice(0, 2);
+  return parts.filter(Boolean).join(" ").trim() || AR_QUIET;
+}
+
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function inZone(iso: string, tz: string | null): Date {
@@ -167,6 +182,7 @@ export async function whyItTouchesHim(
   admin: any,
   userId: string,
   finding: { themes?: unknown },
+  lang: "ar" | "en" = "en",
 ): Promise<string | null> {
   const themes = (Array.isArray(finding?.themes) ? finding.themes : [])
     .map((t: unknown) => safeTheme(String(t)))
@@ -210,8 +226,13 @@ export async function whyItTouchesHim(
     const when = d.getUTCFullYear() < nowYear
       ? String(d.getUTCFullYear())
       : MONTHS[d.getUTCMonth()];
+    if (lang === "ar") {
+      const whenAr = d.getUTCFullYear() < nowYear ? String(d.getUTCFullYear()) : AR_MONTHS[d.getUTCMonth()];
+      return `يمسّ أمراً تكتب عنه منذ ${whenAr}.`;
+    }
     return `It touches something you have been writing about since ${when}.`;
   }
+  if (lang === "ar") return `حفظت شيئاً عن هذا في ${AR_MONTHS[d.getUTCMonth()]}.`;
   return `You saved something on this back in ${MONTHS[d.getUTCMonth()]}.`;
 }
 
@@ -285,7 +306,7 @@ serve(async (req) => {
         .limit(25),
       admin
         .from("diagnostic_profiles")
-        .select("first_name, last_visit_at, timezone")
+        .select("first_name, last_visit_at, timezone, ui_language")
         .eq("user_id", user_id)
         .maybeSingle(),
       admin
@@ -309,6 +330,7 @@ serve(async (req) => {
     const lastVisit: string | null = (profileRow as any)?.last_visit_at ?? null;
     const lastCaptureAt: string | null = (lastEntryRow as any)?.[0]?.created_at ?? null;
     const lastPostAt: string | null = (lastPostRow as any)?.[0]?.published_at ?? null;
+    const ar = pickMemberLang((profileRow as any)?.ui_language) === "ar";
 
     // First match wins; only ONE greeting is ever used.
     let greeting: string | null = null;
@@ -327,7 +349,20 @@ serve(async (req) => {
     }
     // The greeting is itself two clauses at most; the contract still caps at two
     // sentences, and `assemble()` strips the rule's number when a greeting runs.
-    if (greeting) {
+    if (ar) {
+      greeting = null;
+      if (daysAway >= 3 && lastVisit) {
+        const wd = AR_WEEKDAYS[inZone(lastVisit, tz).getDay()];
+        greeting = firstName
+          ? `صباح الخير يا ${firstName}، آخر زيارة لك كانت يوم ${wd} (الأيام: ${daysAway}).`
+          : `آخر زيارة لك كانت يوم ${wd} (الأيام: ${daysAway}).`;
+      } else if (daysSinceCapture >= 10) {
+        greeting = `لم تحفظ شيئاً منذ أيام: ${daysSinceCapture}.`;
+      } else if (daysSincePost >= 21) {
+        greeting = `لم تنشر شيئاً منذ أيام: ${daysSincePost}.`;
+      }
+    }
+    if (greeting && !ar) {
       const { complete } = splitSentences(greeting);
       greeting = complete.slice(0, 1).join(" ") || greeting;
     }
@@ -346,6 +381,18 @@ serve(async (req) => {
       // Plain speech: say what it is about in ordinary words, never quote the
       // headline and paste the source's own abstract framing after it.
       const subject = plainSubject(title);
+      if (ar) {
+        const whyAr = (await whyItTouchesHim(admin, user_id, finding, "ar")) ?? "لا شيء يشبهه فيما حفظته بعد.";
+        return json({
+          kind: "overnight",
+          text: assembleAr(greeting, [`وصل الليلة شيء جديد: «${title}».`, whyAr]),
+          chips: [
+            { label: "ماذا يعني لي؟", prompt: `ماذا يعني «${title}» لموقعي، وما الذي ينبغي أن أفعله؟` },
+            { label: "اكتب منه منشوراً", prompt: `اكتب منشوراً مما وصل الليلة «${title}»، وأدلته مما حفظته أنا.` },
+            AR_ELSE,
+          ],
+        } satisfies Opener);
+      }
       const why = (await whyItTouchesHim(admin, user_id, finding)) ?? "Nothing like it in your vault yet.";
       const lead = subject
         ? `Something came in overnight about ${subject}.`
@@ -392,6 +439,17 @@ serve(async (req) => {
     );
     if (promiseRow) {
       const first = String((promiseRow as any).actions_committed[0]).trim();
+      if (ar) {
+        return json({
+          kind: "promise",
+          text: assembleAr(greeting, [`قلت إنك ستفعل هذا: ${first}.`, "هل ما زالت الخطوة الصحيحة؟"]),
+          chips: [
+            { label: "ساعدني أنجزها", prompt: `ساعدني أنجز هذا: ${first}` },
+            { label: "ما الذي تغيّر منذ ذلك؟", prompt: "ما الذي تغيّر في إشاراتي منذ قلت ذلك؟" },
+            AR_ELSE,
+          ],
+        } satisfies Opener);
+      }
       const out: Opener = {
         kind: "promise",
         text: assemble(greeting, [`You said you would ${first}.`, "Still the right move?"]),
@@ -419,6 +477,17 @@ serve(async (req) => {
       const title = typeof draft.title === "string" ? draft.title.trim() : "";
       const body = typeof draft.post_text === "string" ? draft.post_text.trim() : "";
       const label = title || (body ? `${body.slice(0, 60)}…` : "");
+      if (label && ar) {
+        return json({
+          kind: "draft",
+          text: assembleAr(greeting, [`عندك مسودة تنتظر: «${label}»، ولا موعد لها بعد.`]),
+          chips: [
+            { label: "افتحها", prompt: `اعرض عليّ مسودتي «${label}» وقل لي بصراحة إن كانت جاهزة.` },
+            { label: "اختصرها أولاً", prompt: `اختصر مسودتي «${label}» واحذف كل ما لا يحمل وزناً.` },
+            AR_ELSE,
+          ],
+        } satisfies Opener);
+      }
       if (label) {
         const out: Opener = {
           kind: "draft",
@@ -455,6 +524,17 @@ serve(async (req) => {
       if (unwritten) {
         const n = daysSince(unwritten.created_at);
         const t = String(unwritten.signal_title);
+        if (ar) {
+          return json({
+            kind: "unwritten signal",
+            text: assembleAr(greeting, [`إشارتك «${t}» قائمة منذ أيام: ${n}.`, "لم تكتب منها شيئاً بعد."]),
+            chips: [
+              { label: "اكتب منها", prompt: `اكتب منشوراً من إشارتي «${t}» بالأدلة التي خلفها.` },
+              { label: "أرني الأدلة", prompt: `ما الأدلة التي خلف «${t}»؟` },
+              AR_ELSE,
+            ],
+          } satisfies Opener);
+        }
         const subject = t + " " + SIGNAL.one;
         const out: Opener = {
           kind: "unwritten signal",
@@ -477,6 +557,17 @@ serve(async (req) => {
     const lastAt = lastCaptureAt ?? undefined;
     if (lastAt) {
       const n = daysSince(lastAt);
+      if (n > 7 && ar) {
+        return json({
+          kind: "quiet radar",
+          text: assembleAr(greeting, [`آخر ما حفظته كان قبل أيام: ${n}.`, "وما زال هنا الكثير لتعمل عليه."]),
+          chips: [
+            { label: "ما الذي ما زال حياً؟", prompt: "أي إشاراتي ما زال يستحق العمل عليه الآن؟" },
+            AR_WRITE,
+            AR_ELSE,
+          ],
+        } satisfies Opener);
+      }
       if (n > 7) {
         const out: Opener = {
           kind: "quiet radar",
@@ -506,6 +597,13 @@ serve(async (req) => {
     const E = entryCount ?? 0;
     const S = signalCount ?? 0;
 
+    if (E === 0 && S === 0 && ar) {
+      return json({
+        kind: "cold start",
+        text: assembleAr(greeting, ["ليس عندي شيء منك أقرؤه بعد.", "احفظ مقالاً واحداً، وسيكون عندي ما أقوله عنه."]),
+        chips: [{ label: "ماذا أحفظ؟", prompt: "ما المصادر التي تستحق الحفظ فعلاً لشخص في موقعي؟" }],
+      } satisfies Opener);
+    }
     if (E === 0 && S === 0) {
       return json({
         kind: "cold start",
@@ -552,6 +650,18 @@ serve(async (req) => {
         { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
       ];
 
+    if (ar) {
+      return json({
+        kind: "quiet morning",
+        text: assembleAr(greeting, [AR_QUIET, `ما حفظته هنا متى أردته: ${E}.`]),
+        chips: idleLabel
+          ? [
+            { label: "عُد إلى أقدم مسودة", prompt: `افتح أقدم مسودة لي «${idleLabel}» وقل لي بصراحة إن كانت تستحق الإكمال.` },
+            AR_WRITE,
+          ]
+          : [{ label: "ماذا ترى الآن؟", prompt: "ماذا ترى فعلاً فيما عندي الآن؟" }, AR_WRITE],
+      } satisfies Opener);
+    }
     return json({
       kind: "quiet morning",
       text: assemble(greeting, [
