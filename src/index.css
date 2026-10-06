@@ -37,8 +37,8 @@ html *:not(canvas):not(video):not(iframe) {
    matches the Arabic Unicode ranges, so Latin characters fall through to
    the next family in the stack (Newsreader / IBM Plex Mono) untouched.
 
-   src points to the same gstatic woff2 file the Google Fonts stylesheet
-   uses for the arabic subset, so the browser reuses the cached asset. */
+   The Arabic subset is bundled locally so joining never depends on
+   an external Google Fonts request. */
 @font-face {
   font-family: 'CairoAR';
   font-style: normal;
