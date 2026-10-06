@@ -2284,6 +2284,8 @@
   "trend.val.Medium": "متوسط",
   "trend.val.Low": "منخفض",
   "trend.val.Emerging": "ناشئ",
+  "trend.val.Technology": "تقنية",
+  "trend.val.Thought": "رأي",
   "liImp.settings": "الإعدادات",
   "liImp.title": "أحضر ما كتبته على LinkedIn",
   "liImp.p1": "LinkedIn يعطي KnownBy أرقام منشوراتك، لا نصوصها. اطلب من LinkedIn نسخة من بياناتك من ",
