@@ -109,6 +109,7 @@ const Assessment = () => {
   const insideRef = useRef<HTMLElement | null>(null);
   const autoRan = useRef(false);
   const [postsRead, setPostsRead] = useState(0);
+  const [commentsRead, setCommentsRead] = useState(0);
   /* The run id is minted here and handed to `mirror-read`, so this tab is
      already watching its own run before the work begins. */
   const [readRunId, setReadRunId] = useState<string | null>(null);
@@ -231,6 +232,7 @@ const Assessment = () => {
         return;
       }
       setPostsRead(Number(data.posts_read ?? 0));
+      setCommentsRead(Number(data.comments_read ?? 0));
       setSparse(!!data.sparse);
       setAgeNote(data.stale && typeof data.notice === "string" ? data.notice : null);
       setLangFallback(data.lang_fallback === true);
@@ -277,6 +279,7 @@ const Assessment = () => {
     if (!ok) return;
     setAgeNote(null);
     setPostsRead(0);
+    setCommentsRead(0);
     setSparse(false);
     await persist({ step: "address", answers: {}, profile_url: state.profile_url });
     setStage("address");
@@ -379,6 +382,7 @@ const Assessment = () => {
               <ReadResult
                 read={read as unknown as ReadShape}
                 postsRead={postsRead}
+                commentsRead={commentsRead}
                 sparse={sparse}
                 name={state.name ?? null}
                 headline={state.headline ?? null}

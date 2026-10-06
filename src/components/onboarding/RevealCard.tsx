@@ -46,6 +46,8 @@ export interface RevealData {
   subjects: string[];
   softGround: string[];
   figures: { value: string; label: string }[];
+  /** One small line under all the figures (e.g. the period they cover). */
+  figuresCaption?: string;
   /**
    * What produced each section, computed from real counts. A section with no
    * nameable source carries no line at all rather than a claim.
@@ -405,7 +407,11 @@ const RevealCard = forwardRef<
             </div>
           ))}
         </div>
-      ) : (
+      ) : null}
+      {data.figures.length > 0 && data.figuresCaption ? (
+        <div style={{ fontSize: 15, opacity: 0.7, marginTop: 14 }}>{data.figuresCaption}</div>
+      ) : null}
+      {data.figures.length > 0 ? null : (
         <p style={{ margin: 0, fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{emptyLine}</p>
       )}
 
@@ -533,7 +539,13 @@ const RevealCard = forwardRef<
           </div>
         ))}
       </div>
-    ) : (
+    ) : null}
+    {data.figures.length > 0 && data.figuresCaption ? (
+      <div className="rvc-seq" style={{ fontSize: 10.5, opacity: 0.7, marginBlockStart: 8, animationDelay: "1.08s" }}>
+        {data.figuresCaption}
+      </div>
+    ) : null}
+    {data.figures.length > 0 ? null : (
       <p className="rvc-seq" style={{
         margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92, animationDelay: "1.08s",
       }}>{emptyLine}</p>

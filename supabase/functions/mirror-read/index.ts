@@ -10,6 +10,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
+import { fetchPostItems, fetchCommentItems, filterOwnPosts, filterOwnComments, applyBudget, ownWritingBlocks, twelveMonthsAgo, type OwnPost, type OwnComment } from "../_shared/linkedinOwnWriting.ts";
 import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairValues, arabicQualityNotes, arabicFixInstruction, logArabicQuality, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
@@ -18,12 +19,10 @@ const corsHeaders = {
 };
 
 const PROFILE_ACTOR = "harvestapi~linkedin-profile-scraper";
-const POSTS_ACTOR = "harvestapi~linkedin-profile-posts";
-const MAX_POSTS = 20;
 /** Bumped whenever the read prompt changes; older cached rows regenerate. */
-const READ_VERSION = 3;
+const READ_VERSION = 4;
 /** The Arabic read's own version: bumped with the shared Arabic voice. English rows are untouched. */
-const READ_VERSION_AR = 4;
+const READ_VERSION_AR = 5;
 const versionFor = (l: "ar" | "en") => (l === "ar" ? READ_VERSION_AR : READ_VERSION);
 /** A read older than this is always regenerated. */
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -194,47 +193,6 @@ async function fetchProfile(
   return { item: null };
 }
 
-/** Apify posts scrape — never fatal. */
-async function fetchPosts(canonical_url: string, handle: string, token: string): Promise<string[]> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45_000);
-  let res: Response;
-  try {
-    res = await fetch(
-      `https://api.apify.com/v2/acts/${POSTS_ACTOR}/run-sync-get-dataset-items?token=${token}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetUrls: [canonical_url],
-          maxPosts: MAX_POSTS,
-          scrapeReactions: false,
-          scrapeComments: false,
-        }),
-        signal: controller.signal,
-      },
-    );
-  } catch (_e) {
-    return [];
-  } finally {
-    clearTimeout(timer);
-  }
-  if (res.status !== 200 && res.status !== 201) return [];
-  const items = await res.json().catch(() => null);
-  const list: any[] = Array.isArray(items) ? items : [];
-  const wanted = handle.toLowerCase();
-  const texts: string[] = [];
-  for (const it of list) {
-    const who = String(it?.author?.publicIdentifier ?? "").toLowerCase();
-    if (who && who !== wanted) continue;
-    const content = typeof it?.content === "string" ? it.content.trim() : "";
-    if (!content) continue;
-    texts.push(content.slice(0, 600));
-    if (texts.length >= MAX_POSTS) break;
-  }
-  return texts;
-}
-
 /** Strip fences, take the outermost braces. */
 /**
  * The model sometimes stops mid-sentence. Walk the text tracking string and
@@ -361,7 +319,7 @@ Deno.serve(async (req) => {
     // produce, so it must not consume the visitor's hourly allowance.
     const { data: cached } = await admin
       .from("mirror_reads")
-      .select("handle, read, sparse, generated_at, hit_count, name, headline, avatar_url, posts_read, read_version, read_ar, sparse_ar, generated_at_ar, read_version_ar")
+      .select("handle, read, sparse, generated_at, hit_count, name, headline, avatar_url, posts_read, comments_read, read_version, read_ar, sparse_ar, generated_at_ar, read_version_ar")
       .eq("handle", handle)
       .maybeSingle();
 
@@ -391,6 +349,7 @@ Deno.serve(async (req) => {
       return json({
         ok: true, cached: true, sparse: mine!.sparse, handle, read: mine!.read,
         name: cached!.name ?? null, posts_read: cached!.posts_read ?? 0,
+        comments_read: (cached as any)!.comments_read ?? 0,
         headline: cached!.headline ?? null, avatar_url: cached!.avatar_url ?? null,
         generated_at: mine!.generated_at, lang, lang_fallback: false,
       });
@@ -410,6 +369,7 @@ Deno.serve(async (req) => {
         ok: true, cached: true, ...(withNotice ? { stale: true } : {}), sparse: v.sparse, handle,
         read: v.read, name: cached?.name ?? null,
         posts_read: cached?.posts_read ?? 0,
+        comments_read: (cached as any)?.comments_read ?? 0,
         headline: cached?.headline ?? null, avatar_url: cached?.avatar_url ?? null,
         generated_at: v.generated_at,
         ...(withNotice ? { notice: noticeFor(l, v.generated_at) } : {}),
@@ -484,11 +444,26 @@ Deno.serve(async (req) => {
     /* Stage one opens: the profile request, until the provider answers. */
     run?.mark(OPERATION_STAGES.linkedin_read[0]);
     const profilePromise = fetchProfile(canonical_url, APIFY_TOKEN);
-    const postsPromise = fetchPosts(canonical_url, handle, APIFY_TOKEN).catch(() => [] as string[]);
+    const postsPromise = fetchPostItems(canonical_url, APIFY_TOKEN).catch(() => [] as unknown[]);
+    const commentsPromise = fetchCommentItems(canonical_url, APIFY_TOKEN).catch(() => [] as unknown[]);
     /* Real boundary: the profile is back. Stage two is the posts read. */
     const profile = await profilePromise;
     run?.mark(OPERATION_STAGES.linkedin_read[1]);
-    const postTexts = await postsPromise;
+    const [postItems, commentItems] = await Promise.all([postsPromise, commentsPromise]);
+    const writingSince = twelveMonthsAgo();
+    const budgeted = applyBudget(
+      filterOwnPosts(postItems, handle, writingSince),
+      filterOwnComments(commentItems, handle, writingSince),
+    );
+    const ownPosts: OwnPost[] = budgeted.posts;
+    const ownComments: OwnComment[] = budgeted.comments;
+    const postTexts = ownPosts.map((p) => p.text);
+    const fetch_stats = {
+      post_items: postItems.length, comment_items: commentItems.length,
+      posts_kept: ownPosts.length, quote_posts_kept: ownPosts.filter((p) => p.quote).length,
+      comments_kept: ownComments.length, chars_sent: budgeted.chars,
+    };
+    console.log("[mirror-read] own writing:", JSON.stringify(fetch_stats));
     /* Real boundary: the posts are back. Stage three is the evidence we keep. */
     run?.mark(OPERATION_STAGES.linkedin_read[2]);
     const item = profile.item;
@@ -576,11 +551,11 @@ Deno.serve(async (req) => {
       recommendations_count: recommendations.length,
       recommendation_quote: recQuote,
       /* Their own writing, counted — the same figure the signed-in card shows. */
-      own_words: postTexts.reduce((a, t) => a + t.split(/\s+/).filter(Boolean).length, 0),
+      own_words: [...postTexts, ...ownComments.map((c) => c.text)].reduce((a, t) => a + t.split(/\s+/).filter(Boolean).length, 0),
     };
 
     // --- e) Sparse mode ---
-    const sparse = (!about && experience.length < 2) || postTexts.length === 0;
+    const sparse = (!about && experience.length < 2) || (postTexts.length === 0 && ownComments.length === 0);
 
     const trunc = (v: unknown, n: number) => JSON.stringify(v ?? null).slice(0, n);
     const userPromptFor = (l: "ar" | "en") => [
@@ -594,9 +569,7 @@ Deno.serve(async (req) => {
       `SKILLS: ${trunc(skills.slice(0, 40), 1500)}`,
       `CERTIFICATIONS: ${trunc(certifications.slice(0, 15), 1500)}`,
       "",
-      postTexts.length
-        ? `RECENT POSTS (${postTexts.length}):\n` + postTexts.map((t, i) => `POST ${i + 1}: ${t}`).join("\n\n")
-        : "RECENT POSTS: none were available.",
+      ownWritingBlocks(ownPosts, ownComments),
       "",
       sparse
         ? "Your public material is thin. Say so directly, speaking to the reader as 'you' in market_read and honest_gap — name what is missing and what would change it. Do not compensate by guessing."
@@ -609,7 +582,7 @@ Deno.serve(async (req) => {
   "themes": ["three short career themes read from your own material"],
   "uncontested_space": "one sentence naming a space your material suggests you could own",
   "honest_gap": "one sentence naming something your public presence does not show, that your own material implies you have",
-  "own_words_quote": "one verbatim sentence from one of your own posts, or null if no posts were supplied",
+  "own_words_quote": "one verbatim sentence from YOUR POSTS or YOUR COMMENTS — your own words only, never from the context of a post you replied to — or null if neither was supplied",
   "own_words_read": "one sentence on what that quote shows about how you think, or null"
 }`,
     ].join("\n");
@@ -754,6 +727,7 @@ Deno.serve(async (req) => {
       headline: headline ?? null,
       avatar_url,
       posts_read: postTexts.length,
+      comments_read: ownComments.length,
       hit_count: (cached?.hit_count ?? 0) + 1,
     };
     /* Each language writes only its own columns. */
@@ -769,7 +743,7 @@ Deno.serve(async (req) => {
     return json({
       ok: true, cached: false, sparse, handle, read,
       name: full_name ?? null, headline: headline ?? null, avatar_url,
-      posts_read: postTexts.length, generated_at,
+      posts_read: postTexts.length, comments_read: ownComments.length, generated_at, fetch_stats,
       lang: outLang, lang_fallback: outLang !== lang,
     });
   } catch (e) {

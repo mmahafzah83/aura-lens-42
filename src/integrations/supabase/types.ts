@@ -236,6 +236,45 @@ export type Database = {
         }
         Relationships: []
       }
+      assessment_ar_snapshot_20261006: {
+        Row: {
+          a: string | null
+          b: string | null
+          band: string | null
+          c: string | null
+          d: string | null
+          e: string | null
+          id: string | null
+          opts: Json | null
+          position: number | null
+          src: string | null
+        }
+        Insert: {
+          a?: string | null
+          b?: string | null
+          band?: string | null
+          c?: string | null
+          d?: string | null
+          e?: string | null
+          id?: string | null
+          opts?: Json | null
+          position?: number | null
+          src?: string | null
+        }
+        Update: {
+          a?: string | null
+          b?: string | null
+          band?: string | null
+          c?: string | null
+          d?: string | null
+          e?: string | null
+          id?: string | null
+          opts?: Json | null
+          position?: number | null
+          src?: string | null
+        }
+        Relationships: []
+      }
       assessment_sessions: {
         Row: {
           created_at: string
@@ -3956,6 +3995,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           canonical_url: string
+          comments_read: number
           emailed_at: string | null
           emailed_to: string | null
           generated_at: string
@@ -3975,6 +4015,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           canonical_url: string
+          comments_read?: number
           emailed_at?: string | null
           emailed_to?: string | null
           generated_at?: string
@@ -3994,6 +4035,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           canonical_url?: string
+          comments_read?: number
           emailed_at?: string | null
           emailed_to?: string | null
           generated_at?: string
