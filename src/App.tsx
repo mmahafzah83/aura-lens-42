@@ -53,7 +53,6 @@ const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLe
 const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
 const VoiceHarness = lazy(() => import("./pages/VoiceHarness"));
-const VoiceArHarness = lazy(() => import("./pages/VoiceArHarness"));
 
 const Studio = lazy(() => import("./pages/Studio"));
 /* Review mode: ?review=1 on /assessment, /read or /mirror marks this browser as an invited reviewer. */
@@ -183,7 +182,6 @@ const App = () => (
             <Route path="/signature-harness" element={<PasswordGate><SignatureHarness /></PasswordGate>} />
             {/* Static fixtures only — reads nothing from the database, so it needs no gate. */}
             <Route path="/voice-harness" element={<VoiceHarness />} />
-            <Route path="/settings/voice-ar-harness" element={<VoiceArHarness />} />
             <Route path="/studio" element={<PasswordGate><Studio /></PasswordGate>} />
             {import.meta.env.DEV && (
               <Route path="/carousel-preview" element={<CarouselPreview />} />
