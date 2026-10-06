@@ -46,7 +46,7 @@ export const STAGE_NAMES = [
   "Know you",
   "What you read",
   "Your strengths",
-  "A few questions",
+  "Your position",
   "Your read",
 ] as const;
 

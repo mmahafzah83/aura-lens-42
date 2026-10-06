@@ -10,12 +10,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence } from "@/constants/vocabulary";
 import { ASSESSMENT_STEPS, STAGE_NAMES } from "@/lib/brand";
+import { CV_SCREEN } from "@/lib/journeyWork";
 
 const stageKey = (n: number) =>
   `stage.${Math.max(0, Math.min(STAGE_NAMES.length - 1, Math.round(n) - 1)) + 1}`;
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
+/* The CV screen is about the member himself, so it belongs to stage 1. */
+const stageOf = (s: number) => (s <= 3 || s === CV_SCREEN ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 const dismissKey = (uid: string) => `aura_resume_hidden_${uid}`;
 
 interface Paused { stage: number; saved: string[]; chose: boolean; }
