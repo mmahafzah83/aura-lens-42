@@ -782,7 +782,7 @@
   "wait.announceFailed": "{{title}}. {{cause}}",
   "wait.howLong": "كم يستغرق هذا؟",
   "wait.notifyMe": "راسلني بالبريد حين يجهز",
-  "wait.howLong.youAreAt": "مضى حتى الآن",
+  "wait.howLong.youAreAt": "مضى حتى الآن: <1>{{elapsed}}</1>. مغادرة الصفحة لا توقف العمل.",
   "wait.howLong.unknown": "لم يكمل KnownBy من هذا العمل ما يكفي ليعرف مدته. ولأنه لا يختلق رقماً، يقول ذلك بوضوح.",
   "wait.howLong.whatIsReal": "الرقم الحقيقي: مضى <1>{{elapsed}}</1>. مغادرة الصفحة لا توقف العمل.",
   "fail.timeout": "لم يصل الملف في الوقت المتوقع. لم تفقد شيئاً مما لديك.",
