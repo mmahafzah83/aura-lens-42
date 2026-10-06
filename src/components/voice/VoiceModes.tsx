@@ -87,7 +87,7 @@ export default function VoiceModes({
               <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.5, marginBlockStart: 8, marginBlockEnd: 10 }}>{modeText(m, "blurb")}</p>
               {set ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <span style={{ ...monoNum, fontSize: TYPE.caption, color: on ? BLUE : MUTED }}>
+                  <span style={arStyle(lang, { ...monoNum, fontSize: TYPE.caption, color: on ? BLUE : MUTED })}>
                     {on ? L("Showing this mode", "vo.vm.showing") : L("Press to show this mode", "vo.vm.press")}
                   </span>
                   {m.removable && (

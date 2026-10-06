@@ -280,12 +280,12 @@ export default function SpectrumRow({
                 : L(`Learned from ${trait.evidence_count} posts`, "vo.sr.learnedN", { n: trait.evidence_count })}
           </span>
           {trait.last_confirmed_at && (
-            <span style={{ ...monoNum, fontSize: TYPE.caption, color: MUTED }}>
+            <span style={arStyle(lang, { ...monoNum, fontSize: TYPE.caption, color: MUTED })}>
               {ar ? t("vo.sr.lastConfirmed", { date: displayDate(trait.last_confirmed_at, lang, { year: false }) }) : `Last confirmed ${shortDate(trait.last_confirmed_at)}`}
             </span>
           )}
           {spread !== null && (
-            <span style={{ ...monoNum, fontSize: TYPE.caption, color: MUTED }}>{L(`±${spread}% range across your posts`, "vo.sr.spread", { spread })}</span>
+            <span style={arStyle(lang, { ...monoNum, fontSize: TYPE.caption, color: MUTED })}>{L(`±${spread}% range across your posts`, "vo.sr.spread", { spread })}</span>
           )}
         </div>
       ) : setting ? (

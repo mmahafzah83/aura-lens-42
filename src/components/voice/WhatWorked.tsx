@@ -157,7 +157,7 @@ export default function WhatWorked({
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
                   <span dir="ltr" style={{ ...monoNum, fontSize: TYPE.title, fontWeight: 700, color: INK }}>{r.ratio.toFixed(1)}×</span>
                   <span style={{ fontSize: TYPE.body, color: INK }}>{r.label}</span>
-                  <span style={{ ...monoNum, fontSize: TYPE.caption, color: MUTED }}>{r.sample}</span>
+                  <span style={arStyle(lang, { ...monoNum, fontSize: TYPE.caption, color: MUTED })}>{r.sample}</span>
                 </div>
                 <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "4px 0" }}>{r.text}</p>
               </div>
