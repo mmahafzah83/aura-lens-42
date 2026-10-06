@@ -12,7 +12,8 @@ VERBS OVER NOUNS: «تقيس الأثر» not «تقوم بقياس الأثر»
 NO «كـ» MEANING 'as': never «كمدير», «كمن», «كخبير», «كمرجع». Write «بوصفك مديرًا», or better, restructure: «يراك السوق مدير برامج…».
 LATIN NAMES: company, product and programme names and acronyms stay in Latin letters and never take an attached Arabic letter. Not «وSPL», «بـEY», «لـZATCA», «الـPMO». Use a full preposition or a comma: «في NWC، ثم SPL، ثم ZATCA». Job titles are written in Arabic.
 DIGITS: Western digits 0-9 only. A number never attaches to «و» or «الـ»; write small numbers after «و» in words («وثلاثة منشورات»). Write ranges as «من 16 إلى 20». Percentages as 40%.
-PUNCTUATION: Arabic comma «،» and question mark «؟». No comma before «و» or «ثم». Quotes «». Tanween on the alif (مشروعًا). No decorative diacritics; add one only where a word would be misread.
+PUNCTUATION: Arabic comma «،» and question mark «؟». No comma before «و» or «ثم». Quotes «». Tanween on the alif (مشروعاً). No decorative diacritics; add one only where a word would be misread.
+Write tanween fath on the alif: دليلاً، مؤشراً، شيئاً.
 TERMS: positioning = التموضع (at most twice). Standing = المكانة. The professional = المهني. The space nobody holds = المساحة التي لم يشغلها أحد. Signal = إشارة. Capability levels: Formation = التكوين, Independence = الاستقلال, Reference = المرجعية. Subjects a person is known for = «يُعرف بها» — never «يملك الموضوع».
 BANNED — never write: يُعدّ، في ظلّ، من خلال، يسلّط الضوء، بشكل followed by an adjective، لا شكّ أن، تجدر الإشارة، جدير بالذكر، في عالم اليوم، مما يعزّز، بالإضافة إلى ذلك، على صعيد آخر، يلعب دورًا، في نهاية المطاف، حيث as a filler، رائد فكر، قائد فكر، العلامة الشخصية، رحلة، مشهد، تسخير، تمكين، الارتقاء، سلس، متين، على حدّ سواء، السلطة. No Levantine or Egyptian colloquial words (شو، ليش، هيك، كتير، بس، كمان، عشان، زي).
 CALQUE TEST on every sentence: would a native who never saw English have written it? If it mirrors an English idiom (seat at the table, owns the space, moves the needle), rewrite the idea.
@@ -94,10 +95,15 @@ function frag(v: string, at: number): string {
 /**
  * Mechanical repair of model-written Arabic, applied before the gate:
  * «و» + Latin/digit → space after «و»; «بـ لـ كـ الـ» + Latin/digit → space
- * after the tatweel; Arabic-Indic digits → Western. Nothing else changes.
+ * after the tatweel; Arabic-Indic digits → Western; fathatan moves from the
+ * preceding letter onto its alif. A fathatan after shadda stays untouched.
  */
+export function normaliseArabicTanween(value: string): string {
+  return value.replace(/([\u0621-\u064A])\u064B\u0627/g, "$1\u0627\u064B");
+}
+
 export function repairArabic(value: string): string {
-  return value
+  return normaliseArabicTanween(value)
     .replace(/(^|[^\u0600-\u06FF])و(?=[A-Za-z0-9])/gu, "$1و ")
     .replace(/(^|[^\u0600-\u06FF])(بـ|لـ|كـ|الـ)(?=[A-Za-z0-9])/gu, "$1$2 ")
     .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660));

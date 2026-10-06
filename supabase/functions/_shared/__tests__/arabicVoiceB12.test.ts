@@ -31,6 +31,7 @@ describe("Batch 12 Arabic checker", () => {
   });
   it("block carries the new rules and examples", () => {
     expect(ARABIC_VOICE_BLOCK).toContain("Gulf reader first");
+    expect(ARABIC_VOICE_BLOCK).toContain("Write tanween fath on the alif: دليلاً، مؤشراً، شيئاً.");
     expect(ARABIC_VOICE_BLOCK).toContain("لا ترى المشروع ملفاً تقنياً");
     expect(withArabicVoice("S", "en")).toBe("S");
     expect(withArabicVoice("S", "ar").endsWith(ARABIC_VOICE_BLOCK)).toBe(true);

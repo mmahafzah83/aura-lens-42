@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { arabicGate, arabicGateDetail, arabicCorrectionText, repairArabic, repairValues, ARABIC_VOICE_BLOCK } from "../arabicVoice";
+import { arabicGate, arabicGateDetail, arabicCorrectionText, normaliseArabicTanween, repairArabic, repairValues, ARABIC_VOICE_BLOCK } from "../arabicVoice";
 
 const good = {
   archetype: "المُصلح الهادئ",
@@ -61,13 +61,18 @@ describe("arabicGate", () => {
 
 describe("repairArabic", () => {
   it("spaces «و» before Latin or a digit", () => {
-    expect(repairArabic("في NWC وSPL و50 مشروعًا")).toBe("في NWC و SPL و 50 مشروعًا");
+    expect(repairArabic("في NWC وSPL و50 مشروعًا")).toBe("في NWC و SPL و 50 مشروعاً");
   });
   it("spaces tatweel prefixes before Latin or a digit", () => {
     expect(repairArabic("عمل بـEY ثم لـZATCA ثم الـPMO وكـ5")).toBe("عمل بـ EY ثم لـ ZATCA ثم الـ PMO وكـ5");
   });
   it("turns Arabic-Indic digits Western", () => {
-    expect(repairArabic("قدت ٢٠ مشروعًا")).toBe("قدت 20 مشروعًا");
+    expect(repairArabic("قدت ٢٠ مشروعًا")).toBe("قدت 20 مشروعاً");
+  });
+  it("puts fathatan on the alif and leaves fathatan after shadda untouched", () => {
+    expect(normaliseArabicTanween("دليلًا، مؤشرًا، شيئًا، انطلاقًا")).toBe("دليلاً، مؤشراً، شيئاً، انطلاقاً");
+    expect(normaliseArabicTanween("ردًّا حادًّا")).toBe("ردًّا حادًّا");
+    expect(repairValues({ model: "دليلًا", fixed: "مؤشرًا" })).toEqual({ model: "دليلاً", fixed: "مؤشراً" });
   });
   it("leaves everything else alone", () => {
     const t = "وقت العمل في EY، بوضوح.";
