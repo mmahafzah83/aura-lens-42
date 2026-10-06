@@ -25,7 +25,7 @@ const PENDING = new Set([
   "settings.meta.title", // pending Arabic rewrite
   "settings.linkedin.addressOnFile", // pending Arabic rewrite
  ]);
-const forbidden = /وعددها|، عددها|—|[→←↗↖↘↙]|الأكاديميا|(?<![\u0600-\u06ff])(?:يتم|تم )/u;
+const forbidden = /وعددها|، عددها|—|[→←↗↖↘↙]|الأكاديميا|(?<![\u0600-\u06ff])(?:يتم(?![\u0600-\u06ff])|تم )/u;
 
 describe("Arabic copy guard", () => {
   it("rejects banned phrasing outside the explicit pending rewrites", () => {
