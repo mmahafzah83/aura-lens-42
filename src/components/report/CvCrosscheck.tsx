@@ -82,6 +82,30 @@ export function hasCvCrosscheck(raw: unknown): raw is CvCrosscheckData {
 
 /* ---------------------------------------------------------------- tokens -- */
 
+/** True inside the report document: a print version, no controls, no <details>. */
+const CvPrintCtx = createContext(false);
+
+/** The print parts present in a stored object, in render order — one sheet block each. */
+export function cvPrintParts(raw: unknown): CvPart[] {
+  if (!hasCvCrosscheck(raw)) return [];
+  const d = raw;
+  const findings = (Array.isArray(d.findings) ? d.findings : []).filter((f) => f && (f.what || f.do_this));
+  const recs = (Array.isArray(d.recommendations) ? d.recommendations : []).filter((r) => r && text(r.action));
+  const out: CvPart[] = ["verdict"];
+  if (findings.length > 0) out.push("lead");
+  if (findings.length > 1) out.push("rest");
+  if (strings(d.cv_is_behind).length) out.push("missing");
+  if (strings(d.defensibility).length) out.push("proof");
+  if (text(d.headline_suggestion)) out.push("headline");
+  if (text(d.reading_the_shape)) out.push("shape");
+  if (text(d.profile_vs_voice)) out.push("voice");
+  if (text(d.the_hard_truth)) out.push("truth");
+  if (recs.length) out.push("now");
+  if (text(d.peer_comparison)) out.push("peers");
+  return out;
+}
+export type CvPart = "verdict" | "lead" | "rest" | "missing" | "proof" | "headline" | "shape" | "voice" | "truth" | "now" | "peers";
+
 const SCROLL_MARGIN = 116; /* the sticky journey chrome is 100px + 8 */
 
 const mono: React.CSSProperties = {
@@ -179,7 +203,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   const [done, setDone] = useState(false);
   const timer = useRef<number | null>(null);
 
+  const print = useContext(CvPrintCtx);
   useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
+  if (print) return null;
 
   const copy = async () => {
     try {
@@ -260,7 +286,8 @@ function EvidencePair({ cv, profile }: { cv: string; profile: string }) {
 function EvidenceToggle({ cv, profile }: { cv: string; profile: string }) {
   const { t } = useCvLang();
   const [open, setOpen] = useState(false);
-  if (!cv && !profile) return null;
+  const print = useContext(CvPrintCtx);
+  if (print || (!cv && !profile)) return null;
   return (
     <div>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} style={linkBtn}>
@@ -307,9 +334,28 @@ function Disclosure({
   const ref = useRef<HTMLDetailsElement>(null);
   const [open, setOpen] = useState(false);
 
+  const print = useContext(CvPrintCtx);
+
   useEffect(() => {
     if (openSignal && ref.current) { ref.current.open = true; setOpen(true); }
   }, [openSignal]);
+
+  if (print) {
+    /* Print version: a closed row stays a static row — title and first line. */
+    return (
+      <div id={id} style={{ ...card, padding: "14px 18px" }}>
+        <span style={{ ...body, fontWeight: 600, display: "block" }}>
+          {label}
+          {typeof count === "number" && count > 0 ? (
+            <span className="cvx-mono" style={{ ...mono, display: "inline", marginInlineStart: 8, fontSize: 12 }}>{count}</span>
+          ) : null}
+        </span>
+        {previewText ? (
+          <span dir="auto" style={{ ...body, fontSize: 14, color: OB.muted, display: "block", marginBlockStart: 2 }}>{previewText}</span>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <details
@@ -366,7 +412,13 @@ export default function CvCrosscheck({
   uploadSlot,
   onAuraAction,
   lang: fixedLang,
+  print = false,
+  parts,
 }: {
+  /** Inside the report document: static print version, no buttons, no <details>. */
+  print?: boolean;
+  /** Render only these parts (the report gives each part its own sheet block). */
+  parts?: CvPart[];
   /** Fixes the label language (the report passes its own); defaults to the screen language. */
   lang?: "ar" | "en";
   /** Pass the stored object directly when the caller already has it. */
@@ -493,7 +545,7 @@ export default function CvCrosscheck({
   };
 
   const auraControl = (kind: AuraCan | null | undefined, ctx: { finding?: CvFinding; recommendation?: CvRecommendation }) => {
-    if (!kind) return null; /* a null offer is no control at all */
+    if (!kind || print) return null; /* a null offer is no control at all; print has no controls */
     /* Not built yet — a button that does nothing is worse than no button. */
     if (kind === "draft_post" || kind === "track_signal") return null;
     /* No handler wired on this surface — render nothing rather than a dead button. */
@@ -557,12 +609,15 @@ export default function CvCrosscheck({
     );
   };
 
+  const show = (p: CvPart) => !parts || parts.includes(p);
+
   return (
+    <CvPrintCtx.Provider value={print}>
     <CvLangCtx.Provider value={cvLang}>
     <div className={uiLang === "ar" ? "cvx-ar" : undefined} style={{ display: "grid", gap: 16, ...style }}>
       <style>{`.cvx-ar .cvx-mono{letter-spacing:0 !important;text-transform:none !important;font-family:var(--font-arabic),Cairo,sans-serif !important;}`}</style>
       {/* 1 · Verdict — the only night surface here. */}
-      <section
+      {show("verdict") ? <section
         style={{
           background: OB.night,
           borderRadius: 20,
@@ -587,8 +642,8 @@ export default function CvCrosscheck({
             {d.headline_finding}
           </p>
         ) : null}
-      </section>
-      {fellBack ? <p style={{ ...prose, fontSize: 14, color: OB.muted }}>{t("assess.read.langFallback")}</p> : null}
+      </section> : null}
+      {fellBack && show("verdict") ? <p style={{ ...prose, fontSize: 14, color: OB.muted }}>{t("assess.read.langFallback")}</p> : null}
 
       {/* stale */}
       {state === "stale" ? (
@@ -599,14 +654,14 @@ export default function CvCrosscheck({
       ) : null}
 
       {/* 2 · The one thing to fix first — always open, in full */}
-      {lead ? (
+      {show("lead") && lead ? (
         <Section id="cvx-findings" title={t("cvx.disagree")}>
           <Finding f={lead} first />
         </Section>
       ) : null}
 
       {/* 3 · Everything else — labelled, one tap away */}
-      {rest.length > 0 ? (
+      {show("rest") && rest.length > 0 ? (
         <Disclosure
           id="cvx-findings-rest"
           label={t("cvx.otherDisagree")}
@@ -619,13 +674,13 @@ export default function CvCrosscheck({
         </Disclosure>
       ) : null}
 
-      {behind.length > 0 ? (
+      {show("missing") && behind.length > 0 ? (
         <Disclosure id="cvx-missing" label={t("cvx.missing")} count={behind.length} previewText={preview(behind[0])}>
           <PlainList items={behind} extra={mt} />
         </Disclosure>
       ) : null}
 
-      {proof.length > 0 ? (
+      {show("proof") && proof.length > 0 ? (
         <Disclosure id="cvx-defensibility" label={t("cvx.cfo")} count={proof.length} previewText={preview(proof[0])}>
           <div style={{ display: "grid", gap: 12 }}>
             {proof.map((s, i) => (
@@ -635,7 +690,7 @@ export default function CvCrosscheck({
         </Disclosure>
       ) : null}
 
-      {headlineSuggestion ? (
+      {show("headline") && headlineSuggestion ? (
         <Disclosure
           id="cvx-headline"
           label={t("cvx.headline")}
@@ -652,25 +707,25 @@ export default function CvCrosscheck({
         </Disclosure>
       ) : null}
 
-      {shape ? (
+      {show("shape") && shape ? (
         <Disclosure id="cvx-shape" label={t("cvx.shape")} previewText={preview(shape)}>
           <p dir="auto" style={{ ...prose, ...mt }}>{shape}</p>
         </Disclosure>
       ) : null}
 
-      {voice ? (
+      {show("voice") && voice ? (
         <Disclosure id="cvx-voice" label={t("cvx.voice")} previewText={preview(voice)}>
           <p dir="auto" style={{ ...prose, ...mt }}>{voice}</p>
         </Disclosure>
       ) : null}
 
-      {hardTruth ? (
+      {show("truth") && hardTruth ? (
         <Disclosure id="cvx-truth" label={t("cvx.hardTruth")} previewText={preview(hardTruth)}>
           <p dir="auto" style={{ ...prose, fontSize: 20, fontWeight: 700, lineHeight: 1.45, ...mt }}>{hardTruth}</p>
         </Disclosure>
       ) : null}
 
-      {recs.length > 0 ? (
+      {show("now") && recs.length > 0 ? (
         <Disclosure id="cvx-now" label={t("cvx.now")} count={recs.length} previewText={preview(text(recs[0].action))}>
           <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 18 }}>
             {recs.map((r, i) => (
@@ -684,12 +739,13 @@ export default function CvCrosscheck({
         </Disclosure>
       ) : null}
 
-      {peer ? (
+      {show("peers") && peer ? (
         <Disclosure id="cvx-peers" label={t("cvx.peers")} previewText={preview(peer)}>
           <p dir="auto" style={{ ...prose, ...mt }}>{peer}</p>
         </Disclosure>
       ) : null}
     </div>
     </CvLangCtx.Provider>
+    </CvPrintCtx.Provider>
   );
 }
