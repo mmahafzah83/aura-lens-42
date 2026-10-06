@@ -10,7 +10,11 @@ import {
   biggestGapSentence,
   type CoverageRow,
   type CoverageStatus,
+  coverageLabel,
 } from "@/lib/teachAura";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { arStyle } from "@/lib/arDisplay";
+import { isoNum } from "@/lib/voiceText";
 
 const LINE = "#E2E7EE";
 const INK = "#0F1519";
@@ -32,12 +36,16 @@ export default function TeachAuraCoverage({
   includedCount: number;
   textlessWithEngagement?: number;
 }) {
-  const gap = biggestGapSentence({ coverage, includedCount });
+  const { lang, t } = useLanguage();
+  const ar = lang === "ar";
+  const tr = { lang, t };
+  const L = (en: string, key: string, vars?: Record<string, unknown>) => (ar ? t(key, vars) : en);
+  const gap = biggestGapSentence({ coverage, includedCount }, tr);
 
   return (
     <section style={{ marginBlockStart: 20 }}>
       <h3 style={{ fontSize: 15, fontWeight: 600, color: INK, margin: "0 0 8px" }}>
-        What evidence is missing
+        {L("What evidence is missing", "vo.tc.title")}
       </h3>
       <div style={{ background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: 16, padding: 16 }}>
         {coverage.map((row, i) => {
@@ -53,8 +61,8 @@ export default function TeachAuraCoverage({
             >
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{row.label}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 12.5, color: MUTED }}>
+                  <span style={arStyle(lang, { fontSize: 13.5, fontWeight: 600, color: INK })}>{ar ? coverageLabel(row.key, tr) : row.label}</span>
+                  <span dir="ltr" style={{ fontFamily: MONO, fontSize: 12.5, color: MUTED }}>
                     {row.count} / {row.threshold}
                   </span>
                 </div>
@@ -68,21 +76,21 @@ export default function TeachAuraCoverage({
                   background: chip.bg, color: chip.fg, border: `1px solid ${chip.border}`,
                 }}
               >
-                {chip.label}
+                {L(chip.label, `vo.tc.${row.status}`)}
               </span>
             </div>
           );
         })}
       </div>
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.65, marginBlockStart: 10 }}>
-        {gap ?? `Aura needs at least ${MIN_POSTS_FOR_COVERAGE} posts before it can judge coverage.`}
+        {gap ?? L(`KnownBy needs at least ${MIN_POSTS_FOR_COVERAGE} posts before it can judge coverage.`, "vo.tc.needMin", { min: isoNum(MIN_POSTS_FOR_COVERAGE) })}
       </p>
       {textlessWithEngagement > 0 && (
         <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.65, marginBlockStart: 8 }}>
           <span style={{ color: INK, fontWeight: 600 }}>
-            {textlessWithEngagement} of your posts have engagement data but no text.
+            {L(`${textlessWithEngagement} of your posts have engagement data but no text.`, "vo.tc.textless", { n: isoNum(textlessWithEngagement) })}
           </span>{" "}
-          Import them to teach Aura from your best-performing writing.
+          {L("Import them to teach KnownBy from your best-performing writing.", "vo.tc.textlessFix")}
         </p>
       )}
     </section>

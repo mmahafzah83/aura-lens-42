@@ -13,6 +13,9 @@ const FILES = [
   "components/voice/VoiceRules.tsx", "components/voice/VariationEngine.tsx", "components/voice/WhatWorked.tsx",
   "components/voice/InfoTooltip.tsx", "components/common/CollapseBlock.tsx",
   "lib/voiceOverview.ts", "lib/voiceDna.ts", "lib/voiceOutcomes.ts", "lib/voiceText.ts",
+  // Batch 9b — Teach and Test & improve
+  "components/voice/TeachAura.tsx", "components/voice/TeachAuraCoverage.tsx", "components/voice/TeachAuraReview.tsx",
+  "components/voice/TestImprove.tsx", "lib/teachAura.ts", "lib/voiceFeedback.ts", "lib/voiceFidelity.ts", "lib/voiceSample.ts",
 ];
 const RE = /(["'`])(vo\.[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)\1/g;
 
@@ -29,6 +32,15 @@ const FAMILIES: Record<string, string[]> = {
   "vo.kind": ["always", "never", "anchor"],
   "vo.src": ["learned", "user", "aura"],
   "vo.rsrc": ["openings", "endings", "phrases", "structure", "absences"],
+  "vo.ta": ["stage0", "stage1", "stage2"],
+  "vo.tl.cov": ["arabic", "english", "long", "short", "recent"],
+  "vo.tl.gap": ["arabic", "english", "long", "short", "recent"],
+  "vo.tc": ["sufficient", "thin", "missing"],
+  "vo.tr": ["fAll", "fAside", "fArabic", "fOld"],
+  "vo.ti": ["hYours", "hClose", "hOff", "hNot"],
+  "vo.fb.v": ["sounds_like_me", "partly", "not_me", "too_formal", "too_generic", "too_aggressive", "would_never_say"],
+  "vo.cl": ["your_post", "from_your_linkedin_export", "written_by_aura", "found_online", "added_by_you", "unknown_source",
+    "you_set_this_aside", "aura_wrote_this", "only_a_fragment_of_text", "not_written_by_you", "too_short_to_read"],
   "vo.ex": ["no_text", "not_own_writing", "not_in_corpus", "no_metrics_yet", "no_performance_data", "other_measure", "too_new", "too_few_impressions"],
 };
 for (const [p, ks] of Object.entries(FAMILIES)) for (const k of ks) used.add(`${p}.${k}`);

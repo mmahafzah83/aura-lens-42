@@ -10,6 +10,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { measureOne, scale } from "../../supabase/functions/_shared/voiceMeasure";
+import { isArTr, isoNum, voiceWord, type VoiceTr } from "@/lib/voiceText";
 
 export interface FidelityTrait {
   trait_key: string;
@@ -49,7 +50,8 @@ export interface FidelityTraitInput {
 }
 
 /** Turn a scaled 0–100 band edge back into the unit a member recognises. */
-function human(trait: string, scaled: number): string {
+function human(trait: string, scaled: number, tr?: VoiceTr | null): string {
+  if (isArTr(tr)) return humanAr(trait, scaled, true, tr);
   switch (trait) {
     case "length":
       return Math.round(800 + (scaled / 100) * 1800).toLocaleString("en-US");
@@ -64,7 +66,24 @@ function human(trait: string, scaled: number): string {
   }
 }
 
-function humanSample(trait: string, raw: number): string {
+/** Arabic units, digits isolated left-to-right. `scaledIn` converts a band edge first. */
+function humanAr(trait: string, v: number, scaledIn: boolean, tr: VoiceTr): string {
+  switch (trait) {
+    case "length":
+      return isoNum(Math.round(scaledIn ? 800 + (v / 100) * 1800 : v));
+    case "emoji":
+      return tr.t("vo.fi.perK", { x: isoNum((scaledIn ? (v / 100) * 12 : v).toFixed(1)) });
+    case "evidence_density":
+      return tr.t("vo.fi.figures", { x: isoNum((scaledIn ? (v / 100) * 15 : v).toFixed(1)) });
+    case "language_mix":
+      return tr.t("vo.fi.arabicPct", { x: isoNum(Math.round(v)) });
+    default:
+      return isoNum(Math.round(v));
+  }
+}
+
+function humanSample(trait: string, raw: number, tr?: VoiceTr | null): string {
+  if (isArTr(tr)) return humanAr(trait, raw, false, tr);
   switch (trait) {
     case "length":
       return Math.round(raw).toLocaleString("en-US");
@@ -83,18 +102,21 @@ function humanSample(trait: string, raw: number): string {
  * The pure core. Give it a sample and the member's traits; it returns the
  * per-trait breakdown and the count. No network, no model.
  */
-export function voiceFidelity(sampleText: string, traits: FidelityTraitInput[]): FidelityResult {
+export function voiceFidelity(sampleText: string, traits: FidelityTraitInput[], tr?: VoiceTr | null): FidelityResult {
+  const ar = isArTr(tr);
+  const why = (en: string, key: string) => (ar ? tr!.t(key) : en);
+  const nameOf = (n: string) => (ar ? voiceWord(n, tr) : n);
   const out: FidelityTrait[] = [];
   const excluded: FidelityResult["excluded"] = [];
   let targetChars: number | null = null;
 
   for (const t of traits) {
     if (!t.computable) {
-      excluded.push({ trait_key: t.trait_key, display_name: t.display_name, reason: "not measurable from text" });
+      excluded.push({ trait_key: t.trait_key, display_name: nameOf(t.display_name), reason: why("not measurable from text", "vo.fi.notMeasurable") });
       continue;
     }
     if (t.band_low === null || t.band_high === null || t.value === null) {
-      excluded.push({ trait_key: t.trait_key, display_name: t.display_name, reason: "no measured range yet" });
+      excluded.push({ trait_key: t.trait_key, display_name: nameOf(t.display_name), reason: why("no measured range yet", "vo.fi.noRange") });
       continue;
     }
     if (t.trait_key === "length") {
@@ -102,7 +124,7 @@ export function voiceFidelity(sampleText: string, traits: FidelityTraitInput[]):
     }
     const m = measureOne(t.trait_key, sampleText);
     if (!m) {
-      excluded.push({ trait_key: t.trait_key, display_name: t.display_name, reason: "no signal in this sample" });
+      excluded.push({ trait_key: t.trait_key, display_name: nameOf(t.display_name), reason: why("no signal in this sample", "vo.fi.noSignal") });
       continue;
     }
     const lo = Math.min(t.band_low, t.band_high);
@@ -112,7 +134,7 @@ export function voiceFidelity(sampleText: string, traits: FidelityTraitInput[]):
     const distance = inside ? 0 : Number((((m.scaled < lo ? lo - m.scaled : m.scaled - hi) / width)).toFixed(2));
     out.push({
       trait_key: t.trait_key,
-      display_name: t.display_name,
+      display_name: nameOf(t.display_name),
       sampleValue: Number(m.scaled.toFixed(1)),
       sampleRaw: Number(m.raw.toFixed(2)),
       bandLow: lo,
@@ -121,7 +143,9 @@ export function voiceFidelity(sampleText: string, traits: FidelityTraitInput[]):
       distance,
       miss: inside
         ? null
-        : `${t.display_name} is ${humanSample(t.trait_key, m.raw)} — your range is ${human(t.trait_key, lo)}–${human(t.trait_key, hi)}.`,
+        : ar
+          ? tr!.t("vo.fi.miss", { name: nameOf(t.display_name), value: humanSample(t.trait_key, m.raw, tr), low: human(t.trait_key, lo, tr), high: human(t.trait_key, hi, tr) })
+          : `${t.display_name} is ${humanSample(t.trait_key, m.raw)} — your range is ${human(t.trait_key, lo)}–${human(t.trait_key, hi)}.`,
     });
   }
 

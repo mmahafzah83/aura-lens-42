@@ -6,6 +6,8 @@
  * The gateway is called only when the member presses "Another sample".
  */
 
+import { endingWord, hookWord, isArTr, isoNum, type VoiceTr } from "@/lib/voiceText";
+
 export type SegmentKind = "hook" | "body" | "evidence" | "closer";
 
 export interface Segment {
@@ -113,7 +115,8 @@ export interface ComposedSample {
 }
 
 /** Compose a sample from the member's measured traits. Pure, instant, free. */
-export function composeFromTraits(t: SampleTraits, seed = 0, hookLabel = "your opener bank"): ComposedSample {
+export function composeFromTraits(t: SampleTraits, seed = 0, hookLabel = "your opener bank", tr?: VoiceTr | null): ComposedSample {
+  const ar = isArTr(tr);
   const lang = t.values.language_mix;
   const isArabic = lang !== null && lang !== undefined && lang >= 50;
   const pace = t.values.pace;
@@ -132,7 +135,7 @@ export function composeFromTraits(t: SampleTraits, seed = 0, hookLabel = "your o
   const closer = pick(closers[t.closerKey], seed, pick(closers.question, seed, ""));
 
   const segments: Segment[] = [
-    { text: hook, kind: "hook", reason: `Opener: ${hookLabel} — from your opener bank` },
+    { text: hook, kind: "hook", reason: ar ? tr!.t("vo.vs.opener", { hook: hookWord(t.hookKey, tr!) }) : `Opener: ${hookLabel} — from your opener bank` },
   ];
   for (const line of bodyLines) segments.push({ text: line, kind: "body" });
   if (wantsEvidence) {
@@ -141,14 +144,14 @@ export function composeFromTraits(t: SampleTraits, seed = 0, hookLabel = "your o
       kind: "evidence",
       reason:
         evidence === null || evidence === undefined
-          ? "Evidence line — Aura's default until evidence density is measured"
-          : `Evidence density ${Math.round(evidence)}% — you put a figure before the close`,
+          ? ar ? tr!.t("vo.vs.evDefault") : "Evidence line — KnownBy's default until evidence density is measured"
+          : ar ? tr!.t("vo.vs.evDensity", { n: isoNum(Math.round(evidence)) }) : `Evidence density ${Math.round(evidence)}% — you put a figure before the close`,
     });
   }
   segments.push({
     text: closer,
     kind: "closer",
-    reason: `Closer: ${t.closerKey.replace(/_/g, " ")} — from your closer bank`,
+    reason: ar ? tr!.t("vo.vs.closer", { closer: endingWord(t.closerKey, tr!) }) : `Closer: ${t.closerKey.replace(/_/g, " ")} — from your closer bank`,
   });
 
   const join = pace !== null && pace !== undefined && pace >= 60 ? "\n\n" : "\n";
