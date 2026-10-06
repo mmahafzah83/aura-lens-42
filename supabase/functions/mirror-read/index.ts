@@ -11,7 +11,7 @@ import { logError } from "../_shared/logError.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { fetchPostItems, fetchCommentItems, filterOwnPosts, filterOwnComments, applyBudget, ownWritingBlocks, twelveMonthsAgo, type OwnPost, type OwnComment } from "../_shared/linkedinOwnWriting.ts";
-import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairValues, arabicQualityNotes, arabicFixInstruction, logArabicQuality, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairValues, arabicQualityNotes, arabicFixInstruction, logArabicQuality, englishJuniorLabel, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -266,7 +266,7 @@ function hasPlaceholderInValues(v: unknown): boolean {
 
 
 const SYSTEM_PROMPT =
-  "You read a senior professional's public LinkedIn profile and recent posts, and tell them how their market currently sees them. Address the reader directly as 'you' in every sentence. Never refer to them by name or in the third person — this is their mirror, not a report about them. You use only what is in the material. You never invent an achievement, a number, a date or an employer. Output plain text only — no markdown, no asterisks, no headers, no bracketed placeholders. The reader is a senior GCC executive: write plainly, in short sentences, as a trusted advisor would over coffee. Never use these words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate. ARCHETYPE RULE: the name is 'The [Adjective] [Noun]'. 'Strategic' is banned as the adjective and 'Architect' is banned as the noun. Before naming it, ask yourself whether the name would fit half of all senior professionals; if so it is too generic, choose again from what THIS person's material actually shows.";
+  "You read a senior professional's public LinkedIn profile and recent posts, and tell them how their market currently sees them. Address the reader directly as 'you' in every sentence. Never refer to them by name or in the third person — this is their mirror, not a report about them. You use only what is in the material. You never invent an achievement, a number, a date or an employer. Output plain text only — no markdown, no asterisks, no headers, no bracketed placeholders. The reader is a senior GCC executive: write plainly, in short sentences, as a trusted advisor would over coffee. Never use these words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate. ARCHETYPE RULE: the name is 'The [Adjective] [Noun]'. 'Strategic' is banned as the adjective and 'Architect' is banned as the noun. The noun names what the member actually is or does at his real level, read from his current role and record (for example founder, professor, director, builder of something specific, adviser to a named kind of client); the adjective names the one thing his evidence shows that distinguishes him. Never a passive or junior noun for a senior person: not Observer, Watcher, Follower, Listener, Learner, Student or Teacher. Before naming it, ask yourself whether the name would fit half of all senior professionals; if so it is too generic, choose again from what THIS person's material actually shows.";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -654,8 +654,9 @@ Deno.serve(async (req) => {
       const qOpts = { skipKeys: ["own_words_quote", "raw"], allowLatin: [full_name, headline] };
       const quality0 = l === "ar" && read ? arabicQualityNotes(read, qOpts) : [];
       const firstRead = read;
+      const enJunior = l === "en" && read ? englishJuniorLabel(read) : null;
 
-      if (!read || gateFail || quality0.length) {
+      if (!read || gateFail || quality0.length || enJunior) {
         // One correction pass: the shape was wrong, a placeholder survived, or the Arabic failed.
         const correctionMessages = [...messages];
         if (raw) correctionMessages.push({ role: "assistant", content: raw });
@@ -663,6 +664,8 @@ Deno.serve(async (req) => {
           role: "user",
           content: gateFail || (read && quality0.length)
             ? (gateFail ? arabicCorrectionText(gateFail) + " " : "") + (quality0.length ? arabicFixInstruction(quality0) : "") + " Return ONLY the JSON object with the same seven keys (keys in English, values in Arabic, own_words_quote verbatim), no markdown fences, no commentary."
+            : enJunior && read
+            ? `The archetype uses "${enJunior.word}", a passive or junior noun for a senior person. Rename it: the noun is what this person actually is or does at his real level, the adjective the one thing his evidence shows. Keep every other value exactly. Return ONLY the JSON object with the same seven keys, no markdown fences, no commentary.`
             : "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
         });
         raw = await callModel(correctionMessages, l);
@@ -671,7 +674,7 @@ Deno.serve(async (req) => {
         if (l === "ar" && read) read = repairValues(read, ["own_words_quote", "raw"]);
         gateFail = l === "ar" && read ? arabicGateDetail(read, { skipKeys: ["own_words_quote", "raw"] }) : null;
         /* A first draft that only had quality findings stays if the correction is unusable. */
-        if ((!read || gateFail) && firstRead && quality0.length && !arabicGateDetail(firstRead, { skipKeys: ["own_words_quote", "raw"] })) {
+        if ((!read || gateFail) && firstRead && (quality0.length || enJunior) && !arabicGateDetail(firstRead, { skipKeys: ["own_words_quote", "raw"] })) {
           read = firstRead; gateFail = null;
         }
       }

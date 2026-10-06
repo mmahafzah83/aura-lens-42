@@ -177,5 +177,5 @@ export function fetchPostItems(canonical_url: string, token: string, now = new D
 
 /** Raw comment items written by the profile. Never throws. */
 export function fetchCommentItems(canonical_url: string, token: string): Promise<unknown[]> {
-  return runActor(COMMENTS_ACTOR, { targetUrls: [canonical_url], maxItems: MAX_COMMENTS }, token);
+  return runActor(COMMENTS_ACTOR, { profiles: [canonical_url], maxItems: MAX_COMMENTS }, token);
 }
