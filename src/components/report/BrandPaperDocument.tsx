@@ -741,7 +741,11 @@ function ClosingSheet({ bp, n, total, stats, lang }: {
 
 /** True when a sheet's content is taller than the fixed sheet (it would clip). */
 export function sheetOverflows(sheet: HTMLElement): boolean {
-  return sheet.scrollHeight > sheet.clientHeight + 1;
+  if (sheet.scrollHeight > sheet.clientHeight + 1) return true;
+  // Content that runs into the footer stays inside the sheet's padding, so the
+  // sheet itself never scrolls; the body box above the footer does.
+  const body = sheet.querySelector("[data-sheet-body]") as HTMLElement | null;
+  return !!body && body.scrollHeight > body.clientHeight + 1;
 }
 
 /** Marks and logs every sheet that still overflows, so a clip never goes unseen. */
