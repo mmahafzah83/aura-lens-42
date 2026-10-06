@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence } from "@/constants/vocabulary";
 import { ASSESSMENT_STEPS, STAGE_NAMES } from "@/lib/brand";
+import { CV_SCREEN } from "@/lib/journeyWork";
 
 const stageKey = (n: number) =>
   `stage.${Math.max(0, Math.min(STAGE_NAMES.length - 1, Math.round(n) - 1)) + 1}`;
