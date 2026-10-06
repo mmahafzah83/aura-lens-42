@@ -117,3 +117,24 @@ describe("kaf_as widened", () => {
     expect(arabicGate({ own_words_read: "كما كان كل شيء كذلك، كيف كتب كثير من الناس عن عمل كبير." })).toBeNull();
   });
 });
+
+describe("Batch 15b: kaf-as and junior labels", () => {
+  it("fires on كـ + noun", async () => {
+    const { findKafAs } = await import("../arabicVoice.ts");
+    expect(findKafAs("الفرق بين إدارة المشاريع كمالك وكمستأجر")).toBe("كمالك");
+    expect(findKafAs("بدأ كمؤسس")).toBe("كمؤسس");
+  });
+  it("allows real words", async () => {
+    const { findKafAs } = await import("../arabicVoice.ts");
+    expect(findKafAs("كما قلت")).toBeNull();
+    expect(findKafAs("كمال الخدمة")).toBeNull();
+    expect(findKafAs("الكمية كبيرة")).toBeNull();
+  });
+  it("flags junior Arabic and English labels", async () => {
+    const { arabicQualityNotes, englishJuniorLabel } = await import("../arabicVoice.ts");
+    expect(arabicQualityNotes({ archetype: "المراقب الصبور" }).some((n) => n.check === "junior_label")).toBe(true);
+    expect(arabicQualityNotes({ archetype: "المؤسس الميداني" }).some((n) => n.check === "junior_label")).toBe(false);
+    expect(englishJuniorLabel({ archetype: "The Patient Observer" })?.word).toBe("observer");
+    expect(englishJuniorLabel({ archetype: "The Field Founder" })).toBeNull();
+  });
+});
