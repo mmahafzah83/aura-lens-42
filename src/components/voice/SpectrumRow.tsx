@@ -166,7 +166,7 @@ export default function SpectrumRow({
             {trait.source === "aura" && (
               <>
                 <button type="button" className="vd-act" disabled={busy} onClick={onConfirm}>{L("Confirm", "vo.confirm")}</button>
-                <button type="button" className="vd-act" disabled={busy} onClick={onReject}>{L("Reject", "vo.sr.reject")}</button>
+                <button type="button" className="vd-act" disabled={busy} onClick={onReject}>{L("Reject", "vo.reject")}</button>
               </>
             )}
             {!trait.computable && !measured && !setting && (
