@@ -18,11 +18,12 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const { t, isRTL } = useLanguage();
 
   useEffect(() => {
     if (!open) return;
-    setPassword(""); setConfirm(""); setShow(false);
+    setPassword(""); setConfirm(""); setShow(false); setSubmitError("");
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -42,18 +43,30 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
     if (password.length < 8) { toast.error(t("pwModal.tooShort")); return; }
     if (password !== confirm) { toast.error(t("pwModal.mismatch")); return; }
     setSubmitting(true);
+    setSubmitError("");
     try {
       const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
         body: { new_password: password },
       });
-      if (error) throw error;
-      if ((pwData as any)?.error) throw new Error((pwData as any).error);
+      if (error || pwData?.error) {
+        // A rejected password is form validation, not a successful update or
+        // an uncaught runtime failure. FunctionsHttpError keeps the body here.
+        let message = typeof pwData?.error === "string" ? pwData.error : "";
+        if (error && "context" in error && error.context instanceof Response) {
+          try {
+            const body = await error.context.clone().json();
+            if (typeof body?.error === "string") message = body.error;
+          } catch { /* Non-JSON/network failures use the localized fallback. */ }
+        }
+        setSubmitError((!isRTL && message) || t("pwModal.updateFailed"));
+        return;
+      }
       try { localStorage.setItem("password_set", "1"); } catch {}
       // Force sign-out and hard redirect to login with new password.
       try { await supabase.auth.signOut(); } catch {}
       window.location.href = "/auth?msg=password_updated";
-    } catch (e: any) {
-      toast.error((isRTL ? "" : e?.message) || t("pwModal.updateFailed"));
+    } catch {
+      setSubmitError(t("pwModal.updateFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -109,7 +122,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
             <input
               type={show ? "text" : "password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setSubmitError(""); }}
               placeholder={t("pwModal.newPlaceholder")}
               dir="ltr"
               style={inputStyle}
@@ -128,12 +141,14 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
           <input
             type={show ? "text" : "password"}
             value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
+            onChange={(e) => { setConfirm(e.target.value); setSubmitError(""); }}
             placeholder={t("auth.gate.confirmPlaceholder")}
             dir="ltr"
             style={{ ...inputStyle, padding: "10px 12px" }}
             autoComplete="new-password"
           />
+
+          {submitError && <p role="alert" style={{ color: "var(--error)", fontSize: 14 }}>{submitError}</p>}
 
           <div style={{ marginTop: 4 }}>
             <Button

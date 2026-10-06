@@ -944,7 +944,7 @@
   "assess.three.thenKicker_one": "THEN · {{count}} MINUTES",
   "assess.three.thenKicker_other": "THEN · {{count}} MINUTES",
   "assess.three.thenTitle": "Your CV, your reading, a few questions",
-  "assess.three.thenBody": "Upload your CV, tell us what you've been reading, and answer a handful of questions in your own words. Stop and come back whenever you like.",
+  "assess.three.thenBody": "Upload your CV, tell KnownBy what you've been reading, and answer two short sets of questions in your own words: what you can do, and how you want your market to know you. Stop and come back whenever you like.",
   "assess.three.endKicker": "AT THE END",
   "assess.three.endTitle": "Your report",
   "assess.three.endBody": "What you are provably good at, what is real but invisible, and the position open to you.",
