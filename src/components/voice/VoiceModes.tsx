@@ -10,6 +10,8 @@ import {
 } from "@/components/voice/tokens";
 import InfoTooltip from "@/components/voice/InfoTooltip";
 import type { DnaMode } from "@/lib/voiceDna";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { arStyle } from "@/lib/arDisplay";
 
 function MiniRail({ readiness }: { readiness: string | null }) {
   const idx = READINESS_ORDER.indexOf((readiness ?? "forming") as Readiness);
@@ -32,16 +34,22 @@ export default function VoiceModes({
   onCreate: (key: string) => void;
   onRemove: (mode: DnaMode) => void;
 }) {
+  const { lang, t } = useLanguage();
+  const ar = lang === "ar";
+  const L = (en: string, k: string, p?: Record<string, unknown>) => (ar ? t(k, p) : en);
+  const has = (k: string) => { const v = t(k); return v && v !== k; };
+  const modeText = (m: DnaMode, f: "label" | "blurb") =>
+    ar && has(`vo.mode.${m.key}.${f}`) ? t(`vo.mode.${m.key}.${f}`) : m[f];
   return (
     <section style={{ marginBlockStart: 16 }}>
-      <div style={{ ...microLabel, display: "flex", alignItems: "center", gap: 6 }}>
-        <span>Voice modes</span>
+      <div style={arStyle(lang, { ...microLabel, display: "flex", alignItems: "center", gap: 6 })}>
+        <span>{L("Voice modes", "vo.modes.title")}</span>
         <InfoTooltip
-          term="Voice modes"
-          body="A mode is the same voice, tuned for one job. It shifts a few of your markers — never outside the range your own posts prove — and you pick it in the composer when you write. Your default voice is unchanged."
+          term={L("Voice modes", "vo.modes.title")}
+          body={L("A mode is the same voice, tuned for one job. It shifts a few of your markers — never outside the range your own posts prove — and you pick it in the composer when you write. Your default voice is unchanged.", "vo.vm.tip")}
         />
       </div>
-      <div className="vd-modes" role="radiogroup" aria-label="Voice modes" style={{ marginBlockStart: 10 }}>
+      <div className="vd-modes" role="radiogroup" aria-label={L("Voice modes", "vo.modes.title")} style={{ marginBlockStart: 10 }}>
         {modes.map((m) => {
           const set = Boolean(m.profileId);
           const on = set && m.profileId === activeProfileId;
@@ -69,18 +77,18 @@ export default function VoiceModes({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: set ? INK : MUTED }}>{m.label}</span>
-                {m.needsEvidence && <span style={chipStyle("#9A6F12", "#FBF4E4", "#F0DFB4")}>Needs evidence</span>}
+                <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: set ? INK : MUTED }}>{modeText(m, "label")}</span>
+                {m.needsEvidence && <span style={arStyle(lang, chipStyle("#9A6F12", "#FBF4E4", "#F0DFB4"))}>{L("Needs evidence", "vo.vm.needsEvidence")}</span>}
               </div>
-              <div style={{ ...monoNum, fontSize: TYPE.micro, letterSpacing: ".08em", textTransform: "uppercase", color: MUTED, marginBlockStart: 4 }}>
-                {set ? READINESS_LABEL[(m.readiness ?? "forming") as Readiness] : "Not set up"}
+              <div style={arStyle(lang, { ...monoNum, fontSize: TYPE.micro, letterSpacing: ".08em", textTransform: "uppercase", color: MUTED, marginBlockStart: 4 })}>
+                {set ? L(READINESS_LABEL[(m.readiness ?? "forming") as Readiness], `vo.ready.${m.readiness ?? "forming"}`) : L("Not set up", "vo.ready.not_set_up")}
               </div>
               {set && <MiniRail readiness={m.readiness} />}
-              <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.5, marginBlockStart: 8, marginBlockEnd: 10 }}>{m.blurb}</p>
+              <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.5, marginBlockStart: 8, marginBlockEnd: 10 }}>{modeText(m, "blurb")}</p>
               {set ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <span style={{ ...monoNum, fontSize: TYPE.caption, color: on ? BLUE : MUTED }}>
-                    {on ? "Showing this mode" : "Press to show this mode"}
+                    {on ? L("Showing this mode", "vo.vm.showing") : L("Press to show this mode", "vo.vm.press")}
                   </span>
                   {m.removable && (
                     <button
@@ -89,7 +97,7 @@ export default function VoiceModes({
                       disabled={busy}
                       onClick={(e) => { e.stopPropagation(); onRemove(m); }}
                     >
-                      Remove
+                      {L("Remove", "vo.vm.remove")}
                     </button>
                   )}
                 </div>
@@ -100,7 +108,7 @@ export default function VoiceModes({
                   disabled={busy}
                   onClick={(e) => { e.stopPropagation(); onCreate(m.key); }}
                 >
-                  Create
+                  {L("Create", "vo.vm.create")}
                 </button>
               )}
             </div>
@@ -108,7 +116,7 @@ export default function VoiceModes({
         })}
       </div>
       <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.6, marginBlockStart: 10, marginBlockEnd: 0 }}>
-        Your DNA stays fixed. A mode shifts a few traits within the range your own writing already proves — it never invents a register you've never used.
+        {L("Your DNA stays fixed. A mode shifts a few traits within the range your own writing already proves — it never invents a register you've never used.", "vo.vm.footer")}
       </p>
     </section>
   );

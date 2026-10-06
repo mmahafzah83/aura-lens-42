@@ -87,6 +87,9 @@ export default function VoiceStyles() {
         .ve-tail { justify-content: flex-start; }
       }
 
+      [dir="rtl"] .vd-rail { background: linear-gradient(270deg, ${SURFACE}, #DDE4EC); }
+      [dir="rtl"] .voice-tabs::after { background: linear-gradient(to right, ${WHITE}, rgba(255,255,255,0)); }
+
       .night-line { border-color: ${NIGHT_LINE}; }
 
       @keyframes auraBlink { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
