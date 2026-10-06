@@ -22,6 +22,16 @@ export function displayDate(iso: string | number | Date, lang: string, opts: { y
 /** Western digits always, grouped with commas. */
 export const displayNumber = (n: number): string => n.toLocaleString("en-US");
 
+/** Card/resume stamp: preserve the English padded uppercase date exactly. */
+export function displayReadStamp(iso?: string | null, lang = "en"): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return undefined;
+  if (lang === "ar") return displayDate(d, "ar");
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .replace(/\s+/g, " ").toUpperCase();
+}
+
 /** Arabic time-ago from whole days. */
 export function arabicDaysAgo(days: number): string {
   if (days < 1) return "اليوم";

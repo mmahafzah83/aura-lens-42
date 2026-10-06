@@ -46,6 +46,14 @@ const FAMILIES: Record<string, string[]> = {
 for (const [p, ks] of Object.entries(FAMILIES)) for (const k of ks) used.add(`${p}.${k}`);
 
 describe("voice keys", () => {
+  it("keeps approved placeholder omissions explicit", () => {
+    const COUNT_DROPPED = new Set([
+      "vo.ww.compared", // Arabic drops the count on purpose
+    ]);
+    expect(COUNT_DROPPED.has("vo.ww.compared")).toBe(true);
+    expect(AR["vo.ww.compared"]).not.toContain("{{n}}");
+    expect(AR["vo.tr.unsureMany"]).toContain("{{n}}");
+  });
   it("finds the page's keys", () => expect(used.size).toBeGreaterThan(150));
   it("every key exists in en and ar", () => {
     expect([...used].filter((k) => !(k in EN))).toEqual([]);

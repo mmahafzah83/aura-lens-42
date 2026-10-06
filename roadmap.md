@@ -1,5 +1,12 @@
 # Opportunity engine
 
+## Batch 14a — Arabic copy and display
+- [x] Global typography and arrow rules, card date and accessibility
+- [x] Approved Arabic wording and regression guards
+- [ ] Four checks: tests/vocabulary pass, automatic local build OK; typecheck exit code unavailable
+- [x] Viewed Arabic fixture read screens at 375/1280 and gate at 375; no server changes
+- Rollback: `5c1ca8be533b7b538e159070d6224bf1c2ea3546` (snapshot command unavailable)
+
 ## Step 11 — the source factory (in progress)
 - [x] `oe_entities` table, candidate link, job plumbing
 - [x] `oe-seed-entities` — Wikidata, Wikipedia lists, Wikipedia categories, directory attempts

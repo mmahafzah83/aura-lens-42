@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { displayDate, displayNumber, arabicDaysAgo, arabicList } from "@/lib/arDisplay";
+import { displayDate, displayNumber, arabicDaysAgo, arabicList, displayReadStamp } from "@/lib/arDisplay";
 
 describe("arDisplay", () => {
+  it("read stamp has an unpadded Arabic day; English is unchanged", () => {
+    expect(displayReadStamp("2026-10-06T12:00:00Z", "ar")).toBe("6 أكتوبر 2026");
+    expect(displayReadStamp("2026-10-06T12:00:00Z", "en")).toBe("06 OCT 2026");
+    expect(displayReadStamp("invalid", "ar")).toBeUndefined();
+  });
   it("Arabic dates: Gregorian months, Western digits", () => {
     expect(displayDate("2026-08-10T12:00:00Z", "ar")).toBe("10 أغسطس 2026");
     expect(displayDate("2026-08-10T12:00:00Z", "ar", { year: false })).toBe("10 أغسطس");
