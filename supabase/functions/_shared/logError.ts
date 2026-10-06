@@ -27,7 +27,8 @@ export async function logError(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    await logEfError(admin, {
+    // Type only: this client comes from supabase-js 2.39.3, observe.ts types 2.49.1.
+    await logEfError(admin as unknown as Parameters<typeof logEfError>[0], {
       function_name,
       error,
       severity: mapSeverity(opts?.severity),

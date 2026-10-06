@@ -67,8 +67,9 @@ const impactColor = (level: string | null) => {
   return "hsl(var(--muted-foreground))";
 };
 const decisionStyle = (label: string | null): { color: string; bg: string } => {
-  if (label === "Act Now") return { color: "var(--error)", bg: "var(--glass-2)" };
-  if (label === "Early Opportunity") return { color: "var(--action)", bg: "var(--glass-2)" };
+  // Amber = a clock is running; everything else is a neutral chip (never blue on status).
+  if (label === "Act Now") return { color: "var(--deadline-text)", bg: "var(--deadline-tint)" };
+  if (label === "Early Opportunity") return { color: "var(--text-secondary)", bg: "var(--surface-subtle)" };
   return { color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.3)" };
 };
 
@@ -336,7 +337,7 @@ export default function TrendDetail() {
       {/* Tags row */}
       <div className="flex items-center flex-wrap" style={{ gap: 6, marginBottom: 14 }}>
         {signal.decision_label && (
-          <span style={caps({ fontSize: 12, color: dStyle.color, background: dStyle.bg, border: `0.5px solid ${dStyle.color}55`, padding: "3px 10px", borderRadius: 3, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" })}>
+          <span style={caps({ fontSize: 12, color: dStyle.color, background: dStyle.bg, border: "0.5px solid var(--border-default)", padding: "3px 10px", borderRadius: 3, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" })}>
             ◆ {val(signal.decision_label)}
           </span>
         )}
@@ -415,7 +416,7 @@ export default function TrendDetail() {
           <div className="flex items-center" style={{ gap: 8, marginBottom: 6 }}>
             <span style={sectionLabel as React.CSSProperties}>{t("trend.angle")}</span>
             {signal.opportunity_type && (
-              <span style={caps({ fontSize: 12, color: "var(--success)", background: "var(--glass-2)", border: "0.5px solid var(--rule)", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 })}>
+              <span style={caps({ fontSize: 12, color: "var(--text-secondary)", background: "var(--surface-subtle)", border: "0.5px solid var(--rule)", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 })}>
                 {t("trend.opportunity", { type: val(signal.opportunity_type) })}
               </span>
             )}
@@ -462,9 +463,9 @@ export default function TrendDetail() {
               onClick={() => setSnapshotMode(mode)}
               style={{
                 fontSize: 12,
-                color: active ? "var(--action)" : "hsl(var(--muted-foreground))",
-                background: active ? "var(--glass-2)" : "transparent",
-                border: `0.5px solid ${active ? "var(--rule)" : "hsl(var(--border))"}`,
+                color: active ? "var(--text-primary)" : "hsl(var(--muted-foreground))",
+                background: active ? "var(--surface-subtle)" : "transparent",
+                border: `0.5px solid ${active ? "var(--act)" : "hsl(var(--border))"}`,
                 padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em",
                 fontWeight: active ? 600 : 400,
               }}

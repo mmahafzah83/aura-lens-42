@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LinkedInConnectionStatus {
   connected: boolean;
@@ -22,6 +23,7 @@ interface LinkedInConnectorProps {
 }
 
 const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInConnectorProps) => {
+  const { lang: dateLang } = useLanguage();
   const [status, setStatus] = useState<LinkedInConnectionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -186,7 +188,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
                   <span className="text-label text-xs">Last Sync</span>
                 </div>
                 <p className="text-sm font-semibold text-foreground">
-                  {lastSynced ? formatSmartDate(lastSynced) : "Never"}
+                  {lastSynced ? formatSmartDate(lastSynced, dateLang) : "Never"}
                 </p>
               </div>
 

@@ -17,6 +17,13 @@ interface Props {
   translationNote?: boolean;
 }
 
+/** Keeps model names such as "(text-embedding-3-small)" whole: they may wrap, never split. */
+function keepTokens(text: string): React.ReactNode {
+  const parts = text.split(/(\([a-z0-9]+(?:-[a-z0-9]+)+\))/gi);
+  if (parts.length === 1) return text;
+  return parts.map((p, i) => (i % 2 ? <span key={i} className="lg-nobr">{p}</span> : p));
+}
+
 /** Arabic body: blocks split on blank lines; a block of "·" lines becomes a list. */
 function ArabicBody({ text }: { text: string }) {
   return (
@@ -26,11 +33,11 @@ function ArabicBody({ text }: { text: string }) {
         if (lines.every((l) => /^\s*·/.test(l))) {
           return (
             <ul key={i} className="lg-ul">
-              {lines.map((l, j) => <li key={j}>{l.replace(/^\s*·\s*/, "")}</li>)}
+              {lines.map((l, j) => <li key={j}>{keepTokens(l.replace(/^\s*·\s*/, ""))}</li>)}
             </ul>
           );
         }
-        return <p key={i} className="lg-p">{blk}</p>;
+        return <p key={i} className="lg-p">{keepTokens(blk)}</p>;
       })}
     </div>
   );
@@ -73,7 +80,7 @@ const LegalPage = ({ prefix, count, translationNote }: Props) => {
                 <span className="lg-no">{String(i + 1).padStart(2, "0")}</span>
                 {s.title}
               </h2>
-              {ar ? <ArabicBody text={s.body} /> : <p className="lg-body">{s.body}</p>}
+              {ar ? <ArabicBody text={s.body} /> : <p className="lg-body">{keepTokens(s.body)}</p>}
             </section>
           ))}
         </div>
@@ -114,6 +121,8 @@ const LG_CSS = `
   font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--n500);
   min-height:40px;transition:color .2s ease;}
 .lg-back:hover{color:var(--n900);}
+.lg-main > .lg-back{display:flex;width:max-content;}
+.lg-nobr{white-space:nowrap;}
 .lg-eyebrow{position:relative;display:inline-block;padding:9px 14px;margin:22px 0 20px;}
 .lg-eyebrow span{font-family:var(--mono);font-size:10px;letter-spacing:.2em;
   text-transform:uppercase;color:var(--n700);}

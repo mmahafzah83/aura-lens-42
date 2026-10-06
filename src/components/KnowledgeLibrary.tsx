@@ -3,6 +3,7 @@ import { Search, Link, Mic, Type, FileUp, FileText, ImageIcon, Loader2 } from "l
 import { supabase } from "@/integrations/supabase/client";
 import { captureCountsFromRows } from "@/lib/counts";
 import { formatSmartDate } from "@/lib/formatDate";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface KnowledgeItem {
@@ -18,6 +19,7 @@ interface KnowledgeItem {
 const ENTRY_ICONS: Record<string, typeof Link> = { link: Link, voice: Mic, text: Type, image: ImageIcon };
 
 const KnowledgeLibrary = () => {
+  const { lang: dateLang } = useLanguage();
   const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -166,7 +168,7 @@ const KnowledgeLibrary = () => {
                         )}
                       </div>
                     </div>
-                    <span className="text-meta shrink-0">{formatSmartDate(item.date)}</span>
+                    <span className="text-meta shrink-0">{formatSmartDate(item.date, dateLang)}</span>
                   </div>
                 );
               })

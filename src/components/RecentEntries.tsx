@@ -53,6 +53,7 @@ const ExpandableSummary = ({ text }: { text: string }) => {
 };
 
 const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: () => void }) => {
+  const { lang: dateLang } = useLanguage();
   const [search, setSearch] = useState("");
   const [draftingId, setDraftingId] = useState<string | null>(null);
   const [draftingArId, setDraftingArId] = useState<string | null>(null);
@@ -327,7 +328,7 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
                         </span>
                       )}
                       <span className="text-xs text-muted-foreground">
-                        {formatSmartDate(entry.created_at)}
+                        {formatSmartDate(entry.created_at, dateLang)}
                       </span>
 
                       <button

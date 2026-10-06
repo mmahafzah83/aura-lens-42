@@ -103,7 +103,7 @@ const PublishedList: React.FC<{ lang: "en" | "ar" }> = ({ lang }) => {
             {firstLine(r.post_text || "")}
           </div>
           <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--text-secondary)" }}>
-            <span style={MONO}>{r.published_at ? formatSmartDate(r.published_at) : ""}</span>
+            <span style={MONO}>{r.published_at ? formatSmartDate(r.published_at, lang) : ""}</span>
             <span aria-hidden>·</span>
             <span style={arabicLine}>
               {deckHasSlides(r.source_metadata) ? T.pieceWordsAndSlides[lang] : T.pieceWords[lang]}

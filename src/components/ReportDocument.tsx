@@ -10,7 +10,7 @@
 import { rankFromLevel } from "@/lib/marketPersonas";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
-import CvCrosscheck, { hasCvCrosscheck } from "@/components/report/CvCrosscheck";
+import CvCrosscheck, { hasCvCrosscheck, cvPrintParts } from "@/components/report/CvCrosscheck";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchSeniorityTitles, titleLabel, type SeniorityTitle } from "@/lib/seniorityTitles";
@@ -854,12 +854,15 @@ function buildBlocks(d: ReportData, lang: PaperLang = "en"): Block[] {
 
   // ── CV AGAINST LINKEDIN ──────────────────────────────────────────────
   if (hasCvCrosscheck(d.cv_crosscheck)) {
-    blocks.push({
-      key: "c-cv-crosscheck",
+    // Print version, one block per part, so the paginator can move or split it
+    // between rows like every other block.
+    cvPrintParts(d.cv_crosscheck).forEach((part, i) => blocks.push({
+      key: `c-cv-${part}`,
       section: "capability",
-      spacing: 22,
-      node: <CvCrosscheck data={d.cv_crosscheck} lang={lang} />,
-    });
+      spacing: i === 0 ? 22 : 16,
+      keepWithNext: part === "verdict",
+      node: <CvCrosscheck data={d.cv_crosscheck} lang={lang} print parts={[part]} />,
+    }));
   }
 
   // ── MARKET ───────────────────────────────────────────────────────────
@@ -1085,7 +1088,7 @@ function Paginated({ blocks, data, lang = "en" }: { blocks: Block[]; data: Repor
       {packed.map((sheet, i) => (
         <Sheet key={i} lang={lang} page={i + 2}>
           <PaperHeader lang={lang} label={ar ? (withLatin(pt(lang, `report.doc.sec.${sheet.section}`), lang) as unknown as string) : SECTION_LABEL[sheet.section]} />
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, marginTop: 20 }}>
+          <div data-sheet-body style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, marginTop: 20 }}>
             {sheet.blocks.map((b) => (
               <div key={b.key} style={{ marginTop: b.effectiveSpacing, width: "100%" }}>
                 {b.node}

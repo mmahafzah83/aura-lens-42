@@ -32,6 +32,7 @@ const SummaryText = ({ text }: { text: string }) => {
 };
 
 const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: () => void }) => {
+  const { lang: dateLang } = useLanguage();
   const [draftingId, setDraftingId] = useState<string | null>(null);
   const [draftPost, setDraftPost] = useState("");
   const [draftOpen, setDraftOpen] = useState(false);
@@ -110,7 +111,7 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground/40 tabular-nums">
-                          {formatSmartDate(entry.created_at)}
+                          {formatSmartDate(entry.created_at, dateLang)}
                         </span>
                       </div>
                     </div>

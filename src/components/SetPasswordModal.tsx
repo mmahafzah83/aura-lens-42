@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   open: boolean;
@@ -17,6 +18,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const { t, isRTL } = useLanguage();
 
   useEffect(() => {
     if (!open) return;
@@ -38,7 +40,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
   const handleSubmit = async () => {
     if (!valid || submitting) return;
     if (password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
-    if (password !== confirm) { toast.error("Passwords do not match"); return; }
+    if (password !== confirm) { toast.error(t("pwModal.mismatch")); return; }
     setSubmitting(true);
     try {
       const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
@@ -70,7 +72,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
 
   return createPortal(
     <div
-      role="dialog" aria-modal="true" onClick={onClose}
+      role="dialog" aria-modal="true" onClick={onClose} dir={isRTL ? "rtl" : "ltr"}
       style={{
         position: "fixed", inset: 0, zIndex: 70,
         background: "rgba(0,0,0,0.45)",
@@ -89,7 +91,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
         <button
           type="button" onClick={onClose} aria-label="Close"
           style={{
-            position: "absolute", top: 12, right: 12,
+            position: "absolute", top: 12, insetInlineEnd: 12,
             background: "transparent", border: 0, cursor: "pointer",
             color: "var(--ink-3)", padding: 4,
           }}
@@ -109,12 +111,13 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="New password (min 8 characters)"
+              dir="ltr"
               style={inputStyle}
               autoComplete="new-password"
             />
             <button
               type="button" onClick={() => setShow((s) => !s)}
-              aria-label={show ? "Hide password" : "Show password"}
+              aria-label={show ? t("auth.signin.hidePassword") : t("auth.signin.showPassword")}
               style={{
                 position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
                 background: "transparent", border: 0, cursor: "pointer",
@@ -126,7 +129,8 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
             type={show ? "text" : "password"}
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Confirm password"
+            placeholder={t("auth.gate.confirmPlaceholder")}
+            dir="ltr"
             style={{ ...inputStyle, padding: "10px 12px" }}
             autoComplete="new-password"
           />
@@ -137,7 +141,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
               loading={submitting}
               disabled={!valid}
             >
-              {submitting ? "Saving..." : (isFirstTime ? "Set password" : "Update password")}
+              {submitting ? t("pwModal.saving") : (isFirstTime ? "Set password" : t("auth.reset.submit"))}
             </Button>
           </div>
         </div>

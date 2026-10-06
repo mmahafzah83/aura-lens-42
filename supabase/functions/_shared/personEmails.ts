@@ -292,12 +292,12 @@ export function inviteEmail(lang: EmailLang, d: InviteData): BuiltEmail {
     ${inviterLine}
     ${noteBlock}
     ${divider()}
-    ${label("Your first ten minutes")}
+    ${label("Your first fifteen minutes")}
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px;">
-      ${step("01", "Give KnownBy one thing you read", "A link. KnownBy reads it and shows you what it found, before it asks you anything.")}
-      ${step("02", "Tell KnownBy who you are", "Paste your LinkedIn headline. No forms.")}
-      ${step("03", "Rate your strengths", "Ten sliders, your own read. KnownBy corrects it from there.")}
-      ${step("04", "See how the market reads you", "The first thing KnownBy gives back.")}
+      ${step("01", "KnownBy reads your LinkedIn profile", "You give it the link. No forms.")}
+      ${step("02", "It compares it with your CV", "To see what you know that doesn't show.")}
+      ${step("03", "You answer nine questions", "Short, and about your own work.")}
+      ${step("04", "You get your read", "An honest read of where you stand in your market.")}
     </table>
     ${divider()}
     ${paragraph("Fewer than 50 people have access right now. I read your profile myself before sending this.")}

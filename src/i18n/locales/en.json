@@ -2197,6 +2197,8 @@
   "trend.val.Medium": "Medium",
   "trend.val.Low": "Low",
   "trend.val.Emerging": "Emerging",
+  "trend.val.Technology": "Technology",
+  "trend.val.Thought": "Thought",
   "liImp.settings": "Settings",
   "liImp.title": "Bring in your LinkedIn writing",
   "liImp.p1": "LinkedIn gives us your post metrics but never the words. Ask LinkedIn for a copy of your data — ",
@@ -2936,5 +2938,7 @@
   "vo.vs.evDefault": "Evidence line — KnownBy's default until evidence density is measured",
   "vo.vs.evDensity": "Evidence density {{n}}% — you put a figure before the close",
   "vo.vs.closer": "Closer: {{closer}} — from your closer bank",
-  "vo.vs.defaultBank": "your opener bank"
+  "vo.vs.defaultBank": "your opener bank",
+  "pwModal.mismatch": "Passwords do not match",
+  "pwModal.saving": "Saving..."
 }
