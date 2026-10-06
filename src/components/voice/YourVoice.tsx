@@ -421,6 +421,8 @@ export default function YourVoice({
     attention[`believe:${group}`] = traits.some((t) => t.source === "aura" && !t.last_confirmed_at && t.value !== null);
   }
   const groupIds = Object.keys(attention);
+  const expandLabel = L("Expand all", "vo.expandAll");
+  const collapseLabel = L("Collapse all", "vo.collapseAll");
   const isGroupOpen = (id: string) => openGroups[id] ?? attention[id] ?? false;
 
 
@@ -442,8 +444,8 @@ export default function YourVoice({
 
       {/* Open or close the whole pane in one press. */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBlockEnd: 10 }}>
-        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, true)}>{L("Expand all", "vo.expandAll")}</button>
-        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, false)}>{L("Collapse all", "vo.collapseAll")}</button>
+        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, true)}>{expandLabel}</button>
+        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, false)}>{collapseLabel}</button>
       </div>
 
       <div className="cb-grid">
