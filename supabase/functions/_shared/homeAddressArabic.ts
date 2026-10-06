@@ -21,6 +21,12 @@ const shortTitle = (value: unknown) => {
   const words = String(value ?? "").trim().split(/\s+/).filter(Boolean);
   return words.length > 7 ? `${words.slice(0, 7).join(" ")}…` : words.join(" ");
 };
+const arabicTitle = (value: unknown): string | null => {
+  const title = shortTitle(value);
+  const ar = (title.match(/[\u0600-\u06FF]/g) ?? []).length;
+  const latin = (title.match(/[A-Za-z]/g) ?? []).length;
+  return title && ar >= latin ? title : null;
+};
 const monthAr = (iso: unknown): string | null => {
   if (typeof iso !== "string") return null;
   const month = Number(iso.slice(5, 7));
@@ -36,21 +42,26 @@ export function buildArabicEvidenceLines(f: HomeAddressFacts, move: HomeAddressM
   const lines: string[] = [];
   const signal = f.top_signal;
   if (signal?.title) {
-    const title = shortTitle(signal.title);
+    const title = arabicTitle(signal.title);
     const count = Number(signal.fragment_count ?? 0);
     const month = monthAr(signal.first_fragment_date);
-    if (count > 0 && month) lines.push(`أدلة إشارة «${title}»: ${count}. بدأت تتكوّن في ${month}.`);
-    else if (count > 0) lines.push(`أدلة إشارة «${title}»: ${count}.`);
-    else lines.push(`لديك إشارة باسم «${title}».`);
-    if (signal.gained_last_7d) lines.push(`وصل دليل جديد لإشارة «${title}» هذا الأسبوع.`);
-    if (signal.velocity === "accelerating") lines.push(`إشارة «${title}» تنمو أسرع من بقية ما في ملفك.`);
-    if ((f.signals_never_published_from ?? 0) > 0) lines.push(`لم تنشر شيئاً من إشارة «${title}» بعد.`);
+    if (title && count > 0 && month) lines.push(`أدلة إشارة «${title}»: ${count}. بدأت تتكوّن في ${month}.`);
+    else if (title && count > 0) lines.push(`أدلة إشارة «${title}»: ${count}.`);
+    else if (title) lines.push(`لديك إشارة باسم «${title}».`);
+    else if (count > 0 && month) lines.push(`أدلة أقوى إشارة لديك: ${count}. بدأت تتكوّن في ${month}.`);
+    else if (count > 0) lines.push(`أدلة أقوى إشارة لديك: ${count}.`);
+    else lines.push("لديك إشارة قائمة.");
+    if (signal.gained_last_7d) lines.push(title ? `وصل دليل جديد لإشارة «${title}» هذا الأسبوع.` : "وصل دليل جديد لأقوى إشارة لديك هذا الأسبوع.");
+    if (signal.velocity === "accelerating") lines.push(title ? `إشارة «${title}» تنمو أسرع من بقية ما في ملفك.` : "أقوى إشارة لديك تنمو أسرع من بقية ما في ملفك.");
+    if ((f.signals_never_published_from ?? 0) > 0) lines.push(title ? `لم تنشر شيئاً من إشارة «${title}» بعد.` : "لم تنشر شيئاً من أقوى إشارة لديك بعد.");
   } else if ((f.signals_never_published_from ?? 0) > 0) {
     lines.push(`إشارات قائمة لم تنشر منها بعد: ${f.signals_never_published_from}.`);
   }
 
   const draft = f.last_night?.newest_signal_draft;
-  if (draft?.title) lines.push(`تنتظرك مسودة عن «${String(draft.title).slice(0, 70)}».`);
+  const draftTitle = arabicTitle(draft?.title);
+  if (draftTitle) lines.push(`تنتظرك مسودة عن «${draftTitle}».`);
+  else if (draft?.title) lines.push("تنتظرك مسودة مكتوبة.");
   else if ((f.drafts_total ?? 0) > 0) lines.push(`مسودات مكتوبة لم تنشرها: ${f.drafts_total}.`);
 
   const lastPublished = daysAgo(f.last_publish_attempt);

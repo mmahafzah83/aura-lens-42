@@ -1004,11 +1004,22 @@ async function writeArabicAddress(
   move: Move | null, userId: string, signal?: AbortSignal,
 ): Promise<{ text: string; model: string | null; quality: Record<string, unknown>; phrases: string[] }> {
   const evidence = buildArabicEvidenceLines(facts, move);
-  const moveTitle = move?.ar?.title ?? "احفظ رابطاً واحداً قرأته اليوم";
-  const moveWhat = move?.ar?.what ?? "اختر شيئاً قرأته اليوم واحفظ رابطه.";
+  const moveTarget: Record<string, string> = {
+    publish_draft: "قرّر إن كانت المسودة ستُنشر اليوم أو ستُستبعد.",
+    draft_from_signal: "قرّر إن كنت ستكتب من أقوى إشارة لديك.",
+    capture: "احفظ رابطاً واحداً قرأته اليوم.",
+    connect_linkedin: "اربط صفحتك على LinkedIn لتصل نتائج منشوراتك.",
+    fill_facet: "أضف دليلاً للجانب الذي ما زال فارغاً في ملفك.",
+  };
+  const decision = move ? (moveTarget[move.key] ?? "اختر خطوة واحدة تنفّذها اليوم.") : "احفظ رابطاً واحداً قرأته اليوم.";
+  const lensAr: Record<string, string> = {
+    record: "ركّز على ما تغيّر في سجلّه وما صار واضحاً الآن.",
+    room: "ركّز على النقاش الجاري الآن والموقع الذي ينبغي أن يتخذه فيه.",
+    shape: "ركّز على ملامح ما يبنيه والجزء التالي الذي يحتاجه.",
+  };
   const prompt = `اكتب بطاقة الصباح لهذا العضو في 4 إلى 6 جمل عربية قصيرة ومترابطة.
-الزاوية: ${lens}. سببها: ${lensReason}.
-اختم بقرار واحد فقط يشير إلى هذه الخطوة: ${moveTitle} — ${moveWhat}
+${lensAr[lens] ?? lensAr.shape}
+اختم بهذا القرار وحده، بصياغتك: ${decision}
 
 سطور الأدلة — انسخ سطرين أو ثلاثة منها حرفياً. لا تضف حقيقة أو رقماً أو اسماً لا يظهر فيها:
 ${evidence.map((line) => `- ${line}`).join("\n") || "- لا تغيير يمكن عرضه من أدلتك اليوم."}
