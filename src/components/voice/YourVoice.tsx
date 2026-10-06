@@ -489,7 +489,7 @@ export default function YourVoice({
           <div style={{ display: "flex", gap: 8, marginBlockStart: 12, flexWrap: "wrap" }}>
             {reco.actionLabel && reco.actionTab && reco.actionTab !== "voice" && (
               <button type="button" style={primaryButton} onClick={() => onNavigate(reco.actionTab as "teach" | "test")}>
-                {ar ? t(reco.actionTab === "test" ? "vws.test" : "vws.teach") : reco.actionLabel.replace("Teach Aura", "Teach KnownBy")}
+                {ar ? t(reco.actionTab === "test" ? "vws.test" : "vws.teach") : reco.actionLabel}
               </button>
             )}
             <button

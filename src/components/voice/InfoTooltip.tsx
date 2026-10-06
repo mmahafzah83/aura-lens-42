@@ -8,12 +8,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { arStyle } from "@/lib/arDisplay";
 import { INK, LINE, MONO, MUTED, RADIUS, TYPE, WHITE } from "@/components/voice/tokens";
 
 export default function InfoTooltip({ term, body }: { term: string; body: string }) {
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const btn = useRef<HTMLButtonElement | null>(null);
   const id = useId();
+  const { lang, t } = useLanguage();
 
   const place = useCallback(() => {
     const el = btn.current;
@@ -42,7 +45,7 @@ export default function InfoTooltip({ term, body }: { term: string; body: string
         ref={btn}
         type="button"
         className="voice-info"
-        aria-label={`What ${term} means`}
+        aria-label={lang === "ar" ? t("vo.info.aria", { term }) : `What ${term} means`}
         aria-expanded={pos !== null}
         aria-describedby={pos ? id : undefined}
         onClick={(e) => { e.stopPropagation(); pos ? hide() : place(); }}
@@ -64,10 +67,10 @@ export default function InfoTooltip({ term, body }: { term: string; body: string
             padding: "9px 11px", boxShadow: "0 8px 24px rgba(15,21,25,.14)", pointerEvents: "none",
           }}
         >
-          <div style={{ fontFamily: MONO, fontSize: TYPE.micro, letterSpacing: ".08em", textTransform: "uppercase", color: MUTED }}>
+          <div style={arStyle(lang, { fontFamily: MONO, fontSize: TYPE.micro, letterSpacing: ".08em", textTransform: "uppercase", color: MUTED })}>
             {term}
           </div>
-          <div style={{ fontSize: TYPE.small, lineHeight: 1.6, marginBlockStart: 3 }}>{body}</div>
+          <div style={arStyle(lang, { fontSize: TYPE.small, lineHeight: 1.6, marginBlockStart: 3 })}>{body}</div>
         </div>,
         document.body,
       )}

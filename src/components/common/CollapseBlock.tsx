@@ -10,6 +10,8 @@
  * and aria-controls, keyboard operable, 44px tall. The chevron is a shape.
  */
 import { ChevronDown } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { arStyle } from "@/lib/arDisplay";
 
 const INK = "#0F1519";
 const MUTED = "#5B6673";
@@ -77,6 +79,7 @@ export default function CollapseBlock({
   /** No card chrome — the child already draws its own. */
   bare?: boolean;
 }) {
+  const { lang, t } = useLanguage();
   return (
     <section
       className={open ? "cb-span" : undefined}
@@ -86,7 +89,7 @@ export default function CollapseBlock({
     >
       <button type="button" className="cb-head" aria-expanded={open} aria-controls={`${id}-panel`} onClick={onToggle}>
         <span style={{ flex: 1, minInlineSize: 0 }}>
-          <span style={{ display: "block", fontFamily: MONO, fontSize: 10, fontWeight: 600, letterSpacing: ".16em", textTransform: "uppercase", color: MUTED }}>
+          <span style={arStyle(lang, { display: "block", fontFamily: MONO, fontSize: 10, fontWeight: 600, letterSpacing: ".16em", textTransform: "uppercase", color: MUTED })}>
             {label}
           </span>
           {summary ? (
@@ -96,7 +99,7 @@ export default function CollapseBlock({
           ) : null}
         </span>
         <span style={{ fontSize: 12, fontWeight: 600, color: MUTED, whiteSpace: "nowrap" }}>
-          {open ? "Hide" : controlLabel}
+          {open ? (lang === "ar" ? t("vo.hide") : "Hide") : controlLabel}
         </span>
         <ChevronDown className="cb-chev" size={16} color={MUTED} aria-hidden />
       </button>
