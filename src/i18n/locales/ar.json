@@ -3025,5 +3025,7 @@
   "vo.vs.evDefault": "سطر الدليل: اختيار KnownBy إلى أن تُقاس كثافة الأدلة",
   "vo.vs.evDensity": "كثافة الأدلة {{n}}%: تضع رقماً قبل الخاتمة",
   "vo.vs.closer": "الخاتمة: «{{closer}}»، من خواتيمك",
-  "vo.vs.defaultBank": "بداياتك"
+  "vo.vs.defaultBank": "بداياتك",
+  "pwModal.mismatch": "كلمتا المرور غير متطابقتين",
+  "pwModal.saving": "جارٍ الحفظ…"
 }

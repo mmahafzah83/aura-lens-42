@@ -2938,5 +2938,7 @@
   "vo.vs.evDefault": "Evidence line — KnownBy's default until evidence density is measured",
   "vo.vs.evDensity": "Evidence density {{n}}% — you put a figure before the close",
   "vo.vs.closer": "Closer: {{closer}} — from your closer bank",
-  "vo.vs.defaultBank": "your opener bank"
+  "vo.vs.defaultBank": "your opener bank",
+  "pwModal.mismatch": "Passwords do not match",
+  "pwModal.saving": "Saving..."
 }
