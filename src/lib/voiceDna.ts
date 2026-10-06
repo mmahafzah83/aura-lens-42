@@ -248,7 +248,7 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
   if (legacy) {
     modes.push({
       key: "default", label: legacy.mode_label || "Your default voice",
-      blurb: "The voice Aura uses when you have not asked for anything else.",
+      blurb: "The voice KnownBy uses when you have not asked for anything else.",
       profileId: legacy.id, readiness: legacy.readiness ?? null, needsEvidence: false,
       language: (legacy as { language?: string | null }).language ?? null, removable: false,
     });

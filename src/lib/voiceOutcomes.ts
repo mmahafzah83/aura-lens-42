@@ -121,7 +121,7 @@ const x = (n: number) => `${n.toFixed(1)}×`;
 /** Arabic exclusion label; unknown codes fall through. */
 export function exclusionLabel(code: string, tr?: VoiceTr): string {
   if (isArTr(tr)) {
-    const v = tr.t(`vo.ex.${code}`, { days: OUTCOME_RULES.settleDays, n: OUTCOME_RULES.minImpressions });
+    const v = tr.t(`vo.ex.${code}`, { n: code === "too_new" ? OUTCOME_RULES.settleDays : OUTCOME_RULES.minImpressions });
     if (v && v !== `vo.ex.${code}`) return v;
   }
   return EXCLUSION_LABEL[code] ?? code;

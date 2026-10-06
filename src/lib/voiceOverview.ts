@@ -352,8 +352,8 @@ function describeTrait(t: {
     return {
       emphasis: t.display_name,
       text: v === null
-        ? ` was set by you. Aura will stop adjusting it.`
-        : ` is set to ${v} by you. Aura will stop adjusting it.`,
+        ? ` was set by you. KnownBy will stop adjusting it.`
+        : ` is set to ${v} by you. KnownBy will stop adjusting it.`,
     };
   }
   return {
@@ -365,12 +365,12 @@ function describeTrait(t: {
 }
 
 const VERDICT_TEXT: Record<string, string> = {
-  sounds_like_me: "You told Aura a sample sounded like you.",
-  partly: "You told Aura a sample was only partly right.",
-  not_me: "You told Aura a sample did not sound like you.",
-  too_formal: "You told Aura a sample was too formal.",
-  too_generic: "You told Aura a sample was too generic.",
-  too_aggressive: "You told Aura a sample was too aggressive.",
+  sounds_like_me: "You told KnownBy a sample sounded like you.",
+  partly: "You told KnownBy a sample was only partly right.",
+  not_me: "You told KnownBy a sample did not sound like you.",
+  too_formal: "You told KnownBy a sample was too formal.",
+  too_generic: "You told KnownBy a sample was too generic.",
+  too_aggressive: "You told KnownBy a sample was too aggressive.",
   would_never_say: "You flagged wording you would never use.",
 };
 
