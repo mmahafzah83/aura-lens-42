@@ -57,6 +57,13 @@
       "when": 1791297573437,
       "tag": "0007_arabic_quality_events",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791305674104,
+      "tag": "0008_mirror_reads_comments_read",
+      "breakpoints": true
     }
   ]
 }

@@ -3995,6 +3995,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           canonical_url: string
+          comments_read: number
           emailed_at: string | null
           emailed_to: string | null
           generated_at: string
@@ -4014,6 +4015,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           canonical_url: string
+          comments_read?: number
           emailed_at?: string | null
           emailed_to?: string | null
           generated_at?: string
@@ -4033,6 +4035,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           canonical_url?: string
+          comments_read?: number
           emailed_at?: string | null
           emailed_to?: string | null
           generated_at?: string

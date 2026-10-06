@@ -452,7 +452,7 @@ Deno.serve(async (req) => {
     const [postItems, commentItems] = await Promise.all([postsPromise, commentsPromise]);
     const writingSince = twelveMonthsAgo();
     const budgeted = applyBudget(
-      filterOwnPosts(postItems, handle, since),
+      filterOwnPosts(postItems, handle, writingSince),
       filterOwnComments(commentItems, handle, writingSince),
     );
     const ownPosts: OwnPost[] = budgeted.posts;
