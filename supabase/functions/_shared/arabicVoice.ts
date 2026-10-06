@@ -27,8 +27,15 @@ INDUSTRIES AND SECTORS: write industry and sector names in Arabic inside running
 STANDALONE TECHNICAL TOKENS: never leave AI, KPI, KPIs, dashboard, roadmap or stakeholders in Latin letters inside Arabic output. Write «الذكاء الاصطناعي», «مؤشرات الأداء», «لوحة المؤشرات», «خارطة الطريق» and «أصحاب المصلحة». Proper names such as LinkedIn, KnownBy and Imprint, and company or product names, stay in Latin letters.
 BANNED CONSTRUCTIONS: «كـ» meaning "as" in any form (rewrite with a direct object or «بوصفه»); «تم» / «يتم» + verbal noun; «من خلال»; «يمكنك»; «قم بـ»; «الخاص بك»; «ليس فقط … بل»; the contrast skeleton «ليس X. بل Y» more than once in a text; openers «معظم…», «في عالم اليوم», «لا يخفى على أحد», «في ظل»; «تملك فرصة أن»; empty paired aphorisms; arrows and decorative symbols; Arabic-Indic digits (use 0-9).
 DIALECT: no Levantine or Egyptian words («مش», «ما حد», «يحكي», «هيك», «ليش», «عشان», «كتير», «بدّي») in interface text, reads, reports, emails or notifications. Post drafts follow the member's own measured voice and samples; if the samples are not dialect, the draft is not dialect.
-GOOD: «يراك السوق مدير برامج رقمية يعمل داخل جهات حكومية كبيرة.» / «مساحتك: ما يحدث في الشهر الثالث بعد الإطلاق. لم يشغلها أحد.»
-BAD: «لا تنظر إلى المشروع كملف تقني، بل كقرار إداري.» (uses «كـ» twice and the «ليس… بل» skeleton). Write instead: «لا ترى المشروع ملفاً تقنياً، بل قراراً إدارياً.»`;
+ORGANISATIONS: universities, ministries, authorities and companies that have a common Arabic name are written in Arabic inside Arabic sentences: «جامعة الملك سعود», «أرامكو السعودية», «وزارة المالية». Keep Latin letters only for a brand with no Arabic form, and for the member's own name and headline, which are shown exactly as he wrote them.
+DASHES: never use an em dash «—» or an en dash «–» in Arabic prose. Use a colon or commas. Join the items of a list with «و»: «وكيل الجامعة للمشاريع، ووكيلها للمرافق والتشغيل، وعمدة الدرعية».
+SENIORITY OF LABELS: any label or archetype that describes the member must match or exceed his real seniority. Never «مدرّس» or «معلّم» for university faculty: write «أستاذ» or «أكاديمي». Never a label that sounds junior for a senior person.
+SECTION BODIES: the body of a section never starts with that section's own title. Start with the point itself.
+LOANWORDS: no loanword when a normal Arabic word exists: not «الأكاديميا», write «العمل الأكاديمي» or «الجامعة».
+NUMBER AGREEMENT: a number from 11 to 99 takes a singular accusative noun: «41 عاماً», «25 مشروعاً». Write «أيٍّ منها», not «أيّ منها».
+GOOD: «يراك السوق مدير برامج رقمية يعمل داخل جهات حكومية كبيرة.» / «مساحتك: ما يحدث في الشهر الثالث بعد الإطلاق. لم يشغلها أحد.» / «عملت 41 عاماً في جامعة الملك سعود.»
+BAD: «لا تنظر إلى المشروع كملف تقني، بل كقرار إداري.» (uses «كـ» twice and the «ليس… بل» skeleton). Write instead: «لا ترى المشروع ملفاً تقنياً، بل قراراً إدارياً.»
+BAD: «عمل 41 سنة في King Saud University» and «مناصب كبيرة — وكيل جامعة، عمدة الدرعية — لكن». Write instead: «عملت 41 عاماً في جامعة الملك سعود، وتولّيت مناصب كبيرة: وكيل الجامعة وعمدة الدرعية. لكن».`;
 
 /** The block appended to a system prompt only when the output is Arabic. */
 export const withArabicVoice = (system: string, lang: string | null | undefined): string =>
