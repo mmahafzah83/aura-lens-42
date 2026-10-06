@@ -15,16 +15,8 @@ const SEAT_NO_CARD_AR = tAr("seatOffer.noCard");
 const SEAT_SOLD_OUT_AR = tAr("seatOffer.soldOut");
 const LTRI = (v: string | number) => `\u2066${v}\u2069`;
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
-import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
+import { ASSESSMENT_MINUTES_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
 import { BRAND } from "@/constants/language";
-
-/* D126 — the headline is single-sourced from BRAND.headline. The hero splits it
-   at a known pivot so the second half can carry the gradient treatment. */
-const HEAD_PIVOT = "than your profile shows.";
-const HEAD_LEAD = BRAND.headline.endsWith(HEAD_PIVOT)
-  ? BRAND.headline.slice(0, -HEAD_PIVOT.length).trim()
-  : BRAND.headline;
-const HEAD_TAIL = BRAND.headline.endsWith(HEAD_PIVOT) ? HEAD_PIVOT : "";
 
 /* ────────────────────────────────────────────────────────────────
    LandingV2 — six tabbed pages, one at a time.
@@ -87,8 +79,11 @@ const LANDING_V2_CSS = `
 @keyframes auraPu{0%,100%{opacity:1}50%{opacity:.35}}
 .aura-v2 .dash{stroke-dasharray:4 6;animation:auraMarch 22s linear infinite}
 @keyframes auraMarch{to{stroke-dashoffset:-200}}
-.aura-v2 .hero{display:grid;grid-template-columns:1.02fr 1fr;gap:52px;align-items:center}
-.aura-v2 .loopwrap{display:flex;align-items:center;justify-content:center}
+.aura-v2 .hero{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);gap:52px;align-items:center}
+.aura-v2 .hero>*{min-width:0}
+.aura-v2 .hero-loss{font-size:13px;font-weight:400;color:var(--ink3);line-height:1.6;margin-top:12px}
+.aura-v2 .hero-signature{font-size:12px;color:var(--ink3);line-height:1.6;margin-top:14px}
+.aura-v2 .loopwrap{display:flex;align-items:center;justify-content:center;min-width:0;padding-inline:20px}
 .aura-v2 .loopwrap svg{width:100%;max-width:470px;height:auto;overflow:visible}
 .aura-v2 .orb{animation:auraSpin 44s linear infinite;transform-origin:280px 280px}
 @keyframes auraSpin{to{transform:rotate(360deg)}}
@@ -439,12 +434,15 @@ export const LANDING_COPY = {
   navPrice: ["Pricing", "الأسعار"],
   signIn: ["Sign in", "تسجيل الدخول"],
   navCtaInner: [`${FREE_CTA_SHORT_LABEL} <span class="a">↗</span>`, "ابدأ مجاناً"],
-  headLead: [`${HEAD_LEAD}`, "خبرتك أكبر"],
-  headTail: [`${HEAD_TAIL}`, "مما تُظهره صفحتك."],
-  heroSub: ["KnownBy reads what you already know and turns it into weekly presence — without turning you into a content creator.", "KnownBy يقرأ ما تعرفه أصلاً، ويكتبه بصوتك ليراه سوقك كل أسبوع. ولن تصير صانع محتوى."],
-  freeCta: [`${FREE_CTA}`, "ابدأ مجاناً"],
-  heroSupport: [`We'll read your LinkedIn, compare it with your CV, and ask ${ASSESSMENT_QUESTIONS_PHRASE} — then send you a free, honest read on where you stand. ${ASSESSMENT_MINUTES_LINE}.`, "يقرأ KnownBy صفحتك على LinkedIn، ويقارنها بسيرتك الذاتية، ويسألك تسعة أسئلة، ثم يرسل إليك ملف هويتك المهنية، مجاناً وبصراحة، ليبيّن أين تقف. نحو خمس عشرة دقيقة."],
-  rStart: ["▼ You start here · free", "▼ تبدأ من هنا · مجاناً"],
+  heroPill: ["For professionals with ten years or more", "لأصحاب الخبرة: عشر سنوات فأكثر"],
+  headLead: ["You're not unknown.", "أنت لست مجهولاً."],
+  headTail: ["You're unnoticed.", "السوق لم ينتبه لك بعد."],
+  heroSub: ["Every day you learn things your market never sees. KnownBy reads you first, then turns what you know into writing that sounds like you, so the right people start to notice.", "كل يوم تتعلم ما لا يراه سوقك. KnownBy يقرؤك أولاً ثم يحوّل ما تعرفه إلى كتابة بصوتك، فينتبه لك أصحاب القرار."],
+  freeCta: ["Start free", "ابدأ مجاناً"],
+  heroSupport: ["KnownBy reads your LinkedIn, compares it with your CV, then asks two short sets of questions: what you can do, and how you want your market to know you. About fifteen minutes. Free, and only you see it.", "يقرأ KnownBy صفحتك على LinkedIn ويقارنها بسيرتك الذاتية ثم يسألك مجموعتين من الأسئلة: الأولى عن قدراتك، والثانية عن الصورة التي تريد أن يعرفك بها سوقك. ربع ساعة. مجاناً. ولا يراه أحد غيرك."],
+  heroLoss: ["The opportunity goes to someone with less experience and more visibility.", "الفرصة تذهب لمن هو أقل خبرة وأكثر ظهوراً."],
+  heroSignature: ["KnownBy. Get chosen.", "KnownBy. يعرفك السوق، فيختارك."],
+  rStart: ["▼ You start here · free", "تبدأ من هنا · مجاناً"],
   rk1: ["SEE YOURSELF · YOUR UNDERSTANDING · FREE", "اعرف نفسك · فهمك لنفسك · مجاناً"],
   rk2: ["NOTHING LOST · YOUR KNOWLEDGE, KEPT", "لا يضيع شيء · معرفتك محفوظة"],
   rk3: ["IT COMPOSES · YOUR CONTENT, WRITTEN", "يكتب عنك · محتواك مكتوب"],
@@ -567,8 +565,8 @@ export const LANDING_COPY = {
   t3big: ["In English<br>or Arabic", "بالعربية<br>أو الإنجليزية"],
   t3det: ["Each written properly in its own language. One is never a translation of the other.", "كل لغة مكتوبة بأصولها. لا واحدة منهما ترجمة للأخرى."],
   whyTag: ["The cost of one more quiet year", "ثمن سنة صامتة أخرى"],
-  whyH2a: ["You read a lot.", "تقرأ كثيراً."],
-  whyH2b: ["Nobody ever sees it.", "ولا أحد يرى ذلك."],
+  whyH2a: ["Your experience is worth more", "خبرتك أكبر"],
+  whyH2b: ["than your profile shows.", "مما تُظهره صفحتك."],
   whySub: ["Five hours a week of reading, and none of it reaches the people who decide about you.", "خمس ساعات قراءة كل أسبوع، ولا شيء منها يصل إلى من يقرّرون في شأنك."],
   ledHead: ["YOUR WEEK, AS A LEDGER", "أسبوعك في دفتر حساب"],
   ledDays: ["MON – FRI", "من الأحد إلى الخميس"],
@@ -713,7 +711,7 @@ export const LANDING_COPY = {
   bx3b: ["Your content, written", "محتواك مكتوب"],
   bx4a: ["YOU ARE SEEN", "يراك سوقك"],
   bx4b: ["Your standing, measured", "مكانتك بالأرقام"],
-  ringStart: ["▼ YOU START HERE · FREE", "▼ تبدأ من هنا · مجاناً"],
+  ringStart: ["▼ YOU START HERE · FREE", "تبدأ من هنا · مجاناً"],
   dawn: ["02:00 → DAWN", `من ${I("02:00")} حتى الفجر`],
   pHead: ["02:00 → DAWN · YOU ARE ASLEEP", `من ${I("02:00")} حتى الفجر · وأنت نائم`],
   pk1: ["STAGE 1 · YOU", "المرحلة 1 · أنت"],
@@ -1083,7 +1081,7 @@ const DAWN_EN = `<text x="12" y="68" font-family="IBM Plex Mono, monospace" font
 const DAWN_AR = (t: LandingStrings) => `<text x="43" y="68" font-family="CairoAR, Cairo, sans-serif" font-size="9.5" fill="#8E99A6" text-anchor="middle" direction="rtl">${t.dawn}</text>`;
 const EMPTY_EN = `<text x="48" y="45" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#9AA4B0">empty</text>`;
 const EMPTY_AR = (t: LandingStrings) => `<text x="48" y="45" font-family="CairoAR, Cairo, sans-serif" font-size="11.2" fill="#9AA4B0" text-anchor="middle" direction="rtl">${t.empty}</text>`;
-const DESC_EN = `<span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> AI Professional Identity Platform</span>`;
+
 
 export const landingHtml = (t: LandingStrings, ar: boolean) => `
 <svg style="display:none"><symbol id="m" viewBox="0 0 64 64"><g stroke="currentColor" fill="currentColor" stroke-linecap="round"><circle cx="32" cy="32" r="6.85" stroke="none"/><line x1="32" y1="18.89" x2="32" y2="8.77" stroke-width="1.2"/><line x1="39.09" y1="20.97" x2="44.56" y2="12.45" stroke-width="1.2"/><line x1="43.92" y1="26.56" x2="53.13" y2="22.35" stroke-width="1.2"/><line x1="44.97" y1="33.87" x2="55" y2="35.31" stroke-width="1.2"/><line x1="41.91" y1="40.58" x2="49.56" y2="47.22" stroke-width="1.2"/><line x1="35.69" y1="44.58" x2="38.55" y2="54.29" stroke-width="1.2"/><line x1="28.31" y1="44.58" x2="25.45" y2="54.29" stroke-width="1.2"/><line x1="22.09" y1="40.58" x2="14.44" y2="47.22" stroke-width="1.2"/><line x1="19.03" y1="33.87" x2="9" y2="35.31" stroke-width="1.2"/><line x1="20.08" y1="26.56" x2="10.87" y2="22.35" stroke-width="1.2"/><line x1="24.91" y1="20.97" x2="19.44" y2="12.45" stroke-width="1.2"/></g><g stroke="#00CEC9" fill="#00CEC9" stroke-linecap="round"><line x1="40.07" y1="21.67" x2="49.24" y2="9.94" stroke-width="1.55"/><circle cx="49.24" cy="9.94" r="1.61"/></g></symbol></svg>
@@ -1109,13 +1107,15 @@ export const landingHtml = (t: LandingStrings, ar: boolean) => `
 <section class="pg on" id="home">
   <div class="hero">
     <div>
-      ${ar ? "" : DESC_EN}
+      <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="var(--cyanT)"/></svg>${t.heroPill}</span>
       <h1>${t.headLead}<br><span class="grad">${t.headTail}</span></h1>
       <p class="sub">${t.heroSub}</p>
+      <p class="hero-loss">${t.heroLoss}</p>
       <div class="acts">
         <a class="btn bp" id="heropri" href="/assessment">${t.freeCta}</a>
       </div>
       <p class="support">${t.heroSupport}</p>
+      <p class="hero-signature">${t.heroSignature}</p>
     </div>
     <div class="loopwrap">
       <div class="jring">

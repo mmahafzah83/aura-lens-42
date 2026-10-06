@@ -416,7 +416,7 @@ const Assessment = () => {
   }
 
   return (
-    <div className="asg">
+    <div className="asg asg-gate">
       <style>{ASG_CSS}</style>
       {/* The Gate has one job; no competing action in its own header. */}
       <PublicMasthead cta={null} />
@@ -708,6 +708,8 @@ html[lang="ar"] .asg :is(.asg-k,.asg-pill){font-family:var(--ui);font-size:12px;
 html[lang="ar"] .asg :is(.asg-sub,.asg-pp,.asg-trust,.asg-card p,.asg-item p,.asg-notice,.asg-err,.asg-saved,.asg-c,.asg-lbl){line-height:1.9;}
 html[lang="ar"] .asg :is(.asg-h1,.asg-ph,.asg-ih,.asg-moment div){line-height:1.6;}
 html[lang="ar"] .asg-a{transform:scaleX(-1);}
+html[lang="ar"] .asg-gate .asg-wrap{direction:rtl;text-align:right;}
+html[lang="ar"] .asg-gate .asg-a{display:none;}
 `;
 
 export default Assessment;
