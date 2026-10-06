@@ -17,7 +17,7 @@ Write tanween fath on the alif: دليلاً، مؤشراً، شيئاً.
 TERMS: positioning = التموضع (at most twice). Standing = المكانة. The professional = المهني. The space nobody holds = المساحة التي لم يشغلها أحد. Signal = إشارة. Capability levels: Formation = التكوين, Independence = الاستقلال, Reference = المرجعية. Subjects a person is known for = «يُعرف بها» — never «يملك الموضوع».
 BANNED — never write: يُعدّ، في ظلّ، من خلال، يسلّط الضوء، بشكل followed by an adjective، لا شكّ أن، تجدر الإشارة، جدير بالذكر، في عالم اليوم، مما يعزّز، بالإضافة إلى ذلك، على صعيد آخر، يلعب دورًا، في نهاية المطاف، حيث as a filler، رائد فكر، قائد فكر، العلامة الشخصية، رحلة، مشهد، تسخير، تمكين، الارتقاء، سلس، متين، على حدّ سواء، السلطة. No Levantine or Egyptian colloquial words (شو، ليش، هيك، كتير، بس، كمان، عشان، زي).
 CALQUE TEST on every sentence: would a native who never saw English have written it? If it mirrors an English idiom (seat at the table, owns the space, moves the needle), rewrite the idea.
-ARCHETYPE NAME in Arabic: a definite noun followed by a definite adjective, two words, e.g. «المُصلح الهادئ». The noun comes from what THIS person repeatedly does in their own material — a specific kind of work, not a job family. Banned nouns: المهندس، المعماري، الخبير، القائد، المنفّذ، المستشار، الرائد، صاحب الرؤية. Banned adjectives: الاستراتيجي، الواضح، المتميّز، الفعّال، الناجح. If the name would fit half of all senior professionals, choose again.
+ARCHETYPE NAME in Arabic: a definite noun followed by a definite adjective, two words, e.g. «المُصلح الهادئ». The noun comes from what THIS person repeatedly does in their own material — a specific kind of work, not a job family. Banned nouns: المهندس، المعماري، الخبير، القائد، المنفّذ، المستشار، الرائد، صاحب الرؤية. Banned adjectives: الاستراتيجي، الواضح، المتميّز، الفعّال، الناجح. The noun names what the member actually is or does at his real level, read from his current role and record (مؤسس، أستاذ، مدير، باني شيء محدّد، مستشار لنوع مسمّى من العملاء); the adjective names the one thing his evidence shows that distinguishes him. Never a passive or junior noun for a senior person: المراقب، المتابع، المستمع، المتعلّم، الطالب، المدرّس، المعلّم. If the name would fit half of all senior professionals, choose again.
 QUOTES from the person's own posts stay verbatim in the language they were written in. Never translate or tidy a quote.
 JSON keys and any UPPERCASE section marker lines stay exactly as specified, in English.
 READER: Write as a careful Saudi professional writes to a peer: contemporary, plain, confident. Gulf reader first, clear to any Arab reader. Not dialect, not ministry Arabic, not translated English. Short sentences. Say the thing directly.
@@ -78,7 +78,7 @@ export function findKafAs(text: string): string | null {
     if (KAF_ROOT.has(w)) continue;
     const stem = w.slice(1);
     if (KAF_AS.includes(w)) return w;
-    if (KAF_REAL_PREFIX.some((p) => w.startsWith(p))) continue;
+    if (KAF_REAL_PREFIX.some((p) => p.test(w))) continue;
     if (stem.length >= 3 && stem.startsWith("م")) return w;
   }
   return null;
@@ -271,7 +271,7 @@ const WHAT: Record<ArabicCheck, string> = {
   english_sector: "leaves an industry or sector name in English inside Arabic prose. Write the sector name in Arabic",
   dash: "uses an em dash or en dash in Arabic prose. Use a colon or commas, and join list items with «و»",
   latin_run: "leaves an organisation or name in Latin letters inside an Arabic sentence. Write it with its common Arabic name",
-  junior_label: "uses «مدرّس» or «معلّم» in a label. Use «أستاذ» or «أكاديمي», at or above the member's real seniority",
+  junior_label: "uses a junior or passive noun («مدرّس»، «معلّم»، «المراقب»، «المتابع»، «المستمع»، «المتعلّم»، «الطالب») in a label. Name what the member is or does at his real level. Use «أستاذ» or «أكاديمي», at or above the member's real seniority",
   title_repeat: "starts the section body with the section's own title. Start with the point itself",
   loanword: "uses the loanword «الأكاديميا». Write «العمل الأكاديمي» or «الجامعة»",
 };
@@ -371,7 +371,18 @@ const DASH = /[\u2013\u2014]/;
 const LATIN_RUN = /[A-Z][A-Za-z'’.&-]*(?:\s+(?:of|and|for|the|&)?\s*[A-Z][A-Za-z'’.&-]*)+/g;
 export const LATIN_ALWAYS_ALLOWED = ["KnownBy", "LinkedIn", "Imprint"];
 const LABEL_KEYS = new Set(["archetype", "primary_archetype", "secondary_archetype", "label", "kicker"]);
-const JUNIOR_WORDS = ["مدرس", "المدرس", "معلم", "المعلم", "ومدرس", "ومعلم"];
+const JUNIOR_STEMS = ["مدرس", "معلم", "مراقب", "متابع", "مستمع", "متعلم", "طالب"];
+const JUNIOR_WORDS = JUNIOR_STEMS.flatMap((w) => [w, "ال" + w, "و" + w, "وال" + w]);
+/** English nouns that sound passive or junior for a senior person, checked in label fields of English reads. */
+export const JUNIOR_EN = ["observer", "watcher", "follower", "listener", "learner", "student", "teacher"];
+export function englishJuniorLabel(values: Record<string, unknown>): { field: string; word: string } | null {
+  for (const [k, v] of Object.entries(values)) {
+    if (!LABEL_KEYS.has(k) || typeof v !== "string") continue;
+    const w = v.toLowerCase().split(/[^a-z]+/).find((t) => JUNIOR_EN.includes(t));
+    if (w) return { field: k, word: w };
+  }
+  return null;
+}
 /** Arabic titles a section may wrongly repeat at the start of its own body. */
 export const SECTION_TITLES: Record<string, string[]> = {
   uncontested_space: ["المساحة التي لم يشغلها أحد", "المساحة التي لا يملكها غيرك", "المساحة التي لا يشغلها أحد"],
