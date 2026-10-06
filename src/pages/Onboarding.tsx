@@ -408,7 +408,8 @@ const factsFromAnonymousRead = (read: Record<string, any>): ProfileFacts | null 
 
 /** Which of the five named stages a screen belongs to. One definition, used
  *  by the resume banner and by Finish later. */
-const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
+/* The CV screen is about the member himself, so it belongs to stage 1. */
+const stageOf = (s: number) => (s <= 3 || s === CV_SCREEN ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 const subOf = (screen: number): JourneySub => {
   const i = Math.max(0, Math.min(4, stageOf(screen) - 1));
   return { n: i + 1, total: 5, label: STAGE_NAMES[i] };
