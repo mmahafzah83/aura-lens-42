@@ -35,7 +35,7 @@ export function dayDateAr(d: Date): string {
 
 // {tier} — the app's Arabic Imprint level names (src/i18n/locales/ar.json tier.*).
 const TIER_AR: Record<string, string> = {
-  observer: "مراقب", explorer: "مستكشف", strategist: "استراتيجي", voice: "صوت", presence: "حضور",
+  observer: "متابع", explorer: "مستكشف", strategist: "استراتيجي", voice: "صاحب رأي", presence: "مرجع",
 };
 export function tierAr(t: string | null): string | null {
   if (!t) return null;
