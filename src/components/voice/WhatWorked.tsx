@@ -20,6 +20,10 @@ import {
   traitFindingSentence, type WhatWorkedModel,
 } from "@/lib/voiceOutcomes";
 import type { DnaTrait } from "@/lib/voiceDna";
+import { exclusionLabel } from "@/lib/voiceOutcomes";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { arStyle, arabicList } from "@/lib/arDisplay";
+import { endingWord, hookWord, voiceWord, type VoiceTr } from "@/lib/voiceText";
 
 export default function WhatWorked({
   userId, traits, onConfirm, onReject, modelOverride, collapsed = false, onToggleCollapse,
@@ -35,6 +39,10 @@ export default function WhatWorked({
   onToggleCollapse?: () => void;
 }) {
 
+  const { lang, t } = useLanguage();
+  const ar = lang === "ar";
+  const L = (en: string, k: string, p?: Record<string, unknown>) => (ar ? t(k, p) : en);
+  const tr: VoiceTr = { lang, t };
   const [saving, setSaving] = useState(false);
   const key = modelOverride || !userId ? null : `voice:whatworked:${userId}`;
   const loader = useCallback(() => loadWhatWorked(userId as string), [userId]);
@@ -55,17 +63,17 @@ export default function WhatWorked({
   const rows = [
     ...model.traitFindings.map((f) => ({
       id: `t-${f.trait_key}`,
-      label: name(f.trait_key),
+      label: voiceWord(name(f.trait_key), tr),
       ratio: f.ratio,
-      sample: `${f.topN} best against ${f.bottomN} weakest`,
-      text: traitFindingSentence(f, name(f.trait_key)),
+      sample: L(`${f.topN} best against ${f.bottomN} weakest`, "vo.ww.sample", { topN: f.topN, bottomN: f.bottomN }),
+      text: traitFindingSentence(f, name(f.trait_key), tr),
     })),
     ...model.styleFindings.map((f) => ({
       id: `s-${f.kind}-${f.style}`,
-      label: f.style.replace(/_/g, " "),
+      label: ar ? (f.kind === "hook" ? hookWord(f.style, tr) : endingWord(f.style, tr)) : f.style.replace(/_/g, " "),
       ratio: f.ratio,
-      sample: `${f.n} ${f.n === 1 ? "post" : "posts"}`,
-      text: styleFindingSentence(f),
+      sample: L(`${f.n} ${f.n === 1 ? "post" : "posts"}`, "vo.ww.posts", { n: f.n }),
+      text: styleFindingSentence(f, tr),
     })),
   ].slice(0, 3);
 
@@ -77,19 +85,19 @@ export default function WhatWorked({
     try {
       await setLearningSwitch(userId, next);
       toast.success(next
-        ? "Aura may propose changes from performance. You still confirm every one."
-        : "Aura will keep showing what worked, but will not propose changes.");
+        ? L("KnownBy may propose changes from performance. You still confirm every one.", "vo.ww.toastOn")
+        : L("KnownBy will keep showing what worked, but will not propose changes.", "vo.ww.toastOff"));
     } catch {
       state.set({ ...model, learningOn: !next });
-      toast.error("Couldn't save that. Nothing was changed.");
+      toast.error(L("Couldn't save that. Nothing was changed.", "vo.e.save"));
     } finally {
       setSaving(false);
     }
   };
 
   const headline = n === 0
-    ? "Aura has nothing to compare yet."
-    : `Aura compared your last ${n} ${n === 1 ? "post" : "posts"} against your own average.`;
+    ? L("KnownBy has nothing to compare yet.", "vo.ww.none")
+    : L(`KnownBy compared your last ${n} ${n === 1 ? "post" : "posts"} against your own average.`, "vo.ww.compared", { n });
   const wrapped = Boolean(onToggleCollapse);
 
   const body = (
@@ -100,16 +108,14 @@ export default function WhatWorked({
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ maxInlineSize: 520 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <span style={microLabel}>What worked</span>
+              <span style={arStyle(lang, microLabel)}>{L("What worked", "vo.ww.title")}</span>
               <InfoTooltip
-                term="What worked"
-                body="Aura compares each of your posts against your own recent average — never against anyone else's."
+                term={L("What worked", "vo.ww.title")}
+                body={L("KnownBy compares each of your posts against your own recent average — never against anyone else's.", "vo.ww.tip")}
               />
             </div>
             <h3 style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, margin: "6px 0 0" }}>
-              {n === 0
-                ? "Aura has nothing to compare yet."
-                : `Aura compared your last ${n} ${n === 1 ? "post" : "posts"} against your own average.`}
+              {headline}
             </h3>
           </div>
           <button
@@ -121,7 +127,7 @@ export default function WhatWorked({
               fontSize: TYPE.small, fontWeight: 600, color: MUTED,
             }}
           >
-            Let Aura learn from performance
+            {L("Let KnownBy learn from performance", "vo.ww.learn")}
             <span aria-hidden style={{
               inlineSize: 34, blockSize: 18, borderRadius: 9, background: model.learningOn ? GREEN : LINE,
               position: "relative", flex: "0 0 auto",
@@ -137,10 +143,10 @@ export default function WhatWorked({
         {/* findings */}
         {n < OUTCOME_RULES.minOutcomesToLearn || rows.length === 0 ? (
           <p style={{ fontSize: TYPE.bodyLg, color: INK, lineHeight: 1.65, marginBlock: "12px 0" }}>
-            No pattern yet. Aura needs more posts before it can tell what's working for you.
+            {L("No pattern yet. KnownBy needs more posts before it can tell what's working for you.", "vo.ww.noPattern")}
             {n < OUTCOME_RULES.minOutcomesToLearn && (
               <span style={{ color: MUTED }}>
-                {" "}It has {n} of the {OUTCOME_RULES.minOutcomesToLearn} settled posts it needs.
+                {" "}{L(`It has ${n} of the ${OUTCOME_RULES.minOutcomesToLearn} settled posts it needs.`, "vo.ww.has", { n, min: OUTCOME_RULES.minOutcomesToLearn })}
               </span>
             )}
           </p>
@@ -149,9 +155,9 @@ export default function WhatWorked({
             {rows.map((r) => (
               <div key={r.id} style={{ padding: "10px 0", borderBlockStart: `1px solid ${LINE}` }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ ...monoNum, fontSize: TYPE.title, fontWeight: 700, color: INK }}>{r.ratio.toFixed(1)}×</span>
+                  <span dir="ltr" style={{ ...monoNum, fontSize: TYPE.title, fontWeight: 700, color: INK }}>{r.ratio.toFixed(1)}×</span>
                   <span style={{ fontSize: TYPE.body, color: INK }}>{r.label}</span>
-                  <span style={{ ...monoNum, fontSize: TYPE.caption, color: MUTED }}>{r.sample}</span>
+                  <span style={arStyle(lang, { ...monoNum, fontSize: TYPE.caption, color: MUTED })}>{r.sample}</span>
                 </div>
                 <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "4px 0" }}>{r.text}</p>
               </div>
@@ -164,15 +170,15 @@ export default function WhatWorked({
           const f = model.traitFindings.find((x) => x.trait_key === t.trait_key);
           return (
             <div key={t.trait_key} style={{ marginBlockStart: 12, background: "#FBF4E4", border: `1px solid #F0DFB4`, borderRadius: RADIUS.card, padding: 12 }}>
-              <span style={chipStyle(AMBER_TEXT, WHITE, AMBER_FILL)}>Suggested by Aura</span>
+              <span style={arStyle(lang, chipStyle(AMBER_TEXT, WHITE, AMBER_FILL))}>{L("Suggested by KnownBy", "vo.src.aura")}</span>
               <p style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.6, marginBlock: "8px 10px" }}>
                 {f
-                  ? proposalSentence(f, t.display_name, t.learned_value ?? (t.value as number), t.value as number)
-                  : `Aura has proposed a new value for ${t.display_name.toLowerCase()}. Confirm it or send it back.`}
+                  ? proposalSentence(f, t.display_name, t.learned_value ?? (t.value as number), t.value as number, tr)
+                  : L(`KnownBy has proposed a new value for ${t.display_name.toLowerCase()}. Confirm it or send it back.`, "vo.ww.propFallback", { name: voiceWord(t.display_name, tr) })}
               </p>
               <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" style={{ ...ghostButton, minBlockSize: TAP }} onClick={() => onConfirm(t)}>Confirm</button>
-                <button type="button" style={{ ...ghostButton, minBlockSize: TAP }} onClick={() => onReject(t)}>Reject</button>
+                <button type="button" style={{ ...ghostButton, minBlockSize: TAP }} onClick={() => onConfirm(t)}>{L("Confirm", "vo.confirm")}</button>
+                <button type="button" style={{ ...ghostButton, minBlockSize: TAP }} onClick={() => onReject(t)}>{L("Reject", "vo.reject")}</button>
               </div>
             </div>
           );
@@ -180,17 +186,20 @@ export default function WhatWorked({
 
         {/* the caveat is permanent, not a dismissible nicety */}
         <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.6, marginBlock: "12px 0" }}>
-          Engagement depends on timing, topic and audience as well as voice. Aura only moves a setting when the pattern
-          holds across several posts.
-          {Object.keys(model.excludedCounts).length > 0 && (
+          {ar ? t("vo.ww.caveat") : <>Engagement depends on timing, topic and audience as well as voice. KnownBy only moves a setting when the pattern
+          holds across several posts.</>}
+          {Object.keys(model.excludedCounts).length > 0 && (ar ? (
+            <> {t("vo.ww.setAside")} {arabicList(Object.entries(model.excludedCounts)
+              .map(([k, v]) => t("vo.ww.piece", { count: v, label: exclusionLabel(k, tr) })))}.</>
+          ) : (
             <> Set aside: {Object.entries(model.excludedCounts)
               .map(([k, v]) => `${v} ${EXCLUSION_LABEL[k] ?? k}`).join(", ")}.</>
-          )}
+          ))}
         </p>
 
         {model.learningSinceDays !== null && (
           <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.6, marginBlock: "0 0" }}>
-            Aura has been reading your results for {model.learningSinceDays} {model.learningSinceDays === 1 ? "day" : "days"}.
+            {ar ? t("vo.ww.since", { n: model.learningSinceDays }) : <>KnownBy has been reading your results for {model.learningSinceDays} {model.learningSinceDays === 1 ? "day" : "days"}.</>}
           </p>
         )}
       </div>
@@ -201,9 +210,9 @@ export default function WhatWorked({
   return (
     <CollapseBlock
       id="what-worked"
-      label="What worked"
+      label={L("What worked", "vo.ww.title")}
       summary={headline}
-      controlLabel="Open"
+      controlLabel={L("Open", "vo.open")}
       open={!collapsed}
       onToggle={onToggleCollapse as () => void}
     >

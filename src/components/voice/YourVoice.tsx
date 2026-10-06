@@ -81,7 +81,7 @@ function HealthCard({ h, lang }: { h: Health; lang: string }) {
           <span style={{ ...monoNum, fontSize: TYPE.small, fontWeight: 600, color: colour }}>{h.unit}</span>
         </div>
       )}
-      {h.secondary && <div style={{ ...monoNum, fontSize: TYPE.caption, color: MUTED, marginBlockStart: 6 }}>{h.secondary}</div>}
+      {h.secondary && <div style={arStyle(lang, { ...monoNum, fontSize: TYPE.caption, color: MUTED, marginBlockStart: 6 })}>{h.secondary}</div>}
       <div aria-hidden style={{ blockSize: 4, borderRadius: RADIUS.rail, background: SURFACE, marginBlockStart: 12, overflow: "hidden" }}>
         {h.fill !== null && (
           <div style={{ blockSize: "100%", inlineSize: `${Math.max(2, Math.min(100, h.fill * 100))}%`, background: colour, borderRadius: RADIUS.rail }} />
