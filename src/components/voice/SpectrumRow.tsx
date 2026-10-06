@@ -289,7 +289,7 @@ export default function SpectrumRow({
           )}
         </div>
       ) : setting ? (
-        <div style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 8, fontFamily: MONO }}>
+        <div style={arStyle(lang, { fontSize: TYPE.small, color: MUTED, marginBlockStart: 8, fontFamily: MONO })}>
           {ar ? t("vo.sr.press", { low, high }) : `Press the track where you sit between ${trait.pole_low.toLowerCase()} and ${trait.pole_high.toLowerCase()}.`}
         </div>
       ) : (
