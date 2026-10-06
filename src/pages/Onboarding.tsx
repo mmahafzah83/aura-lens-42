@@ -2503,26 +2503,26 @@ const Onboarding = () => {
 
   /* "Other" never silently means the junior level: the member chooses by what they do. */
   const OTHER_WORK: Array<[Band, string]> = [
-    ["work", "I do the work, and people check with me before they commit"],
-    ["table", "I run programmes or teams, and defend their budgets"],
-    ["room", "I set direction, and my view is heard outside my organisation"],
+    ["work", "ob.other.work"],
+    ["table", "ob.other.table"],
+    ["room", "ob.other.room"],
   ];
 
   const titleList = (onPick: (t: string, b: Band) => void) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 12 }}>
       {otherPicker ? (
         <>
-          <p style={{ ...bodyLight, margin: 0, fontWeight: 600, color: OB.ink }}>Which sounds most like your work today?</p>
+          <p style={{ ...bodyLight, margin: 0, fontWeight: 600, color: OB.ink }}>{tr("ob.other.question")}</p>
           {OTHER_WORK.map(([b, label]) => (
             <button key={b} type="button" onClick={() => { setOtherPicker(false); onPick("Other", b); }}
               style={titleRowStyle(levelTitle === "Other" && band === b)}>
-              <span>{label}</span>
+              <span>{tr(label)}</span>
             </button>
           ))}
           <button type="button" onClick={() => setOtherPicker(false)} style={{
             background: "none", border: "none", padding: "4px 0", cursor: "pointer",
             color: OB.blue, fontSize: 14, fontFamily: "inherit", textAlign: "start",
-          }}>Back</button>
+          }}>{tr("ob.back")}</button>
         </>
       ) : titlesFailed ? (
         <>
