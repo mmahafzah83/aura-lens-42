@@ -16,18 +16,29 @@ import {
 import type { DnaRule } from "@/lib/voiceDna";
 import type { RuleSource } from "@/lib/voiceDna";
 import { nDrafts, nPosts } from "@/constants/vocabulary";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { arStyle } from "@/lib/arDisplay";
+
+/** English inline, Arabic from the key. */
+function useL() {
+  const { lang, t } = useLanguage();
+  const ar = lang === "ar";
+  return { lang, t, ar, L: (en: string, k: string, p?: Record<string, unknown>) => (ar ? t(k, p) : en) };
+}
 
 export const RULE_KINDS = [
-  { kind: "always" as const, label: "Always", colour: GREEN, empty: "No rules yet. Aura will propose some as it reads more of your writing." },
-  { kind: "never" as const, label: "Never", colour: RED, empty: "No rules yet. Aura will propose some as it reads more of your writing." },
-  { kind: "anchor" as const, label: "Anchors", colour: BLUE, empty: "No anchors yet. Aura will propose some as it reads more of your writing." },
+  { kind: "always" as const, label: "Always", colour: GREEN, empty: "No rules yet. KnownBy will propose some as it reads more of your writing." },
+  { kind: "never" as const, label: "Never", colour: RED, empty: "No rules yet. KnownBy will propose some as it reads more of your writing." },
+  { kind: "anchor" as const, label: "Anchors", colour: BLUE, empty: "No anchors yet. KnownBy will propose some as it reads more of your writing." },
 ];
 
 /** One provenance vocabulary across traits and rules. */
-const SOURCE_LABEL: Record<string, string> = { learned: "Learned", user: "Set by you", aura: "Suggested by Aura" };
+const SOURCE_LABEL: Record<string, string> = { learned: "Learned", user: "Set by you", aura: "Suggested by KnownBy" };
 
 function SourceTag({ source }: { source: string }) {
-  return <span style={chipStyle(MUTED, SURFACE, LINE)}>{SOURCE_LABEL[source] ?? source}</span>;
+  const { lang, L } = useL();
+  const label = SOURCE_LABEL[source] ? L(SOURCE_LABEL[source], `vo.src.${source}`) : source;
+  return <span style={arStyle(lang, chipStyle(MUTED, SURFACE, LINE))}>{label}</span>;
 }
 
 const KIND_LABEL: Record<string, string> = { always: "Always", never: "Never", anchor: "Anchors" };
@@ -42,6 +53,7 @@ const SOURCE_OPTIONS: { key: RuleSource; label: string }[] = [
 /* ── the evidence a suggestion came from ─────────────────────────────────── */
 
 function Evidence({ rule }: { rule: DnaRule }) {
+  const { lang, L } = useL();
   const [open, setOpen] = useState(false);
   const [posts, setPosts] = useState<{ id: string; text: string }[] | null>(null);
   const ids = rule.evidence?.post_ids ?? [];
@@ -49,10 +61,10 @@ function Evidence({ rule }: { rule: DnaRule }) {
   const derivation = rule.evidence?.derivation;
   const absent = count === 0;
   const note = absent
-    ? "Never appears in your writing"
+    ? L("Never appears in your writing", "vo.vr.never")
     : derivation === "model"
-      ? "Aura's reading"
-      : `Counted in ${nPosts(count, "en")}`;
+      ? L("KnownBy's reading", "vo.vr.model")
+      : L(`Counted in ${nPosts(count, "en")}`, "vo.vr.counted", { n: count });
 
   const toggle = async () => {
     const next = !open;
@@ -73,7 +85,7 @@ function Evidence({ rule }: { rule: DnaRule }) {
         onClick={() => { if (!absent) void toggle(); }}
         aria-expanded={open}
         style={{
-          ...chipStyle(MUTED, SURFACE, LINE), marginBlockStart: 4,
+          ...arStyle(lang, chipStyle(MUTED, SURFACE, LINE)), marginBlockStart: 4,
           cursor: !absent && ids.length ? "pointer" : "default",
           textDecoration: !absent && ids.length ? "underline" : "none",
           textUnderlineOffset: 3, fontFamily: "inherit",
@@ -93,7 +105,7 @@ function Evidence({ rule }: { rule: DnaRule }) {
             </li>
           ))}
           {posts?.length === 0 && (
-            <li style={{ fontSize: TYPE.small, color: MUTED }}>Those posts are no longer available.</li>
+            <li style={{ fontSize: TYPE.small, color: MUTED }}>{L("Those posts are no longer available.", "vo.vr.gone")}</li>
           )}
         </ul>
       )}
@@ -111,11 +123,12 @@ function Suggestions({
   onAccept: (r: DnaRule) => void;
   onDismiss: (r: DnaRule) => void;
 }) {
+  const { lang, L } = useL();
   if (items.length === 0) return null;
   return (
     <div style={{ ...cardStyle, marginBlockEnd: 12 }} className="v-focusable">
       <div style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
-        What Aura found in your writing, and what it didn't
+        {L("What KnownBy found in your writing, and what it didn't", "vo.vr.foundTitle")}
       </div>
       <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0 }}>
         {items.map((r) => (
@@ -129,22 +142,22 @@ function Suggestions({
             <div style={{ flex: 1, minInlineSize: 180 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <span dir="auto" style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.5 }}>{r.text}</span>
-                <span style={chipStyle(MUTED, SURFACE, LINE)}>{KIND_LABEL[r.kind]}</span>
-                {r.kind === "never" && !r.check ? <span style={chipStyle(MUTED, SURFACE, LINE)}>Guidance only</span> : null}
+                <span style={arStyle(lang, chipStyle(MUTED, SURFACE, LINE))}>{L(KIND_LABEL[r.kind], `vo.kind.${r.kind}`)}</span>
+                {r.kind === "never" && !r.check ? <span style={arStyle(lang, chipStyle(MUTED, SURFACE, LINE))}>{L("Guidance only", "vo.vr.guidance")}</span> : null}
               </div>
               <Evidence rule={r} />
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button type="button" className="v-focusable" style={{ ...ghostButton, minBlockSize: TAP }} disabled={busy}
-                onClick={() => onAccept(r)}>Use this</button>
+                onClick={() => onAccept(r)}>{L("Use this", "vo.vr.use")}</button>
               <button type="button" className="v-focusable" style={{ ...ghostButton, minBlockSize: TAP }} disabled={busy}
-                onClick={() => onDismiss(r)}>Not for me (90 days)</button>
+                onClick={() => onDismiss(r)}>{L("Not for me (90 days)", "vo.vr.notForMe")}</button>
             </div>
           </li>
         ))}
       </ul>
       <p style={{ margin: "10px 0 0", fontSize: TYPE.small, lineHeight: 1.5, color: MUTED }}>
-        Use this and Aura follows it from your next draft. Not for me and Aura stops proposing it for three months.
+        {L("Use this and KnownBy follows it from your next draft. Not for me and KnownBy stops proposing it for three months.", "vo.vr.explain")}
       </p>
     </div>
   );
@@ -170,6 +183,8 @@ export default function VoiceRules({
   onDismiss?: (r: DnaRule) => void;
   onLookForPatterns?: (sources: RuleSource[]) => void;
 }) {
+  const { lang, L } = useL();
+  const kindLabel = (k: string) => L(KIND_LABEL[k] ?? k, `vo.kind.${k}`);
   const [open, setOpen] = useState<DnaRule["kind"] | null>(null);
   const [draft, setDraft] = useState("");
   const [inline, setInline] = useState<Record<string, string>>({});
@@ -199,12 +214,12 @@ export default function VoiceRules({
     <section style={{ marginBlockStart: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <div>
-          <div style={microLabel}>Rules</div>
-          <div style={{ marginBlockStart: 4, fontSize: TYPE.small, color: MUTED }}>Your rules apply to every mode.</div>
+          <div style={arStyle(lang, microLabel)}>{L("Rules", "vo.rules.title")}</div>
+          <div style={{ marginBlockStart: 4, fontSize: TYPE.small, color: MUTED }}>{L("Your rules apply to every mode.", "vo.vr.applies")}</div>
         </div>
         {canSuggest && onLookForPatterns && (
           <button type="button" className="v-focusable" style={linkStyle} disabled={busy} onClick={() => setChoosing((value) => !value)}>
-            Look for patterns
+            {L("Look for patterns", "vo.vr.look")}
           </button>
         )}
       </div>
@@ -215,12 +230,12 @@ export default function VoiceRules({
             {SOURCE_OPTIONS.map((option) => (
               <label key={option.key} style={{ display: "inline-flex", gap: 7, alignItems: "center", minBlockSize: TAP, fontSize: TYPE.small, color: INK }}>
                 <input type="checkbox" checked={sources.includes(option.key)} onChange={(event) => setSources((current) => event.target.checked ? [...current, option.key] : current.filter((key) => key !== option.key))} />
-                {option.label}
+                {L(option.label, `vo.rsrc.${option.key}`)}
               </label>
             ))}
           </div>
           <button type="button" className="v-focusable" style={{ ...ghostButton, minBlockSize: TAP, marginBlockStart: 8 }} disabled={busy || sources.length === 0}
-            onClick={() => { onLookForPatterns(sources); setChoosing(false); }}>Run search</button>
+            onClick={() => { onLookForPatterns(sources); setChoosing(false); }}>{L("Run search", "vo.vr.run")}</button>
         </div>
       )}
 
@@ -239,13 +254,13 @@ export default function VoiceRules({
           return (
             <div key={k.kind} style={{ ...cardStyle, borderInlineStart: `3px solid ${k.colour}` }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: k.colour }}>{k.label}</span>
+                <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: k.colour }}>{kindLabel(k.kind)}</span>
                 {items.length > 0 && (
                   <span style={{ ...monoNum, fontSize: TYPE.body, fontWeight: 600, color: INK }}>{items.length}</span>
                 )}
               </div>
               {items.length === 0 ? (
-                <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.55, marginBlockStart: 8, marginBlockEnd: 10 }}>{k.empty}</p>
+                <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.55, marginBlockStart: 8, marginBlockEnd: 10 }}>{L(k.empty, k.kind === "anchor" ? "vo.vr.emptyAnchors" : "vo.vr.emptyRules")}</p>
               ) : (
                 <ul style={{ listStyle: "none", margin: "10px 0", padding: 0 }}>
                   {items.slice(0, 3).map((r) => (
@@ -253,8 +268,8 @@ export default function VoiceRules({
                       <div dir="auto" style={{ fontSize: TYPE.small, color: INK, lineHeight: 1.5 }}>{r.text}</div>
                        <div style={{ marginBlockStart: 4, display: "flex", gap: 6, flexWrap: "wrap" }}>
                          <SourceTag source={r.source} />
-                         {r.kind === "never" && !r.check ? <span style={chipStyle(MUTED, SURFACE, LINE)}>Guidance only</span> : null}
-                         <span style={chipStyle(MUTED, SURFACE, LINE)}>Used in {nDrafts(r.times_applied ?? 0, "en")}</span>
+                         {r.kind === "never" && !r.check ? <span style={arStyle(lang, chipStyle(MUTED, SURFACE, LINE))}>{L("Guidance only", "vo.vr.guidance")}</span> : null}
+                         <span style={arStyle(lang, chipStyle(MUTED, SURFACE, LINE))}>{L(`Used in ${nDrafts(r.times_applied ?? 0, "en")}`, "vo.vr.used", { n: r.times_applied ?? 0 })}</span>
                        </div>
                     </li>
                   ))}
@@ -263,19 +278,19 @@ export default function VoiceRules({
 
               {/* write one here — no modal */}
               <div style={{ display: "flex", gap: 8, marginBlockEnd: 8 }}>
-                <input dir="auto" value={inline[k.kind] ?? ""} placeholder="+ Add your own" aria-label={`Add a ${k.label.toLowerCase()} rule`} disabled={busy}
+                <input dir="auto" value={inline[k.kind] ?? ""} placeholder={L("+ Add your own", "vo.vr.addOwn")} aria-label={L(`Add a ${k.label.toLowerCase()} rule`, "vo.vr.addAria", { kind: kindLabel(k.kind) })} disabled={busy}
                   onChange={(e) => setInline((s) => ({ ...s, [k.kind]: e.target.value }))}
                   onKeyDown={(e) => { if (e.key !== "Enter") return; const text = (inline[k.kind] ?? "").trim(); if (!text) return; onAdd(k.kind, text); setInline((s) => ({ ...s, [k.kind]: "" })); }}
                   className="v-focusable" style={{ flex: 1, minInlineSize: 0, minBlockSize: TAP, fontSize: TYPE.small, color: INK, border: `1px solid ${LINE}`, borderRadius: RADIUS.button, padding: "8px 10px", fontFamily: "inherit" }} />
                 <button type="button" className="v-focusable" style={{ ...ghostButton, minBlockSize: TAP }} disabled={busy || !(inline[k.kind] ?? "").trim()}
-                  onClick={() => { const text = (inline[k.kind] ?? "").trim(); if (!text) return; onAdd(k.kind, text); setInline((s) => ({ ...s, [k.kind]: "" })); }}>Add</button>
+                  onClick={() => { const text = (inline[k.kind] ?? "").trim(); if (!text) return; onAdd(k.kind, text); setInline((s) => ({ ...s, [k.kind]: "" })); }}>{L("Add", "vo.vr.add")}</button>
               </div>
 
-              {items.length > 3 && <div style={{ fontSize: TYPE.caption, color: MUTED, marginBlockEnd: 6 }}>Showing 3 of {items.length} — View all</div>}
+              {items.length > 3 && <div style={{ fontSize: TYPE.caption, color: MUTED, marginBlockEnd: 6 }}>{L(`Showing 3 of ${items.length} — View all`, "vo.vr.showing", { n: items.length })}</div>}
 
               <button type="button" className="v-focusable" style={{ ...ghostButton, minBlockSize: TAP }}
                 onClick={() => { setOpen(k.kind); setDraft(""); }}>
-                {items.length === 0 ? "Open" : `View all ${items.length} rules →`}
+                {items.length === 0 ? L("Open", "vo.open") : L(`View all ${items.length} rules →`, "vo.vr.viewAll", { n: items.length })}
               </button>
             </div>
           );
@@ -285,12 +300,12 @@ export default function VoiceRules({
       {open && (
         <div style={{ ...cardStyle, marginBlockStart: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div style={microLabel}>{RULE_KINDS.find((k) => k.kind === open)?.label} rules</div>
-            <button type="button" className="v-focusable" style={{ ...ghostButton, minBlockSize: TAP }} onClick={() => setOpen(null)}>Close</button>
+            <div style={arStyle(lang, microLabel)}>{L(`${RULE_KINDS.find((k) => k.kind === open)?.label} rules`, "vo.vr.panel", { kind: kindLabel(open) })}</div>
+            <button type="button" className="v-focusable" style={{ ...ghostButton, minBlockSize: TAP }} onClick={() => setOpen(null)}>{L("Close", "vo.vr.close")}</button>
           </div>
 
           {list.length === 0 ? (
-            <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 10 }}>Nothing here yet.</p>
+            <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 10 }}>{L("Nothing here yet.", "vo.vr.nothing")}</p>
           ) : (
             <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0 }}>
               {list.map((r, i) => (
@@ -308,7 +323,7 @@ export default function VoiceRules({
                     defaultValue={r.text}
                     disabled={busy}
                     className="v-focusable"
-                    aria-label="Rule text"
+                    aria-label={L("Rule text", "vo.vr.ruleText")}
                     onBlur={(e) => { if (e.target.value.trim() && e.target.value !== r.text) onEdit(r.id, e.target.value.trim()); }}
                     style={{
                       flex: 1, minInlineSize: 140, minBlockSize: TAP, fontSize: TYPE.small, color: INK,
@@ -316,14 +331,14 @@ export default function VoiceRules({
                     }}
                   />
                   <SourceTag source={r.source} />
-                  {r.kind === "never" && !r.check ? <span style={chipStyle(MUTED, SURFACE, LINE)}>Guidance only</span> : null}
-                  <span style={chipStyle(MUTED, SURFACE, LINE)}>Used in {nDrafts(r.times_applied ?? 0, "en")}</span>
-                  <select aria-label={`Move rule to another bucket: ${r.text}`} className="v-focusable" value={r.kind} disabled={busy}
+                  {r.kind === "never" && !r.check ? <span style={arStyle(lang, chipStyle(MUTED, SURFACE, LINE))}>{L("Guidance only", "vo.vr.guidance")}</span> : null}
+                  <span style={arStyle(lang, chipStyle(MUTED, SURFACE, LINE))}>{L(`Used in ${nDrafts(r.times_applied ?? 0, "en")}`, "vo.vr.used", { n: r.times_applied ?? 0 })}</span>
+                  <select aria-label={L(`Move rule to another bucket: ${r.text}`, "vo.vr.move", { text: r.text })} className="v-focusable" value={r.kind} disabled={busy}
                     onChange={(event) => onKindChange(r.id, event.target.value as DnaRule["kind"])}
                     style={{ minBlockSize: TAP, border: `1px solid ${LINE}`, borderRadius: RADIUS.button, background: WHITE, color: INK, paddingInline: 8 }}>
-                    {RULE_KINDS.map((kind) => <option key={kind.kind} value={kind.kind}>{kind.label}</option>)}
+                    {RULE_KINDS.map((kind) => <option key={kind.kind} value={kind.kind}>{kindLabel(kind.kind)}</option>)}
                   </select>
-                  <button type="button" aria-label={`Delete rule: ${r.text}`} className="v-focusable"
+                  <button type="button" aria-label={L(`Delete rule: ${r.text}`, "vo.vr.del", { text: r.text })} className="v-focusable"
                     style={{ ...ghostButton, inlineSize: TAP, minBlockSize: TAP, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                     disabled={busy} onClick={() => onDelete(r.id)}>
                     <Trash2 size={14} aria-hidden />
@@ -337,8 +352,8 @@ export default function VoiceRules({
             <input
               dir="auto"
               value={draft}
-              placeholder="Write the rule in your own words"
-              aria-label="New rule"
+              placeholder={L("Write the rule in your own words", "vo.vr.placeholder")}
+              aria-label={L("New rule", "vo.vr.newRule")}
               className="v-focusable"
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
@@ -356,7 +371,7 @@ export default function VoiceRules({
               disabled={busy || !draft.trim()}
               onClick={() => { onAdd(open, draft.trim()); setDraft(""); }}
             >
-              Add
+              {L("Add", "vo.vr.add")}
             </button>
           </div>
         </div>
