@@ -3027,5 +3027,14 @@
   "vo.vs.closer": "الخاتمة: «{{closer}}»، من خواتيمك",
   "vo.vs.defaultBank": "بداياتك",
   "pwModal.mismatch": "كلمتا المرور غير متطابقتين",
-  "pwModal.saving": "جارٍ الحفظ…"
+  "pwModal.saving": "جارٍ الحفظ…",
+  "pwModal.tooShort": "كلمة المرور 8 أحرف على الأقل",
+  "pwModal.updateFailed": "تعذّر تحديث كلمة المرور",
+  "pwModal.secureTitle": "أمّن حسابك",
+  "pwModal.changeTitle": "غيّر كلمة المرور",
+  "pwModal.secureSub": "عيّن كلمة مرور لتدخل من أي جهاز",
+  "pwModal.changeSub": "اختر كلمة مرور جديدة لحسابك",
+  "pwModal.newPlaceholder": "كلمة مرور جديدة (8 أحرف على الأقل)",
+  "pwModal.setSubmit": "عيّن كلمة المرور",
+  "pwModal.close": "أغلق"
 }

@@ -2940,5 +2940,14 @@
   "vo.vs.closer": "Closer: {{closer}} — from your closer bank",
   "vo.vs.defaultBank": "your opener bank",
   "pwModal.mismatch": "Passwords do not match",
-  "pwModal.saving": "Saving..."
+  "pwModal.saving": "Saving...",
+  "pwModal.tooShort": "Password must be at least 8 characters",
+  "pwModal.updateFailed": "Could not update password",
+  "pwModal.secureTitle": "Secure your account",
+  "pwModal.changeTitle": "Change your password",
+  "pwModal.secureSub": "Set a password so you can log in from any device",
+  "pwModal.changeSub": "Choose a new password for your account",
+  "pwModal.newPlaceholder": "New password (min 8 characters)",
+  "pwModal.setSubmit": "Set password",
+  "pwModal.close": "Close"
 }

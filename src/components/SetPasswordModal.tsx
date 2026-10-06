@@ -39,7 +39,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
 
   const handleSubmit = async () => {
     if (!valid || submitting) return;
-    if (password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (password.length < 8) { toast.error(t("pwModal.tooShort")); return; }
     if (password !== confirm) { toast.error(t("pwModal.mismatch")); return; }
     setSubmitting(true);
     try {
@@ -53,7 +53,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
       try { await supabase.auth.signOut(); } catch {}
       window.location.href = "/auth?msg=password_updated";
     } catch (e: any) {
-      toast.error(e?.message || "Could not update password");
+      toast.error((isRTL ? "" : e?.message) || t("pwModal.updateFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +89,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
         }}
       >
         <button
-          type="button" onClick={onClose} aria-label="Close"
+          type="button" onClick={onClose} aria-label={t("pwModal.close")}
           style={{
             position: "absolute", top: 12, insetInlineEnd: 12,
             background: "transparent", border: 0, cursor: "pointer",
@@ -98,10 +98,10 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
         ><X size={18} /></button>
 
         <SectionHeader
-          label={isFirstTime ? "Secure your account" : "Change your password"}
+          label={isFirstTime ? t("pwModal.secureTitle") : t("pwModal.changeTitle")}
           subtitle={isFirstTime
-            ? "Set a password so you can log in from any device"
-            : "Choose a new password for your account"}
+            ? t("pwModal.secureSub")
+            : t("pwModal.changeSub")}
         />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
@@ -110,7 +110,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
               type={show ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="New password (min 8 characters)"
+              placeholder={t("pwModal.newPlaceholder")}
               dir="ltr"
               style={inputStyle}
               autoComplete="new-password"
@@ -141,7 +141,7 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
               loading={submitting}
               disabled={!valid}
             >
-              {submitting ? t("pwModal.saving") : (isFirstTime ? "Set password" : t("auth.reset.submit"))}
+              {submitting ? t("pwModal.saving") : (isFirstTime ? t("pwModal.setSubmit") : t("auth.reset.submit"))}
             </Button>
           </div>
         </div>
