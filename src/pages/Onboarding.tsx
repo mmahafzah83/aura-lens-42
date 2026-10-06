@@ -2503,9 +2503,9 @@ const Onboarding = () => {
 
   /* "Other" never silently means the junior level: the member chooses by what they do. */
   const OTHER_WORK: Array<[Band, string]> = [
-    ["work", "I do the work, and people check with me before they commit"],
-    ["table", "I run programmes or teams, and defend their budgets"],
-    ["room", "I set direction, and my view is heard outside my organisation"],
+    ["work", "ob.other.work"],
+    ["table", "ob.other.table"],
+    ["room", "ob.other.room"],
   ];
 
   const titleList = (onPick: (t: string, b: Band) => void) => (
