@@ -50,6 +50,13 @@
       "when": 1791092927147,
       "tag": "0006_mirror_reads_read_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791297573437,
+      "tag": "0007_arabic_quality_events",
+      "breakpoints": true
     }
   ]
 }

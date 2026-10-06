@@ -212,6 +212,30 @@ export type Database = {
         }
         Relationships: []
       }
+      arabic_quality_events: {
+        Row: {
+          created_at: string
+          fixed: boolean
+          function_name: string
+          id: string
+          rule_id: string
+        }
+        Insert: {
+          created_at?: string
+          fixed?: boolean
+          function_name: string
+          id?: string
+          rule_id: string
+        }
+        Update: {
+          created_at?: string
+          fixed?: boolean
+          function_name?: string
+          id?: string
+          rule_id?: string
+        }
+        Relationships: []
+      }
       assessment_sessions: {
         Row: {
           created_at: string
@@ -11377,6 +11401,14 @@ export type Database = {
       activate_design_version: {
         Args: { p_created_by?: string; p_new_tokens: Json }
         Returns: string
+      }
+      admin_arabic_quality_7d: {
+        Args: never
+        Returns: {
+          fired: number
+          fixed_share: number
+          rule_id: string
+        }[]
       }
       admin_cohorts: {
         Args: never

@@ -5,7 +5,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
-import { ARABIC_VOICE_BLOCK, arabicStyleNotes, fieldFixRequest, applyFieldFix, FIELD_FIX_SYSTEM, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicStyleNotes, fieldFixRequest, applyFieldFix, FIELD_FIX_SYSTEM, logArabicQuality, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
 
 async function arabicFieldFixCall(apiKey: string, user: string): Promise<string> {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -315,6 +315,7 @@ serve(withObserve("brand-assessment", async (req) => {
         return pendingResponse();
       }
       styleNotes = arabicStyleNotes(report, { skipKeys: ["own_words_quote", "content_pillars"] });
+      const notesBefore = styleNotes;
       /* Banned words or «كـ»: ONE field-level correction when no correction
          call has run yet and the time budget allows. */
       if (correctionCalls === 0 && retryAllowed(Date.now() - startedAt)) {
@@ -328,6 +329,7 @@ serve(withObserve("brand-assessment", async (req) => {
           } catch (e) { console.error("brand-assessment: arabic field fix failed", e); }
         }
       }
+      EdgeRuntime.waitUntil(logArabicQuality(admin, "brand-assessment", notesBefore, styleNotes));
       interpretation = buildInterpretationFromReport(report);
     }
 

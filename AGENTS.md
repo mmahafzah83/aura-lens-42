@@ -9,3 +9,4 @@
 - Arabic preview: `?items=ar` on /onboarding makes the whole page Arabic for that tab via `arabicPreviewOn` inside `effectiveLang` (src/i18n) — why: one place decides the language, so preview and ready routes behave the same.
 - Server-written Arabic Home prose must be grounded in Arabic evidence sentences and pass both factual and shared Arabic-voice gates; otherwise use the evidence-only Arabic fallback — why: the daily card must never expose English or invent facts for Arabic members.
 - Lovable AI text generation uses request-local OpenAI Responses calls through the shared server-only wrapper — why: prompts, credentials, streaming, reasoning options, and run correlation must stay consistent and private.
+- Arabic model-output quality detectors live in `arabicQualityNotes` (_shared/arabicVoice.ts) and log rule ids only to `arabic_quality_events` — why: one checker feeds the single correction call and the founder sees which rule fails, without member text.
