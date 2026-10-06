@@ -2685,7 +2685,7 @@
   "vo.sr.userTip": "حدّدت هذه القيمة بنفسك. لن يعدّلها KnownBy، ولا تغيّرها ملاحظاتك على المسودات.",
   "vo.sr.auraTip": "اقتراح لم يثبته KnownBy بعد. أكّده أو ارفضه. لا يُحسب حتى تفعل.",
   "vo.sr.lockedAria": "مقفلة. لن يعدّلها KnownBy",
-  "vo.sr.done": "تم",
+  "vo.sr.done": "انتهيت",
   "vo.sr.edit": "عدّل",
   "vo.sr.unlock": "افتح القفل",
   "vo.sr.lock": "اقفل",
