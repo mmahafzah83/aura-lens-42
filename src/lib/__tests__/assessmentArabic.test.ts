@@ -40,3 +40,30 @@ describe("/assessment Arabic", () => {
     expect(bad).toEqual([]);
   });
 });
+
+/** Arabic may only use variables the code passes: English's own, or these verified extras. */
+const SHARED = new Set(["imprint", "desk", "seatCta", "trustLabel"]);
+const EXTRA: Record<string, string[]> = {
+  "auth.signup.sub": ["minutes"],
+  "seatOffer.waveNoteLater": ["size"],
+  "firstFlight.progressLast": ["r"],
+  "cr.lowest_one": ["n"],
+  "cr.lowest_other": ["n"],
+};
+describe("Arabic placeholders, every key", () => {
+  it("uses no variable the code does not pass", () => {
+    const base = (k: string) => k.replace(/_(zero|one|two|few|many|other)$/, "");
+    const bad: string[] = [];
+    for (const [k, s] of Object.entries(A)) {
+      const b = base(k);
+      const e = E[k] ?? E[`${b}_other`] ?? E[b];
+      if (e == null) continue;
+      const ok = new Set([...vars(e), ...vars(E[`${b}_one`] ?? ""), ...(k !== b ? ["{{count}}"] : [])]);
+      for (const v of vars(s)) {
+        const n = v.slice(2, -2);
+        if (!ok.has(v) && !SHARED.has(n) && !(EXTRA[k] ?? []).includes(n)) bad.push(`${k}: ${v}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});
