@@ -1,5 +1,5 @@
 /**
- * Your Voice — what Aura believes about how you write, and the controls to
+ * Your Voice — what KnownBy believes about how you write, and the controls to
  * correct it.
  *
  * Overview and DNA used to be two pages describing the same object at two zoom
@@ -26,9 +26,12 @@ import {
   RADIUS, RED, SURFACE, TYPE, WHITE, cardStyle, ghostButton, microLabel, monoNum, primaryButton,
 } from "@/components/voice/tokens";
 import { REPETITION_GATES } from "@/lib/voiceGates";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { arStyle } from "@/lib/arDisplay";
+import { hookWord, isArTr, voiceWord, type VoiceTr } from "@/lib/voiceText";
 import { useCachedVoice, invalidateVoiceCache } from "@/lib/voiceCache";
 import {
-  loadVoiceOverview, dismissRecommendation, readinessSentence, variationSummary, HOOK_LABEL,
+  loadVoiceOverview, dismissRecommendation, buildRecommendation, readinessSentence, variationSummary, HOOK_LABEL,
   READINESS_LABEL, READINESS_ORDER, type VoiceOverviewModel, type Readiness,
 
 } from "@/lib/voiceOverview";
@@ -62,12 +65,12 @@ interface Health {
   secondary?: string;
 }
 
-function HealthCard({ h }: { h: Health }) {
+function HealthCard({ h, lang }: { h: Health; lang: string }) {
   const colour = BAND_COLOUR[h.band];
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <span style={microLabel}>{h.label}</span>
+        <span style={arStyle(lang, microLabel)}>{h.label}</span>
         <InfoTooltip term={h.label} body={h.define} />
       </div>
       {h.value === null ? (
@@ -89,10 +92,11 @@ function HealthCard({ h }: { h: Health }) {
   );
 }
 
-export function buildHealth(m: VoiceOverviewModel): Health[] {
+export function buildHealth(m: VoiceOverviewModel, tr?: VoiceTr): Health[] {
+  if (isArTr(tr)) return buildHealthAr(m, tr);
   const coverage: Health = {
     label: "Evidence coverage",
-    define: "How many of your own posts Aura has read. Reposts and comments don't count.",
+    define: "How many of your own posts KnownBy has read. Reposts and comments don't count.",
     value: m.corpusCount,
     unit: m.corpusCount === 1 ? "post" : "posts",
     explain: `${m.corpusCount} ${m.corpusCount === 1 ? "post" : "posts"} read. 30 is the threshold for reliable.`,
@@ -126,11 +130,11 @@ export function buildHealth(m: VoiceOverviewModel): Health[] {
 
   const consistency: Health = {
     label: "Consistency",
-    define: "How much your posts agree with each other. Aura counts a measure as settled only when they do.",
+    define: "How much your posts agree with each other. KnownBy counts a measure as settled only when they do.",
     value: m.computableComputed === 0 ? null : m.computableHigh,
     unit: `of ${m.computableComputed}`,
     explain: m.computableComputed === 0
-      ? "Aura has not measured any traits yet."
+      ? "KnownBy has not measured any traits yet."
       : `Your posts agree with each other on ${m.computableHigh} of ${m.computableComputed} measured traits.${consistencyDetail}`,
     band: m.computableComputed === 0
       ? "weak"
@@ -166,12 +170,44 @@ export function buildHealth(m: VoiceOverviewModel): Health[] {
   return [coverage, fresh, consistency, distinctiveness];
 }
 
+function buildHealthAr(m: VoiceOverviewModel, tr: VoiceTr): Health[] {
+  const { t } = tr;
+  const [en1, en2, en3, en4] = buildHealth(m);
+  const notHigh = m.traits.filter((x) => x.computable && x.confidence !== "high");
+  const names = notHigh.map((x) => voiceWord(x.display_name, tr));
+  const joined = names.length <= 1 ? names.join("") : `${names.slice(0, -1).join("، ")} و${names[names.length - 1]}`;
+  const targets = notHigh.map((x) =>
+    x.evidence_count === null ? null : Math.max(1, (x.confidence === "low" ? x.min_evidence : x.min_evidence * 2) - x.evidence_count),
+  );
+  const estimate = targets.length && targets.every((v) => v !== null) ? Math.max(...(targets as number[])) : null;
+  const detail = names.length === 0 ? "" : ` ${estimate === null ? t("vo.cons.detail", { names: joined }) : t("vo.cons.detailEst", { names: joined, estimate })}`;
+  return [
+    { ...en1, label: t("vo.cov.label"), define: t("vo.cov.define"), unit: t("vo.unit.post"), explain: t("vo.cov.explain", { n: m.corpusCount }), unknownText: t("vo.cov.unknown") },
+    { ...en2, label: t("vo.fresh.label"), define: t("vo.fresh.define"), unit: t("vo.unit.day"), explain: t(m.freshnessDays === null ? "vo.fresh.explainNone" : "vo.fresh.explain"), unknownText: t("vo.fresh.unknown") },
+    {
+      ...en3, label: t("vo.cons.label"), define: t("vo.cons.define"), unit: t("vo.cons.unit", { n: m.computableComputed }),
+      explain: m.computableComputed === 0 ? t("vo.cons.none") : `${t("vo.cons.explain", { high: m.computableHigh, computed: m.computableComputed })}${detail}`,
+      unknownText: t("vo.notEnough"),
+    },
+    {
+      ...en4, label: t("vo.dist.label"), define: t("vo.dist.define"),
+      secondary: m.topShare === null || !m.topStyleKey || m.topStyleCount === null
+        ? undefined
+        : t("vo.dist.secondary", { share: Math.round(m.topShare), topName: hookWord(m.topStyleKey, tr), count: m.topStyleCount, windowClassified: m.windowClassified }),
+      explain: m.diversity === null
+        ? t("vo.dist.thin", { min: REPETITION_GATES.minClassified, windowClassified: m.windowClassified })
+        : t("vo.dist.explain", { floor: REPETITION_GATES.diversityFloor, ceiling: REPETITION_GATES.topShareCeiling }),
+      unknownText: t("vo.notEnough"),
+    },
+  ];
+}
+
 const shortDate = (iso: string) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }).toUpperCase();
 };
 
-function ReadinessRail({ readiness }: { readiness: Readiness }) {
+function ReadinessRail({ readiness, lang, label }: { readiness: Readiness; lang: string; label: (r: Readiness) => string }) {
   const idx = Math.max(0, READINESS_ORDER.indexOf(readiness));
   return (
     <div style={{ marginBlockStart: 16 }}>
@@ -187,9 +223,10 @@ function ReadinessRail({ readiness }: { readiness: Readiness }) {
             style={{
               ...monoNum, flex: 1, fontSize: TYPE.micro, textTransform: "uppercase", letterSpacing: ".08em",
               color: i === idx ? WHITE : NIGHT_MUTED, fontWeight: i === idx ? 700 : 400,
+              ...(lang === "ar" ? { textTransform: "none", letterSpacing: 0, fontFamily: "'Cairo', sans-serif", lineHeight: 1.7 } : {}),
             }}
           >
-            {READINESS_LABEL[r]}
+            {label(r)}
           </span>
         ))}
       </div>
@@ -231,6 +268,14 @@ export default function YourVoice({
   }, [storeKey]);
 
 
+  const { lang, t } = useLanguage();
+  const ar = lang === "ar";
+  const tr: VoiceTr = { lang, t };
+  /** English stays the literal; Arabic is a whole sentence from its key. */
+  const L = (en: string, k: string, p?: Record<string, unknown>) => (ar ? t(k, p) : en);
+  const readyLabel = (r: Readiness) => L(READINESS_LABEL[r], `vo.ready.${r}`);
+  const modeLabel = (m: { key: string; label: string }) => (ar ? t(`vo.mode.${m.key}.label`) : m.label);
+
   const key = modelOverride || !userId ? null : `voice:yourvoice:${userId}:${profileId ?? "active"}`;
   const loader = useCallback(async (): Promise<YourVoiceModel> => {
     const [overview, dna] = await Promise.all([
@@ -260,10 +305,10 @@ export default function YourVoice({
       // allow are two different member problems, not one generic failure.
       const code = (e as { code?: string } | null)?.code;
       const message = (e as { message?: string } | null)?.message;
-      if (code === "23505") toast.error("You already have that mode in this language.");
-      else if (code === "23514") toast.error("That mode isn't available yet.");
-      else if (message && message.startsWith("Your default voice")) toast.error(message);
-      else toast.error("Couldn't save that. Nothing was changed.");
+      if (code === "23505") toast.error(L("You already have that mode in this language.", "vo.e.dup"));
+      else if (code === "23514") toast.error(L("That mode isn't available yet.", "vo.e.unavail"));
+      else if (message && message.startsWith("Your default voice")) toast.error(ar ? t("vo.e.default") : message);
+      else toast.error(L("Couldn't save that. Nothing was changed.", "vo.e.save"));
     } finally {
       setBusy(false);
     }
@@ -284,20 +329,21 @@ export default function YourVoice({
   }, [model]);
 
   if (!userId && !modelOverride) {
-    return <div style={{ ...cardStyle, fontSize: TYPE.body, color: MUTED }}>Sign in to see your voice.</div>;
+    return <div style={{ ...cardStyle, fontSize: TYPE.body, color: MUTED }}>{L("Sign in to see your voice.", "vo.signIn")}</div>;
   }
   if (state.loading && !model) {
-    return <div style={{ fontSize: TYPE.body, color: MUTED, padding: "24px 0" }}>Reading your voice…</div>;
+    return <div style={{ fontSize: TYPE.body, color: MUTED, padding: "24px 0" }}>{L("Reading your voice…", "vo.loading")}</div>;
   }
   // An error is not an empty corpus, and must never be reported as one.
   if (state.error && !model) {
     return (
       <div style={{ ...cardStyle, borderColor: "#EED3CF" }}>
-        <div style={{ fontSize: TYPE.title, fontWeight: 600, color: INK }}>Aura couldn't load your voice.</div>
+        <div style={{ fontSize: TYPE.title, fontWeight: 600, color: INK }}>{L("KnownBy couldn't load your voice.", "vo.err.title")}</div>
         <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 12px" }}>
-          Your writing is safe — this is a connection problem, not an empty file. {state.error}
+          {L("Your writing is safe — this is a connection problem, not an empty file.", "vo.err.body")}{" "}
+          {ar ? <span dir="auto">{state.error}</span> : state.error}
         </p>
-        <button type="button" style={primaryButton} onClick={() => void state.reload(true)}>Try again</button>
+        <button type="button" style={primaryButton} onClick={() => void state.reload(true)}>{L("Try again", "vo.retry")}</button>
       </div>
     );
   }
@@ -313,6 +359,7 @@ export default function YourVoice({
      unknown the line says so in words rather than printing a zero. ───────── */
   const healthCards = buildHealth(ov);
   const healthWeak = healthCards.some((h) => h.band === "weak");
+  const healthCardsShown = ar ? buildHealth(ov, tr) : healthCards;
   const readPart = ov.corpusCount === 0
     ? "Nothing read from your posts yet"
     : `Read from ${ov.corpusCount} of your posts`;
@@ -325,23 +372,39 @@ export default function YourVoice({
   const openingPart = ov.diversity === null
     ? "opening variety not measured yet"
     : `openings vary ${Math.round(ov.diversity)}%`;
-  const healthLine = `${readPart} · ${freshPart} · ${markerPart} · ${openingPart}`;
+  const healthLine = ar
+    ? [
+      ov.corpusCount === 0 ? t("vo.hl.readNone") : t("vo.hl.read", { n: ov.corpusCount }),
+      ov.freshnessDays === null ? t("vo.hl.freshNone") : t("vo.hl.fresh", { n: ov.freshnessDays }),
+      ov.computableComputed === 0 ? t("vo.hl.markersNone") : t("vo.hl.markers", { high: ov.computableHigh, computed: ov.computableComputed }),
+      ov.diversity === null ? t("vo.hl.openNone") : t("vo.hl.open", { d: Math.round(ov.diversity) }),
+    ].join(" · ")
+    : `${readPart} · ${freshPart} · ${markerPart} · ${openingPart}`;
 
   const modesSet = dna.modes.filter((m) => m.profileId);
   const activeMode = modesSet.find((m) => m.profileId === dna.activeProfileId);
-  const modesLine = `${modesSet.length} ${modesSet.length === 1 ? "mode" : "modes"} · ${activeMode ? activeMode.label : "no mode chosen"}`;
+  const modesLine = ar
+    ? t("vo.modes.line", { n: modesSet.length, active: activeMode ? modeLabel(activeMode) : t("vo.modes.none") })
+    : `${modesSet.length} ${modesSet.length === 1 ? "mode" : "modes"} · ${activeMode ? activeMode.label : "no mode chosen"}`;
 
   const countKind = (k: string) => dna.rules.filter((r) => r.kind === k).length;
   const waiting = dna.suggestions.length;
-  const rulesLine = `${countKind("always")} always · ${countKind("never")} never · ${countKind("anchor")} anchors · ${waiting} waiting for you`;
+  const rulesLine = ar
+    ? t("vo.rules.line", { a: countKind("always"), n: countKind("never"), c: countKind("anchor"), w: waiting })
+    : `${countKind("always")} always · ${countKind("never")} never · ${countKind("anchor")} anchors · ${waiting} waiting for you`;
 
-  const variationLine = variationSummary(dna) ?? "Opening variety is not measured yet.";
+  const variationLine = variationSummary(dna, ar ? tr : undefined) ?? L("Opening variety is not measured yet.", "vo.var.none");
 
   const unconfirmedProposal = dna.traits.some((t) => t.source === "aura" && !t.last_confirmed_at && t.value !== null);
 
   const groupSummary = (traits: DnaTrait[]) => {
     const measured = traits.filter((t) => t.value !== null);
-    if (measured.length === 0) return "Nothing measured yet in this group.";
+    if (measured.length === 0) return L("Nothing measured yet in this group.", "vo.group.empty");
+    if (ar) {
+      const n = measured.map((x) => voiceWord(x.display_name, tr));
+      const joined = n.length <= 1 ? n.join("") : `${n.slice(0, -1).join("، ")} و${n[n.length - 1]}`;
+      return t("vo.group.summary", { names: joined, measured: measured.length, total: traits.length });
+    }
     const names = measured.map((t) => t.display_name.toLowerCase()).join(", ");
     return `${names.replace(/^./, (c) => c.toUpperCase())} — ${measured.length} of ${traits.length} read from your posts`;
   };
@@ -364,23 +427,23 @@ export default function YourVoice({
   if (nothingRead) {
     return (
       <div style={cardStyle}>
-        <div style={{ fontSize: TYPE.section, fontWeight: 600, color: INK }}>Aura hasn't read anything you've written yet.</div>
+        <div style={{ fontSize: TYPE.section, fontWeight: 600, color: INK }}>{L("KnownBy hasn't read anything you've written yet.", "vo.empty.title")}</div>
         <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 14px" }}>
-          There is no voice to show until Aura has some of your writing to read.
+          {L("There is no voice to show until KnownBy has some of your writing to read.", "vo.empty.body")}
         </p>
-        <button type="button" style={primaryButton} onClick={() => onNavigate("teach")}>Teach Aura</button>
+        <button type="button" style={primaryButton} onClick={() => onNavigate("teach")}>{L("Teach KnownBy", "vws.teach")}</button>
       </div>
     );
   }
 
   return (
-    <div dir="ltr" style={{ color: INK }}>
+    <div style={{ color: INK }}>
       <CollapseStyles />
 
       {/* Open or close the whole pane in one press. */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBlockEnd: 10 }}>
-        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, true)}>Expand all</button>
-        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, false)}>Collapse all</button>
+        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, true)}>{L("Expand all", "vo.expandAll")}</button>
+        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, false)}>{L("Collapse all", "vo.collapseAll")}</button>
       </div>
 
       <div className="cb-grid">
@@ -390,14 +453,14 @@ export default function YourVoice({
       <section style={{ background: NIGHT, borderRadius: RADIUS.hero, padding: "20px 22px", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
         <VoiceMicBadge size={56} />
         <div style={{ flex: 1, minInlineSize: 240 }}>
-          <div style={{ ...microLabel, color: NIGHT_MUTED, letterSpacing: ".18em" }}>Voice readiness</div>
+          <div style={arStyle(lang, { ...microLabel, color: NIGHT_MUTED, letterSpacing: ".18em" })}>{L("Voice readiness", "vo.readiness")}</div>
           <h2 style={{ fontSize: TYPE.display, fontWeight: 700, color: WHITE, margin: "4px 0 0" }}>
-            {READINESS_LABEL[ov.readiness]}
+            {readyLabel(ov.readiness)}
           </h2>
           <p style={{ fontSize: TYPE.body, lineHeight: 1.6, color: NIGHT_MUTED, marginBlock: "6px 0", maxInlineSize: 620 }}>
-            {readinessSentence(ov)}
+            {readinessSentence(ov, ar ? tr : undefined)}
           </p>
-          <ReadinessRail readiness={ov.readiness} />
+          <ReadinessRail readiness={ov.readiness} lang={lang} label={readyLabel} />
         </div>
       </section>
 
@@ -405,14 +468,14 @@ export default function YourVoice({
       <div style={{ marginBlockStart: 12 }}>
         <CollapseBlock
           id="voice-health"
-          label="Voice health"
+          label={L("Voice health", "vo.health")}
           summary={healthLine}
-          controlLabel="Details"
+          controlLabel={L("Details", "vo.details")}
           open={isGroupOpen("health")}
           onToggle={() => setGroup("health", !isGroupOpen("health"))}
         >
           <div className="vo-health" style={{ marginBlockStart: 4, marginBlockEnd: 4 }}>
-            {healthCards.map((h) => <HealthCard key={h.label} h={h} />)}
+            {healthCardsShown.map((h) => <HealthCard key={h.label} h={h} lang={lang} />)}
           </div>
         </CollapseBlock>
       </div>
@@ -421,12 +484,12 @@ export default function YourVoice({
       {showReco && (
         <div className="cb-span" style={{ ...cardStyle }}>
 
-          <div style={microLabel}>Top recommendation</div>
-          <p dir="auto" style={{ fontSize: TYPE.bodyLg, lineHeight: 1.6, color: INK, marginBlock: "8px 0" }}>{reco.text}</p>
+          <div style={arStyle(lang, microLabel)}>{L("Top recommendation", "vo.reco.top")}</div>
+          <p dir="auto" style={{ fontSize: TYPE.bodyLg, lineHeight: 1.6, color: INK, marginBlock: "8px 0" }}>{ar ? buildRecommendation(ov, tr).text : reco.text}</p>
           <div style={{ display: "flex", gap: 8, marginBlockStart: 12, flexWrap: "wrap" }}>
             {reco.actionLabel && reco.actionTab && reco.actionTab !== "voice" && (
               <button type="button" style={primaryButton} onClick={() => onNavigate(reco.actionTab as "teach" | "test")}>
-                {reco.actionLabel}
+                {ar ? t(reco.actionTab === "test" ? "vws.test" : "vws.teach") : reco.actionLabel.replace("Teach Aura", "Teach KnownBy")}
               </button>
             )}
             <button
@@ -434,7 +497,7 @@ export default function YourVoice({
               style={ghostButton}
               onClick={async () => { setDismissed(true); if (userId) await dismissRecommendation(userId, reco.key); }}
             >
-              Not now
+              {L("Not now", "vo.reco.notNow")}
             </button>
           </div>
         </div>
@@ -443,19 +506,19 @@ export default function YourVoice({
       {/* 3 — the spectrums, one collapsible group each */}
       <header className="cb-span" style={{ marginBlockStart: 8 }}>
         <h2 style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, margin: 0 }}>
-          What Aura believes about how you write
+          {L("What KnownBy believes about how you write", "vo.believe.title")}
         </h2>
         <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "4px 0" }}>
-          Drag any marker to correct it. Aura keeps learning the ones you leave alone.
+          {L("Drag any marker to correct it. KnownBy keeps learning the ones you leave alone.", "vo.believe.sub")}
         </p>
       </header>
       {grouped.map(([group, traits]) => (
         <CollapseBlock
           key={group}
           id={`believe-${group}`}
-          label={GROUP_LABEL[group] ?? group}
+          label={ar && GROUP_LABEL[group] ? t(`vo.group.${group}`) : (GROUP_LABEL[group] ?? group)}
           summary={groupSummary(traits)}
-          controlLabel="Adjust"
+          controlLabel={L("Adjust", "vo.adjust")}
           open={isGroupOpen(`believe:${group}`)}
           onToggle={() => setGroup(`believe:${group}`, !isGroupOpen(`believe:${group}`))}
         >
@@ -507,9 +570,9 @@ export default function YourVoice({
       {/* 4 — modes */}
       <CollapseBlock
         id="voice-modes"
-        label="Voice modes"
+        label={L("Voice modes", "vo.modes.title")}
         summary={modesLine}
-        controlLabel="Open"
+        controlLabel={L("Open", "vo.open")}
         open={isGroupOpen("modes")}
         onToggle={() => setGroup("modes", !isGroupOpen("modes"))}
       >
@@ -525,9 +588,11 @@ export default function YourVoice({
           void mutate(dna, async () => {
             const { profileId: created, needsEvidence } = await createMode(userId, def, dna.traits, dna.activeLanguage);
             setProfileId(created);
-            toast.success(needsEvidence
-              ? `${def.label} created — some shifts were clamped to what your posts prove, so it needs evidence.`
-              : `${def.label} created from your measured voice.`);
+            toast.success(ar
+              ? t(needsEvidence ? "vo.t.modeClamped" : "vo.t.modeCreated", { label: modeLabel(def) })
+              : needsEvidence
+                ? `${def.label} created — some shifts were clamped to what your posts prove, so it needs evidence.`
+                : `${def.label} created from your measured voice.`);
           });
         }}
         onRemove={(m) => {
@@ -535,7 +600,7 @@ export default function YourVoice({
           void mutate(dna, async () => {
             await deleteMode(m.profileId as string);
             if (dna.activeProfileId === m.profileId) setProfileId(null);
-            toast.success(`${m.label} removed. Your default voice is unchanged.`);
+            toast.success(ar ? t("vo.t.modeRemoved", { label: modeLabel(m) }) : `${m.label} removed. Your default voice is unchanged.`);
           });
         }}
       />
@@ -544,9 +609,9 @@ export default function YourVoice({
       {/* 5 — rules. A suggestion is a decision waiting, so it opens by default. */}
       <CollapseBlock
         id="voice-rules"
-        label="Rules"
+        label={L("Rules", "vo.rules.title")}
         summary={rulesLine}
-        controlLabel="Open"
+        controlLabel={L("Open", "vo.open")}
         open={isGroupOpen("rules")}
         onToggle={() => setGroup("rules", !isGroupOpen("rules"))}
       >
@@ -558,21 +623,25 @@ export default function YourVoice({
         busy={busy}
         onAccept={(r) => void mutate(
           { ...dna, rules: [...dna.rules, { ...r, status: "active" }], suggestions: dna.suggestions.filter((s) => s.id !== r.id) },
-          async () => { await acceptSuggestion(r.id); toast.success("Rule added. Aura will follow it from your next draft."); },
+          async () => { await acceptSuggestion(r.id); toast.success(L("Rule added. KnownBy will follow it from your next draft.", "vo.t.ruleAdded")); },
         )}
         onDismiss={(r) => void mutate(
           { ...dna, suggestions: dna.suggestions.filter((s) => s.id !== r.id) },
-          async () => { await dismissSuggestion(r.id); toast("Dismissed. Aura will not suggest that again."); },
+          async () => { await dismissSuggestion(r.id); toast(L("Dismissed. KnownBy will not suggest that again.", "vo.t.dismissed")); },
         )}
         onLookForPatterns={(sources) => void mutate(dna, async () => {
           const res = await runSuggestRules(sources);
           const sourceSummary = Object.entries(res.by_source ?? {})
             .filter(([, count]) => count > 0)
-            .map(([source, count]) => `${source}: ${count}`)
+            .map(([source, count]) => (ar ? t("vo.t.foundPiece", { source: t(`vo.rsrc.${source}`) === `vo.rsrc.${source}` ? source : t(`vo.rsrc.${source}`), count }) : `${source}: ${count}`))
             .join(" · ");
+          if (ar) {
+            toast.success(res.written > 0 ? `${t("vo.t.found", { written: res.written })}${sourceSummary ? ` ${sourceSummary}` : ""}` : t("vo.t.nothingNew"));
+            return;
+          }
           toast.success(res.written > 0
-            ? `Aura found ${res.written} ${res.written === 1 ? "pattern" : "patterns"}${sourceSummary ? ` — ${sourceSummary}` : ""}.`
-            : "Nothing new — Aura found no pattern it could evidence.");
+            ? `KnownBy found ${res.written} ${res.written === 1 ? "pattern" : "patterns"}${sourceSummary ? ` — ${sourceSummary}` : ""}.`
+            : "Nothing new — KnownBy found no pattern it could evidence.");
         })}
         onAdd={(kind, text) => {
           if (!userId) return;
@@ -607,9 +676,9 @@ export default function YourVoice({
       {/* 6 — variation, the only copy in the product */}
       <CollapseBlock
         id="voice-variation"
-        label="How you open and close"
+        label={L("How you open and close", "vo.var.title")}
         summary={variationLine}
-        controlLabel="Open"
+        controlLabel={L("Open", "vo.open")}
         open={isGroupOpen("variation")}
         onToggle={() => setGroup("variation", !isGroupOpen("variation"))}
       >
