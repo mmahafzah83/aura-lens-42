@@ -43,8 +43,8 @@ export default function IdentityDriftBanner() {
       role="status"
       style={{
         position: "relative",
-        border: "1px solid hsl(var(--brand-bronze, 39 38% 56%) / 0.5)",
-        background: "hsl(var(--brand-bronze, 39 38% 56%) / 0.06)",
+        border: "1px solid color-mix(in srgb, var(--deadline) 50%, transparent)",
+        background: "color-mix(in srgb, var(--deadline) 6%, transparent)",
         borderRadius: 12,
         padding: "16px 20px",
         marginBottom: 16,
@@ -53,14 +53,14 @@ export default function IdentityDriftBanner() {
         alignItems: "flex-start",
       }}
     >
-      <Compass size={22} style={{ color: "hsl(var(--brand-bronze, 39 38% 56%))", flexShrink: 0, marginTop: 2 }} />
+      <Compass size={22} style={{ color: "var(--deadline)", flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: 1 }}>
         <div
           style={{
             fontSize: 12,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "hsl(var(--brand-bronze, 39 38% 56%))",
+            color: "var(--deadline-text)",
             fontWeight: 600,
             marginBottom: 6,
             ...AR,
@@ -84,8 +84,8 @@ export default function IdentityDriftBanner() {
               fontSize: 14,
               padding: "6px 14px",
               borderRadius: 8,
-              border: "1px solid hsl(var(--brand-bronze, 39 38% 56%))",
-              background: "hsl(var(--brand-bronze, 39 38% 56%))",
+              border: "1px solid var(--deadline)",
+              background: "var(--deadline)",
               color: "hsl(var(--background))",
               cursor: "pointer",
               fontWeight: 500,
