@@ -59,9 +59,9 @@ describe("onboarding slider and question keys", () => {
 
 describe("slider level tags", () => {
   it("Arabic matches Formation / Independence / Reference", () => {
-    expect(AR["cap.band.developing"]).toBe("التكوين");
-    expect(AR["cap.band.solid"]).toBe("الاستقلال");
-    expect(AR["cap.band.strong"]).toBe("المرجعية");
+    expect(AR["cap.band.developing"]).toBe("مشارك");
+    expect(AR["cap.band.solid"]).toBe("مستقل");
+    expect(AR["cap.band.strong"]).toBe("مرجع");
   });
 });
 
