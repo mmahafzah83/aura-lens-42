@@ -76,7 +76,8 @@ export function findKafAs(text: string): string | null {
     if (KAF_ROOT.has(w)) continue;
     const stem = w.slice(1);
     if (KAF_AS.includes(w)) return w;
-    if (stem.length >= 3 && stem.startsWith("م") && !stem.startsWith("ما")) return w;
+    if (KAF_REAL_PREFIX.some((p) => w.startsWith(p))) continue;
+    if (stem.length >= 3 && stem.startsWith("م")) return w;
   }
   return null;
 }
