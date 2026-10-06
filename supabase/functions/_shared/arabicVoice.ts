@@ -89,7 +89,8 @@ export function contrastSkeletons(text: string): number {
 export type ArabicCheck =
   | "arabic_ratio" | "arabic_indic_digits" | "banned_word" | "kaf_as" | "glued_latin"
   | "glued_digit" | "anta_openers" | "archetype_english" | "archetype_banned"
-  | "banned_opener" | "latin_prefix" | "contrast_skeleton" | "latin_technical" | "english_sector";
+  | "banned_opener" | "latin_prefix" | "contrast_skeleton" | "latin_technical" | "english_sector"
+  | "dash" | "latin_run" | "junior_label" | "title_repeat" | "loanword";
 
 export type ArabicGateDetail = { check: ArabicCheck; field: string; word?: string; fragment?: string };
 
@@ -265,6 +266,11 @@ const WHAT: Record<ArabicCheck, string> = {
   contrast_skeleton: "uses the «ليس … بل» contrast more than once. Keep at most one; say the rest directly",
   latin_technical: "leaves a common technical term in Latin letters. Use the required Arabic professional term",
   english_sector: "leaves an industry or sector name in English inside Arabic prose. Write the sector name in Arabic",
+  dash: "uses an em dash or en dash in Arabic prose. Use a colon or commas, and join list items with «و»",
+  latin_run: "leaves an organisation or name in Latin letters inside an Arabic sentence. Write it with its common Arabic name",
+  junior_label: "uses «مدرّس» or «معلّم» in a label. Use «أستاذ» or «أكاديمي», at or above the member's real seniority",
+  title_repeat: "starts the section body with the section's own title. Start with the point itself",
+  loanword: "uses the loanword «الأكاديميا». Write «العمل الأكاديمي» or «الجامعة»",
 };
 
 /** The one correction message: names the failed check. */
@@ -283,6 +289,7 @@ export const ARABIC_HARD_CHECKS: ArabicCheck[] = ["arabic_ratio", "archetype_eng
 export const ARABIC_STYLE_CHECKS: ArabicCheck[] = [
   "banned_word", "kaf_as", "glued_latin", "glued_digit", "anta_openers", "archetype_banned", "arabic_indic_digits",
   "banned_opener", "latin_prefix", "contrast_skeleton", "latin_technical", "english_sector",
+  "dash", "latin_run", "junior_label", "title_repeat", "loanword",
 ];
 
 const ARCHETYPE_KEYS = ["archetype", "primary_archetype", "secondary_archetype"];
@@ -308,7 +315,7 @@ export function arabicHardFail(
 /** Every style finding, not just the first. */
 export function arabicStyleNotes(
   values: Record<string, unknown>,
-  opts: { skipKeys?: string[] } = {},
+  opts: { skipKeys?: string[]; allowLatin?: (string | null | undefined)[] } = {},
 ): ArabicGateDetail[] {
   const skip = new Set(opts.skipKeys ?? []);
   const out: ArabicGateDetail[] = [];
@@ -349,6 +356,64 @@ export function arabicStyleNotes(
   }
   if (openers > 2) out.push({ check: "anta_openers", field: "*" });
   if (skeletons > 1) out.push({ check: "contrast_skeleton", field: "*" });
+  out.push(...arabicQualityNotes(values, opts));
+  return out;
+}
+
+/* ── Batch 14b: quality detectors for model-written Arabic ────────────────
+   Advisory: each finding feeds the one existing correction call; none of
+   them rejects a result on its own. */
+const hasArabic = (v: string) => /[\u0600-\u06FF]/.test(v);
+const DASH = /[\u2013\u2014]/;
+const LATIN_RUN = /[A-Z][A-Za-z'’.&-]*(?:\s+(?:of|and|for|the|&)?\s*[A-Z][A-Za-z'’.&-]*)+/g;
+export const LATIN_ALWAYS_ALLOWED = ["KnownBy", "LinkedIn", "Imprint"];
+const LABEL_KEYS = new Set(["archetype", "primary_archetype", "secondary_archetype", "label", "kicker"]);
+const JUNIOR_WORDS = ["مدرس", "المدرس", "معلم", "المعلم", "ومدرس", "ومعلم"];
+/** Arabic titles a section may wrongly repeat at the start of its own body. */
+export const SECTION_TITLES: Record<string, string[]> = {
+  uncontested_space: ["المساحة التي لم يشغلها أحد", "المساحة التي لا يملكها غيرك", "المساحة التي لا يشغلها أحد"],
+  honest_gap: ["الفجوة الصريحة", "فجوة واحدة", "الفجوة"],
+  the_gap: ["الفجوة"],
+  honest_truth: ["الحقيقة الصريحة"],
+  market_read: ["كيف يراك الناس", "كيف يراك السوق"],
+  unique_capability: ["ما تنفرد به", "ما لا يقدر عليه غيرك"],
+  invest_next: ["أين تضع جهدك القادم"],
+};
+const lastKey = (path: string) => (path.match(/[^.[\]]+/g) ?? []).filter((t) => !/^\d+$/.test(t)).pop() ?? path;
+
+export function arabicQualityNotes(
+  values: Record<string, unknown>,
+  opts: { skipKeys?: string[]; allowLatin?: (string | null | undefined)[] } = {},
+): ArabicGateDetail[] {
+  const skip = new Set(opts.skipKeys ?? []);
+  const allow = [...LATIN_ALWAYS_ALLOWED, ...(opts.allowLatin ?? [])]
+    .filter((x): x is string => !!x && !!x.trim())
+    .sort((a, b) => b.length - a.length);
+  const out: ArabicGateDetail[] = [];
+  for (const [k, v] of flatten(values, skip)) {
+    if (!hasArabic(v)) continue;
+    const key = lastKey(k);
+    const d = DASH.exec(v);
+    if (d) out.push({ check: "dash", field: k, fragment: frag(v, d.index) });
+    let masked = v;
+    for (const a of allow) masked = masked.split(a).join(" ".repeat(a.length));
+    for (const m of masked.matchAll(LATIN_RUN)) {
+      const words = m[0].split(/\s+/).filter((w) => /^[A-Z]/.test(w));
+      if (words.length >= 2) { out.push({ check: "latin_run", field: k, word: m[0].trim(), fragment: frag(v, m.index ?? 0) }); break; }
+    }
+    if (LABEL_KEYS.has(key)) {
+      const words = bare(v).split(/[\s،,.:]+/);
+      const w = JUNIOR_WORDS.find((j) => words.includes(j));
+      if (w) out.push({ check: "junior_label", field: k, word: w });
+    }
+    const titles = SECTION_TITLES[key];
+    if (titles) {
+      const b = bare(v).trim().replace(/^[«"]/, "");
+      const t = titles.find((x) => b.startsWith(bare(x)));
+      if (t) out.push({ check: "title_repeat", field: k, word: t });
+    }
+    if (bare(v).includes("الأكاديميا") || bare(v).includes("الاكاديميا")) out.push({ check: "loanword", field: k, word: "الأكاديميا" });
+  }
   return out;
 }
 
@@ -386,7 +451,7 @@ export function pathSet(obj: unknown, p: string, v: unknown): boolean {
   cur[ts[ts.length - 1] as any] = v;
   return true;
 }
-export const FIELD_FIX_CHECKS = new Set<ArabicCheck>(["banned_word", "kaf_as"]);
+export const FIELD_FIX_CHECKS = new Set<ArabicCheck>(["banned_word", "kaf_as", "dash", "latin_run", "junior_label", "title_repeat", "loanword"]);
 export const FIELD_FIX_SYSTEM = `You correct Arabic text. You receive a JSON object of field paths to Arabic values and a list of problems. Return ONLY a JSON object with the same keys, each value the corrected text. Change only what the problems name. Keep the meaning, every fact, figure and name. No markdown.\n\n${ARABIC_VOICE_BLOCK}`;
 
 /** Builds the one correction request, or null when nothing is fixable. */
@@ -410,8 +475,29 @@ export function applyFieldFix(obj: unknown, fields: Record<string, string>, repl
   for (const [k, before] of Object.entries(fields)) {
     const after = parsed[k];
     if (typeof after !== "string" || !after.trim()) continue;
-    const bad = (s: string) => arabicTextNotes(s).filter((d) => FIELD_FIX_CHECKS.has(d.check)).length;
+    const bad = (s: string) => arabicStyleNotes({ [lastKey(k)]: s }).filter((d) => FIELD_FIX_CHECKS.has(d.check)).length;
     if (bad(after) < bad(before) && pathSet(obj, k, after.trim())) n++;
   }
   return n;
+}
+
+/** Rule ids that fired, deduplicated, in order. */
+export function firedRules(notes: ArabicGateDetail[]): string[] {
+  return [...new Set(notes.map((n) => n.check))];
+}
+
+/**
+ * One arabic_quality_events row per rule that fired: function name, rule id,
+ * and whether the correction call cleared it. No member text, no user id.
+ */
+export async function logArabicQuality(
+  admin: { from: (t: string) => any },
+  functionName: string,
+  before: ArabicGateDetail[],
+  after: ArabicGateDetail[],
+): Promise<void> {
+  const left = new Set(after.map((n) => n.check));
+  const rows = firedRules(before).map((rule_id) => ({ function_name: functionName, rule_id, fixed: !left.has(rule_id as ArabicCheck) }));
+  if (!rows.length) return;
+  try { await admin.from("arabic_quality_events").insert(rows); } catch (e) { console.error("arabic_quality_events insert failed", e); }
 }
