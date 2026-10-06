@@ -165,7 +165,7 @@ async function runActor(actor: string, input: unknown, token: string, ms = 45_00
 /** Raw posts items, last 12 months, quote posts in, pure reshares out. Never throws. */
 export function fetchPostItems(canonical_url: string, token: string, now = new Date()): Promise<unknown[]> {
   return runActor(POSTS_ACTOR, {
-    targetUrls: [canonical_url],
+    profiles: [canonical_url],
     maxPosts: MAX_POSTS,
     postedLimitDate: twelveMonthsAgo(now).toISOString(),
     includeReposts: false,
@@ -177,5 +177,5 @@ export function fetchPostItems(canonical_url: string, token: string, now = new D
 
 /** Raw comment items written by the profile. Never throws. */
 export function fetchCommentItems(canonical_url: string, token: string): Promise<unknown[]> {
-  return runActor(COMMENTS_ACTOR, { targetUrls: [canonical_url], maxItems: MAX_COMMENTS }, token);
+  return runActor(COMMENTS_ACTOR, { profiles: [canonical_url], maxItems: MAX_COMMENTS }, token);
 }
