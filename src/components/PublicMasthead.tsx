@@ -121,6 +121,7 @@ const PM_CSS = `
   .pm{padding-inline:12px;}
   .pm .pm-link{padding:11px 4px;}
   .pm .pm-cta{padding:10px 10px;font-size:12px;}
+  .pm-bn{font-size:19px;}
 }
 @media (prefers-reduced-motion:reduce){
   .pm *{transition:none !important;}
