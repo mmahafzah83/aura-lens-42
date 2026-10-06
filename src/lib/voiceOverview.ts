@@ -12,6 +12,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { REPETITION_GATES } from "@/lib/voiceGates";
+import { hookWord, isArTr, voiceWord, type VoiceTr } from "@/lib/voiceText";
 
 export type Readiness = "forming" | "developing" | "working" | "reliable" | "distinctive";
 
@@ -107,46 +108,81 @@ const word = (n: number) => (n >= 0 && n < WORDS.length ? WORDS[n] : String(n));
  * thing standing between this member and the next rung — with a real number
  * from their own data. No compliment is paired with a contradiction.
  */
-export function readinessSentence(m: VoiceOverviewModel): string {
+export function readinessSentence(m: VoiceOverviewModel, tr?: VoiceTr): string {
+  if (isArTr(tr)) return readinessSentenceAr(m, tr);
   if (m.corpusCount === 0) {
-    return "Aura hasn't read anything you've written yet, so it has nothing to write from.";
+    return "KnownBy hasn't read anything you've written yet, so it has nothing to write from.";
   }
   const lowNames = m.traits.filter((t) => t.computable && t.confidence === "low").map((t) => t.display_name);
   const medNames = m.traits.filter((t) => t.computable && t.confidence === "medium").map((t) => t.display_name);
 
   if (m.readiness === "forming") {
-    return `Aura has read ${m.corpusCount} of your posts. It needs 8 before it can describe your voice at all — that is the only thing missing.`;
+    return `KnownBy has read ${m.corpusCount} of your posts. It needs 8 before it can describe your voice at all — that is the only thing missing.`;
   }
   if (m.readiness === "developing") {
-    return `Aura has read ${m.corpusCount} posts. Volume is the constraint: 20 is where it can draft in your voice unaided.`;
+    return `KnownBy has read ${m.corpusCount} posts. Volume is the constraint: 20 is where it can draft in your voice unaided.`;
   }
   if (m.readiness === "working") {
     if (lowNames.length) {
-      return `${lowNames.length === 1 ? "One measurement is" : `${lowNames.length} measurements are`} still unreliable — ${lowNames.join(", ")}. That is what is holding your voice back, not the ${m.corpusCount} posts Aura has read.`;
+      return `${lowNames.length === 1 ? "One measurement is" : `${lowNames.length} measurements are`} still unreliable — ${lowNames.join(", ")}. That is what is holding your voice back, not the ${m.corpusCount} posts KnownBy has read.`;
     }
-    return `Aura has read ${m.corpusCount} posts. Volume is still the constraint: 30 is where it stops second-guessing.`;
+    return `KnownBy has read ${m.corpusCount} posts. Volume is still the constraint: 30 is where it stops second-guessing.`;
   }
   if (m.readiness === "reliable") {
     // Binding constraint first: repetition, then breadth, then measurement.
     if (m.topShare !== null && m.topShare > REPETITION_GATES.topShareCeiling && m.topStyleKey && m.topStyleCount) {
-      return `Aura drafts reliably in your voice. ${word(m.topStyleCount).replace(/^./, (c) => c.toUpperCase())} of your last ${word(m.windowClassified)} classified posts opened the same way — that is what stands between you and a voice the market can tell apart.`;
+      return `KnownBy drafts reliably in your voice. ${word(m.topStyleCount).replace(/^./, (c) => c.toUpperCase())} of your last ${word(m.windowClassified)} classified posts opened the same way — that is what stands between you and a voice the market can tell apart.`;
     }
     if (m.diversity !== null && m.diversity < REPETITION_GATES.diversityFloor) {
-      return `Aura drafts reliably in your voice. Your openers only vary ${pct(m.diversity)} across your last ${m.windowClassified} classified posts — 60% is the bar for a voice the market can tell apart.`;
+      return `KnownBy drafts reliably in your voice. Your openers only vary ${pct(m.diversity)} across your last ${m.windowClassified} classified posts — 60% is the bar for a voice the market can tell apart.`;
     }
     if (m.diversity === null) {
-      return `Aura drafts reliably in your voice, from ${m.corpusCount} posts. Opener variety cannot be measured yet — ${m.windowClassified} of your last ${m.windowSize} posts have a labelled opener, and 8 are needed.`;
+      return `KnownBy drafts reliably in your voice, from ${m.corpusCount} posts. Opener variety cannot be measured yet — ${m.windowClassified} of your last ${m.windowSize} posts have a labelled opener, and 8 are needed.`;
     }
     if (medNames.length) {
-      return `Aura drafts reliably in your voice. ${medNames.length === 1 ? `${medNames[0]} is` : `${medNames.join(" and ")} are`} still measured at medium confidence — more of your writing would settle ${medNames.length === 1 ? "it" : "them"}.`;
+      return `KnownBy drafts reliably in your voice. ${medNames.length === 1 ? `${medNames[0]} is` : `${medNames.join(" and ")} are`} still measured at medium confidence — more of your writing would settle ${medNames.length === 1 ? "it" : "them"}.`;
     }
-    return `Aura drafts reliably in your voice, from ${m.corpusCount} posts.`;
+    return `KnownBy drafts reliably in your voice, from ${m.corpusCount} posts.`;
   }
   // distinctive — both gates already passed, so the numbers can be stated plainly.
   if (m.topShare !== null && m.topStyleKey && m.topStyleCount) {
-    return `Aura drafts in a voice the market can tell apart: ${pct(m.diversity)} opener variety across your last ${m.windowClassified} classified posts, and your most-used opener — ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — accounts for only ${m.topStyleCount} of them.`;
+    return `KnownBy drafts in a voice the market can tell apart: ${pct(m.diversity)} opener variety across your last ${m.windowClassified} classified posts, and your most-used opener — ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — accounts for only ${m.topStyleCount} of them.`;
   }
-  return `Aura drafts in a voice the market can tell apart, from ${m.corpusCount} posts.`;
+  return `KnownBy drafts in a voice the market can tell apart, from ${m.corpusCount} posts.`;
+}
+
+function readinessSentenceAr(m: VoiceOverviewModel, tr: VoiceTr): string {
+  const { t } = tr;
+  if (m.corpusCount === 0) return t("vo.rs.zero");
+  const names = (c: string) => arJoin(m.traits.filter((x) => x.computable && x.confidence === c).map((x) => voiceWord(x.display_name, tr)));
+  const low = m.traits.some((x) => x.computable && x.confidence === "low");
+  const med = m.traits.some((x) => x.computable && x.confidence === "medium");
+  if (m.readiness === "forming") return t("vo.rs.forming", { n: m.corpusCount });
+  if (m.readiness === "developing") return t("vo.rs.developing", { n: m.corpusCount });
+  if (m.readiness === "working") {
+    return low ? t("vo.rs.workingLow", { names: names("low"), n: m.corpusCount }) : t("vo.rs.working", { n: m.corpusCount });
+  }
+  if (m.readiness === "reliable") {
+    if (m.topShare !== null && m.topShare > REPETITION_GATES.topShareCeiling && m.topStyleKey && m.topStyleCount) {
+      return t("vo.rs.relShare", { c: m.topStyleCount, w: m.windowClassified });
+    }
+    if (m.diversity !== null && m.diversity < REPETITION_GATES.diversityFloor) {
+      return t("vo.rs.relDiv", { d: Math.round(m.diversity), n: m.windowClassified });
+    }
+    if (m.diversity === null) return t("vo.rs.relNull", { n: m.corpusCount, c: m.windowClassified, w: m.windowSize });
+    if (med) return t("vo.rs.relMed", { names: names("medium") });
+    return t("vo.rs.rel", { n: m.corpusCount });
+  }
+  if (m.topShare !== null && m.topStyleKey && m.topStyleCount) {
+    return t("vo.rs.dist", { d: m.diversity === null ? "" : Math.round(m.diversity), n: m.windowClassified, hook: hookWord(m.topStyleKey, tr), c: m.topStyleCount });
+  }
+  return t("vo.rs.distFallback", { n: m.corpusCount });
+}
+
+/** Arabic list joiner «أ، ب و ج». */
+function arJoin(items: string[]): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join("، ")} و${items[items.length - 1]}`;
 }
 
 export function leastUsedHook(dist: Record<string, number>): string | null {
@@ -171,14 +207,51 @@ export function repetitionSentence(m: {
   windowClassified: number;
   windowSize: number;
   windowDist: Record<string, number>;
-}): string | null {
+}, tr?: VoiceTr): string | null {
   if (m.topShare === null || m.topShare <= REPETITION_GATES.topShareBinding || !m.topStyleKey || !m.topStyleCount) return null;
   const alt = leastUsedHook(m.windowDist);
+  if (isArTr(tr)) {
+    return tr.t("vo.rc.repetition", {
+      c: m.topStyleCount, n: m.windowClassified, hook: hookWord(m.topStyleKey, tr),
+      share: Math.round(m.topShare), alt: hookWord(alt ?? "question", tr), k: m.windowDist[alt ?? ""] ?? 0,
+    });
+  }
   return `${m.topStyleCount} of your last ${m.windowClassified} classified posts open with ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — ${Math.round(m.topShare)}% of the window. Try opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} next time; you have used it ${m.windowDist[alt ?? ""] ?? 0} times in these ${m.windowClassified} classified posts.`;
 }
 
 /** Priority order is fixed: first match wins. Every branch carries a real number. */
-export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation" | "recommendationDismissed">): Recommendation {
+export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation" | "recommendationDismissed">, tr?: VoiceTr): Recommendation {
+  const r = buildRecommendationEn(m);
+  if (!isArTr(tr)) return r;
+  return { ...r, text: recommendationTextAr(r, m, tr), actionLabel: r.actionLabel === undefined ? undefined : tr.t(r.actionTab === "voice" ? "vo.reco.seeTraits" : r.actionTab === "test" ? "vws.test" : "vws.teach") };
+}
+
+function recommendationTextAr(r: Recommendation, m: Omit<VoiceOverviewModel, "recommendation" | "recommendationDismissed">, tr: VoiceTr): string {
+  const { t } = tr;
+  if (r.key === "repetition") return repetitionSentence(m, tr) ?? r.text;
+  if (r.key === "diversity") {
+    const alt = leastUsedHook(m.windowDist);
+    return t("vo.rc.diversity", { d: Math.round(m.diversity ?? 0), n: m.windowClassified, floor: REPETITION_GATES.diversityFloor, alt: hookWord(alt ?? "question", tr), k: m.windowDist[alt ?? ""] ?? 0 });
+  }
+  if (r.key === "freshness") return t("vo.rc.freshness", { n: m.freshnessDays });
+  if (r.key === "confidence") {
+    const low = m.traits.find((x) => x.computable && x.confidence === "low");
+    if (low) return t("vo.rc.confLow", { name: voiceWord(low.display_name, tr), n: Math.max(1, low.min_evidence - (low.evidence_count ?? m.corpusCount)) });
+    const med = m.traits.find((x) => x.computable && x.confidence === "medium");
+    if (med) {
+      const name = voiceWord(med.display_name, tr);
+      return med.evidence_count === null ? t("vo.rc.confMed", { name }) : t("vo.rc.confMedN", { name, n: med.evidence_count, gap: Math.max(1, med.min_evidence * 2 - med.evidence_count) });
+    }
+  }
+  if (r.key === "confirm") {
+    const u = m.traits.find((x) => x.source === "aura" && !x.last_confirmed_at);
+    if (u) return t("vo.rc.confirm", { name: voiceWord(u.display_name, tr), value: u.value ?? "?" });
+  }
+  if (r.key === "none") return t("vo.rc.none");
+  return r.text;
+}
+
+function buildRecommendationEn(m: Omit<VoiceOverviewModel, "recommendation" | "recommendationDismissed">): Recommendation {
   // 1 — repetition. Entropy is forgiving of one dominant opener, so this gate leads.
   const repetition = repetitionSentence(m);
   if (repetition) {
@@ -198,8 +271,8 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
   if (m.freshnessDays !== null && m.freshnessDays > 90) {
     return {
       key: "freshness",
-      text: `Your newest sample is ${m.freshnessDays} days old. Voice drifts after about 90 days — give Aura something recent to read.`,
-      actionLabel: "Teach Aura",
+      text: `Your newest sample is ${m.freshnessDays} days old. Voice drifts after about 90 days — give KnownBy something recent to read.`,
+      actionLabel: "Teach KnownBy",
       actionTab: "teach",
     };
   }
@@ -208,8 +281,8 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
     const needed = Math.max(1, low.min_evidence - (low.evidence_count ?? m.corpusCount));
     return {
       key: "confidence",
-      text: `Aura is unsure about ${low.display_name}. About ${needed} more of your posts would settle it.`,
-      actionLabel: "Teach Aura",
+      text: `KnownBy is unsure about ${low.display_name}. About ${needed} more of your posts would settle it.`,
+      actionLabel: "Teach KnownBy",
       actionTab: "teach",
     };
   }
@@ -222,7 +295,7 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
       text: gap === null
         ? `${medium.display_name} is measured at medium confidence. More of your own writing would lift it to high.`
         : `${medium.display_name} is measured at medium confidence from ${medium.evidence_count} posts. About ${gap} more would lift it to high.`,
-      actionLabel: "Teach Aura",
+      actionLabel: "Teach KnownBy",
       actionTab: "teach",
     };
   }
@@ -230,7 +303,7 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
   if (unconfirmed) {
     return {
       key: "confirm",
-      text: `Aura guessed your ${unconfirmed.display_name} at ${unconfirmed.value ?? "?"}. Confirm it or correct it — it is the only trait you have not signed off.`,
+      text: `KnownBy guessed your ${unconfirmed.display_name} at ${unconfirmed.value ?? "?"}. Confirm it or correct it — it is the only trait you have not signed off.`,
       actionLabel: "Test & Improve",
       actionTab: "test",
     };
@@ -248,10 +321,17 @@ export function variationSummary(m: {
   topShare: number | null;
   windowClassified: number;
   windowDist: Record<string, number>;
-}): string | null {
+}, tr?: VoiceTr): string | null {
   if (m.diversity === null || m.windowClassified < REPETITION_GATES.minClassified) return null;
   const d = Math.round(m.diversity);
   const varied = d >= REPETITION_GATES.diversityFloor;
+  if (isArTr(tr)) {
+    const fa = tr.t("vo.vs.first", { d, floor: REPETITION_GATES.diversityFloor });
+    if (m.topShare === null) return fa;
+    const sh = Math.round(m.topShare);
+    if (sh <= REPETITION_GATES.topShareCeiling) return `${fa} ${tr.t("vo.vs.ok", { share: sh, ceiling: REPETITION_GATES.topShareCeiling })}`;
+    return `${fa} ${tr.t(varied ? "vo.vs.but" : "vo.vs.and", { share: sh, ceiling: REPETITION_GATES.topShareCeiling, alt: hookWord(leastUsedHook(m.windowDist) ?? "question", tr) })}`;
+  }
   const first = `Your openers are ${d}% varied — healthy is ${REPETITION_GATES.diversityFloor}% or more.`;
   if (m.topShare === null) return first;
   const share = Math.round(m.topShare);

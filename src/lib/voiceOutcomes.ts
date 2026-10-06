@@ -12,11 +12,12 @@ import {
 } from "../../supabase/functions/_shared/voiceOutcomes";
 import { COMPUTABLE_TRAITS } from "../../supabase/functions/_shared/voiceMeasure";
 import { HOOK_NAME, ENDING_NAME } from "@/lib/voiceDna";
+import { endingWord, hookWord, isArTr, voiceWord, type VoiceTr } from "@/lib/voiceText";
 
 export const EXCLUSION_LABEL: Record<string, string> = {
   no_text: "no text saved",
   not_own_writing: "not your own writing",
-  not_in_corpus: "not in what Aura reads",
+  not_in_corpus: "not in what KnownBy reads",
   no_metrics_yet: "no performance figures yet",
   no_performance_data: "no performance figures yet",
   other_measure: "measured a different way",
@@ -117,17 +118,37 @@ export async function runLearnFromOutcomes() {
 
 const x = (n: number) => `${n.toFixed(1)}×`;
 
-export function traitFindingSentence(f: TraitFinding, displayName: string): string {
+/** Arabic exclusion label; unknown codes fall through. */
+export function exclusionLabel(code: string, tr?: VoiceTr): string {
+  if (isArTr(tr)) {
+    const v = tr.t(`vo.ex.${code}`, { days: OUTCOME_RULES.settleDays, n: OUTCOME_RULES.minImpressions });
+    if (v && v !== `vo.ex.${code}`) return v;
+  }
+  return EXCLUSION_LABEL[code] ?? code;
+}
+
+export function traitFindingSentence(f: TraitFinding, displayName: string, tr?: VoiceTr): string {
+  if (isArTr(tr)) {
+    return tr.t(f.raise ? "vo.wf.traitHigh" : "vo.wf.traitLow", { name: voiceWord(displayName, tr), x: f.ratio.toFixed(1), topN: f.topN, bottomN: f.bottomN });
+  }
   const dir = f.raise ? "more" : "less";
   return `Your posts with ${dir} ${displayName.toLowerCase()} earned ${x(f.ratio)} your typical engagement — ${f.topN} posts versus ${f.bottomN}.`;
 }
 
-export function styleFindingSentence(f: StyleFinding): string {
+export function styleFindingSentence(f: StyleFinding, tr?: VoiceTr): string {
+  if (isArTr(tr)) {
+    const up = f.ratio >= 1;
+    const key = f.kind === "hook" ? (up ? "vo.wf.hookUp" : "vo.wf.hookDown") : (up ? "vo.wf.endUp" : "vo.wf.endDown");
+    return tr.t(key, { name: f.kind === "hook" ? hookWord(f.style, tr) : endingWord(f.style, tr), x: f.ratio.toFixed(1), n: f.n });
+  }
   const name = (f.kind === "hook" ? HOOK_NAME[f.style] : ENDING_NAME[f.style]) ?? f.style;
   const verb = f.ratio >= 1 ? "earned" : "earned only";
   return `${f.kind === "hook" ? "Openers" : "Endings"} using ${name.toLowerCase()} ${verb} ${x(f.ratio)} your typical reach, across ${f.n} ${f.n === 1 ? "post" : "posts"}.`;
 }
 
-export function proposalSentence(f: TraitFinding, displayName: string, from: number, to: number): string {
-  return `${traitFindingSentence(f, displayName)} Aura suggests ${f.raise ? "raising" : "lowering"} ${displayName.toLowerCase()} from ${Math.round(from)}% to ${Math.round(to)}%.`;
+export function proposalSentence(f: TraitFinding, displayName: string, from: number, to: number, tr?: VoiceTr): string {
+  if (isArTr(tr)) {
+    return `${traitFindingSentence(f, displayName, tr)} ${tr.t(f.raise ? "vo.wf.raise" : "vo.wf.lower", { name: voiceWord(displayName, tr), a: Math.round(from), b: Math.round(to) })}`;
+  }
+  return `${traitFindingSentence(f, displayName)} KnownBy suggests ${f.raise ? "raising" : "lowering"} ${displayName.toLowerCase()} from ${Math.round(from)}% to ${Math.round(to)}%.`;
 }
