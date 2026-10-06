@@ -374,7 +374,7 @@ serve(async (req) => {
           user_id: userId,
           type: "weekly_brief",
           channel: "email",
-          title: "Weekly brief sent",
+          title: lang === "ar" ? "وصلك الموجز الأسبوعي بالبريد" : "Weekly brief sent",
           body: subject,
           read: true,
           read_at: new Date().toISOString(),

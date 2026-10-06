@@ -256,7 +256,7 @@ serve(async (req) => {
             user_id: uid,
             type: "morning_signal",
             channel: "email",
-            title: "Morning signal sent",
+            title: lang === "ar" ? "وصلتك حصيلة الليل بالبريد" : "Morning signal sent",
             body: subject,
             read: true,
             read_at: new Date().toISOString(),
