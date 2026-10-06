@@ -4,7 +4,7 @@
  */
 import { useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import i18n, { dateLocale } from "@/i18n";
+import { displayReadStamp } from "@/lib/arDisplay";
 import RevealCard, {
   rasteriseRevealCard, type RevealData,
 } from "@/components/onboarding/RevealCard";
@@ -63,15 +63,6 @@ const ModelBody = ({ text }: { text: string }) => (
   </Body>
 );
 
-/** "18 AUG 2026" — the stamp printed on the card's own signature line. */
-const longDate = (iso?: string | null): string | undefined => {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return undefined;
-  return d.toLocaleDateString(dateLocale(i18n.language === "ar" ? "ar" : "en"), { day: "2-digit", month: "short", year: "numeric" })
-    .replace(/\s+/g, " ").toUpperCase();
-};
-
 const slugOf = (name?: string | null): string =>
   String(name ?? "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "").slice(0, 40) || "my-read";
@@ -91,11 +82,11 @@ export default function ReadResult({
   /** Quiet line about the age of a cached read. */
   ageNote?: string | null;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const exportRef = useRef<HTMLDivElement>(null);
   const [shareNote, setShareNote] = useState<string>();
 
-  const dateLine = longDate(generatedAt);
+  const dateLine = displayReadStamp(generatedAt, lang);
   const cardData: RevealData = {
     archetype: read.archetype ?? "",
     name: name ?? undefined,
@@ -147,7 +138,7 @@ export default function ReadResult({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: INK }}>
       {/* off-screen export node — one builder, two paths */}
-      <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0 }} aria-hidden>
+      <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0 }} aria-hidden="true">
         <RevealCard ref={exportRef} data={exportData} forExport emptyFiguresLine={read.uncontested_space ?? ""} />
       </div>
 

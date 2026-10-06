@@ -1,4 +1,6 @@
 - Interface language: the stored choice is applied only on routes listed in `ARABIC_READY_ROUTES` (src/i18n/index.ts); every other route renders English LTR — why: half-translated pages must never flip right-to-left.
+- Arabic typography is enforced in base CSS, raw mono Arabic glyphs use bundled Cairo, and DocumentDirection strips arrow text from controls — why: shared and legacy controls must follow the same display rules.
+- Read card and resume stamps use displayReadStamp — why: Arabic unpadded days and unchanged English stamps must not drift.
 - Retired product name: files listed in `RETIRED_NAME_FILES` (scripts/check-vocabulary.mjs) fail the build if they show "Aura" outside comments and console output — why: the new-user journey must only ever say KnownBy.
 - The Arabic-ready route registry lives in `src/i18n/routes.ts` (re-exported from `src/i18n`) — why: e2e specs import it in Node, where the i18n bootstrap cannot load.
 - Assessment item text (questions, options, slider dimensions) is displayed only through `src/lib/assessmentItems.ts`; `*_ar` columns and option `label_ar` are display-only — why: stored answers, slider keys and model input must stay on the canonical English fields.

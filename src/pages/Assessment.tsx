@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import i18n, { readStoredLang, dateLocale } from "@/i18n";
+import i18n, { readStoredLang } from "@/i18n";
+import { displayReadStamp } from "@/lib/arDisplay";
 import { numberWord } from "@/i18n/numberWord";
 import { Trans } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -84,15 +85,6 @@ const STEP_TO_STAGE: Record<string, Stage> = {
   /* ...unless they pressed Back from onboarding: that returns them to the
      exact screen they left, the read itself, with no intermediate menu. */
   read_open: "read",
-};
-
-/** "18 AUG 2026" — the one date shape on this page. */
-const stampDate = (iso?: string | null): string | null => {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(dateLocale(i18n.language === "ar" ? "ar" : "en"), { day: "2-digit", month: "short", year: "numeric" })
-    .replace(/\s+/g, " ").toUpperCase();
 };
 
 const Assessment = () => {
@@ -362,7 +354,7 @@ const Assessment = () => {
             <section className="asg-panel">
               <h1 className="asg-ph">{t("assess.resume.heading")}</h1>
               <p className="asg-resume-meta">
-                {[state.name, stampDate(state.generated_at)].filter(Boolean).join(" · ")}
+                {[state.name, displayReadStamp(state.generated_at, lang)].filter(Boolean).join(" · ")}
               </p>
               <button className="asg-btn asg-bp asg-full" onClick={() => setStage("read")}>
                 {t("assess.resume.open")} <span className="asg-a">↗</span>
