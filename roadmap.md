@@ -1,11 +1,5 @@
 # Opportunity engine
 
-## Batch 13 — first-screen wording
-- [ ] Landing hero copy and ring bounds, EN/AR
-- [ ] Assessment gate copy and RTL layout
-- [ ] Four checks and all requested screenshots viewed
-- Rollback: b0cda420d31efe0d98718aad7f43f27a2be1de6e (named snapshot control unavailable)
-
 ## Step 11 — the source factory (in progress)
 - [x] `oe_entities` table, candidate link, job plumbing
 - [x] `oe-seed-entities` — Wikidata, Wikipedia lists, Wikipedia categories, directory attempts
