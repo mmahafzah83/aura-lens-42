@@ -15,6 +15,10 @@ import { logEfError } from "../_shared/observe.ts";
 // THE DICTIONARY (Deno twin of src/constants/vocabulary.ts). Every member-facing
 // count noun in this file comes from `countNoun` — never hand-written.
 import { countNoun, nDrafts, nPosts, nSignals, nEvidence, nCaptures } from "../_shared/vocabulary.ts";
+import { ARABIC_VOICE_BLOCK } from "../_shared/arabicVoice.ts";
+import { buildArabicEvidenceLines, fallbackArabicHomeAddress, gateArabicHomeAddress } from "../_shared/homeAddressArabic.ts";
+import { memberLang, type MemberLang } from "../_shared/memberLang.ts";
+import { createLovableResponsesCall } from "../_shared/lovableResponses.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,7 +27,7 @@ const corsHeaders = {
 };
 
 const FN = "home-address";
-const MODEL = "google/gemini-3-flash-preview";
+const MODEL = "openai/gpt-6-astra";
 
 // Ratified bands. Floor is inclusive; the last band is the top.
 const BANDS: Array<{ key: string; name: string; floor: number }> = [
@@ -914,27 +918,21 @@ function fallbackAddress(f: Facts, move: Move | null, phrases: string[]): string
   return `${upperFirst(a)}. ${upperFirst(b)}. ${decisionSentence(move)}`;
 }
 
-async function callModel(apiKey: string, userMsg: string): Promise<string> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMsg },
-      ],
-    }),
+async function callModel(
+  apiKey: string, userMsg: string, system = SYSTEM_PROMPT, signal?: AbortSignal, initialRunId?: string,
+): Promise<{ text: string; runId?: string }> {
+  const { result, getRunId } = createLovableResponsesCall({
+    apiKey, model: MODEL, instructions: system, messages: [{ role: "user", content: userMsg }], signal, initialRunId,
   });
-  if (!res.ok) throw new Error(`gateway ${res.status}`);
-  const data = await res.json();
-  return String(data?.choices?.[0]?.message?.content ?? "").trim();
+  const text = String(await result.text).trim();
+  return { text, runId: getRunId() };
 }
 
 async function writeAddress(
   apiKey: string, facts: Facts, lens: string, lensReason: string,
-  move: Move | null, userId: string, memberName: string | null,
+  move: Move | null, userId: string, memberName: string | null, lang: MemberLang = "en", signal?: AbortSignal,
 ): Promise<{ text: string; model: string | null; quality: Record<string, unknown>; phrases: string[] }> {
+  if (lang === "ar") return await writeArabicAddress(apiKey, facts, lens, lensReason, move, userId, signal);
   const lensBrief = {
     record: "Focus on what they have built and what the record now shows.",
     room: "Focus on the conversation happening now and where they should stand in it.",
@@ -964,10 +962,10 @@ ${phrases.map((s) => `- ${s}`).join("\n") || "- (no evidence yet)"}`;
   for (let i = 0; i < 2; i++) {
     let text = "";
     try {
-      text = await callModel(apiKey, i === 0 ? base : `${base}
+      text = (await callModel(apiKey, i === 0 ? base : `${base}
 
 Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write it again and fix every one of those.
-Hard requirements on this second attempt: copy at least two of the evidence phrases above letter for letter, and include one sentence of five words or fewer.`);
+Hard requirements on this second attempt: copy at least two of the evidence phrases above letter for letter, and include one sentence of five words or fewer.`, SYSTEM_PROMPT, signal)).text;
     } catch (e) {
       attempts.push({ attempt: i + 1, reasons: [`gateway error: ${(e as Error)?.message}`] });
       break;
@@ -1001,10 +999,58 @@ Hard requirements on this second attempt: copy at least two of the evidence phra
   };
 }
 
+async function writeArabicAddress(
+  apiKey: string, facts: Facts, lens: string, lensReason: string,
+  move: Move | null, userId: string, signal?: AbortSignal,
+): Promise<{ text: string; model: string | null; quality: Record<string, unknown>; phrases: string[] }> {
+  const evidence = buildArabicEvidenceLines(facts, move);
+  const moveTitle = move?.ar?.title ?? "احفظ رابطاً واحداً قرأته اليوم";
+  const moveWhat = move?.ar?.what ?? "اختر شيئاً قرأته اليوم واحفظ رابطه.";
+  const prompt = `اكتب بطاقة الصباح لهذا العضو في 4 إلى 6 جمل عربية قصيرة ومترابطة.
+الزاوية: ${lens}. سببها: ${lensReason}.
+اختم بقرار واحد فقط يشير إلى هذه الخطوة: ${moveTitle} — ${moveWhat}
+
+سطور الأدلة — انسخ سطرين أو ثلاثة منها حرفياً. لا تضف حقيقة أو رقماً أو اسماً لا يظهر فيها:
+${evidence.map((line) => `- ${line}`).join("\n") || "- لا تغيير يمكن عرضه من أدلتك اليوم."}
+
+لا تستخدم عنواناً أو قائمة أو مقدمة.`;
+  const system = `${SYSTEM_PROMPT}\n\n${ARABIC_VOICE_BLOCK}`;
+  const attempts: Array<{ attempt: number; reasons: string[] }> = [];
+  let runId: string | undefined;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const correction = attempt === 0 ? prompt : `${prompt}\n\nرفض الفحص المحاولة السابقة للأسباب التالية: ${attempts[0].reasons.join("؛ ")}. أعد النص مرة واحدة. انسخ سطرين من الأدلة حرفياً، ولا تضف أي رقم أو اسم، وطبّق كل قواعد العربية.`;
+      const result = await callModel(apiKey, correction, system, signal, runId);
+      runId = result.runId;
+      if (!result.text) {
+        attempts.push({ attempt: attempt + 1, reasons: ["empty response"] });
+        continue;
+      }
+      const gate = gateArabicHomeAddress(result.text, evidence);
+      if (gate.pass) {
+        return {
+          text: result.text, model: MODEL, phrases: evidence,
+          quality: { passed: true, language: "ar", attempt: attempt + 1, failed_attempts: attempts, phrases: evidence, checked_at: new Date().toISOString() },
+        };
+      }
+      attempts.push({ attempt: attempt + 1, reasons: gate.reasons });
+    } catch (error) {
+      attempts.push({ attempt: attempt + 1, reasons: [`gateway error: ${(error as Error)?.message}`] });
+      break;
+    }
+  }
+
+  return {
+    text: fallbackArabicHomeAddress(evidence), model: null, phrases: evidence,
+    quality: { passed: false, fallback: true, language: "ar", failed_attempts: attempts, phrases: evidence, checked_at: new Date().toISOString() },
+  };
+}
+
 // ───────────────────────────────────────────────────────────── GENERATION
 
 async function generateFor(
-  admin: SupabaseClient, apiKey: string, userId: string, force: boolean,
+  admin: SupabaseClient, apiKey: string, userId: string, force: boolean, signal?: AbortSignal,
 ) {
   const today = dayKey(new Date());
 
@@ -1018,11 +1064,12 @@ async function generateFor(
   const { lens, lens_reason } = chooseLens(facts);
   const moves = chooseMoves(facts);
   const { data: prof } = await admin.from("diagnostic_profiles")
-    .select("first_name").eq("user_id", userId).maybeSingle();
+    .select("first_name, ui_language").eq("user_id", userId).maybeSingle();
   const memberName = (prof as any)?.first_name ?? null;
+  const lang = await memberLang(admin, userId, (prof as any)?.ui_language);
 
   const { text, model, quality, phrases } = await writeAddress(
-    apiKey, facts, lens, lens_reason, moves[0] ?? null, userId, memberName,
+    apiKey, facts, lens, lens_reason, moves[0] ?? null, userId, memberName, lang, signal,
   );
   const rejected = quality.passed !== true;
 
@@ -1088,7 +1135,7 @@ serve(async (req) => {
       let ok = 0, failed = 0, rejected = 0;
       for (const id of ids) {
         try {
-          const r = await generateFor(admin, apiKey, id, true);
+          const r = await generateFor(admin, apiKey, id, true, req.signal);
           ok++;
           if (r.rejected) rejected++;
         } catch (e) {
@@ -1116,7 +1163,7 @@ serve(async (req) => {
     if (claimsErr || !claimsData?.claims?.sub) return json({ error: "Unauthorized" }, 401);
     const userId = claimsData.claims.sub as string;
 
-    const { row, cached, rejected } = await generateFor(admin, apiKey, userId, force);
+    const { row, cached, rejected } = await generateFor(admin, apiKey, userId, force, req.signal);
     await logEfError(admin, {
       function_name: FN,
       error: cached ? "served cached address" : "generated address",
