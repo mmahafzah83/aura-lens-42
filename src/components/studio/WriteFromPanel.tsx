@@ -219,7 +219,7 @@ export default function WriteFromPanel({ signalId, lang }: { signalId: string | 
                       color: "var(--text-secondary)", flex: "0 0 auto",
                       fontFamily: "var(--ff-mono)", fontSize: 11,
                     }}>
-                      {formatSmartDate(f.created_at)}
+                      {formatSmartDate(f.created_at, lang)}
                     </span>
                   </div>
                 ))}

@@ -3,8 +3,10 @@ import { motion } from "framer-motion";
 import { User2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ConnectionStatusPanel = () => {
+  const { lang: dateLang } = useLanguage();
   const [connection, setConnection] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +52,7 @@ const ConnectionStatusPanel = () => {
           </h3>
           <p className="text-meta mt-0.5">
             {isConnected
-              ? `${handle ? `@${handle} · ` : ""}Identity linked ${connection?.connected_at ? formatSmartDate(connection.connected_at) : ""}`
+              ? `${handle ? `@${handle} · ` : ""}Identity linked ${connection?.connected_at ? formatSmartDate(connection.connected_at, dateLang) : ""}`
               : "Connect in the Identity tab to link your LinkedIn profile."
             }
           </p>

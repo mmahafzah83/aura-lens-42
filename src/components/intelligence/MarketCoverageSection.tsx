@@ -6,6 +6,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraCard from "@/components/ui/AuraCard";
 import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 const ORANGE = "#B08D3A"; // bronze — coverage accent, not a signal indicator
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export default function MarketCoverageSection({ onOpenCapture, signals = [] }: Props) {
+  const { lang: dateLang } = useLanguage();
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +136,7 @@ export default function MarketCoverageSection({ onOpenCapture, signals = [] }: P
         {open && data && data.items.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
-              Last refreshed: {formatSmartDate(data.generated_at)}
+              Last refreshed: {formatSmartDate(data.generated_at, dateLang)}
             </span>
             <Button
               size="sm"

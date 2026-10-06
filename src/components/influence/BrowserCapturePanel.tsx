@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CaptureOverview {
   extensionConnected: boolean;
@@ -19,6 +20,7 @@ interface CaptureOverview {
 }
 
 const BrowserCapturePanel = () => {
+  const { lang: dateLang } = useLanguage();
   const [overview, setOverview] = useState<CaptureOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -170,7 +172,7 @@ const BrowserCapturePanel = () => {
             <p className="text-xs text-muted-foreground/35">Last capture</p>
           </div>
           <p className="text-xs font-medium text-muted-foreground/50">
-            {overview?.lastCaptureTime ? formatSmartDate(overview.lastCaptureTime) : "—"}
+            {overview?.lastCaptureTime ? formatSmartDate(overview.lastCaptureTime, dateLang) : "—"}
           </p>
         </div>
       </div>

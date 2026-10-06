@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Activity, Clock, ShieldX, Search, HelpCircle, CheckCircle2, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Stats {
   authored: number;
@@ -15,6 +16,7 @@ interface Stats {
 }
 
 const DiscoveryHealthCard = () => {
+  const { lang: dateLang } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -152,7 +154,7 @@ const DiscoveryHealthCard = () => {
         {stats.lastRunAt && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
             <Clock className="w-3 h-3 text-muted-foreground/25" />
-            <span>Last run: {formatSmartDate(stats.lastRunAt)}</span>
+            <span>Last run: {formatSmartDate(stats.lastRunAt, dateLang)}</span>
             {stats.lastRunType && (
               <span className="px-1.5 py-0.5 rounded bg-primary/5 text-primary/40 text-xs font-medium">
                 {syncLabel(stats.lastRunType)}
