@@ -10,7 +10,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
-import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairValues, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
+import { ARABIC_VOICE_BLOCK, arabicGateDetail, arabicCorrectionText, repairValues, arabicQualityNotes, arabicFixInstruction, logArabicQuality, type ArabicGateDetail } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -678,15 +678,18 @@ Deno.serve(async (req) => {
       if (read && hasPlaceholderInValues(read)) read = null;
       if (l === "ar" && read) read = repairValues(read, ["own_words_quote", "raw"]);
       let gateFail = l === "ar" && read ? arabicGateDetail(read, { skipKeys: ["own_words_quote", "raw"] }) : null;
+      const qOpts = { skipKeys: ["own_words_quote", "raw"], allowLatin: [full_name, headline] };
+      const quality0 = l === "ar" && read ? arabicQualityNotes(read, qOpts) : [];
+      const firstRead = read;
 
-      if (!read || gateFail) {
+      if (!read || gateFail || quality0.length) {
         // One correction pass: the shape was wrong, a placeholder survived, or the Arabic failed.
         const correctionMessages = [...messages];
         if (raw) correctionMessages.push({ role: "assistant", content: raw });
         correctionMessages.push({
           role: "user",
-          content: gateFail
-            ? arabicCorrectionText(gateFail) + " Return ONLY the JSON object with the same seven keys (keys in English, values in Arabic, own_words_quote verbatim), no markdown fences, no commentary."
+          content: gateFail || (read && quality0.length)
+            ? (gateFail ? arabicCorrectionText(gateFail) + " " : "") + (quality0.length ? arabicFixInstruction(quality0) : "") + " Return ONLY the JSON object with the same seven keys (keys in English, values in Arabic, own_words_quote verbatim), no markdown fences, no commentary."
             : "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
         });
         raw = await callModel(correctionMessages, l);
@@ -694,6 +697,14 @@ Deno.serve(async (req) => {
         if (read && hasPlaceholderInValues(read)) read = null;
         if (l === "ar" && read) read = repairValues(read, ["own_words_quote", "raw"]);
         gateFail = l === "ar" && read ? arabicGateDetail(read, { skipKeys: ["own_words_quote", "raw"] }) : null;
+        /* A first draft that only had quality findings stays if the correction is unusable. */
+        if ((!read || gateFail) && firstRead && quality0.length && !arabicGateDetail(firstRead, { skipKeys: ["own_words_quote", "raw"] })) {
+          read = firstRead; gateFail = null;
+        }
+      }
+      if (quality0.length) {
+        const after = read ? arabicQualityNotes(read, qOpts) : quality0;
+        await logArabicQuality(admin, "mirror-read", quality0, after);
       }
       return { read: gateFail ? null : read, raw, gateFail };
     }

@@ -372,8 +372,7 @@ const JUNIOR_WORDS = ["مدرس", "المدرس", "معلم", "المعلم", "�
 /** Arabic titles a section may wrongly repeat at the start of its own body. */
 export const SECTION_TITLES: Record<string, string[]> = {
   uncontested_space: ["المساحة التي لم يشغلها أحد", "المساحة التي لا يملكها غيرك", "المساحة التي لا يشغلها أحد"],
-  honest_gap: ["الفجوة الصريحة", "فجوة واحدة", "الفجوة"],
-  the_gap: ["الفجوة"],
+  honest_gap: ["الفجوة الصريحة", "فجوة واحدة"],
   honest_truth: ["الحقيقة الصريحة"],
   market_read: ["كيف يراك الناس", "كيف يراك السوق"],
   unique_capability: ["ما تنفرد به", "ما لا يقدر عليه غيرك"],
