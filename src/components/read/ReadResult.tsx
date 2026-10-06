@@ -69,10 +69,12 @@ const slugOf = (name?: string | null): string =>
 
 /** The read itself: the card, the signals, the honest gap, the own words. */
 export default function ReadResult({
-  read, postsRead = 0, sparse = false,
+  read, postsRead = 0, commentsRead = 0, sparse = false,
   name, headline, avatarUrl, generatedAt, ageNote,
 }: {
-  read: Read; postsRead?: number; sparse?: boolean;
+  read: Read; postsRead?: number;
+  /** His own comments on other people's posts, last 12 months. Hidden at 0. */
+  commentsRead?: number; sparse?: boolean;
   /** Whose read this is — name, headline and picture, when Aura holds them. */
   name?: string | null;
   headline?: string | null;
@@ -97,7 +99,11 @@ export default function ReadResult({
     marketRead: read.market_read ?? "",
     subjects: (read.themes ?? []).slice(0, 3),
     softGround: [],
-    figures: postsRead > 0 ? [{ value: String(postsRead), label: t("reveal.figure.postsRead", { count: postsRead }) }] : [],
+    figures: [
+      ...(postsRead > 0 ? [{ value: String(postsRead), label: t("reveal.figure.postsRead", { count: postsRead }) }] : []),
+      ...(commentsRead > 0 ? [{ value: String(commentsRead), label: t("reveal.figure.commentsWritten", { count: commentsRead }) }] : []),
+    ],
+    figuresCaption: postsRead > 0 || commentsRead > 0 ? t("reveal.figure.caption12m") : undefined,
   };
 
   /* The shareable artefact carries his own sentence; on screen it has its own
