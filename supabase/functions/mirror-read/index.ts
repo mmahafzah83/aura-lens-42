@@ -450,10 +450,10 @@ Deno.serve(async (req) => {
     const profile = await profilePromise;
     run?.mark(OPERATION_STAGES.linkedin_read[1]);
     const [postItems, commentItems] = await Promise.all([postsPromise, commentsPromise]);
-    const since = twelveMonthsAgo();
+    const writingSince = twelveMonthsAgo();
     const budgeted = applyBudget(
       filterOwnPosts(postItems, handle, since),
-      filterOwnComments(commentItems, handle, since),
+      filterOwnComments(commentItems, handle, writingSince),
     );
     const ownPosts: OwnPost[] = budgeted.posts;
     const ownComments: OwnComment[] = budgeted.comments;
