@@ -9,6 +9,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { HOOK_LABEL, repetitionSentence } from "@/lib/voiceOverview";
+import type { VoiceTr } from "@/lib/voiceText";
 
 /* ── vocabulary ──────────────────────────────────────────────────────────── */
 
@@ -137,7 +138,7 @@ export interface VoiceDnaModel {
 }
 
 /** The variation sentence. One generator, shared with the Overview page. */
-export function variationSentence(m: VoiceDnaModel): string | null {
+export function variationSentence(m: VoiceDnaModel, tr?: VoiceTr): string | null {
   return repetitionSentence({
     topShare: m.topShare,
     topStyleKey: m.topStyleKey,
@@ -145,7 +146,7 @@ export function variationSentence(m: VoiceDnaModel): string | null {
     windowClassified: m.windowClassified,
     windowSize: m.windowSize,
     windowDist: m.windowDist,
-  });
+  }, tr);
 }
 
 export const hookPhrase = (key: string) => HOOK_LABEL[key] ?? key;
