@@ -22,6 +22,8 @@ JSON keys and any UPPERCASE section marker lines stay exactly as specified, in E
 READER: Write as a careful Saudi professional writes to a peer: contemporary, plain, confident. Gulf reader first, clear to any Arab reader. Not dialect, not ministry Arabic, not translated English. Short sentences. Say the thing directly.
 PRODUCT TERMS (always): the read or report = «ملفك» or «ملف الهوية المهنية». The LinkedIn profile = «صفحتك». Standing = «مكانتك». Position in the market = «موقعك». Evidence = «دليل» / «أدلة». What the member saves = «ما حفظته». Signal = «إشارة». The product name is KnownBy in Latin letters; the score is Imprint in Latin letters. Stage names: «متابع · مستكشف · استراتيجي · صاحب رأي · مرجع». Never write «الحضور المهني», «العلامة الشخصية», «قائد فكر», «أورا» or "Aura".
 TECHNICAL WORDS: use the Arabic word when one is in common professional use («الذكاء الاصطناعي», «لوحة المؤشرات», «مؤشرات الأداء»). Keep a Latin term only for a proper name or when no accepted Arabic exists. Never attach «الـ», «لـ», «بـ», «كـ» to a Latin word.
+INDUSTRIES AND SECTORS: write industry and sector names in Arabic inside running Arabic text, even when the stored value is English: «الطاقة والمرافق», «الخدمات المالية», «القطاع الحكومي». Do not leave an English industry or sector label inside an Arabic sentence.
+STANDALONE TECHNICAL TOKENS: never leave AI, KPI, KPIs, dashboard, roadmap or stakeholders in Latin letters inside Arabic output. Write «الذكاء الاصطناعي», «مؤشرات الأداء», «لوحة المؤشرات», «خارطة الطريق» and «أصحاب المصلحة». Proper names such as LinkedIn, KnownBy and Imprint, and company or product names, stay in Latin letters.
 BANNED CONSTRUCTIONS: «كـ» meaning "as" in any form (rewrite with a direct object or «بوصفه»); «تم» / «يتم» + verbal noun; «من خلال»; «يمكنك»; «قم بـ»; «الخاص بك»; «ليس فقط … بل»; the contrast skeleton «ليس X. بل Y» more than once in a text; openers «معظم…», «في عالم اليوم», «لا يخفى على أحد», «في ظل»; «تملك فرصة أن»; empty paired aphorisms; arrows and decorative symbols; Arabic-Indic digits (use 0-9).
 DIALECT: no Levantine or Egyptian words («مش», «ما حد», «يحكي», «هيك», «ليش», «عشان», «كتير», «بدّي») in interface text, reads, reports, emails or notifications. Post drafts follow the member's own measured voice and samples; if the samples are not dialect, the draft is not dialect.
 GOOD: «يراك السوق مدير برامج رقمية يعمل داخل جهات حكومية كبيرة.» / «مساحتك: ما يحدث في الشهر الثالث بعد الإطلاق. لم يشغلها أحد.»
@@ -79,7 +81,7 @@ export function contrastSkeletons(text: string): number {
 export type ArabicCheck =
   | "arabic_ratio" | "arabic_indic_digits" | "banned_word" | "kaf_as" | "glued_latin"
   | "glued_digit" | "anta_openers" | "archetype_english" | "archetype_banned"
-  | "banned_opener" | "latin_prefix" | "contrast_skeleton";
+  | "banned_opener" | "latin_prefix" | "contrast_skeleton" | "latin_technical" | "english_sector";
 
 export type ArabicGateDetail = { check: ArabicCheck; field: string; word?: string; fragment?: string };
 
@@ -186,6 +188,10 @@ export function arabicGateDetail(
     if (o) return { check: "banned_opener", field: k, word: o };
     const lp = LATIN_PREFIX.exec(v);
     if (lp) return { check: "latin_prefix", field: k, fragment: frag(v, lp.index) };
+    const technical = LATIN_TECHNICAL.exec(v);
+    if (technical) return { check: "latin_technical", field: k, word: technical[0], fragment: frag(v, technical.index) };
+    const sector = englishSectorIn(v);
+    if (sector) return { check: "english_sector", field: k, word: sector, fragment: frag(v, Math.max(0, v.indexOf(sector))) };
   }
   if (all.reduce((n, [, v]) => n + contrastSkeletons(v), 0) > 1) return { check: "contrast_skeleton", field: "*" };
   // After repair: only an Arabic letter (not the tatweel) fused to a Latin letter.
@@ -206,6 +212,15 @@ export function arabicGateDetail(
 }
 
 const LATIN_PREFIX = /(^|[^\u0600-\u06FF])(الـ|لـ|بـ|كـ)\s*[A-Za-z]/u;
+const LATIN_TECHNICAL = /\b(?:AI|KPIs?|dashboard|roadmap|stakeholders)\b/iu;
+const ENGLISH_SECTORS = [
+  "Energy & Utilities", "Energy and Utilities", "Financial Services", "Government Sector",
+  "Public Sector", "Technology Sector", "Healthcare Sector",
+];
+function englishSectorIn(v: string): string | null {
+  const lower = v.toLowerCase();
+  return ENGLISH_SECTORS.find((sector) => lower.includes(sector.toLowerCase())) ?? null;
+}
 function openerIn(v: string): string | null {
   for (const s of v.split(/[.؟!?\n]/)) {
     const b = bare(s).trim();
@@ -235,6 +250,8 @@ const WHAT: Record<ArabicCheck, string> = {
   banned_opener: "opens a sentence with a banned generic opener. Start with the concrete point",
   latin_prefix: "attaches «الـ», «لـ», «بـ» or «كـ» to a Latin word. Use a full preposition or restructure",
   contrast_skeleton: "uses the «ليس … بل» contrast more than once. Keep at most one; say the rest directly",
+  latin_technical: "leaves a common technical term in Latin letters. Use the required Arabic professional term",
+  english_sector: "leaves an industry or sector name in English inside Arabic prose. Write the sector name in Arabic",
 };
 
 /** The one correction message: names the failed check. */
@@ -252,7 +269,7 @@ export function arabicCorrectionText(d: ArabicGateDetail): string {
 export const ARABIC_HARD_CHECKS: ArabicCheck[] = ["arabic_ratio", "archetype_english"];
 export const ARABIC_STYLE_CHECKS: ArabicCheck[] = [
   "banned_word", "kaf_as", "glued_latin", "glued_digit", "anta_openers", "archetype_banned", "arabic_indic_digits",
-  "banned_opener", "latin_prefix", "contrast_skeleton",
+  "banned_opener", "latin_prefix", "contrast_skeleton", "latin_technical", "english_sector",
 ];
 
 const ARCHETYPE_KEYS = ["archetype", "primary_archetype", "secondary_archetype"];
@@ -306,6 +323,10 @@ export function arabicStyleNotes(
     if (op) out.push({ check: "banned_opener", field: k, word: op });
     const lp = LATIN_PREFIX.exec(v);
     if (lp) out.push({ check: "latin_prefix", field: k, fragment: frag(v, lp.index) });
+    const technical = LATIN_TECHNICAL.exec(v);
+    if (technical) out.push({ check: "latin_technical", field: k, word: technical[0], fragment: frag(v, technical.index) });
+    const sector = englishSectorIn(v);
+    if (sector) out.push({ check: "english_sector", field: k, word: sector, fragment: frag(v, Math.max(0, v.indexOf(sector))) });
     skeletons += contrastSkeletons(v);
     const gl = /[\u0600-\u063F\u0641-\u06FF][A-Za-z]/.exec(v);
     if (gl) out.push({ check: "glued_latin", field: k, fragment: frag(v, gl.index) });
