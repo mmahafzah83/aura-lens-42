@@ -7,8 +7,13 @@ const EN = en as Record<string, string>;
 const AR = ar as Record<string, string>;
 const PREFIXES = ["ob.", "cap."];
 const AR_PLURALS = ["zero", "one", "two", "few", "many", "other"];
-/** English spells the number as a word ({{number}}); Arabic shows the count. */
-const PLACEHOLDER_EXEMPT = new Set(["ob.s10.p1", "ob.age.days", "ob.age.months"]);
+const PLACEHOLDER_EXEMPT = new Set([
+  "ob.s10.p1", // Arabic drops the count on purpose
+  "ob.s9.flat.body", // Arabic drops the count on purpose
+  "ob.s1.recs.readAll", // Arabic drops the count on purpose
+  "ob.s0.steps", // Arabic drops the count on purpose
+  "ob.age.days", "ob.age.months",
+]);
 /** English-only for now: falls back to English until the Arabic is written. */
 const EN_ONLY = new Set([
   "ob.s1.connectAfterAccount", "ob.s1.connectNote.sameTab", "ob.s1.connectNote.blocked",
@@ -46,7 +51,7 @@ describe("onboarding slider and question keys", () => {
       const AR_WORD_FORMS = new Set(["ob.age.days", "ob.age.months"]);
       for (const f of AR_PLURALS) expect(`${b}_${f}` in AR, `${b}_${f}`).toBe(true);
       expect(`${b}_one` in EN).toBe(true);
-      expect(vars(AR[`${b}_other`])).toContain("count");
+      if (!PLACEHOLDER_EXEMPT.has(b)) expect(vars(AR[`${b}_other`])).toContain("count");
       if (AR_WORD_FORMS.has(b)) continue;
     }
   });

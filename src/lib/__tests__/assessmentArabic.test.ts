@@ -8,6 +8,9 @@ const E = en as Record<string, string>;
 const A = ar as Record<string, string>;
 const vars = (s: string) => [...new Set(s.match(/\{\{\w+\}\}/g) ?? [])].sort();
 const tags = (s: string) => (s.match(/<\/?\d+>/g) ?? []).sort();
+const COUNT_DROPPED = new Set([
+  "assess.read.posts", // Arabic drops the count on purpose
+]);
 
 const enKeys = Object.keys(E).filter((k) => PREFIX.test(k));
 const plural = new Set(enKeys.filter((k) => /_(one|other)$/.test(k)).map((k) => k.replace(/_(one|other)$/, "")));
@@ -33,6 +36,7 @@ describe("/assessment Arabic", () => {
       const et = tags(E[`${b}_other`]).join();
       for (const f of FORMS) {
         const s = A[`${b}_${f}`];
+        if (!COUNT_DROPPED.has(b) && !["one", "two"].includes(f) && vars(s).join() !== [...ev].sort().join()) bad.push(`${b}_${f}`);
         // Arabic may drop a number that its unit word already carries (one/two).
         if (vars(s).some((v) => !ev.has(v) && v !== "{{count}}") || tags(s).join() !== et) bad.push(`${b}_${f}`);
       }
