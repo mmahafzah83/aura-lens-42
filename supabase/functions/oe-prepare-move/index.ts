@@ -19,6 +19,10 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
+import { ARABIC_VOICE_BLOCK } from "../_shared/arabicVoice.ts";
+
+/** Where the register and the shared Arabic block disagree on Latin terms, the block wins. */
+const AR_BLOCK_WINS = `\n${ARABIC_VOICE_BLOCK}\nWhere the register above and this Arabic block disagree on Latin terms, follow this Arabic block.\n`;
 import { generationMetadata } from "../_shared/generationMeta.ts";
 import { PROMPT_VERSION, writeLineage } from "../_shared/provenance.ts";
 import { findUnsourcedNumbers } from "../_shared/numberGuard.ts";
@@ -308,7 +312,7 @@ async function buildMentions(
       kind = "application_pack";
       const system =
         `You prepare one senior professional's application for one named chair, in ${lang === "ar" ? "Arabic" : "English"}, ` +
-        `second person, plain words, no label words, no percentages. ${OE_REGISTER_FOR_PROMPT} ` +
+        `second person, plain words, no label words, no percentages. ${OE_REGISTER_FOR_PROMPT} ${lang === "ar" ? AR_BLOCK_WINS : ""}` +
         `Return strict JSON {your_three_points:[{point, cite:{kind,id}, quote, date}], the_note:string, fix_first:string|null}. ` +
         `Every point must come from HIS OWN MATERIAL, cite it by id, and carry a quote of 3 to 15 words copied verbatim from it. ` +
         `the_note is a message to the issuer or named contact, in his voice, at most 120 words, no flattery, no adjectives about himself. ` +
@@ -386,7 +390,7 @@ async function buildMentions(
 
       const system =
         `You write one LinkedIn post for this professional, in ${lang === "ar" ? "Arabic" : "English"}, in HIS voice. ` +
-        `${OE_REGISTER_FOR_PROMPT} No label words, no percentages, no hashtags, no emoji, no flattery. ` +
+        `${OE_REGISTER_FOR_PROMPT} ${lang === "ar" ? AR_BLOCK_WINS : ""}No label words, no percentages, no hashtags, no emoji, no flattery. ` +
         `Return strict JSON {hook:string, post_text:string, why_now:string, cited_evidence:[{kind,id,quote,date}]}. ` +
         `The post puts his name on this topic BEFORE any call opens: it is not an application and it asks for nothing. ` +
         `post_text is 90 to 200 words, short sentences, his own substance only. ` +

@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { memberLang } from "../_shared/memberLang.ts";
+import { withArabicVoice } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -142,14 +144,19 @@ async function processUser(userId: string, admin: any) {
       .limit(1)
       .maybeSingle();
 
+    const lang = await memberLang(admin, userId);
+    const ar = lang === "ar";
+    const fallback = ar
+      ? `لم تحفظ شيئاً منذ أيام: ${days_silent}. الإشارات تضعف حين لا يصلها دليل جديد.`
+      : `Your intelligence capture has paused for ${days_silent} days. Signals decay without fresh evidence.`;
     // 7. AI message
     let alarm_message = "";
     if (fading_signals.length === 0 && market_movements.length === 0) {
-      alarm_message = `Your intelligence capture has paused for ${days_silent} days. Signals decay without fresh evidence.`;
+      alarm_message = fallback;
     } else {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       if (!LOVABLE_API_KEY) {
-        alarm_message = `Your intelligence capture has paused for ${days_silent} days. Signals decay without fresh evidence.`;
+        alarm_message = fallback;
       } else {
         const fadingDesc = fading_signals
           .map((s: any) => `"${s.signal_title}" (${Math.round((s.confidence || 0) * 100)}% confidence, ${s.velocity_status})`)
@@ -178,7 +185,8 @@ async function processUser(userId: string, admin: any) {
                 {
                   role: "system",
                   content:
-                    "You are Aura's Chief of Staff. Compose a 2-3 sentence urgency briefing for a senior executive. Name specific fading signals by title with confidence percentages. Name specific market sources. Tone: direct, professional, not guilt-tripping.",
+                    "You are Aura's Chief of Staff. Compose a 2-3 sentence urgency briefing for a senior executive. Name specific fading signals by title with confidence percentages. Name specific market sources. Tone: direct, professional, not guilt-tripping."
+                    + (ar ? withArabicVoice("\n\nWrite the briefing in Arabic. Signal titles and source names stay as given.", "ar") : ""),
                 },
                 { role: "user", content: userMsg },
               ],
@@ -194,7 +202,7 @@ async function processUser(userId: string, admin: any) {
           console.error("AI call failed", e);
         }
         if (!alarm_message) {
-          alarm_message = `Your intelligence capture has paused for ${days_silent} days. Signals decay without fresh evidence.`;
+          alarm_message = fallback;
         }
       }
     }
@@ -213,5 +221,6 @@ async function processUser(userId: string, admin: any) {
         final_score: m.final_score,
       })),
       alarm_message,
+      ...(ar ? { lang, alarm_title: `لم تحفظ شيئاً منذ أيام: ${days_silent}` } : {}),
     };
 }

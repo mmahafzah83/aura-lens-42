@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ARABIC_VOICE_BLOCK } from "../_shared/arabicVoice.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -183,7 +184,7 @@ FINAL RULE:
 
 BANNED WORDS: "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize," "facilitate," "paradigm," "ecosystem" (unless literal), "excited to share"${identityBlock}${frameworkBlock}`;
 
-    const EXPERT_LINKEDIN_AR = `You are an Elite Executive Arabic LinkedIn Ghostwriter for a Director-level strategy leader in the Middle East.
+    const EXPERT_LINKEDIN_AR = `You are an Elite Executive Arabic LinkedIn Ghostwriter for a senior professional in the Middle East, at the level stated in their profile.
 
 CRITICAL: Write in natural executive Arabic used by strategy leaders and consultants in the GCC. This is NOT a translation - it is original Arabic thought leadership.
 
@@ -193,7 +194,7 @@ GENERAL STYLE:
 - Posts should feel reflective, clear, and conversational.
 
 HOOK RULE (1-2 lines):
-- Bold opening using contrast ("ليس ... بل ...") or reframing ("المشكلة ليست في ... بل في ...").
+- Open with one direct, specific line: an observation, a fact from the source, or a clear claim.
 - Must create curiosity immediately.
 
 STRUCTURE RULE:
@@ -225,7 +226,9 @@ FINAL RULE:
 - Every post must feel: Clear, Structured, Practical, Human.
 - Avoid sounding like AI. Avoid generic motivational language.
 - Prioritize clarity over creativity.
-- Feel natural, confident, executive - NOT translated.${identityBlock}${frameworkBlock}`;
+- Feel natural, confident, executive - NOT translated.${identityBlock}${frameworkBlock}
+
+${ARABIC_VOICE_BLOCK}`;
 
     const systemPrompts: Record<string, string> = {
       "weekly-memo": `You are a Senior Executive Coach. Synthesize voice-note insights into a Leadership Memo.\n\nStructure:\nWEEKLY TRANSFORMATION LENS\n\nTheme of the Week\nTop 3 Insights\nStrategic Implication\nRecommended Action\nCoach's Challenge\n\n${isArabic ? EXPERT_LINKEDIN_AR : EXPERT_LINKEDIN_EN}`,

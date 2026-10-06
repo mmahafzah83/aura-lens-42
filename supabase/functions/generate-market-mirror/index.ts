@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
+import { withArabicVoice } from "../_shared/arabicVoice.ts";
+import { pickMemberLang } from "../_shared/memberLang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,7 +63,7 @@ serve(async (req) => {
 
     const [{ data: profile }, { data: signals }, { data: posts }, { data: trends }] = await Promise.all([
       admin.from("diagnostic_profiles")
-        .select("first_name,level,firm,sector_focus,core_practice")
+        .select("first_name,level,firm,sector_focus,core_practice,ui_language")
         .eq("user_id", userId).maybeSingle(),
       admin.from("strategic_signals")
         .select("signal_title,confidence,velocity_status")
@@ -167,6 +169,8 @@ serve(async (req) => {
     };
     const personaSet = PERSONAS[rankBucket];
 
+    // deno-lint-ignore no-explicit-any
+    const mirrorLang = (body?.lang === "ar" || body?.lang === "en") ? body.lang : pickMemberLang((profile as any)?.ui_language);
     const systemPrompt = `You are analyzing a professional's market positioning. Generate three perspectives, written FROM each persona's point of view:
 
 PERSPECTIVE 1 — THE ${personaSet.slot1}: ${personaSet.p1Desc}
@@ -257,7 +261,8 @@ ${trendLines}`;
       body: JSON.stringify({
         model: "claude-sonnet-4-5-20250929",
         max_tokens: 4096,
-        system: systemPrompt + competitorContext + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
+        system: systemPrompt + competitorContext + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble."
+          + (mirrorLang === "ar" ? withArabicVoice("\n\nARABIC: write every text value in Arabic. JSON keys stay in English.", "ar") : ""),
         messages: [{ role: "user", content: userPrompt }],
       }),
       signal: mirrorAbort.signal,

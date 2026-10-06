@@ -4,6 +4,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { buildConfidenceExplanation } from "../_shared/confidence.ts";
 import { canonicalizeTags } from "../_shared/themeCanon.ts";
 import { logError } from "../_shared/logError.ts";
+import { withArabicVoice } from "../_shared/arabicVoice.ts";
+import { langFromBody } from "../_shared/emailLang.ts";
+import { pickMemberLang } from "../_shared/memberLang.ts";
+
+export const SIGNAL_AR_TAIL = withArabicVoice(
+  "\n\nARABIC: write \"title\", \"summary\" and \"what_it_means_for_you\" in Arabic. \"type\" and \"theme_tags\" stay in English exactly as specified. JSON keys stay in English.",
+  "ar",
+);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -308,8 +316,10 @@ Deno.serve(withObserve("detect-signals-v2", async (req) => {
     // Fetch profile for relevance filter + AI context
     const { data: profile } = await admin
       .from("diagnostic_profiles")
-      .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars")
+      .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars, ui_language")
       .eq("user_id", user_id).maybeSingle();
+    const lang = langFromBody(body?.lang) ?? pickMemberLang((profile as any)?.ui_language);
+    const ar = lang === "ar";
 
     // Combine fragment content for relevance check
     const combinedContent = normalizeText(
@@ -413,7 +423,7 @@ Given evidence fragments and user context, classify them and return valid JSON w
 
 theme_tags are subject themes only — never signal types like market_trend or competitor_move.
 
-${identityCtx}`;
+${identityCtx}` + (ar ? SIGNAL_AR_TAIL : "");
 
     let lastRawSample = "";
     async function classifyCluster(clusterFragIds: string[], repair = false): Promise<any | null> {
@@ -573,7 +583,7 @@ ${identityCtx}`;
         signal = await classifyCluster(clusterFragIds);
       } catch (e: any) {
         if (e?.status === 429 || e?.status === 402) {
-          return new Response(JSON.stringify({ error: e.status === 429 ? "Aura is busy — try again in a moment." : "Aura is temporarily unavailable. Try again later." }), { status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          return new Response(JSON.stringify({ error: e.status === 429 ? (ar ? "KnownBy مشغول الآن. حاول بعد قليل." : "KnownBy is busy — try again in a moment.") : (ar ? "KnownBy غير متاح مؤقتاً. حاول لاحقاً." : "KnownBy is temporarily unavailable. Try again later.") }), { status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         throw e;
       }
@@ -594,7 +604,7 @@ ${identityCtx}`;
           retried = await classifyCluster(clusterFragIds, true);
         } catch (e: any) {
           if (e?.status === 429 || e?.status === 402) {
-            return new Response(JSON.stringify({ error: e.status === 429 ? "Aura is busy — try again in a moment." : "Aura is temporarily unavailable. Try again later." }), { status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            return new Response(JSON.stringify({ error: e.status === 429 ? (ar ? "KnownBy مشغول الآن. حاول بعد قليل." : "KnownBy is busy — try again in a moment.") : (ar ? "KnownBy غير متاح مؤقتاً. حاول لاحقاً." : "KnownBy is temporarily unavailable. Try again later.") }), { status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
           console.error("[detect-signals-v2] repair retry threw:", e?.message);
         }
@@ -636,7 +646,7 @@ ${identityCtx}`;
           const { data: dormantRow, error: dormErr } = await admin.from("strategic_signals").insert({
             user_id,
             signal_title: fallbackTitle,
-            explanation: `This theme was detected in your capture but is not yet strong enough to stand on its own. Aura is holding it until more evidence arrives.`,
+            explanation: ar ? "ظهر هذا الموضوع فيما حفظته، لكنه لم يقوَ بعد ليقف وحده. يبقيه KnownBy جانباً حتى يصل دليل آخر." : `This theme was detected in your capture but is not yet strong enough to stand on its own. KnownBy is holding it until more evidence arrives.`,
             strategic_implications: "",
             theme_tags: fallbackTags,
             confidence: fbConf,

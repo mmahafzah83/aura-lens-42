@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { memberLang } from "../_shared/memberLang.ts";
+import { withArabicVoice } from "../_shared/arabicVoice.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,6 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const AR_NUDGE = withArabicVoice("\n\nARABIC OUTPUT: write the nudge in Arabic, 2-3 sentences, addressed to the reader as أنت through the verb. Do not use a title such as «المدير». Do not use the English terms listed above; say the idea plainly.", "ar");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -78,6 +82,9 @@ serve(async (req) => {
       });
     }
 
+    const lang = await memberLang(adminClient, user.id);
+    const ar = lang === "ar";
+
     // Calculate top 2 skill gaps
     const PARTNER_BENCHMARK: Record<string, number> = {
       "Strategic Architecture": 95,
@@ -131,7 +138,7 @@ Rules:
 - Use terms like "macro-driver," "strategic pivot," "value realization"
 - Sound like a peer delivering urgent intelligence, NOT a reminder bot
 - Do NOT use exclamation marks
-- Output ONLY the nudge text, nothing else`,
+- Output ONLY the nudge text, nothing else` + (ar ? AR_NUDGE : ""),
           },
           {
             role: "user",
@@ -145,8 +152,10 @@ Rules:
       console.error("AI nudge error:", aiRes.status);
       // Fallback static nudge
       const fallbackGap = topGaps[0]?.skill || "Sector Foresight";
-      const nudgeTitle = "Strategic Nudge";
-      const nudgeBody = `Director, a ${Math.round(hoursSinceActive)}-hour gap in your operating rhythm risks missing macro-drivers in ${sector}. Your ${fallbackGap} score remains ${topGaps[0]?.gap || 20}% below Partner standard — this window is closing.`;
+      const nudgeTitle = ar ? "تنبيه من KnownBy" : "Strategic Nudge";
+      const nudgeBody = ar
+        ? `مضت ساعات دون أن تعود: ${Math.round(hoursSinceActive)}. ما يتحرّك في ${sector} لا ينتظر. ما زال ${fallbackGap} عندك دون المعيار بفارق ${topGaps[0]?.gap || 20}%.`
+        : `Director, a ${Math.round(hoursSinceActive)}-hour gap in your operating rhythm risks missing macro-drivers in ${sector}. Your ${fallbackGap} score remains ${topGaps[0]?.gap || 20}% below Partner standard — this window is closing.`;
 
       await adminClient.from("notifications").insert({
         user_id: user.id,
@@ -166,9 +175,9 @@ Rules:
 
     const aiData = await aiRes.json();
     const nudgeBody = aiData.choices?.[0]?.message?.content?.trim() ||
-      `Director, your ${topGaps[0]?.skill || "strategic radar"} requires attention. A ${Math.round(hoursSinceActive)}-hour gap creates blind spots.`;
+      (ar ? `${topGaps[0]?.skill || "إشاراتك"} يحتاج انتباهك. مضت ساعات دون أن تعود: ${Math.round(hoursSinceActive)}.` : `Director, your ${topGaps[0]?.skill || "strategic radar"} requires attention. A ${Math.round(hoursSinceActive)}-hour gap creates blind spots.`);
 
-    const nudgeTitle = "Strategic Nudge from Aura";
+    const nudgeTitle = ar ? "تنبيه من KnownBy" : "A nudge from KnownBy";
 
     // Insert notification
     await adminClient.from("notifications").insert({
