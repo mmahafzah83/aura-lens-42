@@ -11,6 +11,8 @@
  * evidence. Three consistent negatives in 14 days asks for a corpus re-read.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { isArTr, isoNum, scopeWord, voiceWord, traitWord, type VoiceTr } from "@/lib/voiceText";
+import { arabicList } from "@/lib/arDisplay";
 
 export const VERDICTS = [
   "sounds_like_me",
@@ -33,6 +35,10 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
   too_aggressive: "Too aggressive",
   would_never_say: "I would never say that",
 };
+
+/** A verdict's label in the interface language. */
+export const verdictLabel = (v: Verdict, tr?: VoiceTr | null): string =>
+  isArTr(tr) ? tr!.t(`vo.fb.v.${v}`) : VERDICT_LABEL[v] ?? v;
 
 export const NEGATIVE_VERDICTS: Verdict[] = ["partly", "not_me"];
 
@@ -83,17 +89,24 @@ export function planVerdict(
   modeLabel: string,
   otherModeLabels: string[],
   applyToAll: boolean,
+  tr?: VoiceTr | null,
 ): FeedbackPlan {
+  /** Stored value — English, always. */
   const scope = applyToAll ? "all modes" : modeLabel;
+  const ar = isArTr(tr);
+  const scopeShown = ar ? scopeWord(scope, tr) : scope;
+  const pctA = (n: number | null) => (n === null ? "—" : isoNum(Math.round(n)));
   const untouched = otherModeLabels.filter((l) => l !== modeLabel);
   const unchangedLine = applyToAll || untouched.length === 0
     ? null
-    : `${untouched.join(" and ")} ${untouched.length === 1 ? "is" : "are"} unchanged.`;
+    : ar
+      ? tr!.t("vo.fb.unchanged", { modes: arabicList(untouched.map((l) => scopeWord(l, tr))) })
+      : `${untouched.join(" and ")} ${untouched.length === 1 ? "is" : "are"} unchanged.`;
 
   if (verdict === "sounds_like_me") {
     return {
       changes: [],
-      lines: ["Recorded. Nothing changed — Aura is more sure of what it already had."],
+      lines: [ar ? tr!.t("vo.fb.recorded") : "Recorded. Nothing changed — KnownBy is more sure of what it already had."],
       needsPhrase: false,
       creates: false,
     };
@@ -102,7 +115,7 @@ export function planVerdict(
   if (verdict === "partly" || verdict === "not_me") {
     return {
       changes: [],
-      lines: ["No change: one verdict is not enough to move a trait. Aura is watching for a pattern."],
+      lines: [ar ? tr!.t("vo.fb.watching") : "No change: one verdict is not enough to move a trait. KnownBy is watching for a pattern."],
       needsPhrase: false,
       creates: false,
     };
@@ -120,20 +133,22 @@ export function planVerdict(
   const key = verdict === "too_formal" ? "formality" : verdict === "too_generic" ? "evidence_density" : "challenge";
   const t = target(traits, key);
   if (!t) {
-    return { changes: [], lines: [`Aura does not track ${key.replace("_", " ")} yet, so nothing moved.`], needsPhrase: false, creates: false };
+    return { changes: [], lines: [ar ? tr!.t("vo.fb.untracked", { trait: traitWord(key, tr) }) : `KnownBy does not track ${key.replace("_", " ")} yet, so nothing moved.`], needsPhrase: false, creates: false };
   }
   if (t.locked) {
-    return { changes: [], lines: [`${t.display_name} is locked, so nothing moved. Feedback is weaker than a setting you made yourself.`], needsPhrase: false, creates: false };
+    return { changes: [], lines: [ar ? tr!.t("vo.fb.locked", { name: voiceWord(t.display_name, tr) }) : `${t.display_name} is locked, so nothing moved. Feedback is weaker than a setting you made yourself.`], needsPhrase: false, creates: false };
   }
   if (t.source === "user") {
-    return { changes: [], lines: [`${t.display_name} is set by you, so a verdict will not move it. Change it on Voice DNA if you want it different.`], needsPhrase: false, creates: false };
+    return { changes: [], lines: [ar ? tr!.t("vo.fb.userSet", { name: voiceWord(t.display_name, tr) }) : `${t.display_name} is set by you, so a verdict will not move it. Change it on Your voice if you want it different.`], needsPhrase: false, creates: false };
   }
 
   // Rule 2 — a verdict may not invent a learned value.
   if (t.value === null) {
     const seed = verdict === "too_formal" ? 40 : verdict === "too_generic" ? 60 : 45;
     const lines = [
-      `${t.display_name} had no measured value, so Aura has set it to ${seed}% as your own setting in ${scope} — not as something it learned.`,
+      ar
+        ? tr!.t("vo.fb.seeded", { name: voiceWord(t.display_name, tr), seed: isoNum(seed), scope: scopeShown })
+        : `${t.display_name} had no measured value, so KnownBy has set it to ${seed}% as your own setting in ${scope} — not as something it learned.`,
     ];
     if (unchangedLine) lines.push(unchangedLine);
     return { changes: [{ trait_key: key, from: null, to: seed, scope }], lines, needsPhrase: false, creates: true };
@@ -146,22 +161,29 @@ export function planVerdict(
     const hi = t.band_high;
     if (lo === null || hi === null) {
       const to = clamp100(t.value - STEP);
-      const lines = [`Challenge lowered ${pct(t.value)} → ${pct(to)} in ${scope}.`];
+      const lines = [ar
+        ? tr!.t("vo.fb.challenge", { a: pctA(t.value), b: pctA(to), scope: scopeShown })
+        : `Challenge lowered ${pct(t.value)} → ${pct(to)} in ${scope}.`];
       if (unchangedLine) lines.push(unchangedLine);
       return { changes: [{ trait_key: key, from: t.value, to, scope }], lines, needsPhrase: false, creates: false };
     }
     const newHigh = Number(Math.max(lo, hi - (hi - lo) * 0.25).toFixed(2));
     const to = clamp100(Math.min(t.value, newHigh));
     const lines = [
-      `Challenge range narrowed ${pct(lo)}–${pct(hi)} → ${pct(lo)}–${pct(newHigh)} in ${scope}.`,
+      ar
+        ? tr!.t("vo.fb.narrowed", { lo: pctA(lo), hi: pctA(hi), newHi: pctA(newHigh), scope: scopeShown })
+        : `Challenge range narrowed ${pct(lo)}–${pct(hi)} → ${pct(lo)}–${pct(newHigh)} in ${scope}.`,
     ];
     if (unchangedLine) lines.push(unchangedLine);
     return { changes: [{ trait_key: key, from: t.value, to, scope }], lines, needsPhrase: false, creates: false };
   }
 
   const to = clamp100(verdict === "too_formal" ? t.value - STEP : t.value + STEP);
-  const lines =
-    verdict === "too_formal"
+  const lines = ar
+    ? verdict === "too_formal"
+      ? [tr!.t("vo.fb.formality", { a: pctA(t.value), b: pctA(to), scope: scopeShown })]
+      : [tr!.t("vo.fb.evidence", { a: pctA(t.value), b: pctA(to), scope: scopeShown }), tr!.t("vo.fb.evidenceRule")]
+    : verdict === "too_formal"
       ? [`Formality lowered ${pct(t.value)} → ${pct(to)} in ${scope}.`]
       : [`Evidence raised ${pct(t.value)} → ${pct(to)} in ${scope}.`, "Every draft now needs one specific number before the close."];
   if (unchangedLine) lines.push(unchangedLine);
@@ -181,6 +203,8 @@ export interface SubmitArgs {
   plan: FeedbackPlan;
   /** only for `would_never_say` */
   phrase?: string;
+  /** display language for the returned lines; nothing stored depends on it */
+  tr?: VoiceTr | null;
 }
 
 /** Write the verdict, apply whatever the plan allowed, and return the lines to show. */
@@ -232,7 +256,9 @@ export async function submitVerdict(args: SubmitArgs): Promise<string[]> {
       rank: 0,
     });
     if (error) throw error;
-    lines.push(`Added to your never list: "${args.phrase.trim()}". Aura will not write it again.`);
+    lines.push(isArTr(args.tr)
+      ? args.tr!.t("vo.fb.never", { phrase: args.phrase.trim() })
+      : `Added to your never list: "${args.phrase.trim()}". KnownBy will not write it again.`);
   }
 
   if (verdict === "sounds_like_me" && profileId) {

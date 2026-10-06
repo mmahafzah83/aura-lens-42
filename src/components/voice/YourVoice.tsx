@@ -341,7 +341,7 @@ export default function YourVoice({
         <div style={{ fontSize: TYPE.title, fontWeight: 600, color: INK }}>{L("KnownBy couldn't load your voice.", "vo.err.title")}</div>
         <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 12px" }}>
           {L("Your writing is safe — this is a connection problem, not an empty file.", "vo.err.body")}{" "}
-          {ar ? <span dir="auto">{state.error}</span> : state.error}
+          {ar ? t("vo.err.fallback") : state.error}
         </p>
         <button type="button" style={primaryButton} onClick={() => void state.reload(true)}>{L("Try again", "vo.retry")}</button>
       </div>

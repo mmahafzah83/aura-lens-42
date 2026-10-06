@@ -10,6 +10,9 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { HOOK_LABEL } from "@/lib/voiceOverview";
 import { nPosts } from "@/constants/vocabulary";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { displayDate, arStyle } from "@/lib/arDisplay";
+import { corpusWord, hookWord, isoNum } from "@/lib/voiceText";
 import { PAGE_SIZE, setCorpusStates, type CorpusPost, type CorpusState } from "@/lib/teachAura";
 import {
   GREEN, INK, LINE, MUTED, SURFACE, TYPE, cardStyle, chipStyle, ghostButton, microLabel, monoNum, primaryButton,
@@ -18,7 +21,7 @@ import {
 const STATE_CHIP: Record<CorpusState, { bg: string; fg: string; border: string; label: string }> = {
   included: { bg: "#EAF6F0", fg: GREEN, border: "#BFE3D3", label: "Counted" },
   excluded: { bg: SURFACE, fg: MUTED, border: "#DDE4EC", label: "Set aside" },
-  auto_excluded: { bg: "#FBF4E4", fg: "#9A6F12", border: "#F0DFB4", label: "Set aside by Aura" },
+  auto_excluded: { bg: "#FBF4E4", fg: "#9A6F12", border: "#F0DFB4", label: "Set aside by KnownBy" },
 };
 
 const fmtDate = (iso: string | null) =>
@@ -38,6 +41,13 @@ export default function TeachAuraReview({
   /** Applies the queued changes, then recomputes once and reports what moved. */
   onApplied: (changes: { include: string[]; exclude: string[] }) => Promise<void>;
 }) {
+  const { lang, t } = useLanguage();
+  const ar = lang === "ar";
+  const tr = { lang, t };
+  const L = (en: string, key: string, vars?: Record<string, unknown>) => (ar ? t(key, vars) : en);
+  const dateOf = (iso: string | null) => (ar ? (iso ? displayDate(iso, lang) : "—") : fmtDate(iso));
+  /** Stored English reason or source, shown in the interface language. */
+  const word = (stored: string | null) => corpusWord(stored, tr);
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [page, setPage] = useState(0);
@@ -82,7 +92,7 @@ export default function TeachAuraReview({
       setQueued({});
       await onApplied({ include, exclude });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't apply those changes.");
+      toast.error(ar ? t("vo.tr.tApply") : e instanceof Error ? e.message : "Couldn't apply those changes.");
     } finally {
       setBusy(false);
     }
@@ -96,30 +106,41 @@ export default function TeachAuraReview({
   const topReasons = Object.entries(reasonCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 2)
-    .map(([reason, count]) => `${reason} (${count})`);
-  const answer = `Aura read ${includedCount} of your own posts.${excludedCount > 0 ? ` It set aside ${excludedCount}${topReasons.length ? `: ${topReasons.join(", ")}.` : "."}` : ""}`;
+    .map(([reason, count]) => `${word(reason)} (${count})`);
+  const reasonList = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).slice(0, 2);
+  const answerAr = ar
+    ? t("vo.tr.read", { included: isoNum(includedCount) }).replace(/\.$/, "")
+      + (excludedCount > 0
+        ? t("vo.tr.aside", { excluded: isoNum(excludedCount) })
+          + (reasonList.length ? t("vo.tr.reasons", { list: reasonList.map(([reason, count]) => t("vo.tr.reasonPiece", { reason: word(reason), count: isoNum(count) })).join("، ") }) : "")
+        : "")
+      + "."
+    : "";
+  const answer = ar ? answerAr : `KnownBy read ${includedCount} of your own posts.${excludedCount > 0 ? ` It set aside ${excludedCount}${topReasons.length ? `: ${topReasons.join(", ")}.` : "."}` : ""}`;
 
   return (
     <section style={{ marginBlockStart: 20 }}>
       <div style={cardStyle}>
-        <div style={microLabel}>What Aura read</div>
+        <div style={arStyle(lang, microLabel)}>{L("What KnownBy read", "vo.tr.title")}</div>
         <p style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, lineHeight: 1.5, marginBlock: "8px 4px" }}>
-          {answer} {ambiguous.length === 0 ? "Nothing else needs your attention." : ""}
+          {answer} {ambiguous.length === 0 ? L("Nothing else needs your attention.", "vo.tr.nothingElse") : ""}
         </p>
         <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: 0 }}>
-          Take back anything that isn't your own writing.
+          {L("Take back anything that isn't your own writing.", "vo.tr.takeBack")}
         </p>
 
         {ambiguous.length > 0 && (
           <div style={{ marginBlockStart: 14, borderBlockStart: `1px solid ${LINE}`, paddingBlockStart: 12 }}>
             <div style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
-              Aura wasn't sure about {ambiguous.length === 1 ? "this one" : `these ${ambiguous.length}`}. Is each one your own writing?
+              {ar
+                ? ambiguous.length === 1 ? t("vo.tr.unsureOne") : t("vo.tr.unsureMany", { n: isoNum(ambiguous.length) })
+                : <>KnownBy wasn't sure about {ambiguous.length === 1 ? "this one" : `these ${ambiguous.length}`}. Is each one your own writing?</>}
             </div>
             {ambiguous.map((p) => {
               const s = stateOf(p);
               return (
                 <div key={p.id} className="ta-row" style={{ padding: "10px 0", borderBlockStart: `1px solid ${LINE}` }}>
-                  <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{fmtDate(p.publishedAt)} · {p.sourceLabel}</span>
+                  <span style={ar ? arStyle(lang, { fontSize: TYPE.small, color: MUTED }) : { ...monoNum, fontSize: TYPE.small, color: MUTED }}>{dateOf(p.publishedAt)} · {word(p.sourceLabel)}</span>
                   <p dir="auto" style={{ fontSize: TYPE.body, color: INK, margin: 0, lineHeight: 1.5, overflowWrap: "anywhere" }}>
                     {p.excerpt}…
                   </p>
@@ -129,14 +150,14 @@ export default function TeachAuraReview({
                       style={s === "included" ? { borderColor: GREEN, color: GREEN } : undefined}
                       onClick={() => queue(p, "included")}
                     >
-                      Yes, mine
+                      {L("Yes, mine", "vo.tr.yes")}
                     </button>
                     <button
                       type="button" className="vd-act"
                       style={s !== "included" ? { borderColor: INK, color: INK } : undefined}
                       onClick={() => queue(p, "excluded")}
                     >
-                      Not mine
+                      {L("Not mine", "vo.tr.no")}
                     </button>
                   </span>
                 </div>
@@ -152,7 +173,7 @@ export default function TeachAuraReview({
           style={{ marginBlockStart: 14 }}
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? "Hide the full list" : `See everything Aura read (${nPosts(posts.length, "en")})`}
+          {open ? L("Hide the full list", "vo.tr.hide") : ar ? t("vo.tr.see", { n: isoNum(posts.length) }) : `See everything KnownBy read (${nPosts(posts.length, "en")})`}
         </button>
 
         {open && (
@@ -165,7 +186,7 @@ export default function TeachAuraReview({
                   style={filter === k ? { borderColor: INK, color: INK } : undefined}
                   onClick={() => { setFilter(k); setPage(0); }}
                 >
-                  {label}
+                  {L(label, `vo.tr.f${k[0].toUpperCase()}${k.slice(1)}`)}
                 </button>
               ))}
             </div>
@@ -190,34 +211,36 @@ export default function TeachAuraReview({
                         type="checkbox"
                         checked={s !== "included"}
                         onChange={(e) => queue(p, e.target.checked ? "excluded" : "included")}
-                        aria-label={`Set aside the post from ${fmtDate(p.publishedAt)}`}
+                        aria-label={L(`Set aside the post from ${fmtDate(p.publishedAt)}`, "vo.tr.asideAria", { date: dateOf(p.publishedAt) })}
                         style={{ inlineSize: 18, blockSize: 18 }}
                       />
-                      <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{fmtDate(p.publishedAt)} · {p.sourceLabel}</span>
+                      <span style={ar ? arStyle(lang, { fontSize: TYPE.small, color: MUTED }) : { ...monoNum, fontSize: TYPE.small, color: MUTED }}>{dateOf(p.publishedAt)} · {word(p.sourceLabel)}</span>
                     </span>
                     <span style={{ minInlineSize: 0 }}>
                       <span dir="auto" style={{ display: "block", fontSize: TYPE.body, color: INK, lineHeight: 1.5, overflowWrap: "anywhere" }}>
                         {p.excerpt}…
                       </span>
-                      <span style={{ fontSize: TYPE.caption, color: MUTED }}>
-                        {p.hookStyle ? HOOK_LABEL[p.hookStyle] ?? p.hookStyle : "Not classified yet"}
-                        {!counted && p.setAsideReason ? ` · ${p.setAsideReason}` : ""}
+                      <span style={ar ? arStyle(lang, { display: "block", fontSize: TYPE.caption, color: MUTED }) : { fontSize: TYPE.caption, color: MUTED }}>
+                        {p.hookStyle ? (ar ? hookWord(p.hookStyle, tr) : HOOK_LABEL[p.hookStyle] ?? p.hookStyle) : L("Not classified yet", "vo.tr.unclassified")}
+                        {!counted && p.setAsideReason ? ` · ${word(p.setAsideReason)}` : ""}
                       </span>
                     </span>
-                    <span style={chipStyle(chip.fg, chip.bg, chip.border)}>{counted ? chip.label : setAsideLabel(p.setAsideReason)}</span>
+                    <span style={ar ? arStyle(lang, { ...chipStyle(chip.fg, chip.bg, chip.border), justifySelf: "start" }) : chipStyle(chip.fg, chip.bg, chip.border)}>{ar
+                      ? counted ? t("vo.tr.counted") : p.setAsideReason ? t("vo.tr.setAsideR", { reason: word(p.setAsideReason) }) : t("vo.tr.setAside")
+                      : counted ? chip.label : setAsideLabel(word(p.setAsideReason) || null)}</span>
                   </label>
                 );
               })}
               {slice.length === 0 && (
-                <p style={{ fontSize: TYPE.body, color: MUTED, padding: "14px" }}>Nothing matches that filter.</p>
+                <p style={{ fontSize: TYPE.body, color: MUTED, padding: "14px" }}>{L("Nothing matches that filter.", "vo.tr.noMatch")}</p>
               )}
             </div>
 
             {pages > 1 && (
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginBlockStart: 10 }}>
-                <button type="button" className="vd-act" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>Previous</button>
-                <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{page + 1} / {pages}</span>
-                <button type="button" className="vd-act" onClick={() => setPage((p) => p + 1)} disabled={page + 1 >= pages}>Next</button>
+                <button type="button" className="vd-act" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>{L("Previous", "vo.tr.prev")}</button>
+                <span dir="ltr" style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{page + 1} / {pages}</span>
+                <button type="button" className="vd-act" onClick={() => setPage((p) => p + 1)} disabled={page + 1 >= pages}>{L("Next", "vo.tr.next")}</button>
               </div>
             )}
           </div>
@@ -233,12 +256,12 @@ export default function TeachAuraReview({
           }}
         >
           <span style={{ fontSize: TYPE.body, color: INK }}>
-            {pendingCount} {pendingCount === 1 ? "change" : "changes"} waiting. Aura re-reads your patterns once, when you apply.
+            {ar ? t("vo.tr.pending", { n: isoNum(pendingCount) }) : <>{pendingCount} {pendingCount === 1 ? "change" : "changes"} waiting. KnownBy re-reads your patterns once, when you apply.</>}
           </span>
           <span style={{ marginInlineStart: "auto", display: "flex", gap: 8 }}>
-            <button type="button" style={ghostButton} onClick={() => setQueued({})} disabled={busy}>Cancel</button>
+            <button type="button" style={ghostButton} onClick={() => setQueued({})} disabled={busy}>{L("Cancel", "vo.tr.cancel")}</button>
             <button type="button" style={{ ...primaryButton, opacity: busy ? 0.6 : 1 }} onClick={() => void apply()} disabled={busy}>
-              {busy ? "Applying…" : "Apply"}
+              {busy ? L("Applying…", "vo.tr.applying") : L("Apply", "vo.tr.apply")}
             </button>
           </span>
         </div>

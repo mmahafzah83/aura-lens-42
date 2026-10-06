@@ -12,6 +12,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { loadLinkedInAddress, type LinkedInAddress } from "@/lib/linkedinAddress";
 import { linkedinStatus, type LinkedInStatusView } from "@/lib/linkedinStatus";
+import { isArTr, isoNum, type VoiceTr } from "@/lib/voiceText";
 
 /** Aura needs this many classified posts before it will judge coverage. */
 export const MIN_POSTS_FOR_COVERAGE = 8;
@@ -37,12 +38,30 @@ export const COVERAGE_LABEL: Record<CoverageKey, string> = {
 
 /** Plain-language consequence of each gap, used in the single gap sentence. */
 const GAP_CONSEQUENCE: Record<CoverageKey, string> = {
-  arabic: "Aura can't yet write Arabic posts in your voice",
-  english: "Aura can't yet write English posts in your voice",
-  long: "Aura can't yet write long posts in your voice",
-  short: "Aura can't yet write short posts in your voice",
-  recent: "Aura is reading writing that may no longer sound like you",
+  arabic: "KnownBy can't yet write Arabic posts in your voice",
+  english: "KnownBy can't yet write English posts in your voice",
+  long: "KnownBy can't yet write long posts in your voice",
+  short: "KnownBy can't yet write short posts in your voice",
+  recent: "KnownBy is reading writing that may no longer sound like you",
 };
+
+/** A coverage row's label in the interface language. */
+export const coverageLabel = (key: CoverageKey, tr?: VoiceTr | null): string =>
+  isArTr(tr) ? tr.t(`vo.tl.cov.${key}`) : COVERAGE_LABEL[key];
+
+/** English messages this file throws, and the key that says each in Arabic. */
+const ERROR_KEYS: Record<string, string> = {
+  "Add at least one post first.": "vo.tl.e.addOne",
+  "That is too short to learn a tone from.": "vo.tl.e.tooShort",
+  "KnownBy has no voice profile for you yet — read your posts first.": "vo.tl.e.noProfile",
+};
+
+/** A thrown message for display: English unchanged; Arabic gets its own line or the fallback. */
+export function teachErrorText(message: string, fallbackKey: string, tr?: VoiceTr | null): string {
+  if (!isArTr(tr)) return message;
+  const k = ERROR_KEYS[message];
+  return tr.t(k ?? fallbackKey);
+}
 
 export interface CoverageRow {
   key: CoverageKey;
@@ -320,7 +339,7 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
  * The single biggest gap, in words. Returns null when Aura hasn't read enough
  * to judge — the caller says so rather than showing a zero.
  */
-export function biggestGapSentence(m: Pick<TeachAuraModel, "coverage" | "includedCount">): string | null {
+export function biggestGapSentence(m: Pick<TeachAuraModel, "coverage" | "includedCount">, tr?: VoiceTr | null): string | null {
   if (m.includedCount < MIN_POSTS_FOR_COVERAGE) return null;
 
   const rank: Record<CoverageStatus, number> = { missing: 0, thin: 1, sufficient: 2 };
@@ -329,10 +348,13 @@ export function biggestGapSentence(m: Pick<TeachAuraModel, "coverage" | "include
     return a.count / a.threshold - b.count / b.threshold;
   })[0];
   if (!worst || worst.status === "sufficient") {
-    return "Aura has enough of every kind of writing it looks for. Keep publishing and it keeps refining.";
+    return isArTr(tr) ? tr.t("vo.tl.gap.none") : "KnownBy has enough of every kind of writing it looks for. Keep publishing and it keeps refining.";
   }
 
   const missing = worst.threshold - worst.count;
+  if (isArTr(tr)) {
+    return tr.t(`vo.tl.gap.${worst.key}`, { count: isoNum(worst.count), threshold: isoNum(worst.threshold), missing: isoNum(missing) });
+  }
   const noun = worst.label.toLowerCase().replace(/ \(.*\)$/, "");
   return `${GAP_CONSEQUENCE[worst.key]} — it has ${worst.count} of the ${worst.threshold} ${noun} it needs. ${missing} more would settle it.`;
 }
@@ -404,7 +426,7 @@ async function admiredRowId(userId: string): Promise<{ id: string; list: StoredA
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Aura has no voice profile for you yet — read your posts first.");
+  if (!data) throw new Error("KnownBy has no voice profile for you yet — read your posts first.");
   /** Stored shape, kept exactly as the database holds it. */
   const list = (Array.isArray((data as any).admired_posts) ? (data as any).admired_posts : [])
     .map((a: any) => ({

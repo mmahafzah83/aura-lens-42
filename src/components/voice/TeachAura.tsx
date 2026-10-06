@@ -10,13 +10,16 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Upload, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { displayDate, arabicList, arStyle } from "@/lib/arDisplay";
+import { corpusWord, isoNum, traitWord } from "@/lib/voiceText";
 import {
   loadTeachAura, MIN_POSTS_FOR_COVERAGE, splitPastedPosts, addOwnWriting, addAdmiredPost, removeAdmiredPost,
-  ADMIRED_CAP, type TeachAuraModel,
+  ADMIRED_CAP, teachErrorText, type TeachAuraModel,
 } from "@/lib/teachAura";
 import TeachAuraCoverage from "@/components/voice/TeachAuraCoverage";
 import TeachAuraReview from "@/components/voice/TeachAuraReview";
@@ -34,6 +37,17 @@ function Card({ children }: { children: React.ReactNode }) {
 
 export default function TeachAura({ userId }: { userId: string | null }) {
   const { t } = useTranslation();
+  const { lang, t: tt } = useLanguage();
+  const ar = lang === "ar";
+  const tr = { lang, t: tt };
+  /** English stays exactly as written; Arabic reads the key. */
+  const L = (en: string, key: string, vars?: Record<string, unknown>) => (ar ? tt(key, vars) : en);
+  /** A thrown message: English unchanged; Arabic never shows raw server text. */
+  const errText = (e: unknown, en: string, key: string) =>
+    e instanceof Error ? teachErrorText(e.message.split("\n")[0], key, tr) : L(en, key);
+  const enDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const shownDate = (iso: string) => (ar ? displayDate(iso, lang) : enDate(iso));
+  const Arrow = ar ? ChevronLeft : ChevronRight;
   const [stage, setStage] = useState<number | null>(null);
   const [lastRead, setLastRead] = useState<string | null | undefined>(undefined);
   const [readSummary, setReadSummary] = useState<string>("");
@@ -78,12 +92,12 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       });
       if (postsErr) throw postsErr;
       const kept = typeof (posts as any)?.kept_own_text === "number" ? (posts as any).kept_own_text : 0;
-      setReadSummary(`Aura read your profile and ${kept} of your posts.`);
+      setReadSummary(L(`KnownBy read your profile and ${kept} of your posts.`, "vo.ta.readSummary", { kept: isoNum(kept) }));
       invalidateVoiceCache("voice:");
       await state.reload(true);
       await loadLastRead();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your LinkedIn just now.");
+      toast.error(errText(e, "Couldn't read your LinkedIn just now.", "vo.ta.tLinkedIn"));
     } finally {
       reading.current = false;
       setStage(null);
@@ -96,7 +110,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     // Awaited: the "what moved" line must not race the function that moves it.
     const { data: res, error } = await supabase.functions.invoke("voice-compute-traits", { body: {} });
     if (error) {
-      toast.error("Aura couldn't re-read your patterns just now. Your changes were saved.");
+      toast.error(L("KnownBy couldn't re-read your patterns just now. Your changes were saved.", "vo.ta.tPatterns"));
     } else {
       const after = await snapshotTraits(userId);
       const moved = Object.keys(after).filter((k) => before[k] !== undefined && before[k] !== after[k]);
@@ -106,13 +120,13 @@ export default function TeachAura({ userId }: { userId: string | null }) {
         /* A locked marker is a decision the member made — never report it as
            "your posts didn't matter". */
         if (written === 0 && lockedSkipped > 0) {
-          toast.message("Nothing changed — every marker is locked. Open one so Aura can adjust it.");
+          toast.message(L("Nothing changed — every marker is locked. Open one so KnownBy can adjust it.", "vo.ta.tLocked"));
         } else {
-          toast.message("Nothing moved — those posts weren't changing your voice.");
+          toast.message(L("Nothing moved — those posts weren't changing your voice.", "vo.ta.tNothing"));
         }
       } else {
         const k = moved[0];
-        toast.success(`That changed ${k.replace(/_/g, " ")} from ${before[k]}% to ${after[k]}%.`);
+        toast.success(L(`That changed ${k.replace(/_/g, " ")} from ${before[k]}% to ${after[k]}%.`, "vo.ta.tMoved", { trait: traitWord(k, tr), before: isoNum(before[k]), after: isoNum(after[k]) }));
       }
     }
     invalidateVoiceCache("voice:");
@@ -135,14 +149,14 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       const lockedSkipped = Number((traits as any)?.traits_skipped_locked ?? 0);
       const written = Number((traits as any)?.traits_written ?? 0);
       if (written === 0 && lockedSkipped > 0) {
-        toast.message("Nothing changed — every marker is locked. Open one so Aura can adjust it.");
+        toast.message(L("Nothing changed — every marker is locked. Open one so KnownBy can adjust it.", "vo.ta.tLocked"));
       } else {
-        toast.success("Aura re-read your posts.");
+        toast.success(L("KnownBy re-read your posts.", "vo.ta.tReread"));
       }
       invalidateVoiceCache("voice:");
       await state.reload(true);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your posts.");
+      toast.error(errText(e, "Couldn't read your posts.", "vo.ta.tPosts"));
     } finally {
       reading.current = false;
       setStage(null);
@@ -164,15 +178,15 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     setAddReport(null);
     try {
       const r = await addOwnWriting(posts);
-      const parts = [`${r.admitted} added.`];
-      if (r.tooShort > 0) parts.push(`${r.tooShort} rejected — under 200 characters, too short to read a style from.`);
-      if (r.wrongSource > 0) parts.push(`${r.wrongSource} rejected — they did not pass the own-writing rule.`);
+      const parts = [L(`${r.admitted} added.`, "vo.ta.rAdded", { n: isoNum(r.admitted) })];
+      if (r.tooShort > 0) parts.push(L(`${r.tooShort} rejected — under 200 characters, too short to read a style from.`, "vo.ta.rShort", { n: isoNum(r.tooShort) }));
+      if (r.wrongSource > 0) parts.push(L(`${r.wrongSource} rejected — they did not pass the own-writing rule.`, "vo.ta.rWrong", { n: isoNum(r.wrongSource) }));
       setAddReport(parts.join(" "));
       setPasteText("");
       invalidateVoiceCache("voice:");
       await state.reload(true);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't add that writing.");
+      toast.error(errText(e, "Couldn't add that writing.", "vo.ta.tAdd"));
     } finally {
       setAdding(false);
     }
@@ -185,7 +199,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       const text = await file.text();
       await addWriting(splitPastedPosts(text));
     } catch {
-      toast.error("Couldn't read that file. Use a .txt or .md file.");
+      toast.error(L("Couldn't read that file. Use a .txt or .md file.", "vo.ta.tFile"));
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -201,7 +215,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       invalidateVoiceCache("voice:");
       await state.reload(true);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't save that.");
+      toast.error(errText(e, "Couldn't save that.", "vo.ta.tSave"));
     } finally {
       setAddingAdmired(false);
     }
@@ -214,25 +228,25 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       invalidateVoiceCache("voice:");
       await state.reload(true);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't remove that.");
+      toast.error(errText(e, "Couldn't remove that.", "vo.ta.tRemove"));
     }
   }, [userId, state]);
 
 
-  if (!userId) return <Card><span style={{ fontSize: TYPE.body, color: MUTED }}>Sign in to see what Aura read.</span></Card>;
+  if (!userId) return <Card><span style={arStyle(lang, { fontSize: TYPE.body, color: MUTED })}>{L("Sign in to see what KnownBy read.", "vo.ta.signIn")}</span></Card>;
   if (state.loading && !model) {
-    return <Card><span style={{ fontSize: TYPE.body, color: MUTED }}>Loading what Aura read…</span></Card>;
+    return <Card><span style={arStyle(lang, { fontSize: TYPE.body, color: MUTED })}>{L("Loading what KnownBy read…", "vo.ta.loading")}</span></Card>;
   }
 
   /* A failure is a failure — not "nothing read yet". */
   if (state.error && !model) {
     return (
       <Card>
-        <div style={{ fontSize: TYPE.title, fontWeight: 600, color: INK }}>Aura couldn't load what it read.</div>
+        <div style={{ fontSize: TYPE.title, fontWeight: 600, color: INK }}>{L("KnownBy couldn't load what it read.", "vo.ta.errTitle")}</div>
         <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 14px" }}>
-          Your writing is safe — this is a connection problem, not an empty file. {state.error}
+          {ar ? tt("vo.ta.errBody") : <>Your writing is safe — this is a connection problem, not an empty file. {state.error}</>}
         </p>
-        <button type="button" style={primaryButton} onClick={() => void state.reload(true)}>Try again</button>
+        <button type="button" style={primaryButton} onClick={() => void state.reload(true)}>{L("Try again", "vo.ta.retry")}</button>
       </Card>
     );
   }
@@ -243,16 +257,16 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     return (
       <Card>
         <div style={{ fontSize: TYPE.section, fontWeight: 600, color: INK }}>
-          Aura hasn't read anything you've written yet.
+          {L("KnownBy hasn't read anything you've written yet.", "vo.ta.emptyTitle")}
         </div>
         <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 12px" }}>
-          Add your LinkedIn address in Settings and Aura learns your voice from your own posts.
+          {L("Add your LinkedIn address in Settings and KnownBy learns your voice from your own posts.", "vo.ta.emptyBody")}
         </p>
         <Link
           to="/settings?tab=connections"
           style={{ ...primaryButton, minBlockSize: 44, display: "inline-flex", alignItems: "center", textDecoration: "none" }}
         >
-          Add it in Settings
+          {L("Add it in Settings", "vo.ta.emptyCta")}
         </Link>
       </Card>
     );
@@ -262,32 +276,36 @@ export default function TeachAura({ userId }: { userId: string | null }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, margin: "0 0 8px" }}>Where your voice comes from</h2>
+      <h2 style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, margin: "0 0 8px" }}>{L("Where your voice comes from", "vo.ta.whereTitle")}</h2>
       <Card>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: "1 1 260px" }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
-                Your LinkedIn posts — {model.includedCount} counted
+                {L(`Your LinkedIn posts — ${model.includedCount} counted`, "vo.ta.postsCounted", { n: isoNum(model.includedCount) })}
               </span>
-              <span style={{ fontSize: TYPE.body, color: MUTED }}>@{model.address.handle}</span>
+              <span dir="ltr" style={{ fontSize: TYPE.body, color: MUTED }}>@{model.address.handle}</span>
               {/* The shared rule decides this word. This file does not. */}
               {model.status.tone === "green"
                 ? <span style={chipStyle(GREEN, "#EAF6F0", "#BFE3D3")}>{t(model.status.labelKey)}</span>
                 : <span style={chipStyle(AMBER_TEXT, "#FBF3E0", "#EBD8A8")}>{t(model.status.labelKey)}</span>}
             </div>
             <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 0" }}>
-              These are the only posts that shape how Aura writes for you.
+              {L("These are the only posts that shape how KnownBy writes for you.", "vo.ta.onlyPosts")}
             </p>
 
             <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 0" }}>
               {/* Two different facts, said in two different ways: when Aura last
                   read the profile, and when it last read the posts. */}
               {noPosts
-                ? "Aura hasn't read any of your posts yet."
-                : `Aura last read your posts ${
+                ? L("KnownBy hasn't read any of your posts yet.", "vo.ta.noPosts")
+                : ar
+                  ? (model.address.lastSyncedAt
+                    ? tt("vo.ta.lastPosts", { date: shownDate(model.address.lastSyncedAt) })
+                    : tt("vo.ta.lastPostsNever"))
+                  : `KnownBy last read your posts ${
                     model.address.lastSyncedAt
-                      ? new Date(model.address.lastSyncedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+                      ? enDate(model.address.lastSyncedAt)
                       : "— not yet"
                   }`}
             </p>
@@ -300,10 +318,10 @@ export default function TeachAura({ userId }: { userId: string | null }) {
               style={{ ...primaryButton, opacity: stage !== null ? 0.6 : 1, display: "flex", gap: 6, alignItems: "center" }}
             >
               {stage !== null && <Loader2 size={13} className="animate-spin" />}
-              {noPosts ? "Read my posts" : "Re-read my posts"}
+              {noPosts ? L("Read my posts", "vo.ta.readPosts") : L("Re-read my posts", "vo.ta.rereadPosts")}
             </button>
             <Link to="/settings?tab=connections" style={{ fontSize: TYPE.body, color: BLUE, fontWeight: 500, textDecoration: "none" }}>
-              Change in Settings →
+              {ar ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>{tt("vo.ta.changeSettings")}<Arrow size={14} aria-hidden /></span> : "Change in Settings →"}
             </Link>
           </div>
         </div>
@@ -315,12 +333,12 @@ export default function TeachAura({ userId }: { userId: string | null }) {
             style={{ ...ghostButton, opacity: stage !== null ? 0.6 : 1, display: "flex", gap: 6, alignItems: "center", minBlockSize: 44 }}
           >
             {stage !== null && <Loader2 size={12} className="animate-spin" />}
-            Re-read my LinkedIn
+            {L("Re-read my LinkedIn", "vo.ta.rereadLinkedIn")}
           </button>
-          <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>
+          <span style={ar ? arStyle(lang, { fontSize: TYPE.small, color: MUTED }) : { ...monoNum, fontSize: TYPE.small, color: MUTED }}>
             {lastRead === undefined ? "" : lastRead
-              ? `Aura last read your profile ${new Date(lastRead).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
-              : "Aura hasn't read your profile yet"}
+              ? L(`KnownBy last read your profile ${enDate(lastRead)}`, "vo.ta.lastProfile", { date: ar ? shownDate(lastRead) : "" })
+              : L("KnownBy hasn't read your profile yet", "vo.ta.noProfile")}
           </span>
         </div>
         {readSummary && (
@@ -328,25 +346,25 @@ export default function TeachAura({ userId }: { userId: string | null }) {
         )}
         {stage !== null && (
           <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 10 }}>
-            {STAGES[stage]} This can take up to a minute and a half — you can leave this open.
+            {ar ? `${tt(`vo.ta.stage${stage}`)} ${tt("vo.ta.stageWait")}` : <>{STAGES[stage]} This can take up to a minute and a half — you can leave this open.</>}
           </p>
         )}
 
         {/* Writing the member added themselves — a paste or an upload. */}
         <div style={{ borderBlockStart: `1px solid ${LINE}`, marginBlockStart: 14, paddingBlockStart: 12 }}>
           <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
-            Writing you added yourself — {model.addedByYouCount}
+            {L(`Writing you added yourself — ${model.addedByYouCount}`, "vo.ta.addedTitle", { n: isoNum(model.addedByYouCount) })}
           </span>
           <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 8px", lineHeight: 1.6 }}>
-            Posts you wrote that are not on your LinkedIn. They join your posts as evidence of how you write.
+            {L("Posts you wrote that are not on your LinkedIn. They join your posts as evidence of how you write.", "vo.ta.addedBody")}
           </p>
           <textarea
             dir="auto"
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
             rows={4}
-            aria-label="Paste your own writing"
-            placeholder="Paste one or more of your own posts — leave a blank line between them…"
+            aria-label={L("Paste your own writing", "vo.ta.pasteAria")}
+            placeholder={L("Paste one or more of your own posts — leave a blank line between them…", "vo.ta.pastePh")}
             style={{
               inlineSize: "100%", border: `1px solid ${LINE}`, borderRadius: 12, padding: 10,
               fontSize: TYPE.body, lineHeight: 1.6, color: INK, background: "#FFFFFF", resize: "vertical",
@@ -359,7 +377,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
               onClick={() => void addWriting(splitPastedPosts(pasteText))}
               style={{ ...ghostButton, minBlockSize: 44, display: "flex", gap: 6, alignItems: "center", opacity: adding || !pasteText.trim() ? 0.6 : 1 }}
             >
-              {adding && <Loader2 size={13} className="animate-spin" />} Add this writing
+              {adding && <Loader2 size={13} className="animate-spin" />} {L("Add this writing", "vo.ta.addWriting")}
             </button>
             <button
               type="button"
@@ -367,7 +385,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
               onClick={() => fileRef.current?.click()}
               style={{ ...ghostButton, minBlockSize: 44, display: "flex", gap: 6, alignItems: "center" }}
             >
-              <Upload size={13} /> Upload a .txt or .md file
+              <Upload size={13} /> {L("Upload a .txt or .md file", "vo.ta.upload")}
             </button>
             <input ref={fileRef} type="file" accept=".txt,.md" hidden onChange={(e) => void onFile(e)} />
           </div>
@@ -377,11 +395,11 @@ export default function TeachAura({ userId }: { userId: string | null }) {
         {/* Posts the member admires — reference only, never reused. */}
         <div style={{ borderBlockStart: `1px solid ${LINE}`, marginBlockStart: 12, paddingBlockStart: 12 }}>
           <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
-            Posts you admire — {model.admired.length}
+            {L(`Posts you admire — ${model.admired.length}`, "vo.ta.admiredTitle", { n: isoNum(model.admired.length) })}
           </span>
           <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 8px", lineHeight: 1.6 }}>
-            Someone else's writing you want to sound closer to. Aura learns tone from these — it never reuses their
-            words or claims them as yours. Up to {ADMIRED_CAP}.
+            {ar ? tt("vo.ta.admiredBody", { cap: isoNum(ADMIRED_CAP) }) : <>Someone else's writing you want to sound closer to. KnownBy learns tone from these — it never reuses their
+            words or claims them as yours. Up to {ADMIRED_CAP}.</>}
           </p>
           {model.admired.length > 0 && (
             <ul style={{ listStyle: "none", margin: "0 0 8px", padding: 0, display: "grid", gap: 6 }}>
@@ -389,11 +407,11 @@ export default function TeachAura({ userId }: { userId: string | null }) {
                 <li key={`${i}-${a.addedAt ?? ""}`} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <span style={{ fontSize: TYPE.small, color: MUTED, flex: 1, lineHeight: 1.5 }} dir="auto">
                     {a.content.slice(0, 120)}{a.content.length > 120 ? "…" : ""}
-                    {a.source ? ` — ${a.source}` : " — source not noted"}
+                    {a.source ? L(` — ${a.source}`, "vo.ta.srcSuffix", { source: a.source }) : L(" — source not noted", "vo.ta.srcNone")}
                   </span>
                   <button
                     type="button"
-                    aria-label="Remove this admired post"
+                    aria-label={L("Remove this admired post", "vo.ta.removeAdmired")}
                     onClick={() => void dropAdmired(i)}
                     style={{ ...ghostButton, minBlockSize: 44, minInlineSize: 44, display: "flex", alignItems: "center", justifyContent: "center", color: RED }}
                   >
@@ -410,8 +428,8 @@ export default function TeachAura({ userId }: { userId: string | null }) {
                 value={admiredText}
                 onChange={(e) => setAdmiredText(e.target.value)}
                 rows={3}
-                aria-label="Paste a post you admire"
-                placeholder="Paste a post you admire — not your own…"
+                aria-label={L("Paste a post you admire", "vo.ta.admiredPh")}
+                placeholder={L("Paste a post you admire — not your own…", "vo.ta.admiredPh")}
                 style={{
                   inlineSize: "100%", border: `1px solid ${LINE}`, borderRadius: 12, padding: 10,
                   fontSize: TYPE.body, lineHeight: 1.6, color: INK, background: "#FFFFFF", resize: "vertical",
@@ -421,8 +439,9 @@ export default function TeachAura({ userId }: { userId: string | null }) {
                 <input
                   value={admiredSource}
                   onChange={(e) => setAdmiredSource(e.target.value)}
-                  aria-label="Who wrote it"
-                  placeholder="Who wrote it"
+                  dir="auto"
+                  aria-label={L("Who wrote it", "vo.ta.whoWrote")}
+                  placeholder={L("Who wrote it", "vo.ta.whoWrote")}
                   style={{
                     flex: "1 1 180px", minBlockSize: 44, padding: "0 12px", fontSize: TYPE.body,
                     border: `1px solid ${LINE}`, borderRadius: 8, color: INK, background: "#FFFFFF",
@@ -434,7 +453,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
                   onClick={() => void addAdmired()}
                   style={{ ...ghostButton, minBlockSize: 44, opacity: addingAdmired || !admiredText.trim() ? 0.6 : 1 }}
                 >
-                  {addingAdmired ? "Saving…" : "Add this post"}
+                  {addingAdmired ? L("Saving…", "vo.ta.saving") : L("Add this post", "vo.ta.addPost")}
                 </button>
               </div>
             </>
@@ -443,24 +462,34 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       </Card>
 
       <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 8, lineHeight: 1.6 }}>
-        {model.documentCount} document{model.documentCount === 1 ? "" : "s"} feed what Aura knows, not how you sound.{" "}
-        <Link to="/home?tab=intelligence" style={{ color: BLUE, textDecoration: "none" }}>See them →</Link>
+        {ar ? tt("vo.ta.docs", { n: isoNum(model.documentCount) }) : <>{model.documentCount} document{model.documentCount === 1 ? "" : "s"} feed what KnownBy knows, not how you sound.</>}{" "}
+        <Link to="/home?tab=intelligence" style={{ color: BLUE, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 2 }}>
+          {ar ? <>{tt("vo.ta.docsLink")}<Arrow size={13} aria-hidden /></> : "See them →"}
+        </Link>
       </p>
 
       <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 6, lineHeight: 1.6 }}>
-        Examples Aura kept from your posts — {model.examples.length}
-        {model.examples.length > 0 ? `: ${Array.from(new Set(model.examples.map((e) => e.sourceLabel))).join(", ")}` : ""}
+        {ar ? tt("vo.ta.examples", { n: isoNum(model.examples.length) }) : <>Examples KnownBy kept from your posts — {model.examples.length}</>}
+        {model.examples.length > 0
+          ? ar
+            ? tt("vo.ta.examplesLabels", { labels: arabicList(Array.from(new Set(model.examples.map((e) => corpusWord(e.sourceLabel, tr))))) })
+            : `: ${Array.from(new Set(model.examples.map((e) => e.sourceLabel))).join(", ")}`
+          : ""}
       </p>
 
       <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 6, lineHeight: 1.6 }}>
-        Publishing a draft teaches Aura nothing, on purpose — learning from its own writing is how a voice goes stale.
+        {L("Publishing a draft teaches KnownBy nothing, on purpose — learning from its own writing is how a voice goes stale.", "vo.ta.publishing")}
       </p>
 
       {model.negativeVerdicts >= 3 && (
         <div style={{ ...cardStyle, marginBlockStart: 10 }}>
           <div style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.6 }}>
-            You have told Aura {model.negativeVerdicts} times in the last two weeks that a draft did not sound like you
-            {model.negativeDimension ? `, mostly about ${model.negativeDimension}` : ""}. A re-read of your posts is the fix.
+            {ar
+              ? [tt("vo.ta.neg", { n: isoNum(model.negativeVerdicts) }),
+                 model.negativeDimension ? tt("vo.ta.negDim", { dimension: traitWord(model.negativeDimension.replace(/ /g, "_"), tr) }) : "",
+                 tt("vo.ta.negFix")].filter(Boolean).join(" ")
+              : <>You have told KnownBy {model.negativeVerdicts} times in the last two weeks that a draft did not sound like you
+            {model.negativeDimension ? `, mostly about ${model.negativeDimension}` : ""}. A re-read of your posts is the fix.</>}
           </div>
           <button
             type="button"
@@ -468,7 +497,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
             disabled={stage !== null}
             style={{ ...ghostButton, minBlockSize: 44, marginBlockStart: 8, opacity: stage !== null ? 0.6 : 1 }}
           >
-            Re-read my posts
+            {L("Re-read my posts", "vo.ta.rereadPosts")}
           </button>
         </div>
       )}
@@ -493,8 +522,8 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       )}
 
       {!noPosts && model.includedCount < MIN_POSTS_FOR_COVERAGE && (
-        <p style={{ ...monoNum, fontSize: TYPE.small, color: MUTED, marginBlockStart: 8 }}>
-          {model.includedCount} of {MIN_POSTS_FOR_COVERAGE} posts read
+        <p style={ar ? arStyle(lang, { fontSize: TYPE.small, color: MUTED, marginBlockStart: 8 }) : { ...monoNum, fontSize: TYPE.small, color: MUTED, marginBlockStart: 8 }}>
+          {L(`${model.includedCount} of ${MIN_POSTS_FOR_COVERAGE} posts read`, "vo.ta.readOf", { n: isoNum(model.includedCount), min: isoNum(MIN_POSTS_FOR_COVERAGE) })}
         </p>
       )}
       <div style={microLabel} aria-hidden />
