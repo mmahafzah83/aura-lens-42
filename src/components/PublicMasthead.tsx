@@ -111,10 +111,16 @@ const PM_CSS = `
    row fits its width (nothing hidden, nothing restyled). */
 @media (max-width:420px){
   .pm{padding-inline:14px;gap:8px;}
+  .pm-brand{gap:7px;}
   .pm-nav{gap:2px;}
-  .pm .kb-lt{padding:0 6px;min-width:0;}
-  .pm .pm-link{padding:11px 6px;white-space:nowrap;}
+  .pm .kb-lt{padding:0 4px;min-width:0;}
+  .pm .pm-link{padding:11px 5px;white-space:nowrap;}
   .pm .pm-cta{padding:10px 11px;gap:6px;}
+}
+@media (max-width:374px){
+  .pm{padding-inline:12px;}
+  .pm .pm-link{padding:11px 4px;}
+  .pm .pm-cta{padding:10px 10px;font-size:12px;}
 }
 @media (prefers-reduced-motion:reduce){
   .pm *{transition:none !important;}
