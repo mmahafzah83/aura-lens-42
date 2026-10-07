@@ -242,13 +242,23 @@ const Auth = () => {
       }
       const msg = result?.error || error?.message;
       if (msg) {
-        const raw = String(msg);
+        /* A non-2xx arrives as an error with the body still attached in
+           context — the specific complaint lives there, never bin it. */
+        let raw = String(msg);
+        if (!result?.error) {
+          try {
+            const body = await (error as any)?.context?.clone?.().json?.();
+            if (body?.error) raw = String(body.error);
+          } catch { /* body already read or not JSON — keep the message */ }
+        }
         setSignUpError(
           result?.code === "signup_limit" || /rate|too many|429|as many accounts/i.test(raw)
               ? t("auth.error.signupLimit")
-              : /password/i.test(raw)
-                ? t("auth.error.passwordShort")
-                : t("auth.error.signupFailed"),
+              : /weak|easily guess|known to be/i.test(raw)
+                ? t("auth.error.passwordWeak")
+                : /password/i.test(raw)
+                  ? t("auth.error.passwordShort")
+                  : t("auth.error.signupFailed"),
         );
         return;
       }

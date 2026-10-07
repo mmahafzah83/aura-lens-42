@@ -175,6 +175,7 @@
   "auth.error.signinMismatch": "البريد أو كلمة المرور غير صحيحة",
   "auth.error.emailInvalid": "هذا لا يبدو بريداً إلكترونياً. راجعه وحاول مجدداً.",
   "auth.error.passwordShort": "استخدم 8 أحرف أو أكثر.",
+  "auth.error.passwordWeak": "هذه الكلمة السرية مدرجة في قائمة الكلمات المُسرَّبة. اختر كلمة سر أخرى.",
   "auth.error.signupLimit": "محاولات كثيرة من هذا الجهاز اليوم. راسل support@aura-intel.org وسنعالجها يدوياً.",
   "auth.error.signupFailed": "تعذّر فتح الحساب الآن. حاول بعد قليل.",
   "auth.error.emailFirst": "أدخل بريدك أولاً",

@@ -246,6 +246,7 @@
   "auth.error.signinMismatch": "That email and password don't match. If you've never set a password, use “Set or reset your password” below.",
   "auth.error.emailInvalid": "That doesn't look like an email address. Check it and try again.",
   "auth.error.passwordShort": "Use eight characters or more.",
+  "auth.error.passwordWeak": "That password is on a known list of leaked ones. Choose a different password.",
   "auth.error.signupLimit": "That's a lot of attempts from here today. Write to support@aura-intel.org and it's sorted by hand.",
   "auth.error.signupFailed": "Couldn't open the account just now. Try again in a moment.",
   "auth.error.emailFirst": "Enter your email first",
