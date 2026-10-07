@@ -1338,6 +1338,7 @@
   "wall.password": "A password",
   "wall.passwordHint": "Eight characters or more.",
   "wall.err.passwordShort": "Use eight characters or more.",
+  "wall.err.passwordWeak": "That password is on a known list of leaked ones. Choose a different password.",
   "wall.err.email": "That doesn't look like an email address. Check it and try again.",
   "wall.consent": "I agree to the <terms>Terms</terms> and <privacy>Privacy Policy</privacy>. My data is processed under Saudi PDPL, and I can delete everything in one click.",
   "wall.why": "Tick the box above to enable this.",

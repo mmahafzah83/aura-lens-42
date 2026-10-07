@@ -3916,6 +3916,7 @@ const Onboarding = () => {
           /* A 400 from account creation carries a real complaint about one of
              the two fields. It belongs under that field, not in a block. */
           const lower = msg.toLowerCase();
+          if (/weak|easily guess|known to be/i.test(msg)) { setWallPasswordError(tr("wall.err.passwordWeak")); return; }
           if (lower.includes("password")) { setWallPasswordError(msg); return; }
           if (lower.includes("email") || lower.includes("address")) { setWallEmailError(msg); return; }
           setWallError(msg);
