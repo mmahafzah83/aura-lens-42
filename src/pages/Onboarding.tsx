@@ -29,11 +29,7 @@ import {
   type AssessmentState,
 } from "@/lib/assessmentSession";
 import { track } from "@/lib/track";
-import { BAND_COPY, BAND_THRESHOLDS } from "@/lib/capabilityBands";
-
-/* Slider band edges come from the one shared definition — never inline. */
-const SOLID_MIN = BAND_THRESHOLDS.slider.solid.min;
-const STRONG_MIN = BAND_THRESHOLDS.slider.strong.min;
+import { BAND_COPY, bandForSlider } from "@/lib/capabilityBands";
 import { sweepIfServerReset } from "@/lib/resetSweep";
 import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@/lib/marketRead";
 import AuraFace from "@/components/onboarding/AuraFace";
@@ -3532,6 +3528,7 @@ const Onboarding = () => {
     } else {
       const d = dims[Math.min(dimIdx, dims.length - 1)];
       const value = scores[d.name] ?? 50;
+      const band = bandForSlider(value, true);
       const last = dimIdx >= dims.length - 1;
       content = (
         <PaperShell onExit={saveAndExit} subProgress={(dimIdx + 1) / dims.length} footer={escapeFooter}>
@@ -3557,11 +3554,13 @@ const Onboarding = () => {
             type="range" min={0} max={100} step={1} value={value}
             className="ob-slider"
             aria-label={itemText(d, "name", itemLang)}
-            aria-valuetext={value < SOLID_MIN
-              ? `${capBand("developing")}: ${d.anchor_low ? itemText(d, "anchor_low", itemLang) : ""}`
-              : value < STRONG_MIN
-                ? `${capBand("solid")}: ${d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : ""}`
-                : `${capBand("strong")}: ${d.anchor_high ? itemText(d, "anchor_high", itemLang) : ""}`}
+            aria-valuetext={band === "not_assessed"
+              ? tr("cap.band.none_line")
+              : band === "developing"
+                ? `${capBand("developing")}: ${d.anchor_low ? itemText(d, "anchor_low", itemLang) : ""}`
+                : band === "solid"
+                  ? `${capBand("solid")}: ${d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : ""}`
+                  : `${capBand("strong")}: ${d.anchor_high ? itemText(d, "anchor_high", itemLang) : ""}`}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
             onPointerUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
             onKeyUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
@@ -3569,9 +3568,9 @@ const Onboarding = () => {
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
             {([
-              [capBand("developing"), d.anchor_low ? itemText(d, "anchor_low", itemLang) : null, value < SOLID_MIN],
-              [capBand("solid"), d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : null, value >= SOLID_MIN && value < STRONG_MIN],
-              [capBand("strong"), d.anchor_high ? itemText(d, "anchor_high", itemLang) : null, value >= STRONG_MIN],
+              [capBand("developing"), d.anchor_low ? itemText(d, "anchor_low", itemLang) : null, band === "developing"],
+              [capBand("solid"), d.anchor_mid ? itemText(d, "anchor_mid", itemLang) : null, band === "solid"],
+              [capBand("strong"), d.anchor_high ? itemText(d, "anchor_high", itemLang) : null, band === "strong"],
             ] as [string, string | null, boolean][])
               .filter(([, text]) => !!text)
               .map(([tag, text, live]) => (
@@ -3586,6 +3585,11 @@ const Onboarding = () => {
                   <span {...itemAttrs}>{text}</span>
                 </div>
               ))}
+              {band === "not_assessed" ? (
+                <p style={{ margin: 0, fontSize: "var(--ob-anchor)", lineHeight: 1.55, color: OB.muted, padding: "6px 0" }}>
+                  {tr("cap.band.none_line")}
+                </p>
+              ) : null}
           </div>
           <Actions style={{ marginBlockStart: 26 }}>
             <OBButton onClick={() => {
@@ -3912,6 +3916,7 @@ const Onboarding = () => {
           /* A 400 from account creation carries a real complaint about one of
              the two fields. It belongs under that field, not in a block. */
           const lower = msg.toLowerCase();
+          if (/weak|easily guess|known to be/i.test(msg)) { setWallPasswordError(tr("wall.err.passwordWeak")); return; }
           if (lower.includes("password")) { setWallPasswordError(msg); return; }
           if (lower.includes("email") || lower.includes("address")) { setWallEmailError(msg); return; }
           setWallError(msg);
