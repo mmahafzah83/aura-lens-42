@@ -752,6 +752,69 @@ export type Database = {
         }
         Relationships: []
       }
+      capability_dimensions_snapshot_20261007b: {
+        Row: {
+          active: boolean | null
+          anchor_high: string | null
+          anchor_high_ar: string | null
+          anchor_low: string | null
+          anchor_low_ar: string | null
+          anchor_mid: string | null
+          anchor_mid_ar: string | null
+          band: Database["public"]["Enums"]["seniority_band"] | null
+          created_at: string | null
+          framework: string | null
+          id: string | null
+          instrument_version: number | null
+          name: string | null
+          name_ar: string | null
+          position: number | null
+          sector: string | null
+          why_line: string | null
+          why_line_ar: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          anchor_high?: string | null
+          anchor_high_ar?: string | null
+          anchor_low?: string | null
+          anchor_low_ar?: string | null
+          anchor_mid?: string | null
+          anchor_mid_ar?: string | null
+          band?: Database["public"]["Enums"]["seniority_band"] | null
+          created_at?: string | null
+          framework?: string | null
+          id?: string | null
+          instrument_version?: number | null
+          name?: string | null
+          name_ar?: string | null
+          position?: number | null
+          sector?: string | null
+          why_line?: string | null
+          why_line_ar?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          anchor_high?: string | null
+          anchor_high_ar?: string | null
+          anchor_low?: string | null
+          anchor_low_ar?: string | null
+          anchor_mid?: string | null
+          anchor_mid_ar?: string | null
+          band?: Database["public"]["Enums"]["seniority_band"] | null
+          created_at?: string | null
+          framework?: string | null
+          id?: string | null
+          instrument_version?: number | null
+          name?: string | null
+          name_ar?: string | null
+          position?: number | null
+          sector?: string | null
+          why_line?: string | null
+          why_line_ar?: string | null
+        }
+        Relationships: []
+      }
       capability_radar_snapshots: {
         Row: {
           band: Database["public"]["Enums"]["seniority_band"]
