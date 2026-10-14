@@ -1217,6 +1217,7 @@ const Onboarding = () => {
         }
         }
         if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
+        if (st.answers_coded && typeof st.answers_coded === "object") setCodedAnswers(st.answers_coded as CodedAnswers);
         /* The capture payoff survives a reload: the fragments Aura pulled out
            of their link are held on the session, not only in memory. */
         if (Array.isArray(st.capture_fragments) && st.capture_fragments.length) {
