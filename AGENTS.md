@@ -1,3 +1,5 @@
+This build is the old copy, frozen for reference; the technology partner rebuilds KnownBy (D280).
+
 - Interface language: the stored choice is applied only on routes listed in `ARABIC_READY_ROUTES` (src/i18n/index.ts); every other route renders English LTR — why: half-translated pages must never flip right-to-left.
 - Arabic typography is enforced in base CSS, raw mono Arabic glyphs use bundled Cairo, and DocumentDirection strips arrow text from controls — why: shared and legacy controls must follow the same display rules.
 - Read card and resume stamps use displayReadStamp — why: Arabic unpadded days and unchanged English stamps must not drift.
@@ -13,3 +15,6 @@
 - LinkedIn own-writing fetch (posts actor settings, comments actor, 12-month window, character budget) lives in `supabase/functions/_shared/linkedinOwnWriting.ts` — why: every read of the member's writing must see the same window and filters.
 
 - Public email signoffs use the shared emailTemplate signature helper without a personal role line — why: every email surface must use the same team identity.
+- Sign-in is an emailed code, no password (D263) — why: the member never types or stores a password to enter.
+- Plans: a free read and identity file for an email, then Pro or Max with a two-week card trial; no free plan; non-buyers keep a read-only file (D276) — why: the entitlement ladder is fixed by the founder's ruling, not by code convenience.
+- The member's own LinkedIn is read from the pasted link — profile and the latest 50 posts, no comments (D278) — why: one read path, bounded by the ruling, for every member's own writing.

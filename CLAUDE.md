@@ -1,3 +1,5 @@
+This build is the old copy, frozen for reference; the technology partner rebuilds KnownBy (D280).
+
 # CLAUDE.md — brief for an agent working in this repo
 
 Aura is a bilingual (EN/AR) authority-building instrument for senior
@@ -34,7 +36,9 @@ npm run test:e2e    # playwright
 
 - **Design tokens only.** Colours, gradients and shadows are semantic tokens in
   `src/index.css`. Never `text-white`, `bg-black` or `bg-[#…]` in a component.
-  Dark theme, gold accent `#C5A55A`.
+  System-B "Signal": single light theme, canvas `#F2F5F9`, primary `#0670C4`;
+  cyan `#00CEC9` only for the machine's state (never text or buttons). Gold
+  `#C5A55A` is retired.
 - **Plain English, sentence case, no jargon, no emojis in navigation.** Copy is
   policed by `scripts/check-vocabulary.mjs`, which runs inside the build.
 - **One definition per number.** Import from `src/lib/counts.ts`,
