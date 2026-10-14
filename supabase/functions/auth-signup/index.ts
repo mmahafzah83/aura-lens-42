@@ -82,10 +82,10 @@ serve(async (req) => {
     const { email, password, origin, consent_version, lang: bodyLang } = await req.json();
     const addr = String(email || "").trim().toLowerCase();
     const pwd = String(password || "");
-    if (!addr.includes("@") || addr.length < 5) return json({ error: "Enter a valid email address." }, 400);
-    if (pwd.length < 8) return json({ error: "Use eight characters or more." }, 400);
+    if (!addr.includes("@") || addr.length < 5) return json({ ok: false, error: "Enter a valid email address." });
+    if (pwd.length < 8) return json({ ok: false, error: "Use eight characters or more." });
     const version = String(consent_version || "").trim();
-    if (!version) return json({ error: "Consent is required before an account can be opened." }, 400);
+    if (!version) return json({ ok: false, error: "Consent is required before an account can be opened." });
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -149,8 +149,11 @@ serve(async (req) => {
       user_metadata: { password_set: true },
     });
     if (error) {
-      await recordRefusal(admin, ip_hash, "create_user_rejected");
-      return json({ error: error.message }, 400);
+      // A rejected password or address is form validation, an expected state,
+      // not a crashed function: answer 200 so the client shows it under the field.
+      const weak = /weak|easy to guess|known to be/i.test(error.message);
+      await recordRefusal(admin, ip_hash, weak ? "weak_password" : "create_user_rejected");
+      return json({ ok: false, code: weak ? "weak_password" : "create_user_rejected", error: error.message });
     }
 
     if (ip_hash) await admin.from("signup_attempts").insert({ ip_hash });
