@@ -1,8 +1,18 @@
+This build is the old copy, frozen for reference; the technology partner rebuilds KnownBy (D280).
+
 # 03 — Business logic
 
 Every rule below is grounded in a named file. When two places implement the same
 rule (frontend + edge function), both are listed; **they must be changed
 together** — drift makes the product lie to the member.
+
+## Standing rulings
+
+- Sign-in is an emailed code; there is no password (D263).
+- Plans: a free read and identity file for an email; then Pro or Max with a
+  two-week card trial; no free plan; non-buyers keep a read-only file (D276).
+- The member's own LinkedIn is read from the pasted link — profile and the
+  latest 50 posts, no comments (D278).
 
 ## 1. Entitlement
 
@@ -82,7 +92,7 @@ Bands: `not_assessed | developing | solid | strong`.
 |---|---|
 | Sign-ups per address fingerprint per rolling 24 h | 100 |
 | Full instrument runs per account, ever | 1 |
-| Full instrument runs product-wide per UTC day | 40 |
+| Free reads product-wide | 200 in a rolling 24 hours, with a place in the queue (not 40 per UTC day) |
 | Email must be verified before a run | yes |
 
 `clientIp()` returns `""` when no address header exists; callers must treat an

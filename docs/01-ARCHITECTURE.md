@@ -1,3 +1,5 @@
+This build is the old copy, frozen for reference; the technology partner rebuilds KnownBy (D280).
+
 # 01 — Architecture
 
 ## Shape
@@ -95,7 +97,8 @@ with reciprocal-rank fusion across `entries`, `content_items`,
 
 ## Auth and roles
 
-- Supabase email/password auth. No anonymous sign-up; anonymous assessment work
+- Sign-in is an emailed code; there is no password (D263). No anonymous
+  sign-up; anonymous assessment work
   lives in `assessment_sessions` and is claimed with `claim_assessment_session`
   after sign-up.
 - `user_roles` (`app_role` = `admin | member`) is the only role store.
@@ -117,6 +120,7 @@ with reciprocal-rank fusion across `entries`, `content_items`,
 
 ## Integrations
 
-LinkedIn (OAuth + Apify scraping), Anthropic, Lovable AI Gateway, OpenAI
+LinkedIn (the member's own LinkedIn is read from the pasted link — profile and
+the latest 50 posts, no comments; D278), Anthropic, Lovable AI Gateway, OpenAI
 (embeddings), Perplexity (trends), Firecrawl (page fetch), Resend (email +
 webhook). Each is reached only from an edge function.
