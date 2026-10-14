@@ -47,6 +47,12 @@ const CONTACT = /[\w.+-]+@[\w-]+\.[\w.]+|\+?\d[\d\s().-]{7,}/;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  // D182/D253: switched off. Nothing writes oe_issuer_people any more; the
+  // stored rows stay as they are.
+  return new Response(JSON.stringify({ ok: false, disabled: "D182/D253 — spokespeople names are not stored" }), {
+    status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+  // deno-lint-ignore no-unreachable
   try {
     const cronSecret = Deno.env.get("CRON_SECRET");
     if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {

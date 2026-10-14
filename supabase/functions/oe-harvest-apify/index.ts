@@ -173,13 +173,7 @@ function runsFor(actor: string, cfg: any, body: any): RunSpec[] {
     }];
   }
 
-  if (actor === "curious_coder~linkedin-jobs-scraper") {
-    const urls = [
-      "https://www.linkedin.com/jobs/search?keywords=director%20OR%20%22head%20of%22%20OR%20%22vice%20president%22%20OR%20chief%20OR%20%22general%20manager%22&location=Saudi%20Arabia&f_TPR=r86400",
-      "https://www.linkedin.com/jobs/search?keywords=director%20OR%20%22head%20of%22%20OR%20%22vice%20president%22%20OR%20chief%20OR%20%22general%20manager%22&location=United%20Arab%20Emirates&f_TPR=r86400",
-    ];
-    return urls.map((url, i) => ({ label: `search-${i + 1}`, input: { urls: [url], count: 100, scrapeCompany: false } }));
-  }
+  // D253: the LinkedIn jobs actor has no runs. LinkedIn listings are never a source.
 
   if (actor === "johnvc~google-jobs-scraper") {
     const queries = pick<string>(body?.queries, cfg?.queries, [
@@ -320,6 +314,9 @@ Deno.serve(async (req) => {
     for (const cfg of actorsCfg) {
       const actor = String(cfg?.actor ?? "");
       if (!actor) continue;
+      // D253: LinkedIn job listings are never a source. No policy row, request
+      // or test input can run a LinkedIn actor from here.
+      if (/linkedin/i.test(actor)) { counts.per_actor[actor] = { skipped: "D253 LinkedIn listings are never a source" }; continue; }
       if (only && actor !== only) continue;
       if (!only && cfg?.active === false) continue;
       counts.actors++;

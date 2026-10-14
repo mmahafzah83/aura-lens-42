@@ -139,7 +139,9 @@ Deno.serve(async (req) => {
     // ── WHO THE ANNOUNCEMENT NAMES ────────────────────────────────────────
     // A notice about people moving is only a door when a person is named. The
     // same stored page text is read once more, for names and nothing else.
-    {
+    // D182/D253: switched off. No person's name is stored from an announcement;
+    // oe_issuer_people keeps its existing rows and receives no new ones.
+    if (false) {
       let pq = admin.from("oe_opportunities")
         .select("id, title, source_url, route_url, route_kind, access_state, issuer_id, issuer_raw, raw, kind")
         .eq("alive", true).eq("kind", "market_signal");
