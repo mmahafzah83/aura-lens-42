@@ -163,4 +163,4 @@
 - Rollback: `912e911125adf199e92ed535672596125003ca47`
 - [x] Remove founder story, portraits, signatures and public story route
 - [x] Replace public domains; preserve support inbox and operational configuration
-- [ ] Email tests, vocabulary audit, database self-check and 375px home screenshot
+- [x] Email tests (593 passed), vocabulary audit, database self-check (0 matches) and viewed 375px home screenshot

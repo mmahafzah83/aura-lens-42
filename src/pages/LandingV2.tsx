@@ -664,7 +664,7 @@ export const LANDING_COPY = {
   faqTag: ["Answered straight", "أجوبة مباشرة"],
   faqH2a: ["What people ask", "ما يسأله الناس"],
   faqH2b: ["before joining.", "قبل الانضمام."],
-  faqSub: ["No hedging and no small print. Where the answer is no, it says no.", "بلا مواربة ولا شروط مخفية. وحين يكون الجواب لا، أقول لا."],
+  faqSub: ["No hedging and no small print. Where the answer is no, it says no.", "بلا مواربة ولا شروط مخفية. وحين يكون الجواب لا، نقول لا."],
   fq1: ["What does &ldquo;free&rdquo; mean exactly?", "ماذا تعني «مجاناً» بالضبط؟"],
   fa1: [`Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and the KnownBy team helps you get started. ${SEAT_NO_CARD}`, `ملفك مجاني دائماً، وليس فترة تجربة. والجزء الذي يعمل كل ليلة، فيكتب ويصمّم وأنت نائم، سعره ${I(SEAT_PRICE_AR)}. المقعد التأسيسي يثبّت لك هذا السعر ما دمت محتفظاً به، وفريق KnownBy يجهّز حسابك. ${SEAT_NO_CARD_AR}`],
   fq2: ["Can I stop?", "هل أستطيع التوقف؟"],
