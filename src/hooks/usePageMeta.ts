@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SITE_URL = "https://www.aura-intel.org";
+const SITE_URL = "https://knownby.me";
 
 interface PageMeta {
   title: string;

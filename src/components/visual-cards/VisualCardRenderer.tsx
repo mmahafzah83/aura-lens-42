@@ -222,7 +222,7 @@ export default function VisualCardRenderer(props: VisualCardProps) {
                     fontFamily: FONTS.MONO, fontSize: 14,
                     color: style.footerAccentColor, letterSpacing: '0.04em',
                   }}>
-                    aura-intel.org
+                    knownby.me
                   </div>
                   <div style={{
                     fontFamily: isAr ? "'Cairo','DM Sans',sans-serif" : style.bodyFont,

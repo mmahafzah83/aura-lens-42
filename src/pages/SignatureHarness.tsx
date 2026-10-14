@@ -13,7 +13,7 @@ import { ensureCardFontsLoaded } from "@/components/signature/fitText";
 const AR_LINE = "بناء منظومات رقمية متكاملة لقطاع المياه تتجاوز الحلول التقنية المنعزلة";
 const EN_LINE = "Building integrated digital ecosystems for water utilities beyond isolated point solutions";
 const EN_LINE2 = "Directing enterprise transformation through digital capital investment";
-const PORTRAIT_PHOTO = "/hero-head.png";
+const PORTRAIT_PHOTO = undefined;
 const BRIGHT_PHOTO = "/test-bright.jpg";
 
 const FRAME_EN_DECISION: FrameDecision = {
@@ -66,7 +66,7 @@ export default function SignatureHarness() {
     {
       label: "Portrait EN oxblood",
       lang: "en" as Lang, mood: "oxblood" as Mood,
-      name: "Mohammad Mahafdhah",
+      name: "The KnownBy team",
       title: "Director of Digital Transformation",
       meta: "EY",
       lines: ["Architecting integrated digital ecosystems for modern water and energy utilities", EN_LINE2],
@@ -75,7 +75,7 @@ export default function SignatureHarness() {
     {
       label: "Portrait AR teal",
       lang: "ar" as Lang, mood: "teal" as Mood,
-      name: "Mohammad Mahafdhah",
+      name: "The KnownBy team",
       title: "مدير التحول الرقمي",
       meta: "",
       lines: [AR_LINE],
@@ -84,7 +84,7 @@ export default function SignatureHarness() {
     {
       label: "Portrait AR Arabic name",
       lang: "ar" as Lang, mood: "teal" as Mood,
-      name: "محمد محافظة",
+      name: "فريق KnownBy",
       title: "مدير التحول الرقمي",
       meta: "",
       lines: [AR_LINE],
@@ -110,7 +110,7 @@ export default function SignatureHarness() {
         <div id="portrait-en" style={{ width: 1080, height: 1350 }}>
           <SignatureCard
             lang="en" mood="oxblood"
-            name="Mohammad Mahafdhah"
+            name="The KnownBy team"
             title="Director of Digital Transformation"
             meta="EY"
             lines={["Architecting integrated digital ecosystems for modern water and energy utilities", EN_LINE2]}
@@ -120,7 +120,7 @@ export default function SignatureHarness() {
         <div id="portrait-ar" style={{ width: 1080, height: 1350 }}>
           <SignatureCard
             lang="ar" mood="teal"
-            name="Mohammad Mahafdhah"
+            name="The KnownBy team"
             title="مدير التحول الرقمي"
             meta=""
             lines={[AR_LINE]}
@@ -130,7 +130,7 @@ export default function SignatureHarness() {
         <div id="frame-en" style={{ width: 1080, height: 1350 }}>
           <FrameCard
             lang="en" mood="amber"
-            name="Mohammad Mahafdhah"
+            name="The KnownBy team"
             title="Director of Digital Transformation"
             meta="EY"
             lines={[FRAME_EN_LINE]}
@@ -141,7 +141,7 @@ export default function SignatureHarness() {
         <div id="frame-ar" style={{ width: 1080, height: 1350 }}>
           <FrameCard
             lang="ar" mood="teal"
-            name="محمد محافظة"
+            name="فريق KnownBy"
             title="مدير التحول الرقمي"
             meta=""
             lines={[FRAME_AR_LINE]}
@@ -162,7 +162,7 @@ export default function SignatureHarness() {
         <div id="frame-lower-right" style={{ width: 1080, height: 1350 }}>
           <FrameCard
             lang="en" mood="amber"
-            name="Mohammad Mahafdhah"
+            name="The KnownBy team"
             title="Director"
             meta="EY"
             lines={[FRAME_EN_LINE]}
@@ -178,7 +178,7 @@ export default function SignatureHarness() {
         <div id="frame-ar-ai" style={{ width: 1080, height: 1350 }}>
           <FrameCard
             lang="ar" mood="teal"
-            name="محمد محافظة"
+            name="فريق KnownBy"
             title="مدير التحول الرقمي"
             meta=""
             lines={["يقود الذكاء الاصطناعي AI موجة التحول في 2026 عبر بنية البيانات"]}
@@ -215,34 +215,34 @@ export default function SignatureHarness() {
           <LineCard lang="en" mood="teal" name="Rashid Al Mansoori" title="PARTNER" meta="GCC Water Advisory" lines={[EN_LINE]} />
         </div>
         <div id="line-ar" style={{ width: 1080, height: 1350 }}>
-          <LineCard lang="ar" mood="oxblood" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
+          <LineCard lang="ar" mood="oxblood" name="فريق KnownBy" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
         </div>
         <div id="stmt-quote-en" style={{ width: 1080, height: 1350 }}>
-          <StatementQuoteCard lang="en" mood="teal" name="Mohammad Mahafdhah" title="Director of Digital Transformation" meta="EY" lines={[EN_LINE]}
+          <StatementQuoteCard lang="en" mood="teal" name="The KnownBy team" title="Director of Digital Transformation" meta="EY" lines={[EN_LINE]}
             decision={{ textZone: "upper-left", scrim: "strong", cropFocusY: 0.5, emphasis: [{ phrase: "integrated digital ecosystems", style: "color" }] }} />
         </div>
         <div id="stmt-quote-ar" style={{ width: 1080, height: 1350 }}>
-          <StatementQuoteCard lang="ar" mood="oxblood" name="Mohammad Mahafdhah" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]}
+          <StatementQuoteCard lang="ar" mood="oxblood" name="The KnownBy team" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]}
             decision={{ textZone: "upper-right", scrim: "strong", cropFocusY: 0.5, emphasis: [{ phrase: "منظومات رقمية", style: "color" }] }} />
         </div>
         <div id="stmt-head-en" style={{ width: 1080, height: 1350 }}>
-          <StatementHeadlineCard lang="en" mood="amber" name="Mohammad Mahafdhah" title="Director of Digital Transformation" meta="EY" lines={[EN_LINE]} />
+          <StatementHeadlineCard lang="en" mood="amber" name="The KnownBy team" title="Director of Digital Transformation" meta="EY" lines={[EN_LINE]} />
         </div>
         <div id="stmt-head-ar" style={{ width: 1080, height: 1350 }}>
-          <StatementHeadlineCard lang="ar" mood="teal" name="Mohammad Mahafdhah" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
+          <StatementHeadlineCard lang="ar" mood="teal" name="The KnownBy team" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
         </div>
         <div id="milestone-en" style={{ width: 1080, height: 1350 }}>
           <MilestoneCard lang="en" mood="amber" name="Rashid Al Mansoori" title="10" meta="GCC Water Advisory" lines={["YEARS", "Building integrated water infrastructure across the Gulf"]} />
         </div>
         {/* Arabic-name controls retained alongside the primary Latin-name AR cases. */}
         <div id="portrait-ar-arabic-name" style={{ width: 1080, height: 1350 }}>
-          <SignatureCard lang="ar" mood="teal" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} photoUrl={PORTRAIT_PHOTO} />
+          <SignatureCard lang="ar" mood="teal" name="فريق KnownBy" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} photoUrl={PORTRAIT_PHOTO} />
         </div>
         <div id="stmt-quote-ar-arabic-name" style={{ width: 1080, height: 1350 }}>
-          <StatementQuoteCard lang="ar" mood="oxblood" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
+          <StatementQuoteCard lang="ar" mood="oxblood" name="فريق KnownBy" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
         </div>
         <div id="stmt-head-ar-arabic-name" style={{ width: 1080, height: 1350 }}>
-          <StatementHeadlineCard lang="ar" mood="teal" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
+          <StatementHeadlineCard lang="ar" mood="teal" name="فريق KnownBy" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
         </div>
         <div id="filmstrip-ar" style={{ width: 980, padding: 24, background: "#eeeae0" }}>
           <FilmStrip
@@ -251,7 +251,7 @@ export default function SignatureHarness() {
             mood="teal"
             live={{
               profile: {
-                first_name: "Mohammad Mahafdhah",
+                first_name: "The KnownBy team",
                 level: "مدير التحول الرقمي",
                 firm: "",
                 core_practice: AR_LINE,

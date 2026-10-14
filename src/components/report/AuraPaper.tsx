@@ -204,7 +204,7 @@ export function PaperFooter({
           color: T.ink2,
         }}
       >
-        <span dir={lang === "ar" ? "ltr" : undefined}>aura-intel.org</span>
+        <span dir={lang === "ar" ? "ltr" : undefined}>knownby.me</span>
         <span>
           {showDescriptor ? (
             <>
@@ -1196,11 +1196,11 @@ export function ClosingPlate({
             <div style={{ color: "rgba(242,245,249,0.6)", marginTop: 3 }}>
               {lang === "ar" ? (
                 <>
-                  {withLatin(paperTitle || "The KnownBy Paper № 01", lang)} · <LatinIsolate>aura-intel.org</LatinIsolate>
+                  {withLatin(paperTitle || "The KnownBy Paper № 01", lang)} · <LatinIsolate>knownby.me</LatinIsolate>
                   {pageLine ? <> · {pageLine}</> : null}
                 </>
               ) : (
-                <>{paperTitle || "The KnownBy Paper № 01"} · aura-intel.org{pageLine ? ` · ${String(pageLine)}` : ""}</>
+                <>{paperTitle || "The KnownBy Paper № 01"} · knownby.me{pageLine ? ` · ${String(pageLine)}` : ""}</>
               )}
             </div>
           </div>

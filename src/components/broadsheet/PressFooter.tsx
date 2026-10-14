@@ -114,7 +114,7 @@ export default function PressFooter({
         direction="ltr"
         style={{ unicodeBidi: "isolate" as any }}
       >
-        aura-intel.org
+        knownby.me
       </text>
       {rtl ? (
         <text

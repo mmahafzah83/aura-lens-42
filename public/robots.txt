@@ -11,4 +11,4 @@ Disallow: /trends/
 Disallow: /carousel-studio
 Disallow: /edition
 
-Sitemap: https://www.aura-intel.org/sitemap.xml
+Sitemap: https://knownby.me/sitemap.xml

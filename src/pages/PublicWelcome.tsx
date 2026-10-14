@@ -481,49 +481,6 @@ export default function PublicWelcome() {
             pointerEvents: "none",
           }} />
           <div style={{ position: "relative", width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
-            <div
-              className="pw-hero-head-wrap"
-              style={{
-                position: "relative",
-                width: "clamp(200px, 40vw, 360px)",
-                margin: "0 auto",
-                transform: `translateY(${heroScroll * -20}px)`,
-              }}
-            >
-              {/* Ambient bronze glow behind head */}
-              <div
-                aria-hidden
-                className="pw-hero-head-glow"
-                style={{
-                  position: "absolute",
-                  inset: "-20% -20% -20% -20%",
-                  background:
-                    "radial-gradient(circle, color-mix(in srgb, var(--action) 18%, transparent) 0%, color-mix(in srgb, var(--action) 8%, transparent) 40%, transparent 70%)",
-                  filter: "blur(20px)",
-                  pointerEvents: "none",
-                  zIndex: 0,
-                }}
-              />
-              {/* Orbiting bronze scan dot */}
-              <div aria-hidden className="pw-eye-orbit-wrap">
-                <div className="pw-eye-orbit-dot" />
-              </div>
-              <img
-                src="/aura-hero-head.png"
-                alt="Aura Intelligence"
-                loading="eager"
-                fetchPriority="high"
-                className="pw-hero-head"
-                style={{
-                  position: "relative",
-                  zIndex: 1,
-                  width: "100%",
-                  height: "auto",
-                  display: "block",
-                  filter: "sepia(1) saturate(1.8) hue-rotate(15deg) brightness(0.9)",
-                }}
-              />
-            </div>
             <CharReveal
               text="How visible is your expertise right now?"
               style={{
@@ -797,7 +754,7 @@ export default function PublicWelcome() {
         <div style={{ fontSize: 14, color: INK }}>The KnownBy team</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
           <AuraLogo variant="auto" size={20} />
-          <span style={{ fontSize: 11, color: INK_2, fontFamily: BODY }}>Aura · {PRODUCT_DESCRIPTOR} · aura-intel.org</span>
+          <span style={{ fontSize: 11, color: INK_2, fontFamily: BODY }}>Aura · {PRODUCT_DESCRIPTOR} · knownby.me</span>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14, marginTop: 16, fontSize: 12 }}>
           <Link to="/guide" style={{ color: "var(--glass-2)" }}>Guide</Link>

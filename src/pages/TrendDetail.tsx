@@ -126,9 +126,9 @@ export default function TrendDetail() {
           publisher: {
             "@type": "Organization",
             name: "KnownBy",
-            url: "https://www.aura-intel.org",
+            url: "https://knownby.me",
           },
-          mainEntityOfPage: `https://www.aura-intel.org/trends/${signal.id}`,
+          mainEntityOfPage: `https://knownby.me/trends/${signal.id}`,
         }
       : undefined,
   });

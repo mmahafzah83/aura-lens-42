@@ -20,18 +20,18 @@ export default function GuideThoughtLeadershipStrategy() {
           "A systematic thought leadership strategy: define your point of view, build a signal-driven publishing cadence, and measure influence.",
         author: { "@type": "Organization", name: "Aura" },
         publisher: { "@type": "Organization", name: "Aura" },
-        mainEntityOfPage: "https://www.aura-intel.org/guide/thought-leadership-strategy",
+        mainEntityOfPage: "https://knownby.me/guide/thought-leadership-strategy",
       },
       {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Guide", item: "https://www.aura-intel.org/guide" },
+          { "@type": "ListItem", position: 1, name: "Guide", item: "https://knownby.me/guide" },
           {
             "@type": "ListItem",
             position: 2,
             name: "Thought Leadership Strategy",
-            item: "https://www.aura-intel.org/guide/thought-leadership-strategy",
+            item: "https://knownby.me/guide/thought-leadership-strategy",
           },
         ],
       },

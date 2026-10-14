@@ -418,7 +418,7 @@ export default function RequestAccess() {
 
       <footer className="ra-foot">
         <span>{t("auth.request.copyright")}</span>
-        <span>aura-intel.org</span>
+        <span>knownby.me</span>
         <span>
           <Trans i18nKey="auth.request.footLinks" components={{ 1: <Link to="/privacy" />, 2: <Link to="/terms" />, 3: <a href="/contact" /> }} />
         </span>
