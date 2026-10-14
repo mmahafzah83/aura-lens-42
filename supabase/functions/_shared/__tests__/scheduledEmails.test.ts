@@ -74,7 +74,7 @@ export const ALL: Record<string, (l: EmailLang) => BuiltEmail> = {
   "card-alert-digest": (l) => renderCardAlert("digest", [CARD("c1", "Director of Port Operations"), CARD("c2", "Head of Logistics Strategy")], l, v, "https://knownby.me"),
 };
 
-const strayAura = (s: string) => s.replace(/aura-intel\.org/gi, "").replace(/aura-mark/gi, "").replace(/aura_card/gi, "").match(/aura/i);
+const strayAura = (s: string) => s.replace(/support@aura-intel\.org/gi, "").replace(/aura-mark/gi, "").replace(/aura_card/gi, "").match(/aura/i);
 const OUT = process.env.EMAIL_RENDER_DIR;
 
 describe("scheduled emails", () => {

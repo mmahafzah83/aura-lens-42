@@ -11,7 +11,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const APP_URL = "https://aura-intel.org";
+const APP_URL = "https://knownby.me";
 const FROM = "KnownBy <Mohammad.Mahafdhah@aura-intel.org>";
 const FROM_INVITES = "KnownBy <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";

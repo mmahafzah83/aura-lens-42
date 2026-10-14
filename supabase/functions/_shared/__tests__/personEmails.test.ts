@@ -22,8 +22,8 @@ export const ALL: Record<string, (l: EmailLang) => BuiltEmail> = {
   mirror: (l) => mirrorReadEmail(l, READ),
 };
 
-/** "Aura" anywhere except inside an address or URL (knownby.me). */
-const strayAura = (s: string) => s.replace(/aura-intel\.org/gi, "").replace(/aura-mark/gi, "").match(/aura/i);
+/** The retired name is allowed only in the unchanged support inbox and logo asset path. */
+const strayAura = (s: string) => s.replace(/support@aura-intel\.org/gi, "").replace(/aura-mark/gi, "").match(/aura/i);
 
 describe("person-triggered emails", () => {
   for (const [name, build] of Object.entries(ALL)) {
