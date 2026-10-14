@@ -45,7 +45,6 @@ const AdminAppearance = lazy(() => import("./pages/AdminAppearance"));
 const AdminQA = lazy(() => import("./pages/AdminQA"));
 const AdminGuideHealth = lazy(() => import("./pages/AdminGuideHealth"));
 const AdminStandard = lazy(() => import("./pages/AdminStandard"));
-const OurStory = lazy(() => import("./pages/OurStory"));
 const Contact = lazy(() => import("./pages/Contact"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const CardPreview = lazy(() => import("./pages/CardPreview"));
@@ -164,7 +163,6 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/trust" element={<Trust />} />
-            <Route path="/our-story" element={<OurStory />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/guide/thought-leadership-strategy" element={<GuideThoughtLeadershipStrategy />} />

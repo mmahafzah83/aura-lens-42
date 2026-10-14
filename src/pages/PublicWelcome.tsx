@@ -794,14 +794,12 @@ export default function PublicWelcome() {
 
       {/* FOOTER */}
       <footer style={{ padding: 40, borderTop: `1px solid ${HAIR}`, textAlign: "center" }}>
-        <div style={{ fontSize: 14, color: INK }}>Mohammad Mahafdhah</div>
-        <div style={{ fontSize: 12, color: INK_2, marginTop: 4 }}>Aura builder</div>
+        <div style={{ fontSize: 14, color: INK }}>The KnownBy team</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
           <AuraLogo variant="auto" size={20} />
           <span style={{ fontSize: 11, color: INK_2, fontFamily: BODY }}>Aura · {PRODUCT_DESCRIPTOR} · aura-intel.org</span>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14, marginTop: 16, fontSize: 12 }}>
-          <Link to="/our-story" style={{ color: "var(--glass-2)" }}>Our story</Link>
           <Link to="/guide" style={{ color: "var(--glass-2)" }}>Guide</Link>
           <Link to="/trust" style={{ color: "var(--glass-2)" }}>Security &amp; Trust</Link>
           <Link to="/privacy" style={{ color: "var(--glass-2)" }}>Privacy</Link>

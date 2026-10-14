@@ -95,12 +95,10 @@ export function divider(): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td style="height:1px;line-height:1px;font-size:0;background:${BORDER};">&nbsp;</td></tr></table>`;
 }
 
-/** Sign-off. The founder's name is fixed. */
-export function signature(role = "KnownBy builder", lang?: EmailLang): string {
-  if (isAr(lang)) return `<p style="margin:24px 0 0;${AR_TEXT}font-size:16px;line-height:1.9;color:${INK};font-weight:600;">محمد محافظة</p>
-  <p style="margin:2px 0 0;${AR_TEXT}font-size:14px;line-height:1.9;color:${INK_FAINT};">مؤسس <span dir="ltr">KnownBy</span></p>`;
-  return `<p style="margin:24px 0 0;font-family:${BODY};font-size:15px;line-height:1.5;color:${INK};font-weight:600;">Mohammad Mahafzah</p>
-  <p style="margin:2px 0 0;font-family:${BODY};font-size:13px;line-height:1.5;color:${INK_FAINT};">${role}</p>`;
+/** Team sign-off; the unused role argument preserves existing callers. */
+export function signature(_role = "", lang?: EmailLang): string {
+  if (isAr(lang)) return `<p style="margin:24px 0 0;${AR_TEXT}font-size:16px;line-height:1.9;color:${INK};font-weight:600;">فريق <span dir="ltr">KnownBy</span></p>`;
+  return `<p style="margin:24px 0 0;font-family:${BODY};font-size:15px;line-height:1.5;color:${INK};font-weight:600;">The KnownBy team</p>`;
 }
 
 export interface EmailOptions {
