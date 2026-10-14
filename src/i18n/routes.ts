@@ -8,7 +8,7 @@ export const ARABIC_READY_ROUTES: (string | RegExp)[] = [
   "/auth", "/login", "/request-access", "/accept-invitation",
   "/assessment", "/onboarding",
   "/trends", "/linkedin-import",
-  "/our-story", "/contact", /^\/guide$/, "/terms", "/privacy", "/trust",
+  "/contact", /^\/guide$/, "/terms", "/privacy", "/trust",
 ];
 
 const normPath = (pathname: string): string => {

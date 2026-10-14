@@ -2220,7 +2220,7 @@ const Onboarding = () => {
     try {
       // LinkedIn only accepts the live origin as a redirect target.
       const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
-        body: { action: "get-auth-url", origin: "https://www.aura-intel.org" },
+        body: { action: "get-auth-url", origin: "https://knownby.me" },
       });
       if (error) throw error;
       const url = (data as any)?.url || (data as any)?.authUrl;

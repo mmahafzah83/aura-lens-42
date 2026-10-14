@@ -372,10 +372,10 @@ export default function TierCeremonyModal({
     const sig = topSignal?.title || data.quote;
     const confPct = topSignal?.confidence ? Math.round(topSignal.confidence * 100) : 80;
     if (which === "AR") {
-      return `حققت ${sc} على Aura.\n\nمو اختبار..\n\nنظام يقرأ اللي أقرأه، يكتشف الأنماط اللي ما انتبهت لها، ويخبرني إن السوق تحرّك قبل ما ألاحظ.\n\nالحين يتابع ${sig}..\n\n${confPct}٪ ثقة.. ومستمرة.\n\nإذا خبرتك موجودة بس السوق ما يشوفها..\n\nهذا اللي صنع الفرق.\n\naura-intel.org`;
+      return `حققت ${sc} على Aura.\n\nمو اختبار..\n\nنظام يقرأ اللي أقرأه، يكتشف الأنماط اللي ما انتبهت لها، ويخبرني إن السوق تحرّك قبل ما ألاحظ.\n\nالحين يتابع ${sig}..\n\n${confPct}٪ ثقة.. ومستمرة.\n\nإذا خبرتك موجودة بس السوق ما يشوفها..\n\nهذا اللي صنع الفرق.\n\nknownby.me`;
     }
     // The English post is always English, whatever the screen language.
-    return i18n.t("frame.tier.postEn", { lng: "en", score: sc, signal: sig, confidence: confPct, site: "aura-intel.org" });
+    return i18n.t("frame.tier.postEn", { lng: "en", score: sc, signal: sig, confidence: confPct, site: "knownby.me" });
   };
 
   // Seed/reseed the editable caption when language toggles or when

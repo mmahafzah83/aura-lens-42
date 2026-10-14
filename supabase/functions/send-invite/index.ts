@@ -19,7 +19,7 @@ const corsHeaders = {
 const REDIRECT_URL = "https://aura-intel.org/onboarding";
 // Public ceremony page shown BEFORE the token is verified — the user clicks
 // "Let the world see what I know →" here, which then triggers Supabase verify.
-const ACCEPTANCE_URL = "https://aura-intel.org/accept-invitation";
+const ACCEPTANCE_URL = "https://knownby.me/accept-invitation";
 
 serve(withObserve("send-invite", async (req) => {
   if (req.method === "OPTIONS") {

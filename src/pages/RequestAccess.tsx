@@ -418,7 +418,7 @@ export default function RequestAccess() {
 
       <footer className="ra-foot">
         <span>{t("auth.request.copyright")}</span>
-        <span>aura-intel.org</span>
+        <span>knownby.me</span>
         <span>
           <Trans i18nKey="auth.request.footLinks" components={{ 1: <Link to="/privacy" />, 2: <Link to="/terms" />, 3: <a href="/contact" /> }} />
         </span>
@@ -493,8 +493,7 @@ function Ceremony({
       <p className="ra-inbox">{t("auth.request.inbox")}</p>
       {withSignature && (
         <div className="ra-sig">
-          <div className="ra-nm">Mohammad Mahafdhah</div>
-          <div className="ra-rl">{t("auth.request.signatureRole")}</div>
+          <div className="ra-nm">{t("auth.request.signature")}</div>
         </div>
       )}
     </div>

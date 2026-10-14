@@ -360,7 +360,7 @@ export default function AuraCard({ variant }: AuraCardProps) {
           <AuraLogo variant="light" size={14} withWordmark={false} />
           <span style={ar ? AR_TEXT : undefined}>{ar ? t("acf.measured") : "MEASURED BY KNOWNBY"}</span>
         </div>
-        <span dir="ltr">AURA-INTEL.ORG</span>
+        <span dir="ltr">knownby.me</span>
       </footer>
     </article>
   );

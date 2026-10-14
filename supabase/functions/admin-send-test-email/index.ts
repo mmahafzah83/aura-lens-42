@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
         ${paragraph("Sent from the Admin console through the same Resend path lifecycle emails use, rendered with the shared Aura email shell.")}
         ${stat(sentAt.slice(11, 16), "Sent at (UTC)")}
       `,
-      cta: { href: "https://www.aura-intel.org/dashboard", label: "Open Aura" },
+      cta: { href: "https://knownby.me/dashboard", label: "Open Aura" },
     });
     const messageKey = `TEST_${Date.now()}`;
 

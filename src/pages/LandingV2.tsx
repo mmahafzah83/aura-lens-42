@@ -196,7 +196,6 @@ const LANDING_V2_CSS = `
 .aura-v2 .join p{color:#A7B0BC;font-size:15.5px;line-height:1.6;margin-top:14px}
 .aura-v2 .dark .jf{display:block;width:100%;max-width:none;margin-left:auto;margin-right:auto;text-align:center}
 .aura-v2 .jf{font-family:var(--mono);font-size:10px;color:#65707E;letter-spacing:.09em;margin-top:16px;line-height:1.8}
-.aura-v2 .founder{display:flex;gap:15px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:19px;margin:18px auto 0;max-width:640px}
 .aura-v2 .support{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:14px;max-width:52ch}
 .aura-v2 .subxs{font-size:14px;color:var(--ink3);line-height:1.6;margin-top:12px;max-width:540px}
 .aura-v2 .rungs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
@@ -304,9 +303,6 @@ const LANDING_V2_CSS = `
 .aura-v2 .seat .lock b{color:#fff;font-weight:650}
 .aura-v2 .bridge{max-width:600px;margin:22px auto 0;text-align:center;background:var(--white);border:1px solid var(--line);border-radius:999px;padding:14px 24px;font-size:13px;color:var(--ink3);line-height:1.6}
 @media(max-width:860px){.aura-v2 .pricegrid{grid-template-columns:1fr}}
-.aura-v2 .founder img{width:48px;height:48px;border-radius:999px;object-fit:cover;flex-shrink:0}
-.aura-v2 .founder .t{font-size:14px;color:var(--ink3);line-height:1.55}
-.aura-v2 .founder .t b{color:var(--ink)}
 .aura-v2 .foot{border-top:1px solid var(--line);margin-top:56px;padding:20px 0;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .aura-v2 .foot span,.aura-v2 .foot a{font-family:var(--mono);font-size:10px;color:var(--ink4);letter-spacing:.09em;text-decoration:none}
 .aura-v2 .foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px}
@@ -663,16 +659,14 @@ export const LANDING_COPY = {
   tick3: ["The source shown behind every claim", "المصدر ظاهر وراء كل معلومة"],
   tick4: ["English or Arabic — written, not translated", "بالعربية أو الإنجليزية، كتابةً لا ترجمة"],
   tick5: ["Your identity rewritten every quarter, as you move", "هويتك المهنية تُعاد كتابتها كل ثلاثة أشهر، مع تقدّمك"],
-  seatLock: ["<b>Fifty founding seats, ten at a time</b> — because one founder sets each person up himself, properly. <b>The price belongs to your seat, not to a date.</b> Wave two opens when wave one members are publishing.", "<b>خمسون مقعداً تأسيسياً، عشرة في كل دفعة</b>، لأن المؤسس يجهّز حساب كل عضو بنفسه، كما ينبغي. <b>السعر مرتبط بمقعدك، لا بتاريخ.</b> والدفعة الثانية تُفتح حين يبدأ أعضاء الأولى بالنشر."],
+  seatLock: ["<b>Fifty founding seats, ten at a time</b> — because the KnownBy team sets each person up properly. <b>The price belongs to your seat, not to a date.</b> Wave two opens when wave one members are publishing.", "<b>خمسون مقعداً تأسيسياً، عشرة في كل دفعة</b>، لأن فريق KnownBy يجهّز حساب كل عضو كما ينبغي. <b>السعر مرتبط بمقعدك، لا بتاريخ.</b> والدفعة الثانية تُفتح حين يبدأ أعضاء الأولى بالنشر."],
   bridge: ["Walk the road first. The seat will still be here — and you&rsquo;ll know exactly what you&rsquo;re paying to keep alive.", "اقطع الطريق أولاً. المقعد سيبقى في مكانه، وستعرف بالضبط ما الذي تدفع لتحافظ عليه."],
-  founderAlt: ["Mohammad Mahafdhah", "محمد محافظة"],
-  founderT: ["<b>Mohammad Mahafdhah</b> — I built KnownBy from my own reading, because I had the same problem. Write to me directly and I will answer.", "<b>محمد محافظة</b>: بنيت KnownBy من قراءتي أنا، لأني عانيت المشكلة نفسها. اكتب لي مباشرة وسأردّ عليك."],
   faqTag: ["Answered straight", "أجوبة مباشرة"],
   faqH2a: ["What people ask", "ما يسأله الناس"],
   faqH2b: ["before joining.", "قبل الانضمام."],
-  faqSub: ["No hedging and no small print. Where the answer is no, it says no.", "بلا مواربة ولا شروط مخفية. وحين يكون الجواب لا، أقول لا."],
+  faqSub: ["No hedging and no small print. Where the answer is no, it says no.", "بلا مواربة ولا شروط مخفية. وحين يكون الجواب لا، نقول لا."],
   fq1: ["What does &ldquo;free&rdquo; mean exactly?", "ماذا تعني «مجاناً» بالضبط؟"],
-  fa1: [`Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and I onboard you personally. ${SEAT_NO_CARD}`, `ملفك مجاني دائماً، وليس فترة تجربة. والجزء الذي يعمل كل ليلة، فيكتب ويصمّم وأنت نائم، سعره ${I(SEAT_PRICE_AR)}. المقعد التأسيسي يثبّت لك هذا السعر ما دمت محتفظاً به، وأجهّز حسابك بنفسي. ${SEAT_NO_CARD_AR}`],
+  fa1: [`Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and the KnownBy team helps you get started. ${SEAT_NO_CARD}`, `ملفك مجاني دائماً، وليس فترة تجربة. والجزء الذي يعمل كل ليلة، فيكتب ويصمّم وأنت نائم، سعره ${I(SEAT_PRICE_AR)}. المقعد التأسيسي يثبّت لك هذا السعر ما دمت محتفظاً به، وفريق KnownBy يجهّز حسابك. ${SEAT_NO_CARD_AR}`],
   fq2: ["Can I stop?", "هل أستطيع التوقف؟"],
   fa2: ["Any month. Everything you kept and everything you wrote stays yours.", "في أي شهر. وكل ما حفظته وكتبته يبقى لك."],
   fq3: ["Will it sound like AI?", "هل سيبدو مكتوباً بالذكاء الاصطناعي؟"],
@@ -690,8 +684,7 @@ export const LANDING_COPY = {
   stillH3: ["Still deciding?<br><em style=\"font-style:italic;color:var(--ink4)\">Then just take the free report.</em>", "ما زلت تفكّر؟<br><em style=\"color:var(--ink4)\">خذ ملفك المجاني وحسب.</em>"],
   stillP: ["It is yours whether you ever pay us or not. If it shows you something you did not know about yourself, the seat will still be here.", "هو لك، دفعت يوماً أم لم تدفع. وإن أراك شيئاً لم تكن تعرفه عن نفسك، فالمقعد باقٍ في مكانه."],
   closing: ["Ninety seconds, free, and yours to keep.", "تسعون ثانية، مجاناً، ويبقى لك."],
-  footLeft: ["KNOWNBY · AURA-INTEL.ORG · BUILT IN RIYADH", `${I("KNOWNBY")} · ${I("AURA-INTEL.ORG")} · بُني في الرياض`],
-  fl1: ["Our story", "قصتنا"],
+  footLeft: ["KNOWNBY · knownby.me · BUILT IN RIYADH", `${I("KNOWNBY")} · ${I("knownby.me")} · بُني في الرياض`],
   fl2: ["Guide", "الدليل"],
   fl3: ["Security and trust", "الأمان والثقة"],
   fl4: ["Contact", "تواصل معنا"],
@@ -1557,10 +1550,6 @@ export const landingHtml = (t: LandingStrings, ar: boolean) => `
 
   <p class="bridge">${t.bridge}</p>
 
-  <div class="founder">
-    <img src="/aura-founder.jpg" alt="${t.founderAlt}">
-    <div class="t">${t.founderT}</div>
-  </div>
 
   <div class="hdr" style="margin-top:56px">
     <span class="tag">${t.faqTag}</span>
@@ -1592,7 +1581,7 @@ export const landingHtml = (t: LandingStrings, ar: boolean) => `
 
 <div class="foot">
   <span>${t.footLeft}</span>
-  <span><a href="/our-story">${t.fl1}</a> · <a href="/guide">${t.fl2}</a> · <a href="/trust">${t.fl3}</a> · <a href="/contact">${t.fl4}</a> · <a href="/privacy">${t.fl5}</a> · <a href="/terms">${t.fl6}</a></span>
+  <span><a href="/guide">${t.fl2}</a> · <a href="/trust">${t.fl3}</a> · <a href="/contact">${t.fl4}</a> · <a href="/privacy">${t.fl5}</a> · <a href="/terms">${t.fl6}</a></span>
 </div>
 
 </div>

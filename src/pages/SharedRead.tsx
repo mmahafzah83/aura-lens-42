@@ -286,7 +286,7 @@ export default function SharedRead() {
         </p>
       </section>
 
-      <footer dir="ltr" style={{ marginTop: 48, ...mono(10), color: OB.mutedNight, textAlign: isArabic ? "right" : undefined }}>aura-intel.org</footer>
+      <footer dir="ltr" style={{ marginTop: 48, ...mono(10), color: OB.mutedNight, textAlign: isArabic ? "right" : undefined }}>knownby.me</footer>
     </Shell>
   );
 }

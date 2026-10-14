@@ -9,7 +9,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
  */
 const LINKS: Array<{ labelKey: string; to: string }> = [
   { labelKey: "pub.footer.home", to: "/" },
-  { labelKey: "pub.footer.ourStory", to: "/our-story" },
   { labelKey: "pub.footer.guide", to: "/guide" },
   { labelKey: "pub.footer.contact", to: "/contact" },
   { labelKey: "pub.footer.trust", to: "/trust" },

@@ -7,8 +7,8 @@
   "theme": "paper",
   "length": 5,
   "profile": {
-    "name": { "runs": [{ "t": "Mohammad Mahafdhah", "lang": "en" }] },
-    "handle": "mohammad-mahafdhah"
+    "name": { "runs": [{ "t": "The KnownBy team", "lang": "en" }] },
+    "handle": "knownby"
   },
   "slides": [
     {

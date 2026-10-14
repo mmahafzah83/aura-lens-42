@@ -51,11 +51,11 @@ export const ALL: Record<string, (l: EmailLang) => BuiltEmail> = {
   "M4": (l) => lifecycleMessage(l, "M4", "Sara", "Port automation is outpacing labour policy"),
   "draft-ready": (l) => draftReadyEmail({
     firstName: "Sara", shortTopic: "port automation", fullTopic: "Port automation", excerpt: "Automation in ports is not a labour story. It is a policy story, and the policy is late.",
-    nReadings: 5, nSources: 3, newestFragmentIso: new Date().toISOString(), velocityStatus: "accelerating", ctaUrl: "https://www.aura-intel.org/dashboard?draft=x",
+    nReadings: 5, nSources: 3, newestFragmentIso: new Date().toISOString(), velocityStatus: "accelerating", ctaUrl: "https://knownby.me/dashboard?draft=x",
   }, l),
   "draft-ready-nocounts": (l) => draftReadyEmail({
     firstName: null, shortTopic: "a finding you kept", fullTopic: "a finding you kept", excerpt: "Short.",
-    nReadings: null, nSources: null, newestFragmentIso: null, velocityStatus: null, ctaUrl: "https://www.aura-intel.org/dashboard?draft=x",
+    nReadings: null, nSources: null, newestFragmentIso: null, velocityStatus: null, ctaUrl: "https://knownby.me/dashboard?draft=x",
   }, l),
   "morning-signal": (l) => morningSignalEmail(FINDING("f1", "Ports bet on automation"), [FINDING("f2", "Labour rules lag"), FINDING("f3", "Customs goes digital")], l),
   "weekly-brief": (l) => weeklyBriefEmail({
@@ -70,11 +70,11 @@ export const ALL: Record<string, (l: EmailLang) => BuiltEmail> = {
     firstName: "Sara", dayDate: "x", topSignals: [], postsThisWeek: 0, postsLastWeek: 2, activeWeeks: 0, emailParam: "s@e.com",
     marketPulse: { headline: "Steady quarter.", url: null, isExternal: false }, worthReading: null, readyPost: null,
   }, l),
-  "card-alert-instant": (l) => renderCardAlert("instant", [CARD("c1", "Director of Port Operations")], l, v, "https://aura-intel.org"),
-  "card-alert-digest": (l) => renderCardAlert("digest", [CARD("c1", "Director of Port Operations"), CARD("c2", "Head of Logistics Strategy")], l, v, "https://aura-intel.org"),
+  "card-alert-instant": (l) => renderCardAlert("instant", [CARD("c1", "Director of Port Operations")], l, v, "https://knownby.me"),
+  "card-alert-digest": (l) => renderCardAlert("digest", [CARD("c1", "Director of Port Operations"), CARD("c2", "Head of Logistics Strategy")], l, v, "https://knownby.me"),
 };
 
-const strayAura = (s: string) => s.replace(/aura-intel\.org/gi, "").replace(/aura-mark/gi, "").replace(/aura_card/gi, "").match(/aura/i);
+const strayAura = (s: string) => s.replace(/support@aura-intel\.org/gi, "").replace(/aura-mark/gi, "").replace(/aura_card/gi, "").match(/aura/i);
 const OUT = process.env.EMAIL_RENDER_DIR;
 
 describe("scheduled emails", () => {

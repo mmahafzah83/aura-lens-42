@@ -24,7 +24,7 @@ const AR_TEXT = `font-family:${ARABIC};letter-spacing:0;text-transform:none;text
  */
 export function isoAr(text: string): string {
   return String(text).replace(
-    /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|aura-intel\.org(?:\/[A-Za-z0-9_-]+)*|KnownBy|LinkedIn)/g,
+    /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|knownby\.me(?:\/[A-Za-z0-9_-]+)*|KnownBy|LinkedIn)/g,
     '<span dir="ltr" style="white-space:nowrap">$1</span>',
   );
 }
@@ -35,8 +35,8 @@ export function greetingAr(name?: string | null): string {
   return n ? `أهلاً ${n}،` : "أهلاً،";
 }
 
-const LOGO_URL = "https://aura-intel.org/email/aura-mark-ink.png";
-const DEFAULT_PREFS_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
+const LOGO_URL = "https://knownby.me/email/aura-mark-ink.png";
+const DEFAULT_PREFS_URL = "https://knownby.me/dashboard?settings=notifications";
 
 export function escapeHtml(s: string): string {
   return String(s)
@@ -95,12 +95,10 @@ export function divider(): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td style="height:1px;line-height:1px;font-size:0;background:${BORDER};">&nbsp;</td></tr></table>`;
 }
 
-/** Sign-off. The founder's name is fixed. */
-export function signature(role = "KnownBy builder", lang?: EmailLang): string {
-  if (isAr(lang)) return `<p style="margin:24px 0 0;${AR_TEXT}font-size:16px;line-height:1.9;color:${INK};font-weight:600;">محمد محافظة</p>
-  <p style="margin:2px 0 0;${AR_TEXT}font-size:14px;line-height:1.9;color:${INK_FAINT};">مؤسس <span dir="ltr">KnownBy</span></p>`;
-  return `<p style="margin:24px 0 0;font-family:${BODY};font-size:15px;line-height:1.5;color:${INK};font-weight:600;">Mohammad Mahafzah</p>
-  <p style="margin:2px 0 0;font-family:${BODY};font-size:13px;line-height:1.5;color:${INK_FAINT};">${role}</p>`;
+/** Team sign-off; the unused role argument preserves existing callers. */
+export function signature(_role = "", lang?: EmailLang): string {
+  if (isAr(lang)) return `<p style="margin:24px 0 0;${AR_TEXT}font-size:16px;line-height:1.9;color:${INK};font-weight:600;">فريق <span dir="ltr">KnownBy</span></p>`;
+  return `<p style="margin:24px 0 0;font-family:${BODY};font-size:15px;line-height:1.5;color:${INK};font-weight:600;">The KnownBy team</p>`;
 }
 
 export interface EmailOptions {
@@ -155,10 +153,10 @@ export function renderEmail(opts: EmailOptions): string {
       <tr><td style="padding:20px 36px 28px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
           ${rtl ? `<td align="right" dir="rtl" style="border-top:1px solid ${BORDER};padding-top:16px;${AR_TEXT}font-size:13px;line-height:1.9;color:${INK_FAINT};">
-            <span dir="ltr">KnownBy</span> &middot; <a href="https://aura-intel.org" dir="ltr" style="color:${INK_FAINT};text-decoration:none;">aura-intel.org</a>
+            <span dir="ltr">KnownBy</span> &middot; <a href="https://knownby.me" dir="ltr" style="color:${INK_FAINT};text-decoration:none;">knownby.me</a>
             &middot; <a href="${prefsHref}" style="color:${INK_FAINT};text-decoration:underline;">${prefsLabel}</a>
           </td>` : `<td align="${align}" style="border-top:1px solid ${BORDER};padding-top:16px;font-family:${MONO};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">
-            KnownBy &middot; <a href="https://aura-intel.org" style="color:${INK_FAINT};text-decoration:none;">aura-intel.org</a>
+            KnownBy &middot; <a href="https://knownby.me" style="color:${INK_FAINT};text-decoration:none;">knownby.me</a>
             &middot; <a href="${prefsHref}" style="color:${INK_FAINT};text-decoration:underline;">${prefsLabel}</a>
           </td>`}
         </tr></table>

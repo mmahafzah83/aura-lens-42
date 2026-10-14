@@ -11,3 +11,5 @@
 - Lovable AI text generation uses request-local OpenAI Responses calls through the shared server-only wrapper — why: prompts, credentials, streaming, reasoning options, and run correlation must stay consistent and private.
 - Arabic model-output quality detectors live in `arabicQualityNotes` (_shared/arabicVoice.ts) and log rule ids only to `arabic_quality_events` — why: one checker feeds the single correction call and the founder sees which rule fails, without member text.
 - LinkedIn own-writing fetch (posts actor settings, comments actor, 12-month window, character budget) lives in `supabase/functions/_shared/linkedinOwnWriting.ts` — why: every read of the member's writing must see the same window and filters.
+
+- Public email signoffs use the shared emailTemplate signature helper without a personal role line — why: every email surface must use the same team identity.

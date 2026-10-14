@@ -11,7 +11,7 @@
 export const EXPORT_ACTION = "#0670C4";
 
 /** Brand line (URL) — same on every export. */
-export const EXPORT_URL = "aura-intel.org";
+export const EXPORT_URL = "knownby.me";
 
 import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
 

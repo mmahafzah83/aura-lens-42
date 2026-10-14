@@ -128,7 +128,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     ? `Earned ${formatDate(d.earnedAt)}`
     : `Earned ${new Date().toLocaleDateString()}`;
   const footerLineRaw = [d.firstName, d.level].filter(Boolean).join(" · ");
-  const footerLine = footerLineRaw || "aura-intel.org";
+  const footerLine = footerLineRaw || "knownby.me";
   const shareText = lang === "ar"
     ? [
         `خطوة جديدة في رحلتي المهنية ✦`,
@@ -220,7 +220,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   const handleShare = async () => {
     shareToLinkedIn({
       text: caption,
-      url: "https://aura-intel.org/request-access",
+      url: "https://knownby.me/request-access",
       mode: "share",
       toastMessage: "Caption copied!",
     });

@@ -7,11 +7,11 @@
   "theme": "midnight",
   "length": 7,
   "profile": {
-    "name": { "runs": [{ "t": "Mohammad Mahafdhah", "lang": "en" }] },
+    "name": { "runs": [{ "t": "The KnownBy team", "lang": "en" }] },
     "title": { "runs": [{ "t": "Grid strategy", "lang": "en" }] },
-    "handle": "mohammad-mahafdhah",
+    "handle": "knownby",
     "avatar_url": null,
-    "initials": "MM"
+    "initials": "KB"
   },
   "slides": [
     {

@@ -66,7 +66,7 @@ export function readEmail(lang: EmailLang, d: ReadEmailData): BuiltEmail {
           thin.length ? `${lbl("حيث يقلّ ما يظهر منك")}${list(thin)}` : "",
           `<p style="${AR_AUTO}font-size:14px;line-height:1.9;color:${INK_SOFT};margin:24px 0 0;text-align:right">هذا ملف يقرؤك، لا حكم عليك. إن أخطأ في شيء فردّ على هذه الرسالة وأخبرني بما فاته. أقرأ كل رد بنفسي، والملف يتغيّر.</p>`,
         ].join(""),
-        cta: { href: "https://www.aura-intel.org/home", label: "افتح KnownBy" },
+        cta: { href: "https://knownby.me/home", label: "افتح KnownBy" },
       }),
     };
   }
@@ -84,16 +84,16 @@ export function readEmail(lang: EmailLang, d: ReadEmailData): BuiltEmail {
         marketRead ? `<p style="font-size:15px;line-height:1.7;color:${INK_SOFT}">${esc(marketRead)}</p>` : "",
         subjects.length ? `<p style="font-size:13px;color:${INK_SOFT};margin:22px 0 0">The subjects you own</p>${list(subjects)}` : "",
         thin.length ? `<p style="font-size:13px;color:${INK_SOFT};margin:22px 0 0">Where you're thinnest</p>${list(thin)}` : "",
-        `<p style="font-size:13px;line-height:1.6;color:${INK_SOFT};margin:24px 0 0">This is a read, not a verdict. If it got you wrong, reply to this email and tell me what it missed — I read every reply myself, and the read changes.</p>`,
+        `<p style="font-size:13px;line-height:1.6;color:${INK_SOFT};margin:24px 0 0">This is a read, not a verdict. If it got you wrong, reply to this email and tell me what it missed — The KnownBy team reads every reply, and the read changes.</p>`,
       ].join(""),
-      cta: { href: "https://www.aura-intel.org/home", label: "Open KnownBy" },
+      cta: { href: "https://knownby.me/home", label: "Open KnownBy" },
     }),
   };
 }
 
 // 3. send-resume-email ------------------------------------------------------
 export function resumeEmail(lang: EmailLang, stage: number): BuiltEmail {
-  const href = "https://www.aura-intel.org/onboarding";
+  const href = "https://knownby.me/onboarding";
   if (lang === "ar") {
     const t = "أكمل من حيث توقفت";
     const line = stage ? `توقفت عند الخطوة ${stage} من 5. كل ما أجبت عنه محفوظ.` : "كل ما أجبت عنه محفوظ.";
@@ -161,13 +161,13 @@ export function accountNotificationEmail(lang: EmailLang, type: string, firstNam
     if (type === "password_set") {
       subject = "كلمة المرور لحسابك في KnownBy جاهزة";
       h = "كل شيء جاهز.";
-      msg = `${g} أُنشئت كلمة المرور لحسابك في KnownBy. ادخل متى شئت من aura-intel.org.`;
-      cta = { href: "https://aura-intel.org/auth", label: "افتح KnownBy" };
+      msg = `${g} أُنشئت كلمة المرور لحسابك في KnownBy. ادخل متى شئت من knownby.me.`;
+      cta = { href: "https://knownby.me/auth", label: "افتح KnownBy" };
     } else {
       subject = "تغيّرت كلمة المرور لحسابك في KnownBy";
       h = "حُدّثت كلمة المرور.";
       msg = `${g} تغيّرت كلمة المرور لحسابك في KnownBy قبل قليل. إن كنت أنت من غيّرها فلا شيء مطلوب.`;
-      warn = note(isoAr("إن لم تكن أنت، فأعد تعيين كلمة المرور الآن من aura-intel.org/auth."), lang);
+      warn = note(isoAr("إن لم تكن أنت، فأعد تعيين كلمة المرور الآن من knownby.me/auth."), lang);
     }
     const bodyHtml = `
       ${heading(h, lang)}
@@ -182,13 +182,13 @@ export function accountNotificationEmail(lang: EmailLang, type: string, firstNam
   if (type === "password_set") {
     subject = "Your KnownBy password is set";
     h = "You're all set.";
-    message = `Hi ${name}, your KnownBy password has been created. You can log in any time at aura-intel.org.`;
-    cta = { href: "https://aura-intel.org/auth", label: "Open KnownBy" };
+    message = `Hi ${name}, your KnownBy password has been created. You can log in any time at knownby.me.`;
+    cta = { href: "https://knownby.me/auth", label: "Open KnownBy" };
   } else {
     subject = "Your KnownBy password was changed";
     h = "Password updated.";
     message = `Hi ${name}, your KnownBy password was just changed. If this was you, nothing else is needed.`;
-    warningBlock = note("If you didn't make this change, reset your password now at aura-intel.org/auth.");
+    warningBlock = note("If you didn't make this change, reset your password now at knownby.me/auth.");
   }
   const bodyHtml = `
       ${heading(h)}
@@ -204,8 +204,8 @@ export function waitlistEmail(lang: EmailLang, name: string): BuiltEmail {
   if (lang === "ar") {
     const body = `
           ${heading(`${safeName}، وصل طلبك.`, lang)}
-          ${paragraph(isoAr("طلبك عندي. KnownBy في نسخة تجريبية مغلقة لأقل من 50 شخصاً، وأقرأ كل طلب بنفسي."), true, lang)}
-          ${paragraph(isoAr("أرد عليك خلال 24 ساعة. وإن كان KnownBy مناسباً لك، فستجد دعوتك في الرد."), true, lang)}
+          ${paragraph(isoAr("طلبك لدى فريق KnownBy. KnownBy في نسخة تجريبية مغلقة لأقل من 50 شخصاً، ونقرأ كل طلب."), true, lang)}
+          ${paragraph(isoAr("نرد عليك خلال 24 ساعة. وإن كان KnownBy مناسباً لك، فستجد دعوتك في الرد."), true, lang)}
           ${signature(undefined, lang)}
         `;
     return {
@@ -216,8 +216,8 @@ export function waitlistEmail(lang: EmailLang, name: string): BuiltEmail {
   }
   const body = `
           ${heading(`${safeName}, you're on the list.`)}
-          ${paragraph("We have your request. KnownBy is in private beta with fewer than 50 people, and I read every application myself.")}
-          ${paragraph("You'll hear back from me within 24 hours. If KnownBy is right for you, that reply will include your invitation.")}
+          ${paragraph("We have your request. KnownBy is in private beta with fewer than 50 people, and the KnownBy team reads every application.")}
+          ${paragraph("You'll hear back from the KnownBy team within 24 hours. If KnownBy is right for you, that reply will include your invitation.")}
           ${signature()}
         `;
   return {
@@ -256,7 +256,6 @@ export function inviteEmail(lang: EmailLang, d: InviteData): BuiltEmail {
     const body = `
     ${label("دعوة خاصة", lang)}
     ${heading(first ? `${first}، دعوتك جاهزة.` : "أهلاً، دعوتك جاهزة.", lang)}
-    ${paragraph(isoAr("بنيت KnownBy لأن أقدر من أعرفهم لا يراهم أحد. لا تنقصهم الخبرة. ينقصهم طريق يحوّل ما يقرؤونه ويفكرون فيه إلى شيء يراه السوق."), true, lang)}
     ${paragraph(isoAr("KnownBy يقرأ ما تقرؤه، ويجد النمط فيه، ويكتب مسودة منشور بصوتك. وأنت توافق. هذه هي الدورة كلها."), true, lang)}
     ${inviterLine}
     ${noteBlock}
@@ -269,8 +268,8 @@ export function inviteEmail(lang: EmailLang, d: InviteData): BuiltEmail {
       ${step("04", "يصلك ملفك", "قراءة صريحة لمكانتك في سوقك.")}
     </table>
     ${divider()}
-    ${paragraph("أقل من 50 شخصاً لديهم دخول الآن. وقرأت صفحتك بنفسي قبل أن أرسل هذه الدعوة.", true, lang)}
-    ${note("هذا الرابط يُستخدم مرة واحدة. إن توقف عن العمل فردّ على هذه الرسالة وأرسل لك غيره.", lang)}
+    ${paragraph("أقل من 50 شخصاً لديهم دخول الآن. وقرأ فريق KnownBy صفحتك قبل إرسال هذه الدعوة.", true, lang)}
+    ${note("هذا الرابط يُستخدم مرة واحدة. إن توقف عن العمل فردّ على هذه الرسالة ونرسل لك غيره.", lang)}
     ${signature(undefined, lang)}
   `;
     const preheader = "دعوة خاصة. أقل من 50 شخصاً لديهم دخول.";
@@ -287,7 +286,6 @@ export function inviteEmail(lang: EmailLang, d: InviteData): BuiltEmail {
   const body = `
     ${label("A private invitation")}
     ${heading(`${greeting} your KnownBy is ready.`)}
-    ${paragraph("I built KnownBy because the smartest people I know stay invisible. Not for lack of expertise — for lack of a way to turn what they already read and think into something the market can see.")}
     ${paragraph("KnownBy reads what you read, finds the pattern in it, and drafts a post in your own voice. You approve it. That's the whole loop.")}
     ${inviterLine}
     ${noteBlock}
@@ -300,8 +298,8 @@ export function inviteEmail(lang: EmailLang, d: InviteData): BuiltEmail {
       ${step("04", "You get your read", "An honest read of where you stand in your market.")}
     </table>
     ${divider()}
-    ${paragraph("Fewer than 50 people have access right now. I read your profile myself before sending this.")}
-    ${note("This link is single-use. If it stops working, reply to this email and I'll send another.")}
+    ${paragraph("Fewer than 50 people have access right now. The KnownBy team read your profile before sending this.")}
+    ${note("This link is single-use. If it stops working, reply to this email and we'll send another.")}
     ${signature()}
   `;
   const preheader = "A private invitation. Fewer than 50 people have access.";
@@ -366,10 +364,10 @@ export function colleagueReferralEmail(lang: EmailLang, inviterName: string, not
           ${paragraph(`${who} يرى أن <span dir="ltr">KnownBy</span> يستحق وقتك.`, true, lang)}
           ${paragraph(isoAr("KnownBy يقرأ ما تقرؤه أصلاً، ويجد الأنماط في قطاعك، ويكتب منشورات بصوتك أنت. لا قوالب، ولا ذكاء اصطناعي عام."), true, lang)}
           ${noteBlock}
-          ${paragraph("أقرأ كل ترشيح بنفسي وأرد خلال 24 ساعة.", true, lang)}
+          ${paragraph("يقرأ فريق KnownBy كل ترشيح ويرد خلال 24 ساعة.", true, lang)}
           ${signature(undefined, lang)}
         `,
-        cta: { href: "https://aura-intel.org", label: "تعرّف على KnownBy" },
+        cta: { href: "https://knownby.me", label: "تعرّف على KnownBy" },
       }),
     };
   }
@@ -385,10 +383,10 @@ export function colleagueReferralEmail(lang: EmailLang, inviterName: string, not
           ${paragraph(`${displayInviter} thinks KnownBy is worth your time.`)}
           ${paragraph("KnownBy reads what you already read, finds the patterns in your sector, and drafts posts in your own voice. Not templates, not generic AI.")}
           ${noteBlock}
-          ${paragraph("I read every referral myself and reply within 24 hours.")}
+          ${paragraph("The KnownBy team reads every referral and replies within 24 hours.")}
           ${signature()}
         `,
-      cta: { href: "https://aura-intel.org", label: "See what KnownBy is" },
+      cta: { href: "https://knownby.me", label: "See what KnownBy is" },
     }),
   };
 }
@@ -414,7 +412,7 @@ export function mirrorReadEmail(lang: EmailLang, read: MirrorRead): BuiltEmail {
       parts.push(autoBlock("p", `«${esc(read.own_words_quote)}»`, 16, INK));
       if (read.own_words_read) parts.push(autoBlock("p", esc(read.own_words_read), 16, INK_SOFT));
     }
-    parts.push(paragraph(isoAr("هذا ما يراه الجميع. أما أعضاء KnownBy فيصلهم ما لا يراه غيرهم. إن أردت مقعد مؤسس فردّ على هذه الرسالة وسأقرؤها بنفسي."), true, lang));
+    parts.push(paragraph(isoAr("هذا ما يراه الجميع. أما أعضاء KnownBy فيصلهم ما لا يراه غيرهم. إن أردت مقعد مؤسس فردّ على هذه الرسالة وسيقرؤها فريق KnownBy."), true, lang));
     parts.push(signature(undefined, lang));
     const t = "كيف يراك مجالك";
     return { subject: t, preheader: t, html: renderEmail({ lang, preheader: t, body: parts.join("\n") }) };
@@ -437,7 +435,7 @@ export function mirrorReadEmail(lang: EmailLang, read: MirrorRead): BuiltEmail {
   }
   parts.push(paragraph(
     "This is what the world can see. KnownBy's members get the read on what only they can see. " +
-    "If you want a founding seat, reply to this email and I will read it myself.",
+    "If you want a founding seat, reply to this email and the KnownBy team will read it.",
   ));
   parts.push(signature());
   return {

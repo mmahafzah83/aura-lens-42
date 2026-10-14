@@ -50,7 +50,7 @@ const STORY_TAB_AR = "هويتي";
 export interface BuiltEmail { subject: string; preheader: string; html: string; text?: string }
 
 // ══ A. send-lifecycle-email ═══════════════════════════════════════════════
-const APP_URL = "https://aura-intel.org";
+const APP_URL = "https://knownby.me";
 
 export type LifecycleType = "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
 
@@ -382,9 +382,9 @@ function lifecycleAr(type: LifecycleType, ctx: LifecycleCtx): { subject: string;
 }
 
 // ══ B. lifecycle-emails (M1 / M3 / M4) ════════════════════════════════════
-export const LC_DASHBOARD_URL = "https://www.aura-intel.org/dashboard";
-export const LC_INTELLIGENCE_URL = "https://www.aura-intel.org/dashboard?tab=intelligence";
-const LC_NOTIF_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
+export const LC_DASHBOARD_URL = "https://knownby.me/dashboard";
+export const LC_INTELLIGENCE_URL = "https://knownby.me/dashboard?tab=intelligence";
+const LC_NOTIF_URL = "https://knownby.me/dashboard?settings=notifications";
 export type LifecycleKey = "M1" | "M3" | "M4";
 
 interface Msg { subject: string; cta: { href: string; label: string }; render: (c: { firstName: string; signalTitle?: string }) => string }
@@ -581,8 +581,8 @@ export type Finding = {
   id: string; user_id: string; url: string | null; title: string | null; source: string | null;
   relevance_score: number | null; implication: string | null; created_at: string; themes: string[] | null;
 };
-const MS_BASE_CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
-const MS_PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
+const MS_BASE_CTA_URL = "https://knownby.me/dashboard?tab=overnight";
+const MS_PAUSE_URL = "https://knownby.me/dashboard?settings=notifications";
 function riyadhHHMM(iso: string): string {
   return new Date(new Date(iso).getTime() + 3 * 3600 * 1000).toISOString().slice(11, 16);
 }
@@ -611,7 +611,7 @@ export function morningSignalEmail(lead: Finding | null, others: Finding[], lang
   const headline = lead ? ((lead.title || "").trim() || (lead.url || "").trim()) : "";
   const prov = lead ? provenanceParts(lead) : [];
   const extras = others.slice(0, 3);
-  const leadUrl = lead ? `https://www.aura-intel.org/dashboard?desk=1&finding=${lead.id}` : MS_BASE_CTA_URL;
+  const leadUrl = lead ? `https://knownby.me/dashboard?desk=1&finding=${lead.id}` : MS_BASE_CTA_URL;
   const openLabel = A ? "افتحها في KnownBy" : "Open it in KnownBy";
   const quietLine = A ? "أرسلناها لأن الليلة الماضية جاءت بشيء. الليالي الهادئة لا ترسل شيئاً." : "Sent because last night produced something. Quiet nights send nothing.";
 
@@ -667,7 +667,7 @@ export function morningSignalEmail(lead: Finding | null, others: Finding[], lang
 }
 
 // ══ E. send-weekly-brief ══════════════════════════════════════════════════
-const WB_APP = "https://www.aura-intel.org";
+const WB_APP = "https://knownby.me";
 const WB_PREFS = `${WB_APP}/dashboard?settings=notifications`;
 const GOOD = "#12805C";
 const BAD = "#C0392B";

@@ -158,3 +158,9 @@
 - [ ] ProfileManagement Arabic
 - [ ] Extract complete voice-section English list
 - [ ] Checks + 375/1280 screenshots
+
+## D241/D282 public identity cleanup
+- Rollback: `912e911125adf199e92ed535672596125003ca47`
+- [x] Remove founder story, portraits, signatures and public story route
+- [x] Replace public domains; preserve support inbox and operational configuration
+- [x] Email tests (593 passed), vocabulary audit, database self-check (0 matches) and viewed 375px home screenshot
