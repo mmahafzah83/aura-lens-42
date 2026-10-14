@@ -216,7 +216,7 @@
   "auth.signup.trust": "لا ننشر شيئاً ولا نشاركه ولا نعرضه على أحد، إلا بنقرة منك.",
   "auth.signup.haveAccount": "لديك حساب؟ سجّل الدخول",
   "auth.signup.verifySpam": "لم يصلك شيء بعد دقيقة أو دقيقتين؟ راجع البريد غير المرغوب فيه. يبدأ التقييم فور تأكيدك.",
-  "auth.signup.verifyFrom": "يصلك من <1>invites@aura-intel.org</1>.",
+  "auth.signup.verifyFrom": "يصلك من <1>KnownBy</1>.",
   "auth.signin.sending": "جارٍ الإرسال…",
   "auth.signup.resendIn_zero": "أعد إرسال الرابط بعد {{count}} ث",
   "auth.signup.resendIn_one": "أعد إرسال الرابط بعد {{count}} ث",

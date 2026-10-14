@@ -287,7 +287,7 @@
   "auth.signup.trust": "Nothing is posted, shared or shown to anyone — ever, without you clicking.",
   "auth.signup.haveAccount": "Already have an account? Sign in →",
   "auth.signup.verifySpam": "Nothing after a minute or two? Check spam. The assessment opens the moment you confirm.",
-  "auth.signup.verifyFrom": "It comes from <1>invites@aura-intel.org</1>.",
+  "auth.signup.verifyFrom": "It comes from <1>KnownBy</1>.",
   "auth.signin.sending": "Sending…",
   "auth.signup.resendIn_one": "Resend the link in {{count}}s",
   "auth.signup.resendIn_other": "Resend the link in {{count}}s",
