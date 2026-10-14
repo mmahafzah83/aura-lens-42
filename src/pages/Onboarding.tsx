@@ -1058,11 +1058,6 @@ const Onboarding = () => {
     } catch (e) {
       console.error("[journey] kept evidence replay failed", e);
     }
-    try {
-      await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null), undefined, st.answers_coded ?? null);
-    } catch (e) {
-      console.error("[journey] handoff read failed", e);
-    }
     clearToken();
     return { ok: true };
   }, []);
@@ -2007,17 +2002,21 @@ const Onboarding = () => {
 
   /* ── the six questions, then the read ── */
   const finishQuestions = async (finalAnswers: Record<string, string>, finalCoded: CodedAnswers) => {
-    const readRun = newRunId();
-    setRevealRunId(readRun);
-    setRevealPending(true);
-    go(12);
     if (!userId) {
+      /* No account yet: the read is written after the account wall, so there
+         is no run to wait on here. */
+      setRevealPending(false);
+      go(12);
       if (anonToken) {
         anonStateRef.current = { ...anonStateRef.current, answers: finalAnswers, answers_coded: finalCoded, journey_screen: 12 };
         await saveSession(anonToken, anonStateRef.current);
       }
       return;
     }
+    const readRun = newRunId();
+    setRevealRunId(readRun);
+    setRevealPending(true);
+    go(12);
     await saveAnswers(userId, finalAnswers, finalCoded);
     try {
       await writeProfile({ instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "instrument stamp");
@@ -2045,6 +2044,59 @@ const Onboarding = () => {
     setReveal(built ? { ...built, figures } : built);
     setRevealPending(false);
   };
+
+  /* Signed-in members on 12/13 with no read on file: generate it here, once.
+     This is the one place the read is written after an account exists
+     (anonymous runs reach here after the account wall). */
+  const signedInReadRef = useRef(false);
+  useEffect(() => {
+    if (!userId || checking || (screen !== 12 && screen !== 13) || readRaw || revealPending) return;
+    if (signedInReadRef.current) return;
+    signedInReadRef.current = true;
+    const buildReveal = (r: Record<string, any> | null) => {
+      const d = toRevealData(r, {
+        figures: [],
+        excludeSoft: (dims || []).map((x) => x.name),
+        sources: {
+          posts: postsRead ?? 0,
+          saved: claims.length,
+          answers: Object.keys(answers).length,
+          sliders: Object.keys(scores).length,
+        },
+        lang: isAr ? "ar" : "en",
+      });
+      const figures = [
+        ...(evidenceShown ? [{ value: num(evidenceShown), label: `${countNoun(evidenceShown, "evidence")} captured` }] : []),
+        ...(Object.keys(scores).length
+          ? [{ value: num(Object.keys(scores).length), label: tr("ob.fig.strengths") }] : []),
+        ...(signalsTotal ? [{ value: num(signalsTotal), label: `${countNoun(signalsTotal, "signal")} found` }] : []),
+      ];
+      setReveal(d ? { ...d, figures } : d);
+    };
+    void (async () => {
+      const existing = await loadMarketRead(userId);
+      if (existing) {
+        setReadRaw(existing);
+        buildReveal(existing);
+        return;
+      }
+      const runId = newRunId();
+      setRevealRunId(runId);
+      setRevealPending(true);
+      try {
+        const results = await generateMarketRead(userId, answers, sector || null, band, runId, codedAnswers);
+        if (results) {
+          setReadRaw(results);
+          buildReveal(results);
+        }
+      } catch (e) {
+        console.error("[journey] signed-in read failed", e);
+      } finally {
+        setRevealPending(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, checking, screen, readRaw, revealPending]);
 
   /* if they come back later, show whatever read is already on file */
   useEffect(() => {
